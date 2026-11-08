@@ -129,6 +129,10 @@ Its documentation is on openmixer.org.
   -fcallgraph-info, roots from the LV2, CLAP and PipeWire tables, one
   forbidden list, a class table measured by its arm, the worker's result by
   value; omx-dsp's call graphs and thread tags installed for the join
+- on aarch64 an atomic add is a call to libgcc's outline helper
+  (__aarch64_ldadd4_relax, __aarch64_ldadd4_rel, __aarch64_ldadd8_rel): each is
+  a word-atomic row, measured by the arm; the self-run prints each red with its
+  path when it fails
 - every function of the headers carries one @thread audio, worker or control
   tag in place of the RT prose, and make test runs the gate over every tagged
   function (the self-run)

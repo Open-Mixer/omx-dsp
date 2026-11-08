@@ -884,7 +884,8 @@ $(RT_GATE_DIR)/graphs-%.stamp: $(RT_GATE) $(SRC) $(HEADERS) $(ANALYSIS_HEADERS) 
 # and worker function must be a root walked, and nothing red
 rt-gate-selfrun-%: $(RT_GATE) $(RT_GATE_DIR)/%.tags $(RT_GATE_DIR)/graphs-%.stamp
 	./$(RT_GATE) --tables $(RT_GATE_TABLES) --abi omxdsp --tags $(RT_GATE_DIR)/$*.tags --graphs $(RT_GATE_DIR)/graphs-$* \
-	  --work $(RT_GATE_DIR)/selfrun-$*.work -- $(CC) $(RT_GATE_FLAGS_$*) $(RT_GATE_DIR)/selfrun-$*.c > $(RT_GATE_DIR)/selfrun-$*.out
+	  --work $(RT_GATE_DIR)/selfrun-$*.work -- $(CC) $(RT_GATE_FLAGS_$*) $(RT_GATE_DIR)/selfrun-$*.c > $(RT_GATE_DIR)/selfrun-$*.out \
+	  || { echo "rt-gate-selfrun-$*: the gate's reds, each with its path:" >&2; grep -v '^SUMMARY ' $(RT_GATE_DIR)/selfrun-$*.out >&2; exit 1; }
 	@want=$$(awk '$$2 == "audio" || $$2 == "worker"' $(RT_GATE_DIR)/$*.tags | wc -l); \
 	  got=$$(sed -n 's/^SUMMARY roots=\([0-9]*\) .*/\1/p' $(RT_GATE_DIR)/selfrun-$*.out); \
 	  [ "$$got" = "$$want" ] || { echo "rt-gate-selfrun-$*: $$got roots walked, $$want tagged audio or worker"; exit 1; }; \

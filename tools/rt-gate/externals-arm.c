@@ -90,6 +90,25 @@ static long case_clock_gettime(void) {
   }
   return N;
 }
+/* libgcc's outline atomics: the calls gcc emits for an atomic add on aarch64 (-moutline-atomics). The arm calls
+ * each helper by its name there. The helpers exist only on aarch64; on another target the case runs the same
+ * add, which that compiler emits inline, so the row's case is always measured and is the real symbol where the
+ * symbol exists. */
+static int word4;
+static long word8;
+#if defined(__aarch64__)
+extern int __aarch64_ldadd4_relax(int, int *);
+extern int __aarch64_ldadd4_rel(int, int *);
+extern long __aarch64_ldadd8_rel(long, long *);
+#else
+static int __aarch64_ldadd4_relax(int v, int *p) { return __atomic_fetch_add(p, v, __ATOMIC_RELAXED); }
+static int __aarch64_ldadd4_rel(int v, int *p) { return __atomic_fetch_add(p, v, __ATOMIC_RELEASE); }
+static long __aarch64_ldadd8_rel(long v, long *p) { return __atomic_fetch_add(p, v, __ATOMIC_RELEASE); }
+#endif
+static long case___aarch64_ldadd4_relax(void) { for (int i = 0; i < N; i++) sinkl = __aarch64_ldadd4_relax(i, &word4); return N; }
+static long case___aarch64_ldadd4_rel(void) { for (int i = 0; i < N; i++) sinkl = __aarch64_ldadd4_rel(i, &word4); return N; }
+static long case___aarch64_ldadd8_rel(void) { for (int i = 0; i < N; i++) sinkl = __aarch64_ldadd8_rel(i, &word8); return N; }
+
 static long case_strdup_sabotage(void) {
   for (int i = 0; i < 4; i++) {
     char *s = strdup("x");
@@ -107,6 +126,7 @@ static const struct arm_case CASES[] = {
     C(sin), C(cos), C(tan), C(sinh), C(exp), C(log), C(log2), C(log10), C(sqrt), C(floor), C(ceil), C(pow),
     C(hypot), C(atan2), C(fmin), C(fmax), C(copysign), C(lrint), C(lround), C(llround), C(ldexp),
     C(memcpy), C(memmove), C(memset), C(memcmp), C(sem_post), C(clock_gettime),
+    C(__aarch64_ldadd4_relax), C(__aarch64_ldadd4_rel), C(__aarch64_ldadd8_rel),
 };
 
 static int measure(const struct arm_case *c) {

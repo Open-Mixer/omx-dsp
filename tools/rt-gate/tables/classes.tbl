@@ -16,8 +16,12 @@
 #                 (a thread-local word) and return a value; nothing waits.
 #   bulk-memory   memcpy, memmove, memset, memcmp: a bounded pass over caller-owned bytes.
 #   word-atomic   an atomic read-modify-write on one machine word, lock-free on the target. At -O0
-#                 the compiler emits lock-free atomics inline; a call to a libatomic entry (a wider
-#                 or unaligned object, which may take a lock) is no row here and reads red.
+#                 the compiler emits lock-free atomics inline on x86_64; on aarch64 gcc's default
+#                 -moutline-atomics emits a call to libgcc's __aarch64_<op><size>_<order> helper
+#                 instead, linked statically: an LSE instruction where the CPU has it, else an
+#                 exclusive load and store loop, one word, no lock and no system call. Those helpers
+#                 are rows here, each by its name. A call to a libatomic entry (a wider or unaligned
+#                 object, which may take a lock) is no row here and reads red.
 #   clock         a clock read: clock_gettime on a vDSO clock, no system call.
 #   ftz-register  the floating-point control register (flush to zero, denormals are zero): the
 #                 compiler emits these inline (_mm_setcsr, the aarch64 FPCR builtins); a library
@@ -79,3 +83,7 @@ memcmp bulk-memory externals-arm:memcmp a bounded pass over caller-owned bytes
 clock_gettime clock externals-arm:clock_gettime CLOCK_MONOTONIC through the vDSO: no system call
 
 sem_post wake externals-arm:sem_post an atomic increment; a futex wake only when a waiter sleeps
+
+__aarch64_ldadd4_relax word-atomic externals-arm:__aarch64_ldadd4_relax libgcc's outline atomic add, 4 bytes, relaxed: LSE ldadd or an exclusive loop, lock-free
+__aarch64_ldadd4_rel word-atomic externals-arm:__aarch64_ldadd4_rel libgcc's outline atomic add, 4 bytes, release: LSE ldaddl or an exclusive loop, lock-free
+__aarch64_ldadd8_rel word-atomic externals-arm:__aarch64_ldadd8_rel libgcc's outline atomic add, 8 bytes, release: LSE ldaddl or an exclusive loop, lock-free
