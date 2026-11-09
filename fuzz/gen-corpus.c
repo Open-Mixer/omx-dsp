@@ -143,7 +143,7 @@ static void gen_fx(void) {
     snprintf(name, sizeof name, "%s-hot", fx->name);
     finish("fx", name, &s);
   }
-  /* a rate off the grid: every face refuses it and is the identity (22050 Hz, on the 8..768 kHz scale) */
+  /* a rate off the grid: the limiter, bound to the grid, refuses it and is the identity (22050 Hz, on the 8..768 kHz scale) */
   u8(&s, 12u); /* limiter */
   u8(&s, 1u);
   u16(&s, range16(22050.0, 8000.0, 768000.0));
@@ -304,6 +304,7 @@ static void gen_eq(void) {
   static const struct { const char *name; unsigned kind[2]; double gain[2]; unsigned park[2]; } TWO[] = {
       {"parked-and-live", {0, 0}, {3.0, 3.0}, {1, 0}},  /* a peaking band at 0 dB, then a live one */
       {"shelf-then-shelf", {1, 2}, {6.0, -6.0}, {0, 0}}, /* a low shelf, then a high shelf: their gains at DC differ */
+      {"peak-then-shelf", {0, 2}, {6.0, 6.0}, {0, 0}},   /* a bell, then a high shelf: DC alone does not see their gains */
   };
   for (size_t k = 0; k < sizeof TWO / sizeof TWO[0]; k++) {
     u8(&s, 0x02); u8(&s, 2);

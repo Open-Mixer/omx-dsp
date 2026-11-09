@@ -14,12 +14,12 @@ None of this is part of `make test`.
 
 | harness | what it feeds | the properties it holds the library to beyond "no crash" |
 |---|---|---|
-| `fuzz_fx` | every instance face under `include/omxdsp/fx/` (31 of them): init at a rate, resolve with raw ports, run a block | no contract broken; finite in gives finite out; an in-place run equals an out-of-place one; a refused rate leaves the face the identity |
+| `fuzz_fx` | every instance face under `include/omxdsp/fx/` (31 of them): init at a rate, resolve with raw ports, run a block | no contract broken; an init takes exactly the rates its face owes (the grid, or above the face's floor); finite in gives finite out; an in-place run equals an out-of-place one; a refused rate leaves the face the identity |
 | `fuzz_laws` | the scalar laws every port goes through: clamps, dB and linear, pan, balance and fader laws, ramp, slew, wet/dry, the one-pole constructors | a clamp lands in its travel; constant-power pan; the balance law never boosts; a ramp stays between its ends; a mix stays between its inputs; a pole is in [0, 1) |
-| `fuzz_eq` | a bank of up to 24 bands and the head filters, designed at a rate, then a block through the cascade and the bank's magnitude | every designed section finite and stable; at most as many sections as bands; section i has the gain at DC of the i-th band that is on, and is parked exactly when that band is a peaking or shelf band at 0 dB; a bank with nothing live is the identity on each leg it runs, and 0 dB; finite out |
+| `fuzz_eq` | a bank of up to 24 bands and the head filters, designed at a rate, then a block through the cascade and the bank's magnitude | every designed section finite and stable; at most as many sections as bands; section i has the gain at DC of the i-th band that is on, a bell its gain at its centre and a high shelf at least a quarter of it at Nyquist, and is parked exactly when that band is a peaking or shelf band at 0 dB; a bank with nothing live is the identity on each leg it runs, and 0 dB; finite out |
 | `fuzz_src` | a rate pair, the polyphase table, a take cut into blocks and flushed | the plan is taken exactly when it can be sized, and is the reduced ratio; each phase of the table sums to 1; a take is the same cut into blocks as whole, bit for bit; output bounded by the table's own gain; the identity plan returns the take |
 | `fuzz_delay` | the fractional delay line (orders 3 and 5, any ring size, any delay word) and the integer pair with its cross-fade | a line delivers the delay the rule in its comment owes; a refused order or ring leaves it unarmed, and an unarmed line leaves the block as it was; a whole delay is the take delayed, bit for bit; a fractional one is the Lagrange sum over the take, to float rounding, and bounded by the weights; a steady integer delay is exact, and a fade stays between its two taps; `omx_idelay_samples()` is the rounded delay, saturated at the ring's last slot, for any finite ms and rate |
-| `fuzz_note_map` | a stream of MIDI 1.0 channel messages through a leg's policy, with the policy changed in the middle | no note sticks and none is released that never sounded (a model of the downstream synth); `held_count` is the table's population; the table holds what the harness's account of the stream holds; a note on is delivered exactly when the leg takes it and its transposed key is a key, and sounds that key; `out_of_range` counts the others the leg takes |
+| `fuzz_note_map` | a stream of MIDI 1.0 channel messages through a leg's policy, with the policy changed in the middle | no note sticks and none is released that never sounded (a model of the downstream synth); `held_count` is the table's population; the table holds, key by key, what the harness's account of the stream holds; a note on is delivered exactly when the leg takes it and its transposed key is a key, and sounds that key; `out_of_range` counts the others the leg takes |
 
 There is no parser of presets, files or tables in libomxdsp: it holds no serialised format, and
 its tables are compiled in. When one is added it gets a harness here.
@@ -55,8 +55,10 @@ makes the check abort; without it, the seed passes. A stop after a failed alloca
 harness's own carries `not a property: <reason>` in place of a record. The line numbers are those
 of the commit the OSS Verify enrollment pins, and `tools/check --checks` measures each record there.
 
-Where a check needs an expected value the harness works it out itself: the gcd of a plan, the
-stability of a section, the gain at DC of a band, which bands are parked, the validity of a leg and
+`docs/fuzz-checks.md` reads every check against its comment, with its expected value, its record and a verdict.
+
+Where a check needs an expected value the harness works it out itself: the gcd of a plan and the output counts of a take, the
+stability of a section, the gain at DC of a band and a section's gain at a bell's centre or at Nyquist, which bands are parked, the rates each instance face takes, the validity of a leg and
 the leg in force, the delay a line owes and the Lagrange weights at its fraction, the last delays of
 the integer pair and the delay in samples, the keys held, whether a sample is finite, none of them through the library's own function.
 

@@ -97,7 +97,7 @@ static void fractional(struct fuzz_in *in, int order, uint32_t cap) {
   const enum omx_fdelay_code code = omx_fdelay_init(&l, ring, cap, order);
   const int armed = code == OMX_FDELAY_OK;
   /* A ring takes a line exactly when it is longer than the kernel's reach: the lookbehind and two.
-   * mutant: include/omxdsp/omx_fdelay.h:139 `omx_fdelay_max_delay(cap, order) <= 0.0f` -> `cap < 2000u`
+   * mutant: include/omxdsp/omx_fdelay.h:147 `omx_fdelay_max_delay(cap, order) <= 0.0f` -> `cap < 2000u`
    * input: fractional-3 */
   if (!(armed == fits)) {
     FUZZ_SAY("init answered %d for a ring of %u at order %d", (int)code, (unsigned)cap, order);
@@ -105,7 +105,7 @@ static void fractional(struct fuzz_in *in, int order, uint32_t cap) {
   }
   if (!order_ok) {
     /* An order the kernel does not have is answered by the code that says so.
-     * mutant: include/omxdsp/omx_fdelay.h:138 `return OMX_FDELAY_BAD_ORDER` -> `return OMX_FDELAY_RING_TOO_SMALL`
+     * mutant: include/omxdsp/omx_fdelay.h:146 `return OMX_FDELAY_BAD_ORDER` -> `return OMX_FDELAY_RING_TOO_SMALL`
      * input: fractional-refused-order */
     if (!(code == OMX_FDELAY_BAD_ORDER)) {
       FUZZ_SAY("order %d was answered %d", order, (int)code);
@@ -115,7 +115,7 @@ static void fractional(struct fuzz_in *in, int order, uint32_t cap) {
   } else if (!fits) {
     /* a ring that cannot hold the kernel is refused by a code, and the call records its PRE `the-ring-holds-the-kernels-reach` */
     /* A ring that cannot hold the kernel is answered by the code that says so.
-     * mutant: include/omxdsp/omx_fdelay.h:139 `return OMX_FDELAY_RING_TOO_SMALL` -> `return OMX_FDELAY_BAD_ORDER`
+     * mutant: include/omxdsp/omx_fdelay.h:147 `return OMX_FDELAY_RING_TOO_SMALL` -> `return OMX_FDELAY_BAD_ORDER`
      * input: fractional-tiny-ring */
     if (!(code == OMX_FDELAY_RING_TOO_SMALL)) {
       FUZZ_SAY("a ring of %u at order %d was answered %d", (unsigned)cap, order, (int)code);
@@ -125,7 +125,7 @@ static void fractional(struct fuzz_in *in, int order, uint32_t cap) {
   }
   if (!armed) {
     /* A refused line is left unarmed.
-     * mutant: include/omxdsp/omx_fdelay.h:137 `l->order = 0;` -> `l->order = order;`
+     * mutant: include/omxdsp/omx_fdelay.h:145 `l->order = 0;` -> `l->order = order;`
      * input: fractional-refused-order */
     if (!(l.order == 0 && l.ring == NULL && l.cap == 0u)) {
       FUZZ_SAY("a line refused with %d has order %d and a ring of %u", (int)code, l.order, (unsigned)l.cap);
@@ -148,7 +148,7 @@ static void fractional(struct fuzz_in *in, int order, uint32_t cap) {
     if (!armed) {
       /* an unarmed line is not run: omx_fdelay_process requires a line that is armed (its PRE) */
       /* A line that is not armed delays nothing.
-       * mutant: include/omxdsp/omx_fdelay.h:229 `return 0.0f` -> `return 1.0f`
+       * mutant: include/omxdsp/omx_fdelay.h:241 `return 0.0f` -> `return 1.0f`
        * input: fractional-tiny-ring */
       if (!(omx_fdelay_latency(&l, delay) == 0.0f)) {
         FUZZ_SAY("an unarmed line has a latency");
@@ -157,7 +157,7 @@ static void fractional(struct fuzz_in *in, int order, uint32_t cap) {
       omx_fdelay_process(buf, n, &l, delay);
       fuzz_ledger_reset(); /* the call records its PRE `line-is-armed`: the harness made this one on purpose */
       /* A line that is not armed leaves the block as it was, bit for bit.
-       * mutant: include/omxdsp/omx_fdelay.h:451 `return;` -> `{ if (buf) buf[0] = 0.0f; return; }`
+       * mutant: include/omxdsp/omx_fdelay.h:509 `return;` -> `{ if (buf) buf[0] = 0.0f; return; }`
        * input: fractional-refused-order */
       if (!(memcmp(buf, dry, n * sizeof(float)) == 0)) {
         FUZZ_SAY("an unarmed line changed the block");
@@ -168,7 +168,7 @@ static void fractional(struct fuzz_in *in, int order, uint32_t cap) {
     }
     const float d = omx_fdelay_latency(&l, delay);
     /* A delay is delivered inside the ring, and finite.
-     * mutant: include/omxdsp/omx_fdelay.h:235 `d = maxd;` -> `;`
+     * mutant: include/omxdsp/omx_fdelay.h:247 `d = maxd;` -> `;`
      * input: fractional-3 */
     if (!(d >= 0.0f && d <= longest(cap, order) && d - d == 0.0f)) {
       FUZZ_SAY("a request of %g was delivered as %g, in a ring that serves %g", (double)delay, (double)d, (double)longest(cap, order));
@@ -176,7 +176,7 @@ static void fractional(struct fuzz_in *in, int order, uint32_t cap) {
     }
     if (!(delay - delay == 0.0f)) {
       /* A delay that is not finite reads as 0.
-       * mutant: include/omxdsp/omx_fdelay.h:230 `: 0.0f` -> `: 1.0f`
+       * mutant: include/omxdsp/omx_fdelay.h:242 `: 0.0f` -> `: 1.0f`
        * input: fractional-3 */
       if (!(d == 0.0f)) {
         FUZZ_SAY("a non-finite request was delivered as %g", (double)d);
@@ -184,7 +184,7 @@ static void fractional(struct fuzz_in *in, int order, uint32_t cap) {
       }
     }
     /* A line delivers what its comment says it owes a request.
-     * mutant: include/omxdsp/omx_fdelay.h:234 `d = mind;` -> `;`
+     * mutant: include/omxdsp/omx_fdelay.h:246 `d = mind;` -> `;`
      * input: fractional-3 */
     if (!(d == owed(delay, cap, order))) {
       FUZZ_SAY("a request of %g was delivered as %g, the rule says %g", (double)delay, (double)d, (double)owed(delay, cap, order));
@@ -200,14 +200,14 @@ static void fractional(struct fuzz_in *in, int order, uint32_t cap) {
     const double bound = whole ? 1.0 : weights(order, kf, w);
     for (uint32_t i = 0; i < n; i++) {
       /* The line gives finite samples for finite samples.
-       * mutant: include/omxdsp/omx_fdelay.h:459 `omx_fdelay_read_at(l, id, whole ? 0 : c)` -> `NAN`
+       * mutant: include/omxdsp/omx_fdelay.h:517 `omx_fdelay_read_at(l, id, whole ? 0 : c)` -> `NAN`
        * input: fractional-3 */
       if (!(buf[i] - buf[i] == 0.0f)) {
         FUZZ_SAY("fractional delay %g gave a non-finite sample at %u", (double)d, (unsigned)i);
         abort();
       }
       /* A sample stays inside the sum of the absolute Lagrange weights times the take's peak.
-       * mutant: include/omxdsp/omx_fdelay.h:459 `omx_fdelay_read_at(l, id, whole ? 0 : c)` -> `8.0f * omx_fdelay_read_at(l, id, whole ? 0 : c)`
+       * mutant: include/omxdsp/omx_fdelay.h:517 `omx_fdelay_read_at(l, id, whole ? 0 : c)` -> `8.0f * omx_fdelay_read_at(l, id, whole ? 0 : c)`
        * input: fractional-3 */
       if (!(fabs((double)buf[i]) <= bound * (double)peak * 1.0001 + 1e-30)) {
         FUZZ_SAY("delay %g (%g weights): sample %u is %g, past %g x peak %g", (double)d, bound, (unsigned)i, (double)buf[i], bound, (double)peak);
@@ -216,9 +216,9 @@ static void fractional(struct fuzz_in *in, int order, uint32_t cap) {
       if (whole) {
         const float want = take_at(take, (long)(done + i) - (long)id);
         /* A whole-sample delay is the take delayed, bit for bit.
-         * mutant: include/omxdsp/omx_fdelay.h:459 `omx_fdelay_read_at(l, id, whole` -> `omx_fdelay_read_at(l, id + 1u, whole`
+         * mutant: include/omxdsp/omx_fdelay.h:517 `omx_fdelay_read_at(l, id, whole` -> `omx_fdelay_read_at(l, id + 1u, whole`
          * input: fractional-3
-         * mutant: include/omxdsp/omx_fdelay.h:254 `*id = (uint32_t)d;` -> `*id = (uint32_t)d + 1u;`
+         * mutant: include/omxdsp/omx_fdelay.h:267 `*id = (uint32_t)d;` -> `*id = (uint32_t)d + 1u;`
          * input: fractional-3 */
         if (!(memcmp(&want, &buf[i], sizeof want) == 0 || (want == 0.0f && buf[i] == 0.0f))) {
           FUZZ_SAY("whole delay %u: sample %u is %g, the take says %g", (unsigned)id, (unsigned)(done + i), (double)buf[i], (double)want);
@@ -230,7 +230,7 @@ static void fractional(struct fuzz_in *in, int order, uint32_t cap) {
         double want = 0.0;
         for (int k = 0; k <= order; k++) want += w[k] * (double)take_at(take, oldest + k);
         /* A fractional delay is the Lagrange sum over the take, to float rounding.
-         * mutant: include/omxdsp/omx_fdelay.h:256 `*kf = 1.0f - fr;` -> `*kf = fr;`
+         * mutant: include/omxdsp/omx_fdelay.h:269 `*kf = 1.0f - fr;` -> `*kf = fr;`
          * input: fractional-3 */
         if (!(fabs((double)buf[i] - want) <= 1e-5 * bound * (double)peak + 1e-12)) {
           FUZZ_SAY("delay %g: sample %u is %g, the Lagrange sum is %g", (double)own, (unsigned)(done + i), (double)buf[i], want);
@@ -259,14 +259,14 @@ static void integer(struct fuzz_in *in, uint32_t cap, int mono, int any_word) {
         const uint32_t got = omx_idelay_samples(any_ms, any_sr, cap);
         fuzz_ledger_reset(); /* the call records its PRE `rate-is-declared`: the harness made this one on purpose */
         /* A delay in samples lands inside the ring for any finite ms and rate.
-         * mutant: include/omxdsp/omx_idelay.h:67 `d = d >= cap ? cap - 1 : d;` -> `d = d >= cap && s < 1.0e7f ? cap - 1 : d;`
+         * mutant: include/omxdsp/omx_idelay.h:68 `d = d >= cap ? cap - 1 : d;` -> `d = d >= cap && s < 1.0e7f ? cap - 1 : d;`
          * input: integer-any-ms-and-rate */
         if (!(got < cap)) {
           FUZZ_SAY("omx_idelay_samples(%g ms, %g, %u) = %u is outside the ring", (double)any_ms, (double)any_sr, (unsigned)cap, (unsigned)got);
           abort();
         }
         /* It is the rounded delay, saturated at the ring's last slot, however large the request.
-         * mutant: include/omxdsp/omx_idelay.h:66 `s >= (float)cap ? cap : (uint32_t)s` -> `s >= (float)cap ? 0u : (uint32_t)s`
+         * mutant: include/omxdsp/omx_idelay.h:67 `s >= (float)cap ? cap : (uint32_t)s` -> `s >= (float)cap ? 0u : (uint32_t)s`
          * input: integer-any-ms-and-rate */
         if (!(got == samples_owed(any_ms, any_sr, cap))) {
           FUZZ_SAY("omx_idelay_samples(%g ms, %g, %u) = %u, the rule says %u", (double)any_ms, (double)any_sr, (unsigned)cap, (unsigned)got, (unsigned)samples_owed(any_ms, any_sr, cap));
@@ -278,7 +278,7 @@ static void integer(struct fuzz_in *in, uint32_t cap, int mono, int any_word) {
     const float ms_l = (float)fuzz_u16(in) * 0.1f, ms_r = (float)fuzz_u16(in) * 0.1f;
     const uint32_t tl = omx_idelay_samples(ms_l, sr, cap), tr = omx_idelay_samples(ms_r, sr, cap);
     /* A delay in samples lands inside the ring, on both legs.
-     * mutant: include/omxdsp/omx_idelay.h:67 `cap - 1 : d` -> `d : d`
+     * mutant: include/omxdsp/omx_idelay.h:68 `cap - 1 : d` -> `d : d`
      * input: integer-pair */
     if (!(tl < cap && tr < cap)) {
       FUZZ_SAY("omx_idelay_samples(%g ms, %g, %u) = %u / %u is outside the ring", (double)ms_l, (double)sr, (unsigned)cap, (unsigned)tl, (unsigned)tr);
@@ -286,7 +286,7 @@ static void integer(struct fuzz_in *in, uint32_t cap, int mono, int any_word) {
     }
     if (ms_l == 0.0f) {
       /* A delay of no length is 0 samples.
-       * mutant: include/omxdsp/omx_idelay.h:63 `return 0;` -> `return 1;`
+       * mutant: include/omxdsp/omx_idelay.h:64 `return 0;` -> `return 1;`
        * input: integer-pair */
       if (!(tl == 0u)) {
         FUZZ_SAY("a delay of no length is %u samples", (unsigned)tl);
@@ -294,7 +294,7 @@ static void integer(struct fuzz_in *in, uint32_t cap, int mono, int any_word) {
       }
     }
     /* A delay in samples is the rounded delay, on both legs.
-     * mutant: include/omxdsp/omx_idelay.h:64 `* 0.001f` -> `* 0.002f`
+     * mutant: include/omxdsp/omx_idelay.h:65 `* 0.001f` -> `* 0.002f`
      * input: integer-pair */
     if (!(tl == samples_owed(ms_l, sr, cap) && tr == samples_owed(ms_r, sr, cap))) {
       FUZZ_SAY("omx_idelay_samples(%g, %g ms, %g, %u) = %u / %u, the rule says %u / %u", (double)ms_l, (double)ms_r, (double)sr, (unsigned)cap, (unsigned)tl, (unsigned)tr, (unsigned)samples_owed(ms_l, sr, cap), (unsigned)samples_owed(ms_r, sr, cap));
@@ -316,9 +316,9 @@ static void integer(struct fuzz_in *in, uint32_t cap, int mono, int any_word) {
       const float ol = take_at(takel, (long)(done + i) - (long)from_l);
       if (steady_l) {
         /* A steady delay on the left is the take delayed, bit for bit.
-         * mutant: include/omxdsp/omx_idelay.h:107 `omx_lookahead_back(w, tgt, cap)` -> `omx_lookahead_back(w, tgt + 1u, cap)`
+         * mutant: include/omxdsp/omx_idelay.h:109 `omx_lookahead_back(w, tgt, cap)` -> `omx_lookahead_back(w, tgt + 1u, cap)`
          * input: integer-pair
-         * mutant: include/omxdsp/omx_idelay.h:120 `*cur = tgt;` -> ``
+         * mutant: include/omxdsp/omx_idelay.h:122 `*cur = tgt;` -> ``
          * input: integer-pair */
         if (!(memcmp(&wl, &l[i], sizeof wl) == 0 || (wl == 0.0f && l[i] == 0.0f))) {
           FUZZ_SAY("steady delay %u: left sample %u is %g, the take says %g", (unsigned)tl, (unsigned)(done + i), (double)l[i], (double)wl);
@@ -327,7 +327,7 @@ static void integer(struct fuzz_in *in, uint32_t cap, int mono, int any_word) {
       }
       else {
         /* A delay that moves on the left stays between the two taps it fades.
-         * mutant: include/omxdsp/omx_idelay.h:117 `ring[r0] *` -> `2.0f * ring[r0] *`
+         * mutant: include/omxdsp/omx_idelay.h:119 `ring[r0] *` -> `2.0f * ring[r0] *`
          * input: integer-pair */
         if (!(l[i] >= fminf(wl, ol) - 1e-6f && l[i] <= fmaxf(wl, ol) + 1e-6f)) {
           FUZZ_SAY("fade %u -> %u: left sample %u is %g, outside %g and %g", (unsigned)from_l, (unsigned)tl, (unsigned)(done + i), (double)l[i], (double)ol, (double)wl);
@@ -339,7 +339,7 @@ static void integer(struct fuzz_in *in, uint32_t cap, int mono, int any_word) {
         const float orr = take_at(taker, (long)(done + i) - (long)from_r);
         if (steady_r) {
           /* A steady delay on the right is the take delayed, bit for bit.
-           * mutant: include/omxdsp/omx_idelay.h:168 `omx_idelay_apply(r, n, d->ring_r, d->cap, &d->wpos_r, &d->cur_r, tgt_r);` -> `{ omx_idelay_apply(r, n, d->ring_r, d->cap, &d->wpos_r, &d->cur_r, tgt_r); r[n - 1] += 1.0f; }`
+           * mutant: include/omxdsp/omx_idelay.h:172 `omx_idelay_apply(r, n, d->ring_r, d->cap, &d->wpos_r, &d->cur_r, tgt_r);` -> `{ omx_idelay_apply(r, n, d->ring_r, d->cap, &d->wpos_r, &d->cur_r, tgt_r); r[n - 1] += 1.0f; }`
            * input: integer-right-steady */
           if (!(memcmp(&wr, &r[i], sizeof wr) == 0 || (wr == 0.0f && r[i] == 0.0f))) {
             FUZZ_SAY("steady delay %u: right sample %u is %g, the take says %g", (unsigned)tr, (unsigned)(done + i), (double)r[i], (double)wr);
@@ -348,7 +348,7 @@ static void integer(struct fuzz_in *in, uint32_t cap, int mono, int any_word) {
         }
         else {
           /* A delay that moves on the right stays between the two taps it fades.
-           * mutant: include/omxdsp/omx_idelay.h:168 `omx_idelay_apply(r, n, d->ring_r, d->cap, &d->wpos_r, &d->cur_r, tgt_r);` -> `{ omx_idelay_apply(r, n, d->ring_r, d->cap, &d->wpos_r, &d->cur_r, tgt_r); r[n - 1] += 1.0f; }`
+           * mutant: include/omxdsp/omx_idelay.h:172 `omx_idelay_apply(r, n, d->ring_r, d->cap, &d->wpos_r, &d->cur_r, tgt_r);` -> `{ omx_idelay_apply(r, n, d->ring_r, d->cap, &d->wpos_r, &d->cur_r, tgt_r); r[n - 1] += 1.0f; }`
            * input: integer-pair */
           if (!(r[i] >= fminf(wr, orr) - 1e-6f && r[i] <= fmaxf(wr, orr) + 1e-6f)) {
             FUZZ_SAY("fade %u -> %u: right sample %u is %g, outside %g and %g", (unsigned)from_r, (unsigned)tr, (unsigned)(done + i), (double)r[i], (double)orr, (double)wr);
