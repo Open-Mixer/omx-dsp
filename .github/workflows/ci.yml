@@ -64,7 +64,7 @@ jobs:
       # is named here.
       # the channel serves Debian; an Ubuntu takes its trixie index (omx-contract is Architecture: all)
       - name: Add the OpenMixer repository
-        uses: Open-Mixer/.github/.github/actions/add-openmixer@main
+        uses: Open-Mixer/.github/.github/actions/add-openmixer@openmixer-v1
         with:
           suite: ${{ startsWith(matrix.image, 'ubuntu') && 'trixie' || '' }}
 
@@ -91,12 +91,12 @@ jobs:
 
       - name: Every file a comment can be written in opens with its licence
         id: handback-spdx
-        uses: Open-Mixer/.github/.github/actions/spdx-check@main
+        uses: Open-Mixer/.github/.github/actions/spdx-check@openmixer-v1
 
       # packaging/deps.txt is the one place a floor is written: the spec, debian/control and OMX_CONTRACT_REF follow it
       - name: The dependency floors are the ones packaging/deps.txt declares
         id: handback-deps
-        uses: Open-Mixer/.github/.github/actions/deps-render@main
+        uses: Open-Mixer/.github/.github/actions/deps-render@openmixer-v1
 
       - name: The release workflow builds arm on every tag
         id: handback-release-arm-gate
@@ -130,7 +130,7 @@ jobs:
       - name: The checkout is a git directory this job may read
         run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
       - name: Add the OpenMixer repository
-        uses: Open-Mixer/.github/.github/actions/add-openmixer@main
+        uses: Open-Mixer/.github/.github/actions/add-openmixer@openmixer-v1
       - name: Install the build dependencies from the OpenMixer channel
         run: apt-get build-dep -y --no-install-recommends ./
       - name: The library the twins are checked against
@@ -173,7 +173,7 @@ jobs:
           fi
 
       - name: Add the OpenMixer repository
-        uses: Open-Mixer/.github/.github/actions/add-openmixer@main
+        uses: Open-Mixer/.github/.github/actions/add-openmixer@openmixer-v1
 
       - name: Install omx-contract ${{ env.OLD }}
         run: |
@@ -322,7 +322,7 @@ jobs:
           dnf install -y --setopt=install_weak_deps=False git rpm-build dnf5-plugins gcc make tar gzip diffutils pkgconf-pkg-config python3
 
       - name: Add the OpenMixer repository
-        uses: Open-Mixer/.github/.github/actions/add-openmixer@main
+        uses: Open-Mixer/.github/.github/actions/add-openmixer@openmixer-v1
 
       - uses: actions/checkout@v4
         with:
@@ -331,7 +331,7 @@ jobs:
       - name: The checkout is a git directory this job may read
         run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
-      - uses: Open-Mixer/.github/.github/actions/build-rpm@main
+      - uses: Open-Mixer/.github/.github/actions/build-rpm@openmixer-v1
 
       - name: Check the file list
         run: |
@@ -422,9 +422,9 @@ jobs:
         run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
       - name: Take omx-contract from the OpenMixer channel
-        uses: Open-Mixer/.github/.github/actions/add-openmixer@main
+        uses: Open-Mixer/.github/.github/actions/add-openmixer@openmixer-v1
 
-      - uses: Open-Mixer/.github/.github/actions/build-deb@main
+      - uses: Open-Mixer/.github/.github/actions/build-deb@openmixer-v1
 
       - name: A consumer builds against libomxdsp-dev
         run: |
@@ -468,4 +468,4 @@ jobs:
   # the checks every FreeMixer repository runs on what it publishes: commit messages, private references, and no
   # local copy of either (Open-Mixer/.github's public-sources-check)
   public-sources:
-    uses: Open-Mixer/.github/.github/workflows/public-sources-check.yml@main
+    uses: Open-Mixer/.github/.github/workflows/public-sources-check.yml@openmixer-v1

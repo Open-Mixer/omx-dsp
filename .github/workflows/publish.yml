@@ -42,7 +42,7 @@ jobs:
           apt-get install -y --no-install-recommends build-essential gawk diffutils git ca-certificates curl pkgconf dpkg-dev
       - uses: actions/checkout@v4
       - name: Add the OpenMixer repository
-        uses: Open-Mixer/.github/.github/actions/add-openmixer@main
+        uses: Open-Mixer/.github/.github/actions/add-openmixer@openmixer-v1
       - name: Install the build dependencies from the OpenMixer channel
         run: |
           set -euo pipefail

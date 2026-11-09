@@ -41,7 +41,7 @@ permissions:
 
 jobs:
   rpm:
-    uses: Open-Mixer/.github/.github/workflows/build-rpm.yml@main
+    uses: Open-Mixer/.github/.github/workflows/build-rpm.yml@openmixer-v1
     with:
       package-name: omx-dsp
       binary-names: omx-dsp-devel omx-rt-gate
@@ -55,7 +55,7 @@ jobs:
   # after the RPMs, and only when they are green: both publish into one tree, and a push that loses a race is refused
   deb:
     needs: rpm
-    uses: Open-Mixer/.github/.github/workflows/build-deb.yml@main
+    uses: Open-Mixer/.github/.github/workflows/build-deb.yml@openmixer-v1
     with:
       package-name: omx-dsp
       binary-names: libomxdsp-dev omx-rt-gate
