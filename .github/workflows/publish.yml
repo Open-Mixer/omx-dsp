@@ -5,7 +5,7 @@ name: Publish the TypeScript twins to npm
 # Publishes @openmixer/omx-dsp (ts/: the TypeScript twins of omx-dsp kernels) to
 # npmjs.org by npm trusted publishing (OIDC, no token anywhere), modelled on omx-contract's publish.yml. npmjs.com
 # trusts the CALLER of the publish by repository + workflow filename (+ environment when one is set there; none is):
-#   Repository: FreeMixer/omx-dsp    Workflow filename: publish.yml    Environment: (none)
+#   Repository: Open-Mixer/omx-dsp    Workflow filename: publish.yml    Environment: (none)
 # A version tag publishes (the library's own tag: ts/package.json carries the library version); a manual dispatch
 # is a dry run unless asked otherwise. Only the public repository publishes.
 
@@ -24,7 +24,7 @@ permissions:
 
 jobs:
   publish:
-    if: github.repository == 'FreeMixer/omx-dsp'
+    if: github.repository == 'Open-Mixer/omx-dsp'
     runs-on: ubuntu-latest
     container:
       image: debian:trixie
@@ -42,7 +42,7 @@ jobs:
           apt-get install -y --no-install-recommends build-essential gawk diffutils git ca-certificates curl pkgconf dpkg-dev
       - uses: actions/checkout@v4
       - name: Add the OpenMixer repository
-        uses: FreeMixer/.github/.github/actions/add-openmixer@v1
+        uses: Open-Mixer/.github/.github/actions/add-openmixer@main
       - name: Install the build dependencies from the OpenMixer channel
         run: |
           set -euo pipefail
