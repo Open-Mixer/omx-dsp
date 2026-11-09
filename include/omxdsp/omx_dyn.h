@@ -231,7 +231,7 @@ struct omx_dyn_state {
   int gate_open;                   /**< 1 while the gate is open (hold/hysteresis state) */
   float hyst_credit_db;            /**< dB the open curve still lends a closed gate, decaying */
   float gr_min_db;                 /**< the DEEPEST gain applied inside the LAST call, dB <= 0
-                                    *   (omx_gr_block_db() of it): the host's gain-reduction
+                                    *   (omx_gr_block_db() of it), make-up excluded: the host's gain-reduction
                                     *   reading; 0 = none, so a zeroed state reads "no reduction" */
   float fb_env;                    /**< the feedback loop's ONE envelope stage, detector domain */
   float fb_yl;                     /**< the loop's last pre-make-up output, leg L: y[n-1] */
@@ -708,7 +708,8 @@ static inline float omx_gr_block_db(float min_gain) {
  * @post `finite-out-l`, `finite-out-r`; `gain-finite-nonneg` and `no-gain-added`: the last gain
  *       applied is finite, non-negative and at most the make-up.
  *       `st->gr_min_db` holds the deepest gain applied in this call, per sample, the 4x path's
- *       decimated gain and a factor switch's crossfade included, in dB (omx_gr_block_db()).
+ *       decimated gain and a factor switch's crossfade included, with the make-up taken out (it is
+ *       not reduction), in dB (omx_gr_block_db()).
  * @invariant `envelope-finite`: the detector cascade stays finite.
  * @note O(n), no allocation, bounded scratch. Thread-safe on distinct state.
  * @thread audio
@@ -795,7 +796,10 @@ static inline void omx_dynamics_keyed(float *l, float *r, const float *key, uint
   if (!prog) memset(&st->prs, 0, sizeof st->prs);
   const float floor_lin = floored ? omx_db_to_lin(p->floor_db) * p->gc.makeup_lin : 0.0f;
 
-  float gmin = 1.0f; /* the block's deepest applied gain, whatever path produced it */
+  float gmin = 1.0f; /* the block's deepest applied gain, make-up taken out, whatever path produced it */
+  /* The readout is REDUCTION: the make-up is a fixed boost that the listener hears but that is not the
+   * computer's reduction, so it never enters gmin (#308). */
+  const float inv_makeup = 1.0f / p->gc.makeup_lin;
   /* A keyed slot detects its key, which a loop cannot hear through: feedback is the
    * self-detecting slot's. Entering the loop seeds its one stage from the cascade's level (same
    * domain), so a topology switch does not start the detector from silence; leaving it seeds the
@@ -984,7 +988,7 @@ static inline void omx_dynamics_keyed(float *l, float *r, const float *key, uint
         w = omx_lookahead_fwd(w, 1u, ring);
       }
       st->delay_pos = w;
-      for (uint32_t i = 0; i < m; i++) gmin = gain[i] < gmin ? gain[i] : gmin;
+      for (uint32_t i = 0; i < m; i++) gmin = gain[i] * inv_makeup < gmin ? gain[i] * inv_makeup : gmin;
       for (uint32_t i = 0; i < m; i++) l[done + i] *= gain[i];
       if (r)
         for (uint32_t i = 0; i < m; i++) r[done + i] *= gain[i];
@@ -1007,7 +1011,7 @@ static inline void omx_dynamics_keyed(float *l, float *r, const float *key, uint
           ge = a * ge + (1.0f - a) * st->xfade_gain;
           st->xfade_left--;
         }
-        gmin = ge < gmin ? ge : gmin;
+        gmin = ge * inv_makeup < gmin ? ge * inv_makeup : gmin;
         st->delay_pos = omx_lookahead_fwd(st->delay_pos, 1u, ring);
         l[done + i] = gl;
         if (r) r[done + i] = gr;

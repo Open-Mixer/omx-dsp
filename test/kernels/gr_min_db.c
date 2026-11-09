@@ -162,6 +162,37 @@ static void gr_band_case(float sr, int c) {
   gr_hold(sr, c, st.band.gr_min_db, omx_gr_block_db(gmin), omx_gr_block_db(g));
 }
 
+/* makeup is not reduction: the same tone and threshold read the same deepest reduction at every
+ * makeup step, on the 1x and the 4x path, and the reading is the makeup-free one (issue #308) */
+static void gr_makeup_case(float sr, int c) {
+  const uint32_t prime = (uint32_t)(0.05f * sr);
+  static float l[GR_MAX];
+  const uint32_t n = gr_block(sr);
+  const uint32_t from = prime + gr_from(sr), to = prime + gr_to(sr);
+  static const float steps_db[] = {0.0f, 3.0f, 6.0f, 12.0f, 18.0f, 24.0f};
+  float base = 0.0f;
+  for (size_t k = 0; k < sizeof steps_db / sizeof steps_db[0]; k++) {
+    struct omx_dyn d = gr_atom(OMX_DYN_ABOVE, c == GR_COMP_4X ? 0.2f : 5.0f, sr);
+    d.gc.makeup_lin = omx_db_to_lin(steps_db[k]);
+    for (uint32_t i = 0; i < prime + n; i++) l[i] = gr_signal(i, sr, from, to);
+    struct omx_dyn_state st;
+    omx_dyn_state_init(&st, 1u);
+    for (uint32_t off = 0; off < prime; off += GR_CALL) {
+      const uint32_t m = prime - off < GR_CALL ? prime - off : GR_CALL;
+      omx_dynamics(l + off, NULL, m, &d, &st);
+    }
+    omx_dynamics(l + prime, NULL, n, &d, &st);
+    char what[160];
+    if (k == 0u) base = st.gr_min_db;
+    snprintf(what, sizeof what, "%s at %.0f Hz: reduction at +%.0f dB makeup reads the +0 dB figure", GR_CASE_NAME[c],
+             (double)sr, (double)steps_db[k]);
+    ok(fabsf(st.gr_min_db - base) <= 1e-3f, what, st.gr_min_db, base);
+    snprintf(what, sizeof what, "%s at %.0f Hz: reduction at +%.0f dB makeup is the pinned figure", GR_CASE_NAME[c],
+             (double)sr, (double)steps_db[k]);
+    ok(fabsf(st.gr_min_db - gr_pin(sr, c)) <= GR_TOL_DB, what, st.gr_min_db, gr_pin(sr, c));
+  }
+}
+
 static void arm_gr_min_db(void) {
   g_arm = "gr_min_db";
   for (uint32_t ri = 0; ri < OMX_DECLARED_RATE_COUNT; ri++) {
@@ -169,6 +200,8 @@ static void arm_gr_min_db(void) {
     ok(gr_pin(sr, 0) == gr_pin(sr, 0), "every declared rate has pinned readings", sr, 0.0);
     for (int c = GR_COMP; c <= GR_GATE; c++) gr_dyn_case(sr, c);
     for (int c = GR_BAND; c < GR_CASES; c++) gr_band_case(sr, c);
+    gr_makeup_case(sr, GR_COMP);
+    gr_makeup_case(sr, GR_COMP_4X);
 
     /* a disabled slot leaves the reading alone; silence reads no reduction */
     struct omx_dyn d = gr_atom(OMX_DYN_ABOVE, 5.0f, sr);
