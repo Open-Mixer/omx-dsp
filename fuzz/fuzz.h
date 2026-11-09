@@ -158,9 +158,9 @@ static inline void fuzz_ledger_check(const char *ctx, int declared, int hostile)
     if (!skipped) broken = r;
   }
   /* No contract the library states is broken.
-   * mutant: include/omxdsp/omx_onepole.h:120 `pole >= 0.0f && pole < 1.0f` -> `pole < 0.0f`
+   * mutant: include/omxdsp/omx_onepole.h:124 `pole >= 0.0f && pole < 1.0f` -> `pole < 0.0f`
    * input: onepole
-   * mutant: include/omxdsp/omx_dyn.h:745 `gain[i] = g * p->gc.makeup_lin;` -> `gain[i] = g * p->gc.makeup_lin * (prog && done + i >= 64u && !omx_rate_is_declared(p->prp[0].sr) ? 2.0f : 1.0f);`
+   * mutant: include/omxdsp/omx_dyn.h:875 `gain[i] = g * p->gc.makeup_lin;` -> `gain[i] = g * p->gc.makeup_lin * (prog && done + i >= 64u && !omx_rate_is_declared(p->prp[0].sr) ? 2.0f : 1.0f);`
    * input: comp-feedback-opto-64000 */
   if (broken) {
     FUZZ_SAY("%s: contract broken: %s %s %s (%u in all)", ctx, broken->stage, broken->kind, broken->token, (unsigned)n);

@@ -62,7 +62,7 @@ static void call_clamp(struct fuzz_in *in) {
   }
   const float c = omx_clampf(v, lo, hi);
   /* A clamp lands inside its travel, whatever the word.
-   * mutant: include/omxdsp/omx_param.h:37 `(v <= hi ? v : hi)` -> `v`
+   * mutant: include/omxdsp/omx_param.h:38 `(v <= hi ? v : hi)` -> `v`
    * input: clamp */
   if (!(c >= lo && c <= hi)) {
     FUZZ_SAY("omx_clampf(%g, %g, %g) = %g is outside its travel", (double)v, (double)lo, (double)hi, (double)c);
@@ -70,7 +70,7 @@ static void call_clamp(struct fuzz_in *in) {
   }
   if (v >= lo && v <= hi) {
     /* A word already inside the travel comes back unchanged.
-     * mutant: include/omxdsp/omx_param.h:37 `(v <= hi ? v : hi)` -> `(v <= hi ? lo : hi)`
+     * mutant: include/omxdsp/omx_param.h:38 `(v <= hi ? v : hi)` -> `(v <= hi ? lo : hi)`
      * input: clamp */
     if (!(c == v)) {
       FUZZ_SAY("omx_clampf moved %g, which is inside [%g, %g]", (double)v, (double)lo, (double)hi);
@@ -81,7 +81,7 @@ static void call_clamp(struct fuzz_in *in) {
   d = d < lo ? lo : d > hi ? hi : d;
   const float o = omx_clamp_or(v, lo, hi, d);
   /* omx_clamp_or lands inside the travel too.
-   * mutant: include/omxdsp/omx_param.h:56 `omx_clampf(v, lo, hi)` -> `v`
+   * mutant: include/omxdsp/omx_param.h:58 `omx_clampf(v, lo, hi)` -> `v`
    * input: clamp */
   if (!(o >= lo && o <= hi)) {
     FUZZ_SAY("omx_clamp_or(%g, %g, %g, %g) = %g is outside its travel", (double)v, (double)lo, (double)hi, (double)d, (double)o);
@@ -89,7 +89,7 @@ static void call_clamp(struct fuzz_in *in) {
   }
   if (!is_fin(v)) {
     /* A word that is not finite reads as the declared default.
-     * mutant: include/omxdsp/omx_param.h:56 `: dflt` -> `: lo`
+     * mutant: include/omxdsp/omx_param.h:58 `: dflt` -> `: lo`
      * input: clamp */
     if (!(o == d)) {
       FUZZ_SAY("omx_clamp_or(%g) = %g is not the default %g", (double)v, (double)o, (double)d);
@@ -98,7 +98,7 @@ static void call_clamp(struct fuzz_in *in) {
   }
   const float u = omx_unit(v);
   /* omx_unit lands in [0, 1].
-   * mutant: include/omxdsp/omx_param.h:67 `omx_clampf(v, 0.0f, 1.0f)` -> `v`
+   * mutant: include/omxdsp/omx_param.h:70 `omx_clampf(v, 0.0f, 1.0f)` -> `v`
    * input: clamp */
   if (!(u >= 0.0f && u <= 1.0f)) {
     FUZZ_SAY("omx_unit(%g) = %g", (double)v, (double)u);
@@ -110,7 +110,7 @@ static void call_units(struct fuzz_in *in) {
   const float db = fuzz_f32(in);
   const float g = omx_db_to_lin(fin_or(db, 0.0f));
   /* dB to linear is never negative.
-   * mutant: include/omxdsp/omx_units.h:24 `powf(10.0f, db * 0.05f)` -> `-powf(10.0f, db * 0.05f)`
+   * mutant: include/omxdsp/omx_units.h:40 `powf(10.0f, db * 0.05f)` -> `-powf(10.0f, db * 0.05f)`
    * input: units */
   if (!(!(g < 0.0f))) {
     FUZZ_SAY("omx_db_to_lin(%g) = %g is negative", (double)db, (double)g);
@@ -119,7 +119,7 @@ static void call_units(struct fuzz_in *in) {
   const float dbc = fin_or(db, 0.0f);
   if (dbc >= -150.0f && dbc <= 150.0f) {
     /* Inside +-150 dB, dB to linear is finite and above 0.
-     * mutant: include/omxdsp/omx_units.h:24 `powf(10.0f, db * 0.05f)` -> `0.0f * powf(10.0f, db * 0.05f)`
+     * mutant: include/omxdsp/omx_units.h:40 `powf(10.0f, db * 0.05f)` -> `0.0f * powf(10.0f, db * 0.05f)`
      * input: units */
     if (!(is_fin(g) && g > 0.0f)) {
       FUZZ_SAY("omx_db_to_lin(%g) = %g is not finite and positive", (double)dbc, (double)g);
@@ -127,7 +127,7 @@ static void call_units(struct fuzz_in *in) {
     }
     const float back = omx_lin_to_db(g);
     /* Linear to dB brings a gain back to its dB, to 0.01 dB.
-     * mutant: include/omxdsp/omx_units.h:36 `20.0f * log10f` -> `21.0f * log10f`
+     * mutant: include/omxdsp/omx_units.h:53 `20.0f * log10f` -> `21.0f * log10f`
      * input: units */
     if (!(fabsf(back - dbc) <= 0.01f)) {
       FUZZ_SAY("dB %g -> linear %g -> dB %g", (double)dbc, (double)g, (double)back);
@@ -135,7 +135,7 @@ static void call_units(struct fuzz_in *in) {
     }
     const float gp = omx_db_to_lin_poly(dbc);
     /* The polynomial dB to linear is finite and above 0 inside +-150 dB.
-     * mutant: include/omxdsp/omx_units.h:123 `p * scale` -> `p * scale * NAN`
+     * mutant: include/omxdsp/omx_units.h:159 `p * scale` -> `p * scale * NAN`
      * input: units */
     if (!(is_fin(gp) && gp > 0.0f)) {
       FUZZ_SAY("omx_db_to_lin_poly(%g) = %g", (double)dbc, (double)gp);
@@ -146,7 +146,7 @@ static void call_units(struct fuzz_in *in) {
   if (is_fin(lin)) { /* +Inf is +Inf dB: the floor is the law for what is small, not for what is not finite */
     const float l = omx_lin_to_db(lin);
     /* Linear to dB keeps its floor and stays finite for any finite word: 0 is the floor, not -Inf.
-     * mutant: include/omxdsp/omx_units.h:36 `lin < floor_lin ? floor_lin : lin` -> `lin`
+     * mutant: include/omxdsp/omx_units.h:53 `lin < floor_lin ? floor_lin : lin` -> `lin`
      * input: units */
     if (!(is_fin(l) && l >= OMX_LIN_TO_DB_FLOOR_DB - 0.001f)) {
       FUZZ_SAY("omx_lin_to_db(%g) = %g", (double)lin, (double)l);
@@ -156,7 +156,7 @@ static void call_units(struct fuzz_in *in) {
   if (is_fin(lin)) {
     const float p = omx_lin_to_db_poly(lin);
     /* The polynomial linear to dB is finite for any finite word.
-     * mutant: include/omxdsp/omx_units.h:89 `8.685889638065037f` -> `NAN`
+     * mutant: include/omxdsp/omx_units.h:124 `8.685889638065037f` -> `NAN`
      * input: units */
     if (!(is_fin(p))) {
       FUZZ_SAY("omx_lin_to_db_poly(%g) = %g", (double)lin, (double)p);
@@ -169,7 +169,7 @@ static void call_pan_fader(struct fuzz_in *in) {
   const float pan = fuzz_range(in, -1.0f, 1.0f);
   const float gl = omx_pan_law_gain(pan, OMX_PAN_LEG_L), gr = omx_pan_law_gain(pan, OMX_PAN_LEG_R);
   /* The pan law is constant power: the squares of the two legs add up to 1.
-   * mutant: include/omxdsp/omx_fader_law.h:58 `sinf(theta)` -> `cosf(theta)`
+   * mutant: include/omxdsp/omx_fader_law.h:59 `sinf(theta)` -> `cosf(theta)`
    * input: pan-fader */
   if (!(fabsf(gl * gl + gr * gr - 1.0f) <= 1e-5f)) {
     FUZZ_SAY("the pan law at %g: %g^2 + %g^2 is not 1", (double)pan, (double)gl, (double)gr);
@@ -179,7 +179,7 @@ static void call_pan_fader(struct fuzz_in *in) {
   float bl, br;
   omx_balance_law(any, &bl, &br);
   /* The balance law never boosts: both legs in [0, 1], and one of them is 1.
-   * mutant: include/omxdsp/omx_balance_law.h:47 `1.0f - p` -> `1.0f + p`
+   * mutant: include/omxdsp/omx_balance_law.h:49 `1.0f - p` -> `1.0f + p`
    * input: pan-fader */
   if (!(bl >= 0.0f && bl <= 1.0f && br >= 0.0f && br <= 1.0f && (bl == 1.0f || br == 1.0f))) {
     FUZZ_SAY("the balance law at %g gives (%g, %g)", (double)any, (double)bl, (double)br);
@@ -197,7 +197,7 @@ static void call_pan_fader(struct fuzz_in *in) {
   p.dca_mute = fuzz_u8(in) & 1;
   const float g = omx_fader_law_coeff(&p);
   /* The fader law's coefficient is finite and not negative.
-   * mutant: include/omxdsp/omx_fader_law.h:85 `fader * pan` -> `-fader * pan`
+   * mutant: include/omxdsp/omx_fader_law.h:87 `fader * pan` -> `-fader * pan`
    * input: pan-fader */
   if (!(is_fin(g) && g >= 0.0f)) {
     FUZZ_SAY("the fader law gives %g", (double)g);
@@ -205,7 +205,7 @@ static void call_pan_fader(struct fuzz_in *in) {
   }
   if (p.mute || p.dca_mute) {
     /* A muted strip or DCA has a coefficient of 0.
-     * mutant: include/omxdsp/omx_fader_law.h:83 `p->mute ? 0.0f : 1.0f` -> `p->mute ? 1.0f : 1.0f`
+     * mutant: include/omxdsp/omx_fader_law.h:85 `p->mute ? 0.0f : 1.0f` -> `p->mute ? 1.0f : 1.0f`
      * input: pan-fader */
     if (!(g == 0.0f)) {
       FUZZ_SAY("a muted entry's coefficient is %g", (double)g);
@@ -227,7 +227,7 @@ static void call_ramp(struct fuzz_in *in) {
   const float lo = fminf(start, end), hi = fmaxf(start, end);
   const float slack = 1e-5f * fmaxf(fabsf(lo), fabsf(hi)) + FLT_MIN; /* the rounding of cur + step*i, a denormal one included */
   /* A ramp starts at the applied value, 0 for one that is not finite.
-   * mutant: include/omxdsp/omx_ramp.h:56 `r.cur + r.step` -> `r.tgt + r.step`
+   * mutant: include/omxdsp/omx_ramp.h:58 `r.cur + r.step` -> `r.tgt + r.step`
    * input: ramp */
   if (!(omx_ramp_at(r, 0) == start)) {
     FUZZ_SAY("a ramp from %g does not start there (%g)", (double)cur, (double)omx_ramp_at(r, 0));
@@ -236,7 +236,7 @@ static void call_ramp(struct fuzz_in *in) {
   for (uint32_t i = 0; i < n; i++) {
     const float x = omx_ramp_at(r, i);
     /* No sample of a ramp leaves the span of its two ends.
-     * mutant: include/omxdsp/omx_ramp.h:56 `r.step * (float)i` -> `2.0f * r.step * (float)i`
+     * mutant: include/omxdsp/omx_ramp.h:58 `r.step * (float)i` -> `2.0f * r.step * (float)i`
      * input: ramp */
     if (!(is_fin(x) && x >= lo - slack && x <= hi + slack)) {
       FUZZ_SAY("ramp %g -> %g over %u: sample %u is %g", (double)cur, (double)tgt, (unsigned)n, (unsigned)i, (double)x);
@@ -245,7 +245,7 @@ static void call_ramp(struct fuzz_in *in) {
   }
   omx_ramp_end(r, &held);
   /* A ramp ends on its target.
-   * mutant: include/omxdsp/omx_ramp.h:65 `*cur = r.tgt` -> `*cur = r.cur`
+   * mutant: include/omxdsp/omx_ramp.h:68 `*cur = r.tgt` -> `*cur = r.cur`
    * input: ramp */
   if (!(held == end)) {
     FUZZ_SAY("a ramp ends on %g, not %g", (double)held, (double)end);
@@ -261,7 +261,7 @@ static void call_wetdry(struct fuzz_in *in) {
   omx_wetdry_mix(&l, &r, xl, xr, wl, wr, dry, mix);
   const float tol = 1e-5f;
   /* A wet/dry mix of finite samples lies between the dry one and the wet one.
-   * mutant: include/omxdsp/omx_wetdry.h:35 `dry * xl` -> `2.0f * dry * xl`
+   * mutant: include/omxdsp/omx_wetdry.h:36 `dry * xl` -> `2.0f * dry * xl`
    * input: wetdry */
   if (!(l >= fminf(xl, wl) - tol && l <= fmaxf(xl, wl) + tol && r >= fminf(xr, wr) - tol && r <= fmaxf(xr, wr) + tol)) {
     FUZZ_SAY("the wet/dry mix at %g is outside its two inputs", (double)mix);
@@ -276,7 +276,7 @@ static void call_wetdry(struct fuzz_in *in) {
   omx_wetdry_xfade_block(d, a, b, n);
   for (uint32_t i = 0; i < n; i++)
     /* Each sample of a cross-fade lies between the two bodies.
-     * mutant: include/omxdsp/omx_wetdry.h:79 `(step * (float)i)` -> `(2.0f * step * (float)i)`
+     * mutant: include/omxdsp/omx_wetdry.h:82 `(step * (float)i)` -> `(2.0f * step * (float)i)`
      * input: wetdry */
     if (!(d[i] >= fminf(a[i], b[i]) - tol && d[i] <= fmaxf(a[i], b[i]) + tol)) {
       FUZZ_SAY("the cross-fade's sample %u (%g) is outside %g and %g", (unsigned)i, (double)d[i], (double)a[i], (double)b[i]);
@@ -289,14 +289,14 @@ static void call_onepole(struct fuzz_in *in) {
   const float ms = fin_or(fuzz_f32(in), 0.0f), hz = fin_or(fuzz_f32(in), 0.0f);
   const float pt = omx_pole_from_time_ms(ms, sr), pc = omx_pole_from_cutoff_hz(hz, sr);
   /* A time constant gives a pole in [0, 1), however long the time.
-   * mutant: include/omxdsp/omx_onepole.h:119 `fminf(expf(-1.0f / (ms * 0.001f * sr)), OMX_POLE_MAX)` -> `expf(-1.0f / (ms * 0.001f * sr))`
+   * mutant: include/omxdsp/omx_onepole.h:123 `fminf(expf(-1.0f / (ms * 0.001f * sr)), OMX_POLE_MAX)` -> `expf(-1.0f / (ms * 0.001f * sr))`
    * input: onepole */
   if (!(pt >= 0.0f && pt < 1.0f)) {
     FUZZ_SAY("omx_pole_from_time_ms(%g, %g) = %g", (double)ms, (double)sr, (double)pt);
     abort();
   }
   /* A corner gives a pole in [0, 1), however low the corner.
-   * mutant: include/omxdsp/omx_onepole.h:138 `fminf(expf(-2.0f * (float)M_PI * hz / sr), OMX_POLE_MAX)` -> `expf(-2.0f * (float)M_PI * hz / sr)`
+   * mutant: include/omxdsp/omx_onepole.h:143 `fminf(expf(-2.0f * (float)M_PI * hz / sr), OMX_POLE_MAX)` -> `expf(-2.0f * (float)M_PI * hz / sr)`
    * input: onepole */
   if (!(pc >= 0.0f && pc < 1.0f)) {
     FUZZ_SAY("omx_pole_from_cutoff_hz(%g, %g) = %g", (double)hz, (double)sr, (double)pc);
@@ -305,7 +305,7 @@ static void call_onepole(struct fuzz_in *in) {
   const float p = fuzz_range(in, 0.0f, 1.0f), ref = fuzz_f32(in), run = fuzz_f32(in);
   const float q = omx_pole_rescale(p, ref, run);
   /* A rescaled pole stays in [0, 1].
-   * mutant: include/omxdsp/omx_onepole.h:163 `powf(p, ref / sr)` -> `2.0f`
+   * mutant: include/omxdsp/omx_onepole.h:169 `powf(p, ref / sr)` -> `2.0f`
    * input: onepole */
   if (!(q >= 0.0f && q <= 1.0f)) {
     FUZZ_SAY("omx_pole_rescale(%g, %g, %g) = %g", (double)p, (double)ref, (double)run, (double)q);
@@ -315,7 +315,7 @@ static void call_onepole(struct fuzz_in *in) {
   const float x = fuzz_range(in, -4.0f, 4.0f), s0 = s;
   const float y = omx_onepole(&s, x, pt);
   /* One step of the filter lies between the input and the state, and the state is what it returns.
-   * mutant: include/omxdsp/omx_onepole.h:51 `x * (1.0f - pole)` -> `2.0f * x * (1.0f - pole)`
+   * mutant: include/omxdsp/omx_onepole.h:52 `x * (1.0f - pole)` -> `2.0f * x * (1.0f - pole)`
    * input: onepole */
   if (!(y >= fminf(x, s0) - 1e-5f && y <= fmaxf(x, s0) + 1e-5f && y == s)) {
     FUZZ_SAY("a one-pole step from %g toward %g at pole %g gave %g", (double)s0, (double)x, (double)pt, (double)y);
@@ -327,7 +327,7 @@ static void call_slew(struct fuzz_in *in) {
   const float ms = fuzz_f32(in), sr = fuzz_rate(in);
   const float step = omx_slew_step(ms, sr);
   /* A step is one sample's travel at most, and never none.
-   * mutant: include/omxdsp/mix/omx_slew.h:48 `s < 1.0f ? (s > FLT_MIN ? s : FLT_MIN) : 1.0f` -> `s`
+   * mutant: include/omxdsp/mix/omx_slew.h:49 `s < 1.0f ? (s > FLT_MIN ? s : FLT_MIN) : 1.0f` -> `s`
    * input: slew */
   if (!(step > 0.0f && step <= 1.0f)) {
     FUZZ_SAY("omx_slew_step(%g, %g) = %g", (double)ms, (double)sr, (double)step);
@@ -343,7 +343,7 @@ static void call_slew(struct fuzz_in *in) {
   omx_slew_gain(x, y, n, tgt0, step, &cur);
   const float a = is_fin(cur0) ? cur0 : 0.0f, b = is_fin(tgt0) ? tgt0 : 0.0f;
   /* The cursor stays between where it was and its target, and is exactly the target once the walk fits the block.
-   * mutant: include/omxdsp/mix/omx_slew.h:65 `up < tgt ? up : tgt` -> `up`
+   * mutant: include/omxdsp/mix/omx_slew.h:67 `up < tgt ? up : tgt` -> `up`
    * input: slew */
   const float dist = fabsf(b - a);
   if (!(cur >= fminf(a, b) && cur <= fmaxf(a, b)) || ((float)n * step > dist * 1.01f + 1e-3f && cur != b)) {
@@ -351,7 +351,7 @@ static void call_slew(struct fuzz_in *in) {
     abort();
   }
   /* The hold's way back to open waits for a carried sample: over silence the position stays.
-   * mutant: include/omxdsp/mix/omx_slew.h:123 `h < t || xl != 0.0f || xr != 0.0f` -> `1`
+   * mutant: include/omxdsp/mix/omx_slew.h:127 `h < t || xl != 0.0f || xr != 0.0f` -> `1`
    * input: slew */
   memset(x, 0, n * sizeof(float));
   const float p0 = fuzz_range(in, 0.0f, 1.0f);

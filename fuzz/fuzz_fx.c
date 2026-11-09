@@ -20,8 +20,9 @@
  * aliasing every face documents as safe), B copies it out of place.
  *
  * Properties, each an abort():
- *   - a refused init (a rate off the grid) leaves run() the identity, bit for bit, whatever
- *     the ports say;
+ *   - two inits at one rate answer the same, and an init takes exactly the rates its face owes a
+ *     yes (the oracle grid, or any rate above the face's own floor), by the harness's own rule;
+ *   - a refused init leaves run() the identity, bit for bit, whatever the ports say;
  *   - no contract the library states is broken, on any port value or block (the ledger of
  *     omx_contract.h stays empty);
  *   - an instance that took finite samples gives finite samples back, at every port value;
@@ -270,6 +271,24 @@ static const struct fx FX[] = {
 };
 #define FX_COUNT (sizeof FX / sizeof FX[0])
 
+/* Whether a face's init owes the rate a yes, by the harness's own reading of each face's init:
+ * the nine rates of the oracle grid for a face that binds to them (omx_instance_bind), any rate
+ * above 0 for the dynamics faces and the trim, and above twice the highest frequency it must
+ * place for the three faces that say so: the tremolo's fastest rate, the phaser's top corner and
+ * the graphic EQ's highest ISO centre, 20 kHz. Never omx_rate_is_oracle_full() or the faces' own
+ * tests. */
+static int rate_owed(const char *name, float sr) {
+  static const float grid[OMX_ORACLE_FULL_RATES_COUNT] = OMX_ORACLE_FULL_RATES_INIT;
+  if (!(sr > 0.0f) || sr - sr != 0.0f) return 0;
+  if (!strcmp(name, "comp") || !strcmp(name, "gate") || !strcmp(name, "trim")) return 1;
+  if (!strcmp(name, "tremolo")) return sr > 2.0f * (float)OMX_TREMOLO_RATE_RANGE_MAX;
+  if (!strcmp(name, "phaser")) return sr > 2.0f * (float)OMX_PHASER_F_TOP_HZ;
+  if (!strcmp(name, "geq")) return sr > 2.0f * 20000.0f;
+  for (uint32_t i = 0; i < OMX_ORACLE_FULL_RATES_COUNT; i++)
+    if (grid[i] == sr) return 1;
+  return 0;
+}
+
 static void *fx_alloc(size_t size) {
   size = (size + 63u) & ~(size_t)63u;
   void *p = aligned_alloc(64, size);
@@ -293,10 +312,20 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
   void *a = fx_alloc(fx->size), *b = fx_alloc(fx->size);
   const int ra = fx->init(a, rate), rb = fx->init(b, rate);
   /* Two inits at one rate answer the same.
-   * mutant: include/omxdsp/fx/omx_trim_instance.h:69 `return 1;` -> `{ static int calls; return calls++ % 2; }`
+   * mutant: include/omxdsp/fx/omx_trim_instance.h:71 `return 1;` -> `{ static int calls; return calls++ % 2; }`
    * input: trim-neutral */
   if (!(ra == rb)) {
     FUZZ_SAY("%s: two inits at %g disagree (%d, %d)", fx->name, (double)rate, ra, rb);
+    abort();
+  }
+  /* An init takes exactly the rates its face owes a yes: a face bound to the grid refuses every
+   * rate off it, and a face that takes any rate above its floor refuses none of them.
+   * mutant: include/omxdsp/fx/omx_instance_io.h:114 `return omx_rate_is_oracle_full(sr);` -> `return sr > 0.0f;`
+   * input: refused-rate
+   * mutant: include/omxdsp/fx/omx_instance_io.h:129 `return sr > 0.0f;` -> `return omx_rate_is_oracle_full(sr);`
+   * input: comp-22050 */
+  if (!(ra == rate_owed(fx->name, rate))) {
+    FUZZ_SAY("%s: init at %g answered %d, the face owes %d", fx->name, (double)rate, ra, rate_owed(fx->name, rate));
     abort();
   }
   fuzz_ledger_check(ctx, omx_rate_is_declared(rate), bmode & 1u);
@@ -322,7 +351,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     fx->run(b, il, ir, ol, orr, n);
 
     /* Aliasing is safe: running in place gives the samples of running out of place, bit for bit.
-     * mutant: include/omxdsp/fx/omx_trim_instance.h:95 `if (out_l != in_l) memmove` -> `if (out_l == in_l) out_l[0] += 1.0f; else memmove`
+     * mutant: include/omxdsp/fx/omx_trim_instance.h:98 `n)) return;` -> `n)) return; if (out_l == in_l) out_l[0] += 1.0f;`
      * input: trim-neutral */
     if (!(memcmp(al, ol, n * sizeof(float)) == 0 && memcmp(ar, orr, n * sizeof(float)) == 0)) {
       FUZZ_SAY("%s: running in place gives other samples than running out of place", fx->name);
@@ -330,7 +359,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     }
     if (!ready) {
       /* A refused init leaves run() the identity, bit for bit, whatever the ports say.
-       * mutant: include/omxdsp/fx/omx_limiter_instance.h:137 `if (!s || !s->ready) return;` -> `if (!s || !s->ready) { out_l[0] = 0.5f; return; }`
+       * mutant: include/omxdsp/fx/omx_instance_io.h:156 `!(s)->ready) return;` -> `!(s)->ready) { (out_l)[0] = 0.5f; return; }`
        * input: refused-rate */
       if (!(memcmp(il, ol, n * sizeof(float)) == 0 && memcmp(ir, orr, n * sizeof(float)) == 0)) {
         FUZZ_SAY("%s: a refused init leaves run() other than the identity", fx->name);
@@ -338,7 +367,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
       }
     } else if (!(bmode & 1u)) {
       /* An instance that took finite samples gives finite samples back, at any port value.
-       * mutant: include/omxdsp/fx/omx_trim_instance.h:99 `out_l[i] *= omx_ramp_at(g, i)` -> `out_l[i] = NAN`
+       * mutant: include/omxdsp/fx/omx_trim_instance.h:101 `out_l[i] *= omx_ramp_at(g, i)` -> `out_l[i] = NAN`
        * input: trim-neutral */
       if (!(fuzz_all_finite(ol, n) && fuzz_all_finite(orr, n))) {
         FUZZ_SAY("%s: finite samples in, a non-finite sample out", fx->name);
