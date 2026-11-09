@@ -3,15 +3,17 @@
 name: ci
 
 # On every push and pull request: the whole suite on Fedora, both Debian releases and Ubuntu 24.04,
-# on both architectures; the packages built, their file lists checked and a consumer outside the tree built
+# on both architectures; on workflow_dispatch the packages built, their file lists checked and a consumer outside the tree built
 # against each; omx-contract installed from the FreeMixer channel at the floor the packaging
-# declares, and refused below its floor; and the release workflow as a dry run. Nothing is signed or published here. Every job reads this
+# declares, and refused below its floor. The packages and the release workflow as a dry run only on workflow_dispatch
+# (fast-release dispatches it on a release head). Nothing is signed or published here. Every job reads this
 # repository and other public ones, and runs on GitHub's runners.
 
 on:
   pull_request:
   push:
     branches: [main, dedupe/all]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -304,6 +306,7 @@ jobs:
 
   rpm:
     name: omx-dsp-devel (fc44, ${{ matrix.arch }})
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ${{ github.event.pull_request.head.repo.fork && 'ubuntu-latest' || vars.OMX_RUNNER || 'ubuntu-latest' }}
     # %check runs make check-package, as the deb job's build does
     timeout-minutes: 30
@@ -390,6 +393,7 @@ jobs:
 
   deb:
     name: libomxdsp-dev (${{ matrix.suite }}, ${{ matrix.arch }})
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ${{ github.event.pull_request.head.repo.fork && 'ubuntu-latest' || vars.OMX_RUNNER || 'ubuntu-latest' }}
     # the package build runs make check-package (dh_auto_test), which takes under 15 minutes on a hosted
     # runner; make test, with the sabotage and perturbation arms, ran here until it no longer fit 60
@@ -451,6 +455,7 @@ jobs:
 
   release-dry-run:
     name: release workflow, dry run
+    if: github.event_name == 'workflow_dispatch'
     permissions:
       contents: write
       issues: write
