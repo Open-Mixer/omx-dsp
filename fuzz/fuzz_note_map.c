@@ -27,7 +27,8 @@
  *   - NO NOTE STICKS AND NONE IS RELEASED THAT NEVER SOUNDED: every note off delivered is for a key
  *     the model has sounding, on the channel it was played on, and after releasing everything the
  *     model has nothing sounding and held_count is 0;
- *   - held_count is the population of the held table, always; an invalid leg is refused and leaves
+ *   - held_count is the population of the held table, always, and the table holds exactly the
+ *     keys of the harness's own account, key by key; an invalid leg is refused and leaves
  *     the policy as it was; a valid one is taken;
  *   - a note on outside the leg's channel, key range or transposed key range is never delivered,
  *     one inside them always is, and it sounds the transposed key;
@@ -59,6 +60,15 @@ struct model {
   int held_count;
 };
 
+/* The first (channel, key) where the map's held table and the harness's account differ, as
+ * channel * 128 + key, or -1 when they hold the same keys. */
+static int held_differs(const struct omx_note_map *m, const struct model *md) {
+  for (int c = 0; c < OMX_NOTE_CHANNELS; c++)
+    for (int k = 0; k < OMX_NOTE_KEYS; k++)
+      if ((int)((m->held[c][k / 32] >> (k % 32)) & 1u) != md->held[c][k]) return c * OMX_NOTE_KEYS + k;
+  return -1;
+}
+
 /* A message as the map's header reads it: what it does to the keys held under the leg in force. */
 static void hold_model(struct model *md, const struct omx_note_leg *own, struct omx_note_msg msg) {
   if (msg.status < 0x80u || msg.status >= 0xF0u || msg.data1 > 127u || msg.data2 > 127u) return;
@@ -85,7 +95,7 @@ static void hold_model(struct model *md, const struct omx_note_leg *own, struct 
 static void deliver(struct model *md, const struct omx_note_leg *own, const struct omx_note_msg *o, int n, int max,
                     struct omx_note_msg in) {
   /* A call makes no more messages than it has room for.
-   * mutant: include/omxdsp/omx_note_map.h:319 `return n;` -> `return n + 9;`
+   * mutant: include/omxdsp/omx_note_map.h:327 `return n;` -> `return n + 9;`
    * input: omni-linear */
   if (!(n >= 0 && n <= max)) {
     FUZZ_SAY("a call made %d outputs, room for %d", n, max);
@@ -94,7 +104,7 @@ static void deliver(struct model *md, const struct omx_note_leg *own, const stru
   for (int i = 0; i < n; i++) {
     const int kind = o[i].status & 0xF0, ch = o[i].status & 0x0F;
     /* Each message delivered is a channel message with data bytes of 7 bits.
-     * mutant: include/omxdsp/omx_note_map.h:301 `0x90 | ch` -> `0xF0 | ch`
+     * mutant: include/omxdsp/omx_note_map.h:309 `0x90 | ch` -> `0xF0 | ch`
      * input: omni-linear */
     if (!(o[i].status >= 0x80u && o[i].status < 0xF0u && o[i].data1 <= 127u && o[i].data2 <= 127u)) {
       FUZZ_SAY("output %d of %02x %02x %02x is %02x %02x %02x", i, in.status, in.data1, in.data2, o[i].status, o[i].data1, o[i].data2);
@@ -102,7 +112,7 @@ static void deliver(struct model *md, const struct omx_note_leg *own, const stru
     }
     if (kind == 0x90) {
       /* A note on delivered has a velocity of 1 or more.
-       * mutant: include/omxdsp/omx_note_map.h:303 `omx_velocity_curve_apply(m->leg.velocity_curve, in.data2, m->leg.velocity_fixed)` -> `0`
+       * mutant: include/omxdsp/omx_note_map.h:311 `omx_velocity_curve_apply(m->leg.velocity_curve, in.data2, m->leg.velocity_fixed)` -> `0`
        * input: omni-linear */
       if (!(o[i].data2 >= 1u)) {
         FUZZ_SAY("a note on with velocity 0 (a note off in disguise) was delivered");
@@ -111,7 +121,7 @@ static void deliver(struct model *md, const struct omx_note_leg *own, const stru
       md->sounding[ch][o[i].data1]++;
       /* a note on is only ever delivered inside the leg's own range, on a channel it takes */
       /* A note on is delivered only on a channel the leg takes.
-       * mutant: include/omxdsp/omx_note_map.h:289 `!omx_note_map_takes_channel(m, ch) || ` -> ``
+       * mutant: include/omxdsp/omx_note_map.h:297 `!omx_note_map_takes_channel(m, ch) || ` -> ``
        * input: channel-1-up-an-octave */
       if (!(own->channel == 0 || own->channel == ch + 1)) {
         FUZZ_SAY("a note on on channel %d, which the leg does not take", ch + 1);
@@ -119,7 +129,7 @@ static void deliver(struct model *md, const struct omx_note_leg *own, const stru
       }
     } else if (kind == 0x80) {
       /* A note off delivered is for a key the model has sounding on that channel.
-       * mutant: include/omxdsp/omx_note_map.h:284 `m->out_key[ch][key]` -> `m->out_key[ch][key] + 1`
+       * mutant: include/omxdsp/omx_note_map.h:292 `m->out_key[ch][key]` -> `m->out_key[ch][key] + 1`
        * input: omni-linear */
       if (!(md->sounding[ch][o[i].data1] > 0)) {
         FUZZ_SAY("a note off for key %d on channel %d, which was not sounding", o[i].data1, ch + 1);
@@ -144,7 +154,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
   leg.velocity_curve = fuzz_u8(&in) % OMX_VELOCITY_CURVE_COUNT;
   leg.velocity_fixed = 1 + fuzz_u8(&in) % 127;
   /* The leg the harness builds is one the library takes.
-   * mutant: include/omxdsp/omx_note_map.h:165 `l->velocity_fixed <= 127` -> `l->velocity_fixed <= 0`
+   * mutant: include/omxdsp/omx_note_map.h:168 `l->velocity_fixed <= 127` -> `l->velocity_fixed <= 0`
    * input: omni-linear */
   if (!(omx_note_leg_valid(&leg))) {
     FUZZ_SAY("the harness built an invalid leg");
@@ -175,7 +185,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
       const int to_here = msg.data1 + own.transpose;
       if (taken_here && (to_here < 0 || to_here > 127)) out_of_range++;
       /* A note on that the leg takes and whose transposed key is a key is delivered.
-       * mutant: include/omxdsp/omx_note_map.h:289 `if (!omx_note_map_takes_channel` -> `if (1 || !omx_note_map_takes_channel`
+       * mutant: include/omxdsp/omx_note_map.h:297 `if (!omx_note_map_takes_channel` -> `if (1 || !omx_note_map_takes_channel`
        * input: omni-linear */
       if (!(!taken_here || to_here < 0 || to_here > 127 || n > 0)) {
         FUZZ_SAY("note on %d on channel %d was dropped, inside the leg", msg.data1, (msg.status & 0x0F) + 1);
@@ -184,16 +194,16 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
       if (n > 0 && (msg.status & 0xF0) == 0x90 && msg.data2 > 0u && msg.data1 < 128u) {
         const int to = msg.data1 + own.transpose;
         /* A note on is delivered only inside the leg's key range, and its output key is a key.
-         * mutant: include/omxdsp/omx_note_map.h:289 ` || key > m->leg.key_high` -> ``
+         * mutant: include/omxdsp/omx_note_map.h:297 ` || key > m->leg.key_high` -> ``
          * input: channel-1-up-an-octave */
         if (!(msg.data1 >= own.key_low && msg.data1 <= own.key_high && to >= 0 && to <= 127)) {
           FUZZ_SAY("note on %d was delivered outside the leg's key range %d..%d, transpose %d", msg.data1, own.key_low, own.key_high, own.transpose);
           abort();
         }
         /* A note on makes one message, or two when its key was held, and the last sounds the transposed key.
-         * mutant: include/omxdsp/omx_note_map.h:302 `(uint8_t)to` -> `(uint8_t)key`
+         * mutant: include/omxdsp/omx_note_map.h:310 `(uint8_t)to` -> `(uint8_t)key`
          * input: channel-1-up-an-octave
-         * mutant: include/omxdsp/omx_note_map.h:199 `omx_note_leg_valid(leg) ? *leg : omx_note_leg_default()` -> `omx_note_leg_default()`
+         * mutant: include/omxdsp/omx_note_map.h:204 `omx_note_leg_valid(leg) ? *leg : omx_note_leg_default()` -> `omx_note_leg_default()`
          * input: channel-1-up-an-octave */
         if (!(n == (was_held ? 2 : 1) && out[n - 1].data1 == (uint8_t)to)) {
           FUZZ_SAY("a note on of %d made %d messages", msg.data1, n);
@@ -201,9 +211,9 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
         }
       }
       /* out_of_range counts the note ons the leg takes whose transposed key is outside 0..127.
-       * mutant: include/omxdsp/omx_note_map.h:292 `m->out_of_range++` -> `m->out_of_range--`
+       * mutant: include/omxdsp/omx_note_map.h:300 `m->out_of_range++` -> `m->out_of_range--`
        * input: out-of-range-twice
-       * mutant: include/omxdsp/omx_note_map.h:292 `m->out_of_range++` -> ``
+       * mutant: include/omxdsp/omx_note_map.h:300 `m->out_of_range++` -> ``
        * input: out-of-range-twice */
       if (!(m.out_of_range == out_of_range)) {
         FUZZ_SAY("out_of_range is %u, the harness counted %u", (unsigned)m.out_of_range, (unsigned)out_of_range);
@@ -229,14 +239,14 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
       if (leg_valid(&l)) own = l;
       const int taken = omx_note_map_set_leg(&m, &l);
       /* set_leg takes a leg exactly when it is valid, by the harness's own reading of a leg.
-       * mutant: include/omxdsp/omx_note_map.h:216 `if (!omx_note_leg_valid(leg)) return 0;` -> ``
+       * mutant: include/omxdsp/omx_note_map.h:222 `if (!omx_note_leg_valid(leg)) return 0;` -> ``
        * input: transposed-below-zero-and-change-leg */
       if (!(taken == leg_valid(&l))) {
         FUZZ_SAY("set_leg answered %d for a leg that is %svalid", taken, leg_valid(&l) ? "" : "in");
         abort();
       }
       /* A leg taken is the policy now, and a leg refused leaves the old one.
-       * mutant: include/omxdsp/omx_note_map.h:217 `m->leg = *leg;` -> ``
+       * mutant: include/omxdsp/omx_note_map.h:223 `m->leg = *leg;` -> ``
        * input: transposed-below-zero-and-change-leg */
       if (!(taken ? memcmp(&m.leg, &l, sizeof l) == 0 : memcmp(&m.leg, &before, sizeof before) == 0)) {
         FUZZ_SAY("set_leg left a policy that is not the one it answered for");
@@ -249,7 +259,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
       do {
         n = omx_note_map_release_all(&m, out, cap);
         /* release_all writes no more than its cap.
-         * mutant: include/omxdsp/omx_note_map.h:342 `return n;` -> `return n + cap + 1;`
+         * mutant: include/omxdsp/omx_note_map.h:351 `return n;` -> `return n + cap + 1;`
          * input: channel-1-up-an-octave */
         if (!(n >= 0 && n <= cap)) {
           FUZZ_SAY("release_all(%d) wrote %d", cap, n);
@@ -258,7 +268,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
         const struct omx_note_msg none = {0, 0, 0};
         for (int i = 0; i < n; i++) {
           /* release_all writes only note offs.
-           * mutant: include/omxdsp/omx_note_map.h:336 `0x80 | c` -> `0x90 | c`
+           * mutant: include/omxdsp/omx_note_map.h:345 `0x80 | c` -> `0x90 | c`
            * input: channel-1-up-an-octave */
           if (!((out[i].status & 0xF0) == 0x80)) {
             FUZZ_SAY("release_all wrote a %02x", out[i].status);
@@ -270,7 +280,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
       memset(md.held, 0, sizeof md.held);
       md.held_count = 0;
       /* After release_all, nothing is held.
-       * mutant: include/omxdsp/omx_note_map.h:340 `omx_note_map_mark(m, c, k, 0);` -> ``
+       * mutant: include/omxdsp/omx_note_map.h:349 `omx_note_map_mark(m, c, k, 0);` -> ``
        * input: channel-1-up-an-octave */
       if (!(m.held_count == 0u)) {
         FUZZ_SAY("release_all left %u held", (unsigned)m.held_count);
@@ -279,7 +289,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
       for (int c = 0; c < OMX_NOTE_CHANNELS; c++)
         for (int k = 0; k < OMX_NOTE_KEYS; k++)
           /* After release_all, the model has nothing sounding.
-           * mutant: include/omxdsp/omx_note_map.h:339 `n++;` -> ``
+           * mutant: include/omxdsp/omx_note_map.h:348 `n++;` -> ``
            * input: channel-1-up-an-octave */
           if (!(md.sounding[c][k] == 0)) {
             FUZZ_SAY("after release_all, key %d on channel %d still sounds (%d)", k, c + 1, md.sounding[c][k]);
@@ -287,17 +297,20 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
           }
     }
     /* held_count is the population of the held table.
-     * mutant: include/omxdsp/omx_note_map.h:246 `m->held_count++;` -> `m->held_count += 2;`
+     * mutant: include/omxdsp/omx_note_map.h:253 `m->held_count++;` -> `m->held_count += 2;`
      * input: omni-linear */
     if (!((int)m.held_count == popcount_held(&m))) {
       FUZZ_SAY("held_count %u is not the table's population %d", (unsigned)m.held_count, popcount_held(&m));
       abort();
     }
-    /* The table holds as many keys as the harness's own account of what was played.
-     * mutant: include/omxdsp/omx_note_map.h:306 `omx_note_map_mark(m, ch, key, 1);` -> ``
+    /* The table holds the keys the harness's own account of what was played holds, key by key.
+     * mutant: include/omxdsp/omx_note_map.h:314 `omx_note_map_mark(m, ch, key, 1);` -> ``
+     * input: omni-linear
+     * mutant: include/omxdsp/omx_note_map.h:314 `omx_note_map_mark(m, ch, key, 1);` -> `omx_note_map_mark(m, ch, key ^ 1, 1);`
      * input: omni-linear */
-    if (!(popcount_held(&m) == md.held_count)) {
-      FUZZ_SAY("the table holds %d keys, the harness counted %d", popcount_held(&m), md.held_count);
+    if (!(held_differs(&m, &md) < 0)) {
+      const int at = held_differs(&m, &md);
+      FUZZ_SAY("the table and the harness differ at key %d on channel %d", at % OMX_NOTE_KEYS, at / OMX_NOTE_KEYS + 1);
       abort();
     }
   }
@@ -308,7 +321,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
   const struct omx_note_msg none = {0, 0, 0};
   deliver(&md, &own, out, n, OMX_NOTE_MAP_HELD_MAX, none);
   /* The release at the end of the input leaves nothing held.
-   * mutant: include/omxdsp/omx_note_map.h:340 `omx_note_map_mark(m, c, k, 0);` -> ``
+   * mutant: include/omxdsp/omx_note_map.h:349 `omx_note_map_mark(m, c, k, 0);` -> ``
    * input: held-at-the-end */
   if (!(m.held_count == 0u)) {
     FUZZ_SAY("the final release left %u held", (unsigned)m.held_count);
@@ -317,7 +330,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
   for (int c = 0; c < OMX_NOTE_CHANNELS; c++)
     for (int k = 0; k < OMX_NOTE_KEYS; k++)
       /* No note sticks: after the release at the end, the model has nothing sounding.
-       * mutant: include/omxdsp/omx_note_map.h:339 `n++;` -> ``
+       * mutant: include/omxdsp/omx_note_map.h:348 `n++;` -> ``
        * input: held-at-the-end */
       if (!(md.sounding[c][k] == 0)) {
         FUZZ_SAY("a note is stuck: key %d on channel %d sounds (%d)", k, c + 1, md.sounding[c][k]);
@@ -328,7 +341,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     for (int curve = 0; curve < OMX_VELOCITY_CURVE_COUNT; curve++) {
       const int o = omx_velocity_curve_apply(curve, v, leg.velocity_fixed);
       /* Each curve keeps a velocity in 1..127.
-       * mutant: include/omxdsp/omx_note_map.h:130 `if (out > 127) out = 127;` -> `out = 128;`
+       * mutant: include/omxdsp/omx_note_map.h:133 `if (out > 127) out = 127;` -> `out = 128;`
        * input: leg-only */
       if (!(o >= 1 && o <= 127)) {
         FUZZ_SAY("curve %d at velocity %d gave %d", curve, v, o);
@@ -336,7 +349,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
       }
     }
     /* The linear curve is the identity.
-     * mutant: include/omxdsp/omx_note_map.h:127 `out = v` -> `out = 1`
+     * mutant: include/omxdsp/omx_note_map.h:130 `out = v` -> `out = 1`
      * input: leg-only */
     if (!(omx_velocity_curve_apply(OMX_VELOCITY_LINEAR, v, 1) == v)) {
       FUZZ_SAY("the linear curve moved velocity %d", v);
