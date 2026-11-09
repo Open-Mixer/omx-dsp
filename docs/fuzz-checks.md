@@ -18,7 +18,9 @@ How to read a row:
 - **Breakage**: the record in the check's comment: a one-line change of the library (`file:line`, the text before and
   after) and the seed of `fuzz/corpus/<harness>/` that makes this check abort with the change made. Each record is
   run alone: the library is changed, the harness rebuilt, and the seed must stop at this `abort()`; without the
-  change every seed passes.
+  change every seed passes. A record is read only from the comment lines directly above the `if`, with no code
+  between: the two slew checks of `fuzz_laws.c` (lines 351 and 362) had code between the comment and the `if`, so
+  their records were not read, and those comments now sit directly above their `if`.
 - **Verdict**: OK when the check tests what the comment states, its expected value is right and independent, and its
   breakage makes it fail. WEAK would mean a wrong library can pass it; WRONG, that the comment or the value is wrong.
 
@@ -85,8 +87,8 @@ of `fuzz_fx.c` (the init check), `fuzz_eq.c` (the bell and the shelf) and `fuzz_
 | `fuzz_laws.c:312` | A rescaled pole stays in [0, 1]. | the constant interval [0, 1] | `omx_onepole.h:169` `powf(p, ref / sr)` → `2.0f`, on `onepole` | OK |
 | `fuzz_laws.c:322` | One step of the filter lies between the input and the state, and the state is what it returns. | the input and state the harness passed | `omx_onepole.h:52` `x * (1.0f - pole)` → `2.0f * x * (1.0f - pole)`, on `onepole` | OK |
 | `fuzz_laws.c:334` | A step is one sample's travel at most, and never none. | the constant interval (0, 1] | `mix/omx_slew.h:49` `s < 1.0f ? (s > FLT_MIN ? s : FLT_MIN) : 1.0f` → `s`, on `slew` | OK |
-| `fuzz_laws.c:351` | The cursor stays between where it was and its target, and is exactly the target once the walk fits the block. | the start and target the harness passed | `mix/omx_slew.h:67` `up < tgt ? up : tgt` → `up`, on `slew` | OK |
-| `fuzz_laws.c:362` | The hold's way back to open waits for a carried sample: over silence the position stays. | the position the harness passed | `mix/omx_slew.h:127` `h < t \|\| xl != 0.0f \|\| xr != 0.0f` → `1`, on `slew` | OK |
+| `fuzz_laws.c:351` | The cursor stays between where it was and its target, and is exactly the target once the walk fits the block. | the start and target the harness passed | `mix/omx_slew.h:67` `up < tgt ? up : tgt` → `up`, on `slew` (the comment directly above the `if`, so the record is read) | OK |
+| `fuzz_laws.c:362` | The hold's way back to open waits for a carried sample: over silence the position stays. | the position the harness passed | `mix/omx_slew.h:127` `h < t \|\| xl != 0.0f \|\| xr != 0.0f` → `1`, on `slew` (the comment directly above the `if`, so the record is read) | OK |
 
 ## `fuzz_eq`: the EQ design and run path
 

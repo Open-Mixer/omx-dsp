@@ -342,21 +342,21 @@ static void call_slew(struct fuzz_in *in) {
   float cur = cur0;
   omx_slew_gain(x, y, n, tgt0, step, &cur);
   const float a = is_fin(cur0) ? cur0 : 0.0f, b = is_fin(tgt0) ? tgt0 : 0.0f;
+  const float dist = fabsf(b - a);
   /* The cursor stays between where it was and its target, and is exactly the target once the walk fits the block.
    * mutant: include/omxdsp/mix/omx_slew.h:67 `up < tgt ? up : tgt` -> `up`
    * input: slew */
-  const float dist = fabsf(b - a);
   if (!(cur >= fminf(a, b) && cur <= fmaxf(a, b)) || ((float)n * step > dist * 1.01f + 1e-3f && cur != b)) {
     FUZZ_SAY("a slew from %g to %g by %g over %u ended at %g", (double)a, (double)b, (double)step, (unsigned)n, (double)cur);
     abort();
   }
-  /* The hold's way back to open waits for a carried sample: over silence the position stays.
-   * mutant: include/omxdsp/mix/omx_slew.h:127 `h < t || xl != 0.0f || xr != 0.0f` -> `1`
-   * input: slew */
   memset(x, 0, n * sizeof(float));
   const float p0 = fuzz_range(in, 0.0f, 1.0f);
   float pos = p0;
   omx_slew_hold(x, x, y, y, n, 0.0f, step, &pos);
+  /* The hold's way back to open waits for a carried sample: over silence the position stays.
+   * mutant: include/omxdsp/mix/omx_slew.h:127 `h < t || xl != 0.0f || xr != 0.0f` -> `1`
+   * input: slew */
   if (!(pos == p0)) {
     FUZZ_SAY("a hold at %g opened over silence, to %g", (double)p0, (double)pos);
     abort();
