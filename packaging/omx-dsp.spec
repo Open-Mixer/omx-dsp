@@ -5,7 +5,7 @@ Version: 0.32.0
 Release: 1%{?dist}
 License: GPL-3.0-or-later
 Summary: The audio toolbox of the OpenMixer console, as a real-time-safe C library
-URL: https://github.com/FreeMixer/omx-dsp
+URL: https://github.com/Open-Mixer/omx-dsp
 
 Source0: %{url}/archive/v%{version}/%{name}-%{version}.tar.gz
 
