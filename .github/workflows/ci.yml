@@ -236,7 +236,8 @@ jobs:
           git init -q /tmp/omx-contract
           git -C /tmp/omx-contract fetch -q --depth 1 https://github.com/Open-Mixer/omx-contract "$ref"
           git -C /tmp/omx-contract checkout -q FETCH_HEAD
-          npm ci --prefix /tmp/omx-contract --omit=dev
+          # with its devDependencies: since 3.18.0 a tag's lib/ is built from src/ by its prepare script (tsc)
+          npm ci --prefix /tmp/omx-contract
           # the Makefile finds omx-contract by pkg-config: the checkout itself, installed under a scratch prefix
           make -C /tmp/omx-contract install PREFIX=/tmp/omx-contract-prefix
           echo "PKG_CONFIG_PATH=/tmp/omx-contract-prefix/share/pkgconfig" >> "$GITHUB_ENV"
