@@ -52,7 +52,7 @@
 #               for 1..62 bands, and every count EQ_BAND_COUNTS declares has its default bands
 #   make eq-defaults-table  test/golden/eq_default_bands.txt is the rule's JavaScript spelling over data/
 #               (tools/eq-defaults-golden.mjs, node)
-#   make public-sources  no tracked file names a private repository, path or issue (FreeMixer/.github's
+#   make public-sources  no tracked file names a private repository, path or issue (Open-Mixer/.github's
 #               private-refs-check, from a checkout of it: DOTGITHUB=<dir>)
 #   make docs   the API reference by doxygen (build-time only)
 #   make test-tsan  the thread arm under -fsanitize=thread where the toolchain has it
@@ -117,7 +117,7 @@ MVEC_CFLAGS = -fopenmp-simd -fno-math-errno $(foreach f,$(MVEC_FUNCS),-DOMX_FAST
 MVEC_LIBS   = -lmvec
 override CFLAGS += $(MVEC_CFLAGS)
 endif
-# The limits come from FreeMixer/omx-contract: the installed omx-contract-devel / libomx-contract-dev
+# The limits come from Open-Mixer/omx-contract: the installed omx-contract-devel / libomx-contract-dev
 # at or above the floor packaging/omx-dsp.spec declares, found by pkg-config in tools/contract-include.sh
 # (nothing is downloaded); this tree commits no copy of them. Every sub-script that compiles gets the
 # directory as CONTRACT_INC.
@@ -462,7 +462,7 @@ copy-check: | $(BUILD)
 	TMPDIR="$(abspath $(BUILD))" bash tools/omx-dsp-copy-check.sh --self-test --sabotage
 
 # No tracked file points into a private repository, issue, branch or path, with no exemption. The engine and its
-# self-test are FreeMixer/.github's private-refs-check (CI runs it in that repository's public-sources-check
+# self-test are Open-Mixer/.github's private-refs-check (CI runs it in that repository's public-sources-check
 # workflow, with the commit message check and no-local-copies); locally name a checkout of it:
 # make private-refs DOTGITHUB=<checkout>.
 public-sources: private-refs
@@ -471,14 +471,14 @@ public-sources: private-refs
 DOTGITHUB ?=
 .PHONY: private-refs deps deps-check
 private-refs:
-	@test -n "$(DOTGITHUB)" || { echo "$@: name a checkout of FreeMixer/.github: make $@ DOTGITHUB=<dir>" >&2; exit 2; }
+	@test -n "$(DOTGITHUB)" || { echo "$@: name a checkout of Open-Mixer/.github: make $@ DOTGITHUB=<dir>" >&2; exit 2; }
 	$(DOTGITHUB)/.github/actions/private-refs-check/check.sh --self-test
 	$(DOTGITHUB)/.github/actions/private-refs-check/check.sh .
 deps:
-	@test -n "$(DOTGITHUB)" || { echo "$@: name a checkout of FreeMixer/.github: make $@ DOTGITHUB=<dir>" >&2; exit 2; }
+	@test -n "$(DOTGITHUB)" || { echo "$@: name a checkout of Open-Mixer/.github: make $@ DOTGITHUB=<dir>" >&2; exit 2; }
 	$(DOTGITHUB)/.github/actions/deps-render/render.sh --write .
 deps-check:
-	@test -n "$(DOTGITHUB)" || { echo "$@: name a checkout of FreeMixer/.github: make $@ DOTGITHUB=<dir>" >&2; exit 2; }
+	@test -n "$(DOTGITHUB)" || { echo "$@: name a checkout of Open-Mixer/.github: make $@ DOTGITHUB=<dir>" >&2; exit 2; }
 	$(DOTGITHUB)/.github/actions/deps-render/render.sh --check .
 
 # omx_log10f() (test/support) against the libm's log10f on all 2^31 non-negative floats: proof of correct rounding

@@ -2,7 +2,7 @@
   "kernel": "band_dyn",
   "since": "2.0.0",
   "engine": {
-    "repo": "FreeMixer/omx-dsp",
+    "repo": "Open-Mixer/omx-dsp",
     "ref": "origin/main",
     "commit": "25300b03892d582a7387c077a415947c2bd4bcd8"
   },
