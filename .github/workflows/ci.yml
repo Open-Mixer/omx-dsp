@@ -43,7 +43,8 @@ jobs:
       matrix:
         # ubuntu:24.04 carries GCC 13, whose -Wmaybe-uninitialized reads paths the newer
         # compilers prove dead.
-        image: ['fedora:44', 'debian:bookworm', 'debian:trixie', 'ubuntu:24.04']
+        # ruling D25: bookworm is a full cell, served its floors (omx-contract 3.18.0) only at the wave-end full release
+        image: ${{ fromJSON(vars.OMX_RELEASE_MATRIX == 'full' && '["fedora:44", "debian:bookworm", "debian:trixie", "ubuntu:24.04"]' || '["fedora:44", "debian:trixie", "ubuntu:24.04"]') }}
         arch: [amd64]  # arm64 builds run at release only (release.yml)
     container:
       image: ${{ matrix.image }}
