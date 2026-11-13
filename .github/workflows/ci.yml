@@ -40,8 +40,30 @@ jobs:
           sparse-checkout: .github/workflows
       - uses: Open-Mixer/.github/.github/actions/fedora-cells@openmixer-v1
 
+  # the cells the build, the contract floor and the rpm job run: check-matrix's answer (rule 11-10: fc45 beside fc44;
+  # the quick set while a release wave is open, the whole matrix declared here otherwise)
+  checks:
+    runs-on: ${{ github.event.pull_request.head.repo.fork && 'ubuntu-latest' || vars.OMX_RUNNER || 'ubuntu-latest' }}
+    timeout-minutes: 5
+    outputs:
+      cells: ${{ steps.m.outputs.cells }}
+      count: ${{ steps.m.outputs.count }}
+      rpm: ${{ steps.m.outputs.rpm }}
+      rpm-count: ${{ steps.m.outputs.rpm-count }}
+    steps:
+      - id: m
+        uses: Open-Mixer/.github/.github/actions/check-matrix@openmixer-v1
+        with:
+          wave: ${{ vars.OMX_RELEASE_MATRIX }}
+          rpm-releases: '["44", "45"]'
+          rpm-arches: '["x86_64"]'
+          deb-releases: '["bookworm", "trixie"]'
+          deb-arches: '["amd64"]'
+
   test:
-    name: make test (${{ matrix.image }}, ${{ matrix.arch }})
+    name: make test (${{ matrix.cell.image }}, ${{ matrix.cell.arch }})
+    needs: checks
+    if: needs.checks.outputs.count != '0'
     runs-on: ${{ github.event.pull_request.head.repo.fork && 'ubuntu-latest' || vars.OMX_RUNNER || 'ubuntu-latest' }}
     # Run one make job per CPU (BUILDING.md: make -jN test is supported, and make gen-once holds the
     # one generation under -j8): serially the suite reached 39 to 43 minutes of this 60-minute limit
@@ -51,12 +73,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        # check-matrix's cells, amd64 and x86_64 only: arm64 builds run at release only (release.yml)
+        cell: ${{ fromJSON(needs.checks.outputs.cells) }}
         # ubuntu:24.04 carries GCC 13, whose -Wmaybe-uninitialized reads paths the newer
         # compilers prove dead.
-        image: ['fedora:44', 'debian:bookworm', 'debian:trixie', 'ubuntu:24.04']
-        arch: [amd64]  # arm64 builds run at release only (release.yml)
+        include:
+          - cell: { image: 'ubuntu:24.04', arch: amd64 }
     container:
-      image: ${{ matrix.image }}
+      image: ${{ matrix.cell.image }}
     # debian images run sh by default, which has no pipefail
     defaults:
       run:
@@ -82,7 +106,7 @@ jobs:
       - name: Add the OpenMixer repository
         uses: Open-Mixer/.github/.github/actions/add-openmixer@openmixer-v1
         with:
-          suite: ${{ startsWith(matrix.image, 'ubuntu') && 'trixie' || '' }}
+          suite: ${{ startsWith(matrix.cell.image, 'ubuntu') && 'trixie' || '' }}
 
       - name: Install the build dependencies from the OpenMixer channel
         run: |
@@ -163,15 +187,17 @@ jobs:
           grep -q 'linked against the tree' /tmp/ts-test.log
 
   contract-floor:
-    name: below the omx-contract floor the build refuses (${{ matrix.image }})
+    name: below the omx-contract floor the build refuses (${{ matrix.cell.image }})
+    needs: checks
+    if: needs.checks.outputs.count != '0'
     runs-on: ${{ github.event.pull_request.head.repo.fork && 'ubuntu-latest' || vars.OMX_RUNNER || 'ubuntu-latest' }}
     timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
-        image: ['fedora:44', 'debian:bookworm']
+        cell: ${{ fromJSON(needs.checks.outputs.cells) }}
     container:
-      image: ${{ matrix.image }}
+      image: ${{ matrix.cell.image }}
     defaults:
       run:
         shell: bash
@@ -321,17 +347,19 @@ jobs:
         run: make docs
 
   rpm:
-    name: omx-dsp-devel (fc44, ${{ matrix.arch }})
-    if: github.event_name == 'workflow_dispatch'
+    name: omx-dsp-devel (fc${{ matrix.cell.fedora }}, ${{ matrix.cell.arch }})
+    needs: checks
+    if: github.event_name == 'workflow_dispatch' && needs.checks.outputs.rpm-count != '0'
     runs-on: ${{ github.event.pull_request.head.repo.fork && 'ubuntu-latest' || vars.OMX_RUNNER || 'ubuntu-latest' }}
     # %check runs make check-package, as the deb job's build does
     timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
-        arch: [x86_64]  # aarch64 builds run at release only (release.yml)
+        # check-matrix's Fedora cells, x86_64 only: aarch64 builds run at release only (release.yml)
+        cell: ${{ fromJSON(needs.checks.outputs.rpm) }}
     container:
-      image: fedora:44
+      image: ${{ matrix.cell.image }}
     steps:
       - name: Install the build tools
         run: |
@@ -352,7 +380,7 @@ jobs:
       - name: Check the file list
         run: |
           set -euo pipefail
-          rpm=$(ls rpms/omx-dsp-devel-[0-9]*.${{ matrix.arch }}.rpm)
+          rpm=$(ls rpms/omx-dsp-devel-[0-9]*.${{ matrix.cell.arch }}.rpm)
           rpm -qp --qf '[%{FILEMODES:perms} %{FILENAMES}\n]' "$rpm" | grep -v '^d' | cut -d' ' -f2 \
             | sed 's,/usr/lib64/,/usr/lib*/,' | grep -v '^/usr/include/omxdsp/' | sort > files.txt
           printf '%s\n' '/usr/lib*/libomxdsp.a' '/usr/lib*/libomxdsp-contracts.a' '/usr/lib*/libomxdsp-tsan.a' \
@@ -370,7 +398,7 @@ jobs:
           grep -q '^/usr/include/omxdsp/fx/omx_reverb.h$' listing.txt
           # the gate is its own package: its binary, man page and share directory, and nothing of it in the devel one
           ! grep -q 'rt-gate' listing.txt
-          rpm -qlp "$(ls rpms/omx-rt-gate-[0-9]*.${{ matrix.arch }}.rpm)" > listing.txt
+          rpm -qlp "$(ls rpms/omx-rt-gate-[0-9]*.${{ matrix.cell.arch }}.rpm)" > listing.txt
           for f in bin/omx-rt-gate share/man/man1/omx-rt-gate.1.gz share/omxdsp/rt-gate/tables/forbidden.tbl \
                    share/omxdsp/rt-gate/tables/classes.tbl share/omxdsp/rt-gate/tables/lv2.abi share/omxdsp/rt-gate/tables/clap.abi \
                    share/omxdsp/rt-gate/tables/pipewire.abi share/omxdsp/rt-gate/tables/omxdsp.abi share/omxdsp/rt-gate/omx-dsp.tags \
@@ -390,7 +418,7 @@ jobs:
       - name: A consumer builds against omx-dsp-devel
         run: |
           set -euo pipefail
-          dnf install -y --setopt=install_weak_deps=False rpms/omx-dsp-devel-[0-9]*.${{ matrix.arch }}.rpm rpms/omx-dsp-contract-[0-9]*.noarch.rpm
+          dnf install -y --setopt=install_weak_deps=False rpms/omx-dsp-devel-[0-9]*.${{ matrix.cell.arch }}.rpm rpms/omx-dsp-contract-[0-9]*.noarch.rpm
           test "$(pkg-config --modversion omxdsp)" = "$(make -s version)"
           pkg-config --cflags omxdsp | grep -q -- '-ffp-contract=off'
           gcc $(pkg-config --cflags omxdsp) -Itest/fx -include test/support/log10f_subst.h -O2 -o /tmp/golden test/fx/delay_golden.test.c $(pkg-config --libs omxdsp)
@@ -402,7 +430,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: omx-dsp-rpms-fc44-${{ matrix.arch }}
+          name: omx-dsp-rpms-fc${{ matrix.cell.fedora }}-${{ matrix.cell.arch }}
           path: rpms/*.rpm
           if-no-files-found: error
           retention-days: 7
