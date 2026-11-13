@@ -303,14 +303,14 @@ contract directory as the package `omx-dsp`, with a `MANIFEST.json`, where the o
 it.
 
 The facts no single package implements (the declared sample rates, the parameter scales) stay in
-FreeMixer/omx-contract, read through `<omxcontract/omx_contract_limits.h>`, which the definitions
+Open-Mixer/omx-contract, read through `<omxcontract/omx_contract_limits.h>`, which the definitions
 header includes. That dependency is declared once, in the packaging: `packaging/omx-dsp.spec`
 (`BuildRequires`, `Requires`) and `debian/control` (`Build-Depends`, `Depends`) carry the same floor
 and the same ceiling, the next major (`>= 3.9.0` and `< 4`), and `omxdsp.pc` requires the same range. Install
-it from the FreeMixer channel with the rest of the build dependencies:
+it from the OpenMixer channel with the rest of the build dependencies:
 
-    dnf builddep packaging/omx-dsp.spec     # Fedora, with the FreeMixer repository added
-    apt-get build-dep ./                    # Debian, with the FreeMixer source list added
+    dnf builddep packaging/omx-dsp.spec     # Fedora, with the OpenMixer repository added
+    apt-get build-dep ./                    # Debian, with the OpenMixer source list added
 
 `tools/contract-include.sh` finds the installed `omx-contract` with `pkg-config`: at or above the
 floor the spec declares, it prints the package's include directory; otherwise the build stops, naming
@@ -329,6 +329,6 @@ in the code.
 ## Packages
 
 `packaging/omx-dsp.spec` (RPM, `omx-dsp-devel`) and `debian/` (`libomxdsp-dev`). A `v<version>`
-tag releases both through the FreeMixer release workflows; the version is
+tag releases both through the OpenMixer release workflows; the version is
 `OMXDSP_VERSION_*` in `include/omxdsp/omxdsp.h`, the spec's `Version:` and the top of
 `debian/changelog`, and CI refuses them disagreeing.
