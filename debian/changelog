@@ -1,3 +1,13 @@
+omx-dsp (0.33.0) unstable; urgency=medium
+
+  * eq: EQ_Q_RANGE and EQ_NOTCH_Q_RANGE stay one declaration
+    (data/kernels/eq.json), rendered into the generated header and the
+    generated TypeScript twin; a sabotage test moves the declaration and
+    checks the C kernel and the twin move together, red when the twin is
+    left at a stale literal (#5).
+
+ -- Pau Aliagas <linuxnow@gmail.com>  Fri, 13 Nov 2026 12:00:00 +0100
+
 omx-dsp (0.32.0) unstable; urgency=medium
 
   * fbs: the placement in C (omx_fbs_place.h): both pools, the staged

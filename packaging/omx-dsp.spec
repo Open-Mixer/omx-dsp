@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2026 Pau Aliagas <linuxnow@gmail.com>
 Name: omx-dsp
-Version: 0.32.0
+Version: 0.33.0
 Release: 1%{?dist}
 License: GPL-3.0-or-later
 Summary: The audio toolbox of the OpenMixer console, as a real-time-safe C library
@@ -123,6 +123,12 @@ Its documentation is on openmixer.org.
 %{_datadir}/omx-contract/contract.d/3/omx-dsp/
 
 %changelog
+* Fri Nov 13 2026 Pau Aliagas <linuxnow@gmail.com> - 0.33.0-1
+- eq: EQ_Q_RANGE and EQ_NOTCH_Q_RANGE stay one declaration (data/kernels/eq.json),
+  rendered into the generated header and the generated TypeScript twin; a
+  sabotage test moves the declaration and checks the C kernel and the twin
+  move together, red when the twin is left at a stale literal (#5)
+
 * Fri Nov 06 2026 Pau Aliagas <linuxnow@gmail.com> - 0.32.0-1
 - rt-gate: omx-rt-gate, the one static real-time gate, in its own package
   omx-rt-gate: the consumer's units compiled at -O0 -fno-inline
