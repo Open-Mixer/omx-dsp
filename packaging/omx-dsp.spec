@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2026 Pau Aliagas <linuxnow@gmail.com>
 Name: omx-dsp
-Version: 0.32.0
+Version: 0.32.1
 Release: 1%{?dist}
 License: GPL-3.0-or-later
 Summary: The audio toolbox of the OpenMixer console, as a real-time-safe C library
@@ -15,7 +15,7 @@ BuildRequires: binutils
 BuildRequires: gawk
 BuildRequires: diffutils
 BuildRequires: pkgconfig
-BuildRequires: omx-contract-devel >= 3.9.0
+BuildRequires: omx-contract-devel >= 3.18.0
 BuildRequires: omx-contract-devel < 4
 
 # Headers and a static archive only: nothing of this package is loaded at run time.
@@ -36,7 +36,7 @@ Its documentation is on openmixer.org.
 %package devel
 Summary: Headers and static library to build on the OpenMixer audio toolbox
 Provides: %{name}-static = %{version}-%{release}
-Requires: omx-contract-devel >= 3.9.0
+Requires: omx-contract-devel >= 3.18.0
 Requires: omx-contract-devel < 4
 Requires: %{name}-contract = %{version}-%{release}
 
@@ -61,7 +61,7 @@ Its documentation is on openmixer.org.
 Summary: omx-dsp's kernel and instance declarations, for programs that read them at run time
 BuildArch: noarch
 # the declarations live in omx-contract's contract directory and are read against its schema; a floor only
-Requires: omx-contract-data >= 3.9.0
+Requires: omx-contract-data >= 3.18.0
 Requires: omx-contract-data < 4
 
 %description contract
@@ -123,6 +123,14 @@ Its documentation is on openmixer.org.
 %{_datadir}/omx-contract/contract.d/3/omx-dsp/
 
 %changelog
+* Fri Nov 13 2026 Pau Aliagas <linuxnow@gmail.com> - 0.32.1-1
+- Built against omx-contract >= 3.18.0 and below 4 (was 3.9.0), the newest the
+  channel serves, with its ceiling (D30).
+- The organisation's name: FreeMixer becomes Open-Mixer and OpenMixer; the
+  package metadata names the Open-Mixer repository.
+- release: the DEBs built beside the RPMs; a staged run publishes to the
+  staging channel (#1).
+
 * Fri Nov 06 2026 Pau Aliagas <linuxnow@gmail.com> - 0.32.0-1
 - rt-gate: omx-rt-gate, the one static real-time gate, in its own package
   omx-rt-gate: the consumer's units compiled at -O0 -fno-inline

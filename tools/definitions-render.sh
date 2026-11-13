@@ -29,7 +29,7 @@ ocversion="$(sed -n 's/^  "version": "\(.*\)",$/\1/p' "$OC/package.json")"
 [ -n "$major" ] && [ -n "$ocversion" ] || { echo "definitions-render: $OC states no schema major or version" >&2; exit 2; }
 dir="$out/dir"
 rm -rf "$dir"; mkdir -p "$dir"
-sh "$OC/tools/install-contract-dir.sh" -x codes.json omx-contract "$ocversion" "$major" "$OC/data" "$dir" data >/dev/null
+sh "$OC/tools/install-contract-dir.sh" -x codes.json -x scale-vectors.json omx-contract "$ocversion" "$major" "$OC/data" "$dir" data >/dev/null
 sh "$OC/tools/install-contract-dir.sh" omx-dsp "$version" "$major" "$HERE/data" "$dir" data >/dev/null
 header=omxdsp/omxdsp_definitions.h
 [ -z "$check" ] || [ -f "$HERE/include/$header" ] || { echo "definitions-render: no committed include/$header to check" >&2; exit 2; }

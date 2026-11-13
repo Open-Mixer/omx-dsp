@@ -38,7 +38,7 @@ oc() { (cd "$OC" && node bin/omx-contract.mjs "$@"); }
 # install <dir> <omx-dsp data dir>: the two packages of the contract directory under <dir>
 install_both() {
   rm -rf "$1"; mkdir -p "$1"
-  sh "$installer" -x codes.json omx-contract "$ocversion" "$major" "$OC/data" "$1" data >/dev/null
+  sh "$installer" -x codes.json -x scale-vectors.json omx-contract "$ocversion" "$major" "$OC/data" "$1" data >/dev/null
   sh "$installer" omx-dsp "$version" "$major" "$2" "$1" data >/dev/null
 }
 
