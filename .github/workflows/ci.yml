@@ -151,6 +151,8 @@ jobs:
           npm ci
           npm test 2>&1 | tee /tmp/ts-test.log
           grep -q 'linked against the tree' /tmp/ts-test.log
+      - name: The EQ Q range moves the kernel and the twin together (omx-dsp#5)
+        run: make -j"$(nproc)" eq-q-range-sabotage
 
   contract-floor:
     name: below the omx-contract floor the build refuses (${{ matrix.image }})
