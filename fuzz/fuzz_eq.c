@@ -24,7 +24,7 @@
  *     not in it);
  *   - section i belongs to the i-th band that is on: its gain at DC is the one omx_eq_design.h
  *     gives that band's kind and gain, to a tolerance, a peaking section from 20 Hz and up to Q 100 has at least
- *     its band's gain at its centre and a high shelf a quarter of it at Nyquist, each on the gain's side of
+ *     its band's gain at its centre, and at most 5 % more there up to an eighth of the rate, and a high shelf a quarter of it at Nyquist, each on the gain's side of
  *     0 dB, and it is parked exactly when the harness's own rule finds a peaking or shelf band at 0 dB;
  *   - the cascade, over finite samples, gives finite samples on both legs, and a bank with no live
  *     section leaves the block as it was, bit for bit, on each leg it runs;
@@ -186,18 +186,22 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     }
     if (own->kind == OMX_EQ_PEAKING && own->gain_db != 0.0 && own->freq_hz >= 20.0 && own->q <= 100.0) {
       const double at = gain_db_at(dcoef[i], 2.0 * M_PI * corner(own, rate) / rate);
+      const double side = at * (own->gain_db > 0.0 ? 1.0 : -1.0);
       /* A peaking section has its band's gain at the band's centre, on its side of 0 dB: a boost
        * boosts and a cut cuts, by at least the gain asked, to 0.1 % (the prototype bell is exactly
-       * the gain there; the matched design is that or more near Nyquist, never less). For a bell a
-       * console sets: from 20 Hz, no narrower than Q 100; below that the bell is narrower than its
-       * double coefficients resolve.
+       * the gain there; the matched design is that or more near Nyquist, never less). With its
+       * centre at most an eighth of the rate, where the matched design is the prototype bell, it is
+       * also at most the gain asked, to 5 % (the design is within 1.6 % there, from Q 1e-3 to 100
+       * at any rate). For a bell a console sets: from 20 Hz, no narrower than Q 100; below that the
+       * bell is narrower than its double coefficients resolve.
        * mutant: include/omxdsp/omx_eq_design.h:164 `omx_eq_matched_pair(w0, 1.0 / (2.0 * A * qq), p);` -> `omx_eq_matched_pair(w0, A / (2.0 * qq), p);`
        * input: peak-then-shelf
        * mutant: include/omxdsp/omx_eq_design.h:160 `exp(gain_db * (M_LN10 / 40.0))` -> `exp(-gain_db * (M_LN10 / 40.0))`
        * input: peak-then-shelf
        * mutant: include/omxdsp/omx_eq_design.h:164 `1.0 / (2.0 * A * qq)` -> `1.0 / (2.0 * A * A * qq)`
        * input: peak-then-shelf */
-      if (!(at * (own->gain_db > 0.0 ? 1.0 : -1.0) >= fabs(own->gain_db) * (1.0 - 1e-3))) {
+      if (!(side >= fabs(own->gain_db) * (1.0 - 1e-3) &&
+            (corner(own, rate) > rate / 8.0 || side <= fabs(own->gain_db) * 1.05))) {
         FUZZ_SAY("section %u, a bell of %g dB at %g Hz, is %g dB there", (unsigned)i, own->gain_db, corner(own, rate), at);
         abort();
       }
