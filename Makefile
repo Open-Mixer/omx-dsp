@@ -428,6 +428,8 @@ checks:
 	bash tools/patch-names-check.sh --self-test
 	bash tools/gen-scratch-check.sh
 	bash tools/gen-scratch-check.sh --self-test
+	bash tools/fuzz-targets-check.sh
+	bash tools/fuzz-targets-check.sh --self-test
 
 lint: checks
 
