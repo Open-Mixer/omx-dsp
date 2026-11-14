@@ -22,7 +22,7 @@
  *   - the coefficients of each phase of the table sum to 1, to float rounding;
  *   - a take never makes more outputs than the capacity omx_src.h gives its input, n * l / m + 2, and a
  *     take run without a flush makes no more than a whole file's n * l / m plus the filter's half
- *     length (the outputs its first samples wait for), both worked out by the harness;
+ *     length (the outputs its first samples wait for), and a flushed take at least n * l / m, all by the harness;
  *   - the take is the same however it is cut into blocks: run whole, or in the blocks the input
  *     gives, it yields the same samples bit for bit;
  *   - every output sample is finite, and bounded by the input's peak times the filter's own
@@ -173,13 +173,20 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
   }
   /* A take makes no more samples than the capacity of what went in, n * l / m + 2, by the harness's arithmetic.
    * mutant: include/omxdsp/omx_src.h:322 `s->acc += (uint64_t)s->m` -> `s->acc += (uint64_t)s->m / 2u`
-   * input: 48000-44100
-   * mutant: include/omxdsp/omx_src.h:320 `(s->acc / (uint64_t)s->l) < s->consumed` -> `(s->acc / (uint64_t)s->l) < s->consumed && s->l == s->m`
-   * input: 32000-48000 */
+   * input: 48000-44100 */
   if (!(wa <= room)) {
     FUZZ_SAY("%u -> %u: %u samples out of %u in exceeds the capacity", (unsigned)rin, (unsigned)rout, (unsigned)wa, (unsigned)t.n);
     abort();
   }
+  if (flush)
+    /* A flushed take makes at least a whole file's frames, n * l / m, by the harness's arithmetic: the flush walks
+     * the filter's tail out, so no input is left in the history.
+     * mutant: include/omxdsp/omx_src.h:320 `(s->acc / (uint64_t)s->l) < s->consumed` -> `(s->acc / (uint64_t)s->l) < s->consumed && s->l == s->m`
+     * input: 32000-48000 */
+    if (!(wa >= want)) {
+      FUZZ_SAY("%u -> %u: %u samples out of a flushed %u in, a whole file is %llu", (unsigned)rin, (unsigned)rout, (unsigned)wa, (unsigned)t.n, (unsigned long long)want);
+      abort();
+    }
   for (uint32_t i = 0; i < wa; i++) {
     /* Each output is finite, and inside the input's peak times the filter's worst gain.
      * mutant: include/omxdsp/omx_src.h:292 `c[k] * h[k]` -> `1000.0f * c[k] * h[k]`

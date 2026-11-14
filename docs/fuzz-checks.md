@@ -3,7 +3,7 @@
 
 # The checks of the fuzz targets
 
-Every property the harnesses of `fuzz/` hold the library to, read one by one: 104 checks, each an
+Every property the harnesses of `fuzz/` hold the library to, read one by one: 105 checks, each an
 `if (...) abort();` with its comment above it, and the stops that are not properties. This is the reading OSS Verify's
 enrollment review asks for (items F5 and F8 of its `review.md`): does each check prove what its comment says, in both
 directions, and does its expected value come from the harness rather than from the library under test.
@@ -26,7 +26,7 @@ How to read a row:
 
 ## Verdicts
 
-All 104 checks are OK. Five were WEAK before this reading, and are fixed in the harnesses as they stand now:
+All 105 checks are OK. Five were WEAK before this reading, and are fixed in the harnesses as they stand now:
 
 - `fuzz_fx`: a refused init was held to run() as the identity, but which rates an init refuses was the library's own
   answer. A face bound to the grid that took every rate, or a dynamics face that took only the grid, passed every
@@ -123,9 +123,10 @@ of `fuzz_fx.c` (the init check), `fuzz_eq.c` (the bell and the shelf) and `fuzz_
 | `fuzz_src.c:157` | A take is the same however it is cut into blocks, bit for bit. | the same take run whole, a second conversion | `omx_src.h:345` `i < in_n` → `i + 1u < in_n`, on `44100-48000` | OK |
 | `fuzz_src.c:171` | Without a flush, a take makes no more than a whole file's frames and the half length of the filter. | n * l / m by the harness's arithmetic, plus half the taps | `omx_src.h:322` `s->acc += (uint64_t)s->m` → `s->acc += (uint64_t)s->m / 2u`, on `96000-48000` | OK |
 | `fuzz_src.c:179` | A take makes no more samples than the capacity of what went in, n * l / m + 2, by the harness's arithmetic. | n * l / m + 2 by the harness's arithmetic | `omx_src.h:322` `s->acc += (uint64_t)s->m` → `s->acc += (uint64_t)s->m / 2u`, on `48000-44100` | OK |
-| `fuzz_src.c:187` | Each output is finite, and inside the input's peak times the filter's worst gain. | the input's peak times the sum of the absolute coefficients of the worst phase, summed by the harness | `omx_src.h:292` `c[k] * h[k]` → `1000.0f * c[k] * h[k]`, on `44100-48000` | OK |
-| `fuzz_src.c:196` | An identity plan returns the take unchanged. | the harness's copy of the take | `omx_src.h:175` `coef[0] = 1.0f` → `coef[0] = 0.5f`, on `48000-48000` | OK |
-| `fuzz_src.c:207` | The coefficients of each phase sum to 1, the rule of the table in omx_src.h. The bound on the outputs above takes its gain from this table, so this is what holds the table's scale. | 1, the rule of the table in omx_src.h, summed by the harness | `omx_src.h:208` `*= g;` → `*= 2.0f * g;`, on `44100-48000` | OK |
+| `fuzz_src.c:188` | A flushed take makes at least a whole file's frames, n * l / m, by the harness's arithmetic: the flush walks the filter's tail out, so no input is left in the history. | n * l / m by the harness's arithmetic | `omx_src.h:320` `(s->acc / (uint64_t)s->l) < s->consumed` → `(s->acc / (uint64_t)s->l) < s->consumed && s->l == s->m`, on `32000-48000` | OK |
+| `fuzz_src.c:196` | Each output is finite, and inside the input's peak times the filter's worst gain. | the input's peak times the sum of the absolute coefficients of the worst phase, summed by the harness | `omx_src.h:292` `c[k] * h[k]` → `1000.0f * c[k] * h[k]`, on `44100-48000` | OK |
+| `fuzz_src.c:205` | An identity plan returns the take unchanged. | the harness's copy of the take | `omx_src.h:175` `coef[0] = 1.0f` → `coef[0] = 0.5f`, on `48000-48000` | OK |
+| `fuzz_src.c:216` | The coefficients of each phase sum to 1, the rule of the table in omx_src.h. The bound on the outputs above takes its gain from this table, so this is what holds the table's scale. | 1, the rule of the table in omx_src.h, summed by the harness | `omx_src.h:208` `*= g;` → `*= 2.0f * g;`, on `44100-48000` | OK |
 
 ## `fuzz_delay`: the delay lines
 
