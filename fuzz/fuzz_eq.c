@@ -194,6 +194,8 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
        * mutant: include/omxdsp/omx_eq_design.h:164 `omx_eq_matched_pair(w0, 1.0 / (2.0 * A * qq), p);` -> `omx_eq_matched_pair(w0, A / (2.0 * qq), p);`
        * input: peak-then-shelf
        * mutant: include/omxdsp/omx_eq_design.h:160 `exp(gain_db * (M_LN10 / 40.0))` -> `exp(-gain_db * (M_LN10 / 40.0))`
+       * input: peak-then-shelf
+       * mutant: include/omxdsp/omx_eq_design.h:164 `1.0 / (2.0 * A * qq)` -> `1.0 / (2.0 * A * A * qq)`
        * input: peak-then-shelf */
       if (!(at * (own->gain_db > 0.0 ? 1.0 : -1.0) >= fabs(own->gain_db) * (1.0 - 1e-3))) {
         FUZZ_SAY("section %u, a bell of %g dB at %g Hz, is %g dB there", (unsigned)i, own->gain_db, corner(own, rate), at);
