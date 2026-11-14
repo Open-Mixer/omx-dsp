@@ -173,7 +173,9 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
   }
   /* A take makes no more samples than the capacity of what went in, n * l / m + 2, by the harness's arithmetic.
    * mutant: include/omxdsp/omx_src.h:322 `s->acc += (uint64_t)s->m` -> `s->acc += (uint64_t)s->m / 2u`
-   * input: 48000-44100 */
+   * input: 48000-44100
+   * mutant: include/omxdsp/omx_src.h:320 `(s->acc / (uint64_t)s->l) < s->consumed` -> `(s->acc / (uint64_t)s->l) < s->consumed && s->l == s->m`
+   * input: 32000-48000 */
   if (!(wa <= room)) {
     FUZZ_SAY("%u -> %u: %u samples out of %u in exceeds the capacity", (unsigned)rin, (unsigned)rout, (unsigned)wa, (unsigned)t.n);
     abort();
