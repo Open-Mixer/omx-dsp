@@ -6,5 +6,5 @@
 # differ (deps-render in Open-Mixer/.github: render.sh --write, render.sh --check).
 #
 # <rpm name>          <deb name>           <floor>  <ceiling>  <workflow variable pinning the release tag>
-omx-contract-devel    libomx-contract-dev  3.9.0    4          OMX_CONTRACT_REF
-omx-contract-data     omx-contract-data    3.9.0    4
+omx-contract-devel    libomx-contract-dev  3.18.0   4          OMX_CONTRACT_REF
+omx-contract-data     omx-contract-data    3.18.0   4

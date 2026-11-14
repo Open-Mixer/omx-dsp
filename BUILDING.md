@@ -306,7 +306,7 @@ The facts no single package implements (the declared sample rates, the parameter
 Open-Mixer/omx-contract, read through `<omxcontract/omx_contract_limits.h>`, which the definitions
 header includes. That dependency is declared once, in the packaging: `packaging/omx-dsp.spec`
 (`BuildRequires`, `Requires`) and `debian/control` (`Build-Depends`, `Depends`) carry the same floor
-and the same ceiling, the next major (`>= 3.9.0` and `< 4`), and `omxdsp.pc` requires the same range. Install
+and the same ceiling, the next major (`>= 3.18.0` and `< 4`), and `omxdsp.pc` requires the same range. Install
 it from the OpenMixer channel with the rest of the build dependencies:
 
     dnf builddep packaging/omx-dsp.spec     # Fedora, with the OpenMixer repository added

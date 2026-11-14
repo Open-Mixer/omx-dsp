@@ -1,3 +1,14 @@
+omx-dsp (0.32.1) unstable; urgency=medium
+
+  * Built against omx-contract >= 3.18.0 and below 4 (was 3.9.0), the newest
+    the channel serves, with its ceiling (D30).
+  * The organisation's name: FreeMixer becomes Open-Mixer and OpenMixer; the
+    package metadata names the Open-Mixer repository.
+  * release: the DEBs built beside the RPMs; a staged run publishes to the
+    staging channel (#1).
+
+ -- Pau Aliagas <linuxnow@gmail.com>  Fri, 13 Nov 2026 17:00:00 +0100
+
 omx-dsp (0.32.0) unstable; urgency=medium
 
   * fbs: the placement in C (omx_fbs_place.h): both pools, the staged
