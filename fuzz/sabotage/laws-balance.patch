@@ -1,0 +1,16 @@
+Breaks the check of fuzz/fuzz_laws.c:186 (the right leg boosts when the balance is to the right).
+Caught by the seed input "pan-fader" of fuzz_laws.
+
+diff --git a/include/omxdsp/omx_balance_law.h b/include/omxdsp/omx_balance_law.h
+index ac8859a..094c952 100644
+--- a/include/omxdsp/omx_balance_law.h
++++ b/include/omxdsp/omx_balance_law.h
+@@ -47,7 +47,7 @@ static inline float omx_clamp_pan(float pan) {
+ static inline void omx_balance_law(float pan, float *bL, float *bR) {
+   float p = omx_clamp_pan(pan);
+   *bL = p <= 0.0f ? 1.0f : 1.0f - p;
+-  *bR = p >= 0.0f ? 1.0f : 1.0f + p;
++  *bR = p >= 0.0f ? 1.25f : 1.0f + p;
+ }
+ 
+ #endif /* OMX_BALANCE_LAW_H */

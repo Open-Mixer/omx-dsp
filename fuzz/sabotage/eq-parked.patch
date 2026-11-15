@@ -1,0 +1,16 @@
+Breaks the check of fuzz/fuzz_eq.c:175 (every section is parked).
+Caught by the seed input "parked-and-live" of fuzz_eq.
+
+diff --git a/include/omxdsp/omx_eq_design.h b/include/omxdsp/omx_eq_design.h
+index f36ccf8..6e8593b 100644
+--- a/include/omxdsp/omx_eq_design.h
++++ b/include/omxdsp/omx_eq_design.h
+@@ -490,7 +490,7 @@ static inline uint32_t omx_eq_bank_design(int eq_on, const struct omx_eq_band *b
+     const struct omx_eq_band *b = &bands[i];
+     if (!b->on) continue;
+     omx_eq_design(b->kind, b->freq_hz, b->q, b->gain_db, sample_rate, coeffs[n]);
+-    enabled[n] = omx_eq_band_is_identity(b->kind, b->gain_db) ? 0u : 1u;
++    enabled[n] = omx_eq_band_is_identity(b->kind, b->gain_db) ? 0u : 0u;
+     n++;
+   }
+   OMX_POST(n <= nbands, "no-more-sections-than-bands");

@@ -26,9 +26,12 @@ its tables are compiled in. When one is added it gets a harness here.
 
 ## Running
 
-    apt-get install -y clang      # clang with libFuzzer's runtime; no other dependency beyond omx-contract
+    apt-get install -y clang llvm # clang with libFuzzer's runtime, llvm-cov; no other dependency beyond omx-contract
     make fuzz                     # build every harness into build/fuzz/
     make fuzz-run FUZZ_TIME=60    # run each for 60 s from its seed corpus; red on any crash
+    make fuzz-sabotage            # every patch of fuzz/sabotage/ found, each at the check it names
+    make fuzz-records             # every record met, each at its own check
+    make fuzz-coverage            # the coverage witness and its floors
     make fuzz-corpus              # regenerate fuzz/corpus/ (fuzz/gen-corpus.c)
 
 `make fuzz` needs omx-contract like every other target (see `BUILDING.md`).
@@ -52,8 +55,44 @@ macro, and the comment above it says what it checks and carries a record, as OSS
 
 A record is a one-line change of the library and the seed it shows on: with the change, that seed
 makes the check abort; without it, the seed passes. A stop after a failed allocation of the
-harness's own carries `not a property: <reason>` in place of a record. The line numbers are those
-of the commit the OSS Verify enrollment pins, and `tools/check --checks` measures each record there.
+harness's own carries `not a property: <reason>` in place of a record. A check of `fuzz/fuzz.h` is
+every harness's; its record's seed names the harness whose corpus holds it.
+
+`make fuzz-records` (`fuzz/records.sh`) proves every record at this commit. First the ratchet: a
+check with neither a record nor a `not a property:` line, or with lines not of that form, is red
+before anything is built (`fuzz/checks.awk` reads them as `tools/check` does). Then each record
+alone: the harness, built plain at -O0 with the contracts and no sanitizer and driven by
+`fuzz/standalone.c`, passes the seed as the tree is, and with the change aborts on it at that
+record's own `abort()`, which each `abort()` names on stderr in that build. The count is the proof:
+
+```
+make fuzz-records: all 114 records and 6 patches met, each by its own check on its own seed (105 checks)
+```
+
+## The sabotage patches
+
+`fuzz/sabotage/<harness>-<property>.patch` is a bug in the code a harness drives, at least one for
+each harness, as `git diff` writes it. Above its `diff --git` line it names the check it breaks and
+the seed that shows it, the two lines OSS Verify reads:
+
+```
+Breaks the check of fuzz/fuzz_laws.c:186 (the right leg boosts when the balance is to the right).
+Caught by the seed input "pan-fader" of fuzz_laws.
+```
+
+`make fuzz-sabotage` applies each, rebuilds the sanitizer harness and runs every seed of its corpus
+once, without fuzzing: the named seed must abort with the message of the check the header names (its
+`FUZZ_SAY()`; the optimizer merges a harness's `abort()` calls, so the stack cannot tell one check
+from another), and every seed that fails must fail at some check, not by a sanitizer report.
+`make fuzz-records` proves the line the header names.
+
+## The coverage witness
+
+`make fuzz-coverage` builds each harness for `llvm-cov` (no sanitizers), runs it once over its
+corpus and prints the line coverage of every file of `src/` and `include/` the harness holds
+(`fuzz/coverage.sh`). `fuzz/coverage-floor.txt` holds the covered lines each harness reaches; one
+below its floor is red, and so is a check of `fuzz/fuzz_<harness>.c` no seed reaches. Raise a floor
+when coverage rises; lower one only with the change that removed the lines.
 
 `docs/fuzz-checks.md` reads every check against its comment, with its expected value, its record and a verdict.
 
