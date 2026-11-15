@@ -11,7 +11,7 @@
 # -fstack-protector-strong (the gate takes the optimisation, the fortification and the stack
 # protector's guard call out of its input). Each fixtures/*.c names what it binds and what the
 # gate must say about it:
-#   // abi: lv2|clap|...          the --abi it binds
+#   // abi: lv2|clap|... [...]    the --abi it binds, one word each (lv2 omx-clap-core binds both)
 #   // tags: <file>               a thread-tag file the run reads
 #   // needs: graphs              judged only when --graphs is given (omx-dsp's shipped graphs)
 #   // expect: 0|1                the gate's exit code
@@ -49,7 +49,8 @@ judge() { # judge <fixture> <graphs?> <want-exit> <want-reds-file> <label>
   local f="$1" g="$2" want="$3" reds="$4" label="$5" abi tags out rc args=()
   abi=$(meta abi "$HERE/$f")
   tags=$(meta tags "$HERE/$f")
-  args=(--tables "$TABLES" --abi "$abi" --work "$SCRATCH/work.$cases")
+  args=(--tables "$TABLES" --work "$SCRATCH/work.$cases")
+  for a in $abi; do args+=(--abi "$a"); done
   [ -n "$tags" ] && args+=(--tags "$tags")
   if [ "$g" = yes ]; then args+=(--graphs "$GRAPHS" --tags "$TAGS"); fi
   out="$SCRATCH/out.$cases"
