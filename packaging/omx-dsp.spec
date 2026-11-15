@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2026 Pau Aliagas <linuxnow@gmail.com>
 Name: omx-dsp
-Version: 0.32.3
+Version: 0.32.4
 Release: 1%{?dist}
 License: GPL-3.0-or-later
 Summary: The audio toolbox of the OpenMixer console, as a real-time-safe C library
@@ -148,6 +148,15 @@ Its documentation is on openmixer.org.
 %{_datadir}/omx-contract/contract.d/3/omx-dsp/
 
 %changelog
+* Sun Nov 15 2026 Pau Aliagas <linuxnow@gmail.com> - 0.32.4-1
+- curve: the drive family, a drive's transfer curve sample in to sample out
+  through the drive kernel's own control mapping and biased shaper; roles
+  drive, tone, model, mix and output, the unit pc, the sample extents. The
+  TypeScript twin draws it too. Added names only; the three moved curve
+  counts are proven in tools/patch-count-proofs.txt.
+- patch-names-check: a count or size macro whose value moves in a patch
+  needs its proof line.
+
 * Sun Nov 15 2026 Pau Aliagas <linuxnow@gmail.com> - 0.32.3-1
 - packaging: the JACK headers by pkgconfig(jack) again, so the build image's
   PipeWire JACK devel package satisfies them, and jack2's runtime

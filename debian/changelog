@@ -1,3 +1,15 @@
+omx-dsp (0.32.4) unstable; urgency=medium
+
+  * curve: the drive family, a drive's transfer curve sample in to sample
+    out through the drive kernel's own control mapping and biased shaper;
+    roles drive, tone, model, mix and output, the unit pc, the sample
+    extents. The TypeScript twin draws it too. Added names only; the three
+    moved curve counts are proven in tools/patch-count-proofs.txt.
+  * patch-names-check: a count or size macro whose value moves in a patch
+    needs its proof line.
+
+ -- Pau Aliagas <linuxnow@gmail.com>  Sun, 15 Nov 2026 20:55:00 +0100
+
 omx-dsp (0.32.3) unstable; urgency=medium
 
   * flavour-check: the TSan consumer runs under setarch -R; where that is
