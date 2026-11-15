@@ -385,3 +385,17 @@ log
 count 1
 slot 0 2000 0 116 1 fbs-fixed notch
 end
+
+# A band seated live and re-tagged fixed before its adoption tick: the console adopts by the band's tag at
+# tick time, so it never tracks it and it never lifts.
+vector seat-live-retag-fixed-before-tick
+set 1 6 116 100 600
+seat fbs-live 1000 -18 8
+edit 0 fbs-fixed -18
+ticks 250 60000 250
+log
+count 1
+slot 0 1000 -18 8 1 fbs-fixed bell
+tick 60250 c 1000 -18 s 1000
+log
+end
