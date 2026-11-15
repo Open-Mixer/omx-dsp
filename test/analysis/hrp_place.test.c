@@ -3,7 +3,7 @@
  *
  * hrp_place.test.c — the HRP placement and stepping in C (omx_hrp_place.h) held to the shared vector file,
  * test/analysis/fixtures/hrp_place.vectors, which the TypeScript twin's test (ts/test/hrp-place.test.mjs) reads
- * too. Every line is judged inside the tolerances the file states; test/analysis/hrp-place-sabotage.sh breaks
+ * too. Every value is judged exactly; test/analysis/hrp-place-sabotage.sh breaks
  * each rule once in a copy of src/omx_hrp_place.c and requires this program to fail on that rule's line.
  *
  *   build/analysis_hrp_place [<vectors>]
@@ -19,7 +19,6 @@
 #define MAXW 96
 
 static int checks, failures, lines;
-static double tol_q = -1.0;
 
 static double num(const char *w) {
   if (strcmp(w, "nan") == 0) return NAN;
@@ -27,11 +26,8 @@ static double num(const char *w) {
   if (strcmp(w, "-inf") == 0) return -INFINITY;
   return strtod(w, NULL);
 }
-/* Exact unless a tolerance is given; a NaN is matched only by a NaN. */
-static int same(double a, double b, double tol) {
-  if (isnan(b)) return isnan(a);
-  return tol > 0.0 ? fabs(a - b) <= tol : a == b;
-}
+/* Exact; a NaN is matched only by a NaN. */
+static int same(double a, double b) { return isnan(b) ? isnan(a) : a == b; }
 
 static void check(int ok, const char *name, const char *line, const char *got) {
   checks++;
@@ -58,13 +54,11 @@ int main(int argc, char **argv) {
     for (char *t = strtok(raw, " \t"); t && n < MAXW; t = strtok(NULL, " \t")) w[n++] = t;
     if (n == 0) continue;
     char got[2048] = "";
-    if (strcmp(w[0], "tolerance") == 0 && n == 3) {
-      if (strcmp(w[1], "q") == 0) tol_q = num(w[2]);
-    } else if (strcmp(w[0], "step") == 0 && n == 5) {
+    if (strcmp(w[0], "step") == 0 && n == 5) {
       lines++;
       const double r = omx_hrp_step_toward(num(w[2]), num(w[3]));
       snprintf(got, sizeof(got), "%.17g", r);
-      check(same(r, num(w[4]), 0.0), w[1], line, got);
+      check(same(r, num(w[4])), w[1], line, got);
     } else if (strcmp(w[0], "place") == 0 && n >= 9 && strcmp(w[7], "g") == 0) {
       lines++;
       int arrow = -1;
@@ -88,8 +82,8 @@ int main(int argc, char **argv) {
                                out[b].gain_db, out[b].q);
       for (uint32_t b = 0; ok && b < want; b++) {
         char **e = &w[arrow + 1 + 4 * b];
-        ok = out[b].harmonic == (uint32_t)strtoul(e[0], NULL, 10) && same(out[b].freq_hz, num(e[1]), 0.0) &&
-             same(out[b].gain_db, num(e[2]), 0.0) && same(out[b].q, num(e[3]), tol_q);
+        ok = out[b].harmonic == (uint32_t)strtoul(e[0], NULL, 10) && same(out[b].freq_hz, num(e[1])) &&
+             same(out[b].gain_db, num(e[2])) && same(out[b].q, num(e[3]));
       }
       check(ok, w[1], line, got);
     } else {

@@ -3,8 +3,7 @@
 /**
  * The twin of omx_hrp_place.h (src/omx_hrp_place.c): the harmonic resonance processor's placement and stepping.
  * The C placement and this one read the same vector file (test/analysis/fixtures/hrp_place.vectors) in
- * test/analysis/hrp_place.test.c and test/hrp-place.test.mjs, so the two are held to the same values: exact
- * everywhere but a Q clamped onto the bell's lower bound, which the contract renders as 0.3f into C.
+ * test/analysis/hrp_place.test.c and test/hrp-place.test.mjs, so the two are held to the same values, exactly.
  *
  * The rules are the header's, one function each, in the same order and arithmetic: the console's harmonicBands
  * and the HRP planter's stepToward, term for term.

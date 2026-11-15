@@ -8,12 +8,10 @@
 #include <math.h>
 
 #include <omxdsp/analysis/omx_hrp_place.h>
+#include <omxdsp/analysis/omx_place_clamp.h>
 
 /* A number that may take part in the arithmetic: the console's Number.isFinite. */
 static int usable(double v) { return isfinite(v); }
-
-/* The console's clamp: below lo is lo, above hi is hi, anything else (a NaN too) passes through. */
-static double clamp(double v, double lo, double hi) { return v < lo ? lo : v > hi ? hi : v; }
 
 /* REFUSED WHOLE: an input the placement cannot honour places nothing. */
 static int refused(double f0_hz, double q, const OmxHrpPlaceLimits *l) {
@@ -32,7 +30,7 @@ int omx_hrp_place_in_range(double freq_hz) {
 }
 
 /* THE BELL'S Q: the console's clampEqBandQ('bell', q). */
-static double bell_q(double q) { return clamp(q, (double)OMX_EQ_Q_RANGE_MIN, (double)OMX_EQ_Q_RANGE_MAX); }
+static double bell_q(double q) { return omx_place_clamp(q, OMX_EQ_Q_RANGE_MIN_DOUBLE, (double)OMX_EQ_Q_RANGE_MAX); }
 
 /* THE CAP's order: a before b when its |gain| is larger, ties to the lower harmonic. */
 static int stronger(const OmxHrpPlacedBand *a, const OmxHrpPlacedBand *b) {
@@ -67,7 +65,7 @@ uint32_t omx_hrp_place_bands(double f0_hz, const double *gains_db, uint32_t n_ga
     const uint32_t harmonic = k + 1u;
     const double freq_hz = (double)harmonic * f0_hz;
     if (!omx_hrp_place_in_range(freq_hz)) continue;
-    const double gain_db = clamp(requested, -limits->max_cut_db, limits->max_boost_db);
+    const double gain_db = omx_place_clamp(requested, -limits->max_cut_db, limits->max_boost_db);
     if (gain_db == 0.0) continue; /* SPARSE: -0 is the same fact */
     out[m].harmonic = harmonic;
     out[m].freq_hz = freq_hz;

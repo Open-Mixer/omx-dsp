@@ -13,10 +13,9 @@
 #        one bounded move of a gain toward its target (HRP_GAIN_STEP_DB, 2 dB, per move)
 #   nan, inf and -inf are the IEEE values.
 #
-# Tolerances: harmonics, counts and order are exact, and so are frequencies, gains and steps (a product of a
-# harmonic and f0, a clamp, a sum: one rounding each, the same in both). Q is within 1e-6 because the contract
-# renders the bell's lower bound as the float 0.3f into C and as 0.3 into TypeScript.
-tolerance q 1e-6
+# Every value is exact: harmonics, counts and order, and frequencies, gains, Q and steps too (a product of a
+# harmonic and f0, a clamp, a sum: one rounding each, the same in both; the bell's lower Q bound is the contract's
+# double 0.3 in both, OMX_EQ_Q_RANGE_MIN_DOUBLE in C).
 
 # --- the console's case: Q 5, a 6 dB cut, no boost, a ladder of twelve ---------------------------------------
 place clamps-and-sparse 100 5 6 0 12 g 0 -3 0 -6.5 2 => 2 200 -3 5 4 400 -6 5
