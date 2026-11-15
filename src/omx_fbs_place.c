@@ -264,6 +264,8 @@ static void correct(OmxFbsPlace *p, const OmxFbsCandidate *c) {
     emit(p, OMX_FBS_POOL_FULL, c->freq_hz, -1);
     return;
   }
+  /* the strip's EQ is full: its store returns the EQ unchanged, and the corrector says nothing */
+  if ((uint64_t)omx_fbs_place_count(p) + p->others >= (uint64_t)OMX_EQ_MAX_BANDS) return;
   uint32_t k = 0;
   while (k < OMX_FBS_PLACE_SLOTS && p->slot[k].origin != OMX_CURVE_ORIGINS_USER) k++;
   if (k >= OMX_FBS_PLACE_SLOTS) return;
@@ -309,10 +311,71 @@ static void hold_sweep(OmxFbsPlace *p, const double *snapshot_hz, uint32_t n_sna
   }
 }
 
+/* adoptUntracked: every fbs-live band not yet tracked, in band order, starts a fresh hold and takes its ring memory */
+static void adopt(OmxFbsPlace *p) {
+  for (int k = next_by_seq(p, 0); k >= 0; k = next_by_seq(p, p->slot[k].seq)) {
+    OmxFbsPlaceSlot *s = &p->slot[k];
+    if (!s->adopt) continue;
+    s->adopt = 0;
+    s->live = 1;
+    s->planted_db = s->gain_db;
+    s->last_ring_ms = p->now_ms;
+    s->stage = 0u;
+    s->dwelling = 0;
+    s->ramping = 0;
+    s->reclamps = take_memory(p, s->freq_hz);
+  }
+}
+
 void omx_fbs_place_tick(OmxFbsPlace *p, double now_ms, const double *snapshot_hz, uint32_t n_snapshot,
                         const OmxFbsCandidate *confirmed, uint32_t n_confirmed) {
   if (!p) return;
   omx_fbs_place_advance(p, now_ms);
+  adopt(p);
   for (uint32_t i = 0; confirmed && i < n_confirmed; i++) correct(p, &confirmed[i]);
   hold_sweep(p, snapshot_hz ? snapshot_hz : (const double *)0, snapshot_hz ? n_snapshot : 0u);
+}
+
+void omx_fbs_place_set_others(OmxFbsPlace *p, uint32_t n) {
+  if (p) p->others = n;
+}
+
+/* the band is gone from the store: holdSweep and the ramp drop its tracking, and the pool reads one fewer */
+int omx_fbs_place_remove(OmxFbsPlace *p, uint32_t k) {
+  if (!p || k >= OMX_FBS_PLACE_SLOTS || p->slot[k].origin == OMX_CURVE_ORIGINS_USER) return -1;
+  free_slot(&p->slot[k]);
+  return 0;
+}
+
+/* an operator PATCH on an fbs band: the store holds the new tag and the gain its cap allows */
+int omx_fbs_place_edit(OmxFbsPlace *p, uint32_t k, int origin, double gain_db) {
+  if (!p || k >= OMX_FBS_PLACE_SLOTS || p->slot[k].origin == OMX_CURVE_ORIGINS_USER) return -1;
+  if (origin < 0 || origin >= (int)OMX_CURVE_ORIGINS_COUNT) return -1;
+  if (!is_fbs(origin)) return omx_fbs_place_remove(p, k);
+  OmxFbsPlaceSlot *s = &p->slot[k];
+  s->origin = origin;
+  s->gain_db = omx_fbs_place_gain_cap(origin, gain_db);
+  if (origin == OMX_CURVE_ORIGINS_FBS_LIVE && !s->live) s->adopt = 1;
+  return 0;
+}
+
+/* a restored band: in the store before the corrector sees it, so it counts at once and a live one is adopted */
+int omx_fbs_place_seat(OmxFbsPlace *p, int origin, double freq_hz, double gain_db, double q) {
+  if (!p || !is_fbs(origin) || !isfinite(freq_hz) || !isfinite(gain_db) || !isfinite(q)) return -1;
+  uint32_t k = 0;
+  while (k < OMX_FBS_PLACE_SLOTS && p->slot[k].origin != OMX_CURVE_ORIGINS_USER) k++;
+  if (k >= OMX_FBS_PLACE_SLOTS) return -1;
+  const int fixed = origin == OMX_CURVE_ORIGINS_FBS_FIXED;
+  OmxFbsPlaceSlot *s = &p->slot[k];
+  free_slot(s);
+  s->origin = origin;
+  s->freq_hz = clamp(freq_hz, OMX_EQ_FREQ_RANGE_MIN, OMX_EQ_FREQ_RANGE_MAX);
+  s->shape = fixed ? OMX_CURVE_SHAPES_NOTCH : OMX_CURVE_SHAPES_BELL;
+  s->gain_db = omx_fbs_place_gain_cap(origin, gain_db);
+  s->q = fixed ? clamp(q, OMX_EQ_NOTCH_Q_RANGE_MIN_DOUBLE, OMX_EQ_NOTCH_Q_RANGE_MAX) : clamp(q, OMX_EQ_Q_RANGE_MIN_DOUBLE, OMX_EQ_Q_RANGE_MAX);
+  s->on = 1;
+  s->seq = ++p->seq;
+  s->planted_db = s->gain_db;
+  s->adopt = !fixed;
+  return (int)k;
 }
