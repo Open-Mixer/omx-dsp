@@ -114,6 +114,7 @@ refused "a row without a reason" classes.tbl "cosf maths externals-arm:cosf"
 refused "a row without the arm that measured it" classes.tbl "cosf maths"
 refused "a duplicate row" classes.tbl "$(grep -m1 '^[a-z_]* maths ' "$TABLES/classes.tbl")"
 refused "a row for a forbidden symbol" classes.tbl "malloc bulk-memory externals-arm:malloc planted"
+refused "a host-buffer row for an unruled host call" classes.tbl "jack_port_register host-buffer externals-arm:jack_port_register planted"
 refused "a forbidden row outside the closed codes" forbidden.tbl "snprintf RT-MAYBE planted"
 refused "an empty forbidden list" forbidden.tbl EMPTY
 refused "a per-consumer list" consumer.tbl "snprintf maths externals-arm:snprintf a consumer's own"

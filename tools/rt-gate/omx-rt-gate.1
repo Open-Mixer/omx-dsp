@@ -83,10 +83,15 @@ above.
 .B classes.tbl
 \fIsymbol class arm:case reason\fR: the external symbols a root may call, each
 with its class from the closed set \fBmaths\fR, \fBbulk\-memory\fR,
-\fBword\-atomic\fR, \fBclock\fR, \fBftz\-register\fR, \fBwake\fR, the arm that
-measured it and the reason. \fBsem_post\fR is a wake, like FUTEX_WAKE: an atomic,
-and a futex wake only when a waiter sleeps; \fBsem_wait\fR and
-\fBsem_timedwait\fR stay forbidden. A row naming a site, a field, a file or a
+\fBword\-atomic\fR, \fBclock\fR, \fBftz\-register\fR, \fBwake\fR,
+\fBhost\-buffer\fR, the arm that measured it and the reason. \fBsem_post\fR is a
+wake, like FUTEX_WAKE: an atomic, and a futex wake only when a waiter sleeps;
+\fBsem_wait\fR and \fBsem_timedwait\fR stay forbidden. \fBhost\-buffer\fR is an
+audio host's own lookup of a port's buffer for the current period, documented
+for its process thread: the one call a process callback cannot avoid. It holds
+exactly the symbols the gate names, today \fBjack_port_get_buffer\fR; a row of
+the class for any other symbol is refused at load, so another host call enters
+it only by a ruling. A row naming a site, a field, a file or a
 function of omx-dsp, a class outside the set, a row without a reason or an arm,
 a duplicate, or a row for a forbidden symbol is refused at load.
 .TP
