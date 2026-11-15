@@ -17,7 +17,9 @@ BuildRequires: diffutils
 BuildRequires: pkgconfig
 BuildRequires: omx-contract-devel >= 3.18.0
 BuildRequires: omx-contract-devel < 4
-BuildRequires: pkgconfig(jack)
+# jack2 by name, not pkgconfig(jack): PipeWire's devel package provides that too, and omx-rt-gate's host-buffer
+# arm and omx-rta-read's null test measure against jack2's jackd and libjack, failing by name on PipeWire's.
+BuildRequires: jack-audio-connection-kit-devel
 
 # Headers and a static archive only: nothing of this package is loaded at run time.
 %global debug_package %{nil}
