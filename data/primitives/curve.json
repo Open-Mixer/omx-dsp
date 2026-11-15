@@ -153,7 +153,7 @@
     "source": {
       "impl": "include/omxdsp/omx_curve.h#omx_curve_points_marked"
     },
-    "doc": "A curve's default extents, where a request gives none: an eq_response from `freqMinHz` to the lower of `freqMaxHz` and `nyquistFraction` of Nyquist, each band's dB floored at `eqFloorDb` so a notch's null stays finite (the console's EQ draws to -120 dB); a transfer_curve's input from `levelMinDb` to `levelMaxDb`, and a drive's, in its linear signed units, from `sampleMin` to `sampleMax` (since 0.32.4). Hz, dB and full scale.",
+    "doc": "A curve's default extents, where a request gives none: an eq_response from `freqMinHz` to the lower of `freqMaxHz` and `nyquistFraction` of Nyquist, each band's dB floored at `eqFloorDb` so a notch's null stays finite (the console's EQ draws to -120 dB); a transfer_curve's input from `levelMinDb` to `levelMaxDb`, and a drive's (a steady level in, its level out, in dB like every transfer_curve; since 0.32.4) from `driveLevelMinDb` to `driveLevelMaxDb`",
     "value": {
       "freqMinHz": 20,
       "freqMaxHz": 20000,
@@ -161,8 +161,8 @@
       "eqFloorDb": -120,
       "levelMinDb": -80,
       "levelMaxDb": 0,
-      "sampleMin": -1,
-      "sampleMax": 1
+      "driveLevelMinDb": -60,
+      "driveLevelMaxDb": 0
     }
   }
 }

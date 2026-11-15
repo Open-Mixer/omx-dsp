@@ -1,21 +1,28 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Pau Aliagas <linuxnow@gmail.com>
 
-/* ---- the drive's transfer curve (omx_curve.h, family `drive`): what the kernel does to each sample ---------
+/* ---- the drive's transfer curve (omx_curve.h, family `drive`): a steady level in, the kernel's level out, in dB --
  *
- * The curve is the drive kernel's static path, so the oracle is the kernel itself: an instance at 1x, on the full
- * band, with no roll-off and no auto-gain, runs the curve's own x as a block, and every output sample must be the
- * curve's y. That holds exactly where nothing that is not a function of one sample runs: at tone -1 the bias is
- * zero and the DC blocker is off. With a bias the kernel's DC blocker runs, which the curve does not draw, so
- * there the oracle is the kernel's own shaper block (omx_drive_shape_block(), what omx_drive_process() runs at 1x)
- * under the instance's own atom, mixed and trimmed as omx_drive_leg_chunk() and omx_drive_process() do. */
+ * A transfer_curve is dB in to dB out on one axis on every surface, the drive's too: x a steady input level, y the
+ * level the drive's static path gives it. The curve is that path, so the oracle is the kernel itself: an instance at
+ * 1x, on the full band, with no roll-off and no auto-gain, runs the steady sample of each x (10^(x/20)) as a block,
+ * and every output sample, in dB (omx_lin_to_db), must be the curve's y. That holds exactly where nothing that is not
+ * a function of one sample runs: at tone -1 the bias is zero and the DC blocker is off. With a bias the kernel's DC
+ * blocker runs, which a steady level's curve does not draw, so there the oracle is the kernel's own shaper block
+ * (omx_drive_shape_block(), what omx_drive_process() runs at 1x) under the instance's own atom, mixed and trimmed as
+ * omx_drive_leg_chunk() and omx_drive_process() do. */
 
 #include <omxdsp/fx/omx_drive_instance.h>
 #include <omxdsp/omx_curve.h>
 
 #define CD_POINTS 129u
-/* The shaper block may run libmvec's vector tanhf where the curve runs the scalar one: a few float ULPs. */
-#define CD_TOL 4e-7
+/* The kernel may run libmvec's vector tanhf where the curve runs the scalar one: a few float ULPs of the shaper,
+ * 4e-7 full scale at most, as on the linear axis. On the dB axis that is a relative error, largest where the
+ * output is small or the biased shaper's `shape(u + b) - shape(b)` cancels, so the bound is read at each point's
+ * own level: 20 log10(1 + 4e-7 / |out|), plus a float ULP of the dB conversion. */
+#define CD_TOL_LIN 4e-7
+#define CD_TOL_DB_ULP 4e-6
+static double cd_tol(double out_db) { return 20.0 * log10(1.0 + CD_TOL_LIN / pow(10.0, out_db / 20.0)) + CD_TOL_DB_ULP; }
 
 static uint32_t cd_draw(int model, double amount, double tone, double mix, double output, int with_tone, int with_mix,
                         int with_output, double *x, double *y, int *code) {
@@ -44,9 +51,9 @@ static void cd_kernel(int model, float amount, float tone, float mix, float outp
   memset(l, 0, sizeof l);
   memset(r, 0, sizeof r);
   omx_drive_instance_run(&s, l, r, l, r, CD_POINTS);
-  for (uint32_t i = 0; i < CD_POINTS; i++) l[i] = r[i] = (float)x[i];
+  for (uint32_t i = 0; i < CD_POINTS; i++) l[i] = r[i] = omx_db_to_lin((float)x[i]);
   omx_drive_instance_run(&s, l, r, l, r, CD_POINTS);
-  memcpy(out, l, sizeof l);
+  for (uint32_t i = 0; i < CD_POINTS; i++) out[i] = omx_lin_to_db(l[i]);
 }
 
 /* The kernel's shaper block under the instance's own atom, mixed and trimmed as the leg and the process do. */
@@ -56,11 +63,11 @@ static void cd_shaper(int model, float amount, float tone, float mix, float outp
   omx_drive_instance_controls(&o, amount, tone, mix, output, model);
   const struct omx_drive_bias b = omx_drive_bias_for(o.curve, o.even_w);
   float wet[CD_POINTS];
-  for (uint32_t i = 0; i < CD_POINTS; i++) wet[i] = (float)x[i];
+  for (uint32_t i = 0; i < CD_POINTS; i++) wet[i] = omx_db_to_lin((float)x[i]);
   omx_drive_shape_block(o.curve, &b, o.drive_lin, wet, CD_POINTS);
   for (uint32_t i = 0; i < CD_POINTS; i++) {
-    const float dry = (float)x[i], delta = o.curve == OMX_DRIVE_EXCITER ? wet[i] : wet[i] - dry;
-    out[i] = (dry + o.mix * delta) * o.trim_lin;
+    const float dry = omx_db_to_lin((float)x[i]), delta = o.curve == OMX_DRIVE_EXCITER ? wet[i] : wet[i] - dry;
+    out[i] = omx_lin_to_db((dry + o.mix * delta) * o.trim_lin);
   }
 }
 
@@ -74,7 +81,7 @@ static void arm_curve_drive(void) {
   const float tones[] = {-0.5f, 0.0f, 1.0f};
 
   /* 1. Against the kernel run, at tone -1: every shaper, drive, mix and trim, sample for sample. */
-  double worst = 0.0;
+  double worst = 0.0, ratio = 0.0;
   uint32_t cells = 0;
   for (uint32_t m = 0; m < 4u; m++)
     for (uint32_t a = 0; a < 4u; a++)
@@ -87,14 +94,16 @@ static void arm_curve_drive(void) {
           for (uint32_t i = 0; i < n; i++) {
             const double e = fabs(y[i] - (double)k[i]);
             if (e > worst) worst = e;
+            if (e / cd_tol((double)k[i]) > ratio) ratio = e / cd_tol((double)k[i]);
           }
           cells++;
         }
-  ok(cells == 4u * 4u * 3u * 3u && worst <= CD_TOL, "the drive curve is the kernel run on its x (tone -1, 144 cells)", worst, CD_TOL);
-  printf("  curve-drive: worst |curve - kernel run| %.3g over %u cells of %u samples (tone -1)\n", worst, cells, CD_POINTS);
+  ok(cells == 4u * 4u * 3u * 3u && ratio <= 1.0, "the drive curve is the kernel run on its x (tone -1, 144 cells)", ratio, 1.0);
+  printf("  curve-drive: worst |curve - kernel run| %.3g dB, worst share of its bound %.2f, over %u cells of %u levels (tone -1)\n", worst, ratio, cells, CD_POINTS);
 
   /* 2. With a bias: against the kernel's shaper block under the instance's atom. */
   worst = 0.0;
+  ratio = 0.0;
   for (uint32_t m = 0; m < 4u; m++)
     for (uint32_t a = 0; a < 4u; a++)
       for (uint32_t c = 0; c < 3u; c++) {
@@ -104,16 +113,26 @@ static void arm_curve_drive(void) {
         for (uint32_t i = 0; i < n; i++) {
           const double e = fabs(y[i] - (double)k[i]);
           if (e > worst) worst = e;
+          if (e / cd_tol((double)k[i]) > ratio) ratio = e / cd_tol((double)k[i]);
         }
       }
-  ok(worst <= CD_TOL, "a biased drive curve is the kernel's shaper block (48 cells)", worst, CD_TOL);
-  printf("  curve-drive: worst |curve - kernel shaper block| %.3g over 48 biased cells\n", worst);
+  ok(ratio <= 1.0, "a biased drive curve is the kernel's shaper block (48 cells)", ratio, 1.0);
+  printf("  curve-drive: worst |curve - kernel shaper block| %.3g dB, worst share of its bound %.2f, over 48 biased cells\n", worst, ratio);
 
-  /* 3. The grid: CURVE_EXTENTS sampleMin..sampleMax by default, both edges, 0 in to 0 out (the bias normaliser). */
+  /* 3. The axis: dB in, dB out. The default grid is driveLevelMinDb..driveLevelMaxDb, both edges; the level out
+   * never falls as the level in rises; low in the grid the soft shaper alone is its drive (unity small-signal
+   * slope): -60 dB in at +18 dB drive is -42 dB out; a bias moves the curve. */
   cd_draw(OMX_DRIVE_TUBE, 12.0, 1.0, 100.0, 0.0, 1, 1, 1, x, y, &code);
-  ok(x[0] == OMX_CURVE_EXTENTS_SAMPLE_MIN && x[CD_POINTS - 1u] == OMX_CURVE_EXTENTS_SAMPLE_MAX, "the default extents are sampleMin..sampleMax", x[0], x[CD_POINTS - 1u]);
-  ok(fabs(y[(CD_POINTS - 1u) / 2u]) < 1e-7, "silence in is silence out, biased", y[(CD_POINTS - 1u) / 2u], 1e-7);
-  ok(y[CD_POINTS - 1u] != -y[0], "a tube biased by the tone is not odd: the curve shows the asymmetry", y[CD_POINTS - 1u], -y[0]);
+  ok(x[0] == OMX_CURVE_EXTENTS_DRIVE_LEVEL_MIN_DB && x[CD_POINTS - 1u] == OMX_CURVE_EXTENTS_DRIVE_LEVEL_MAX_DB,
+     "the default extents are driveLevelMinDb..driveLevelMaxDb", x[0], x[CD_POINTS - 1u]);
+  int rising = 1;
+  for (uint32_t i = 1; i < CD_POINTS; i++) rising &= y[i] >= y[i - 1u];
+  ok(rising, "the level out never falls as the level in rises", 0, 0);
+  cd_draw(OMX_DRIVE_TUBE, 12.0, -1.0, 100.0, 0.0, 1, 1, 1, x, y2, &code);
+  ok(y[CD_POINTS - 1u] != y2[CD_POINTS - 1u], "a bias moves the curve", y[CD_POINTS - 1u], y2[CD_POINTS - 1u]);
+  cd_draw(OMX_DRIVE_SOFT, 18.0, -1.0, 100.0, 0.0, 1, 1, 1, x, y, &code);
+  ok(fabs(y[0] - (x[0] + 18.0)) < 0.01, "low in the grid the soft drive is its gain: -60 dB in, -42 dB out", y[0], x[0] + 18.0);
+  ok(y[CD_POINTS - 1u] < 0.0, "a soft shaper's output stays under full scale at 0 dB in, +18 dB drive", y[CD_POINTS - 1u], 0.0);
 
   /* 4. The defaults that are not guesses: no tone is -1, no mix 100 %, no output 0 dB (a card's picture). */
   cd_draw(OMX_DRIVE_TAPE, 18.0, 0.0, 0.0, 0.0, 0, 0, 0, x, y, &code);

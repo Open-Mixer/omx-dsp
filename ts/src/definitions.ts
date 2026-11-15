@@ -146,7 +146,7 @@ export const CURVE_CODES = ['ok', 'kindUnknown', 'termMissing', 'unitRefused', '
 /** The most points one curve carries, an EQ's band anchors included: a reply of x with four significant digits and y to 0.01 dB, about 13 bytes a point, fits the 4096-byte line a host's reply is built in. Every caller reads it here; it moves with that buffer, in this one place. @see data/primitives/curve.json */
 export const CURVE_POINTS_MAX = 256;
 
-/** A curve's default extents, where a request gives none: an eq_response from `freqMinHz` to the lower of `freqMaxHz` and `nyquistFraction` of Nyquist, each band's dB floored at `eqFloorDb` so a notch's null stays finite (the console's EQ draws to -120 dB); a transfer_curve's input from `levelMinDb` to `levelMaxDb`, and a drive's, in its linear signed units, from `sampleMin` to `sampleMax` (since 0.32.4). Hz, dB and full scale. @see data/primitives/curve.json */
+/** A curve's default extents, where a request gives none: an eq_response from `freqMinHz` to the lower of `freqMaxHz` and `nyquistFraction` of Nyquist, each band's dB floored at `eqFloorDb` so a notch's null stays finite (the console's EQ draws to -120 dB); a transfer_curve's input from `levelMinDb` to `levelMaxDb`, and a drive's (a steady level in, its level out, in dB like every transfer_curve; since 0.32.4) from `driveLevelMinDb` to `driveLevelMaxDb` @see data/primitives/curve.json */
 export const CURVE_EXTENTS = {
   freqMinHz: 20,
   freqMaxHz: 20000,
@@ -154,8 +154,8 @@ export const CURVE_EXTENTS = {
   eqFloorDb: -120,
   levelMinDb: -80,
   levelMaxDb: 0,
-  sampleMin: -1,
-  sampleMax: 1,
+  driveLevelMinDb: -60,
+  driveLevelMaxDb: 0,
 } as const;
 
 /** The floor of the linear-to-decibel conversions (`omx_lin_to_db`, `omx_lin_to_db_poly`): an amplitude below `lin` reads as `lin`, so silence is `db` dB, never -inf or NaN. `db` is `20·log10(lin)`. A design constant, not a control. @see data/primitives/lin-to-db-floor.json */
