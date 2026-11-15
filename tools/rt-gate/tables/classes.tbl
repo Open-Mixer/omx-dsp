@@ -53,6 +53,13 @@
 #                 (THREAD_IDENTITY_RULED) and refuses at load a row of the class for any other;
 #                 pthread_getattr_np, pthread_getname_np and the like allocate or read /proc and
 #                 never enter it.
+#   cpu-identity  the CPU the calling thread runs on: sched_getcpu, which glibc reads from the
+#                 thread's rseq area (registered by glibc 2.35 and later) or, on x86_64, from the
+#                 vDSO getcpu: no system call, no allocation, no lock, on any thread. A thread pool
+#                 needs it so a helper never claims a task on the CPU of the audio thread that waits
+#                 for it (omx-clap-core's pool, ruling A, 2026-11-15). Closed to sched_getcpu
+#                 (CPU_IDENTITY_RULED); getcpu() and sched_getaffinity, which enter the kernel, never
+#                 enter it.
 #
 # The arm: externals-arm (tools/rt-gate/externals-arm.c, make rt-gate) calls each symbol over a
 # spread of arguments with the process's allocator interposed and requires zero allocations; every
