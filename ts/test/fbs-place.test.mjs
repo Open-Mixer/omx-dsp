@@ -159,6 +159,7 @@ describe('every rule has an arm that turns a vector red', () => {
     'a seated or re-tagged band never adopted': (p) => { p.adopt = () => {}; },
     'an adopted band\'s hold starts at zero': (p) => { p.adoptClock = () => 0; },
     'a pending band adopted whatever its origin': (p) => { p.adoptsOrigin = () => true; },
+    'a band re-tagged fixed keeps releasing': (p) => { p.leaveLadder = () => {}; },
   };
   for (const [name, override] of Object.entries(arms)) it(name, () => assert.ok(runAll(arm(override)).length > 0, `${name} stayed green`));
   it('the per-origin cap arm is the console\'s for every origin', () => {

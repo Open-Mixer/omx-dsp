@@ -25,6 +25,7 @@
 #   seat-no-adopt   a seated live band is never adopted
 #   adopt-hold      an adopted band's hold starts at time zero, not at its adoption
 #   adopt-origin    a pending band is adopted whatever its origin at the tick
+#   fixed-releases  a tracked live band re-tagged fixed stays in the release ladder
 #
 # CC, CFLAGS and CONTRACT_INC from the environment (make exports CONTRACT_INC).
 set -euo pipefail
@@ -81,5 +82,6 @@ sabotage retag-no-adopt operator-retags-fixed-to-live 's/\&\& !s->live) s->adopt
 sabotage others-ignored shared-eq-cap 's/omx_fbs_place_count(p) + p->others >=/omx_fbs_place_count(p) + 0u >=/'
 sabotage seat-no-adopt seat-a-restored-band 's/^  s->adopt = !fixed;$/  s->adopt = 0; (void)fixed;/'
 sabotage adopt-hold seat-a-restored-band 's/^    s->last_ring_ms = p->now_ms;$/    s->last_ring_ms = 0.0;/'
+sabotage fixed-releases tracked-live-retagged-fixed-stops-releasing 's/^  if (origin == OMX_CURVE_ORIGINS_FBS_FIXED) {$/  if (0 \&\& origin == OMX_CURVE_ORIGINS_FBS_FIXED) {/'
 sabotage adopt-origin seat-live-retag-fixed-before-tick 's/^    if (s->origin != OMX_CURVE_ORIGINS_FBS_LIVE) continue;$/    (void)0;/'
 echo "fbs-place-sabotage.sh: every rule's arm fails its vector"

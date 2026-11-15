@@ -358,6 +358,14 @@ int omx_fbs_place_edit(OmxFbsPlace *p, uint32_t k, int origin, double gain_db) {
   s->origin = origin;
   s->gain_db = omx_fbs_place_gain_cap(origin, gain_db);
   if (origin == OMX_CURVE_ORIGINS_FBS_LIVE && !s->live) s->adopt = 1;
+  /* the fixed pool never lifts: a band re-tagged fixed leaves the release ladder where the edit left it (a
+   * pending adoption is refused by adopt(), which reads the origin at the tick) */
+  if (origin == OMX_CURVE_ORIGINS_FBS_FIXED) {
+    s->live = 0;
+    s->ramping = 0;
+    s->stage = 0u;
+    s->dwelling = 0;
+  }
   return 0;
 }
 

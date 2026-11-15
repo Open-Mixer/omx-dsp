@@ -229,6 +229,7 @@ export class FbsPlace {
     s.origin = originIndex;
     s.gainDb = this.capGain(originIndex, gainDb);
     if (originIndex === ORIGIN.fbsLive && !s.live) s.adopt = true;
+    if (originIndex === ORIGIN.fbsFixed) this.leaveLadder(k);
     return true;
   }
 
@@ -351,6 +352,15 @@ export class FbsPlace {
       s.ramp = null;
       s.reclamps = this.takeMemory(s.freqHz);
     }
+  }
+
+  /** The fixed pool never lifts: a band re-tagged fixed leaves the release ladder where the edit left it. */
+  protected leaveLadder(k: number): void {
+    const s = this.slots[k]!;
+    s.live = false;
+    s.ramp = null;
+    s.stage = 0;
+    s.dwellStartMs = null;
   }
 
   /** Whether a pending band is adopted: only one whose origin is fbs-live at the tick. */
