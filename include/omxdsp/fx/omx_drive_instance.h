@@ -120,7 +120,7 @@ typedef struct {
  * reading as the declared default), the pre-shaper gain from `amount` (dB), the bias weight from `character`
  * (-1..+1, folded to (character + 1) / 2), the wet share from `mix` (percent) and the make-up from `trim` (dB),
  * each clamped into its declared travel, a non-finite word reading as the declared default. The one mapping:
- * omx_drive_instance_resolve() applies it to the atom it runs, and omx_curve_points() draws the drive's
+ * {@link omx_drive_instance_resolve} applies it to the atom it runs, and omx_curve_points() draws the drive's
  * transfer curve through it, so the curve is what the kernel runs at those words. Pure.
  * @thread any
  */
