@@ -795,6 +795,12 @@ flavours: $(LIBS_ALL) test/omxdsp_flavour.c $(HEADERS) | $(BUILD)
 	CC="$(CC)" NM="$(NM)" bash tools/flavour-check.sh $(BUILD)/flavour "$(TESTFLAGS)" \
 	  $(LIB) $(LIB_CONTRACTS) $(LIB_TSAN)
 
+# flavour-check's TSan probe names its own failure (it does not link; TSan's mapping fatal; anything else) and runs
+# under setarch -R where that is allowed: a stand-in compiler and setarch act out each case.
+.PHONY: flavour-probe-sabotage
+flavour-probe-sabotage: $(LIBS_ALL) test/omxdsp_flavour.c tools/flavour-check.sh test/flavour-probe-sabotage.sh | $(BUILD)
+	CC="$(CC)" NM="$(NM)" TMPDIR="$(abspath $(BUILD))" bash test/flavour-probe-sabotage.sh $(LIB) $(LIB_CONTRACTS) $(LIB_TSAN) "$(TESTFLAGS)"
+
 # copy-check runs alone, before the rest: under the test job's -j it once missed a planted copy
 # while the other checks ran beside it (#227), and a check that can miss a planted copy can pass a
 # real one. The rest runs in parallel from a second make, which shares the parent's job slots.
@@ -996,7 +1002,7 @@ check-package: $(CHECK_PACKAGE)
 	@echo "omxdsp: make check-package green"
 
 .PHONY: test-parallel
-test-parallel: lib checks gen-once suite negative magnitude-sabotage eq-sabotage curve-sabotage meter-view-sabotage rta-bands-sabotage geq-true-sabotage delay-taps-sabotage align-fdelay-sabotage pitch-rates-sabotage instance-rates-sabotage bandwidth-q-table bandwidth-q-sabotage eq-default-bands consumer perturb fdelay-sabotage doppler-sabotage onepole-sabotage note-map-sabotage threads threads-sabotage test-fx test-analysis test-engine-kernels test-mix flavours fastmath fastmath-diff fastmath-sabotage fastmath-plain fastmath-partial rt-gate rt-gate-sabotage
+test-parallel: lib checks gen-once suite negative magnitude-sabotage eq-sabotage curve-sabotage meter-view-sabotage rta-bands-sabotage geq-true-sabotage delay-taps-sabotage align-fdelay-sabotage pitch-rates-sabotage instance-rates-sabotage bandwidth-q-table bandwidth-q-sabotage eq-default-bands consumer perturb fdelay-sabotage doppler-sabotage onepole-sabotage note-map-sabotage threads threads-sabotage test-fx test-analysis test-engine-kernels test-mix flavours flavour-probe-sabotage fastmath fastmath-diff fastmath-sabotage fastmath-plain fastmath-partial rt-gate rt-gate-sabotage
 
 # ---- omx-rta-read (tools/omx-rta-read): the spectrum of a JACK signal, read and never fed; built where jack.pc is found
 #   make rta-read           the program

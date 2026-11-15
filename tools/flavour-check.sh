@@ -47,10 +47,27 @@ echo "flavour-check: on $PLAIN the same consumer fails, as it must"
 # where the shadow goes: "FATAL: ThreadSanitizer: unexpected memory mapping", by chance, run to run. The TSan programs
 # therefore run under `setarch -R` (no address randomisation) wherever it is allowed; where it is not (a container
 # whose seccomp refuses the personality) they run as they are, and that one fatal, by its own words, is NOT RUN.
+# The probe, an empty TSan program, says first whether TSan can be read here at all, and when it cannot, it says why
+# in its own words: it does not link, it hit the mapping fatal, or it failed some other way (its first line, its exit).
 NOASLR=()
 if command -v setarch > /dev/null && setarch "$(uname -m)" -R true 2> /dev/null; then NOASLR=(setarch "$(uname -m)" -R); fi
 printf 'int main(void) { return 0; }\n' > "$OUT/probe.c"
-if $CC -fsanitize=thread -o "$OUT/probe" "$OUT/probe.c" 2>/dev/null && "${NOASLR[@]}" "$OUT/probe" 2>/dev/null; then
+probe_ok=0
+if ! plink="$($CC -fsanitize=thread -o "$OUT/probe" "$OUT/probe.c" 2>&1)"; then
+  echo "flavour-check: NOT RUN — the TSan probe does not link: $(grep -m1 . <<< "$plink")"
+else
+  pout="$("${NOASLR[@]}" "$OUT/probe" 2>&1)"; prc=$?
+  if [ "$prc" -eq 0 ]; then
+    probe_ok=1
+  elif grep -q 'ThreadSanitizer: unexpected memory mapping' <<< "$pout"; then
+    if [ "${#NOASLR[@]}" -eq 0 ]; then why="address randomisation, and setarch -R is not allowed here"
+    else why="even under ${NOASLR[*]}"; fi
+    echo "flavour-check: NOT RUN — the TSan probe: $(grep -m1 'unexpected memory mapping' <<< "$pout") ($why)"
+  else
+    echo "flavour-check: NOT RUN — the TSan probe does not run: $(grep -m1 . <<< "$pout") (exit $prc)"
+  fi
+fi
+if [ "$probe_ok" = 1 ]; then
   # shellcheck disable=SC2086
   $CC $FLAGS -fsanitize=thread -o "$OUT/tsan" test/omxdsp_flavour.c "$TSAN" -lm || fail "the consumer does not link the TSan archive"
   if ! tout="$(TSAN_OPTIONS="halt_on_error=1 exitcode=66" "${NOASLR[@]}" "$OUT/tsan" 2>&1)"; then
@@ -63,7 +80,5 @@ if $CC -fsanitize=thread -o "$OUT/probe" "$OUT/probe.c" 2>/dev/null && "${NOASLR
     printf '%s\n' "$tout"
     echo "flavour-check: the TSan consumer reads the contracts${NOASLR[*]:+ (under ${NOASLR[*]})}"
   fi
-else
-  echo "flavour-check: NOT RUN — the TSan consumer: the toolchain does not link and run -fsanitize=thread here"
 fi
 echo "flavour-check: RAN — a contracts consumer reads the compiled unit's contracts through the contracts archive"
