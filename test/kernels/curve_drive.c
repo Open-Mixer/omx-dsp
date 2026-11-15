@@ -16,8 +16,13 @@
 #include <omxdsp/omx_curve.h>
 
 #define CD_POINTS 129u
-/* The shaper block may run libmvec's vector tanhf where the curve runs the scalar one: a few float ULPs, in dB. */
-#define CD_TOL 1e-5
+/* The kernel may run libmvec's vector tanhf where the curve runs the scalar one: a few float ULPs of the shaper,
+ * 4e-7 full scale at most, as on the linear axis. On the dB axis that is a relative error, largest where the
+ * output is small or the biased shaper's `shape(u + b) - shape(b)` cancels, so the bound is read at each point's
+ * own level: 20 log10(1 + 4e-7 / |out|), plus a float ULP of the dB conversion. */
+#define CD_TOL_LIN 4e-7
+#define CD_TOL_DB_ULP 4e-6
+static double cd_tol(double out_db) { return 20.0 * log10(1.0 + CD_TOL_LIN / pow(10.0, out_db / 20.0)) + CD_TOL_DB_ULP; }
 
 static uint32_t cd_draw(int model, double amount, double tone, double mix, double output, int with_tone, int with_mix,
                         int with_output, double *x, double *y, int *code) {
@@ -76,7 +81,7 @@ static void arm_curve_drive(void) {
   const float tones[] = {-0.5f, 0.0f, 1.0f};
 
   /* 1. Against the kernel run, at tone -1: every shaper, drive, mix and trim, sample for sample. */
-  double worst = 0.0;
+  double worst = 0.0, ratio = 0.0;
   uint32_t cells = 0;
   for (uint32_t m = 0; m < 4u; m++)
     for (uint32_t a = 0; a < 4u; a++)
@@ -89,14 +94,16 @@ static void arm_curve_drive(void) {
           for (uint32_t i = 0; i < n; i++) {
             const double e = fabs(y[i] - (double)k[i]);
             if (e > worst) worst = e;
+            if (e / cd_tol((double)k[i]) > ratio) ratio = e / cd_tol((double)k[i]);
           }
           cells++;
         }
-  ok(cells == 4u * 4u * 3u * 3u && worst <= CD_TOL, "the drive curve is the kernel run on its x (tone -1, 144 cells)", worst, CD_TOL);
-  printf("  curve-drive: worst |curve - kernel run| %.3g dB over %u cells of %u levels (tone -1)\n", worst, cells, CD_POINTS);
+  ok(cells == 4u * 4u * 3u * 3u && ratio <= 1.0, "the drive curve is the kernel run on its x (tone -1, 144 cells)", ratio, 1.0);
+  printf("  curve-drive: worst |curve - kernel run| %.3g dB, worst share of its bound %.2f, over %u cells of %u levels (tone -1)\n", worst, ratio, cells, CD_POINTS);
 
   /* 2. With a bias: against the kernel's shaper block under the instance's atom. */
   worst = 0.0;
+  ratio = 0.0;
   for (uint32_t m = 0; m < 4u; m++)
     for (uint32_t a = 0; a < 4u; a++)
       for (uint32_t c = 0; c < 3u; c++) {
@@ -106,10 +113,11 @@ static void arm_curve_drive(void) {
         for (uint32_t i = 0; i < n; i++) {
           const double e = fabs(y[i] - (double)k[i]);
           if (e > worst) worst = e;
+          if (e / cd_tol((double)k[i]) > ratio) ratio = e / cd_tol((double)k[i]);
         }
       }
-  ok(worst <= CD_TOL, "a biased drive curve is the kernel's shaper block (48 cells)", worst, CD_TOL);
-  printf("  curve-drive: worst |curve - kernel shaper block| %.3g dB over 48 biased cells\n", worst);
+  ok(ratio <= 1.0, "a biased drive curve is the kernel's shaper block (48 cells)", ratio, 1.0);
+  printf("  curve-drive: worst |curve - kernel shaper block| %.3g dB, worst share of its bound %.2f, over 48 biased cells\n", worst, ratio);
 
   /* 3. The axis: dB in, dB out. The default grid is driveLevelMinDb..driveLevelMaxDb, both edges; the level out
    * never falls as the level in rises; low in the grid the soft shaper alone is its drive (unity small-signal

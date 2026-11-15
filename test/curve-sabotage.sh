@@ -73,9 +73,9 @@ run default-q 's|                      : (double)omx_eq_lv2_clamp_q(kind == OMX_
 run limiter 's|  const float r = ratio ? (float)omx_curve_term_value(ratio) : INFINITY, k|  const float r = ratio ? (float)omx_curve_term_value(ratio) : 4.0f, k|'
 run slope-enum 's|  if (!f \|\| !s \|\| s->unit != OMX_CURVE_UNITS_DB) return OMX_CURVE_TERM_MISSING;|  if (!f \|\| !s) return OMX_CURVE_TERM_MISSING;|'
 run drive-bias 's|  const struct omx_drive_bias bias = omx_drive_bias_for(o.curve, o.even_w);|  const struct omx_drive_bias bias = omx_drive_bias_for(o.curve, 0.0f);|'
-run drive-mix 's|    y\[i\] = (double)((dry + o.mix \* delta) \* o.trim_lin);|    y[i] = (double)((dry + delta) * o.trim_lin);|'
-run drive-trim 's|    y\[i\] = (double)((dry + o.mix \* delta) \* o.trim_lin);|    y[i] = (double)(dry + o.mix * delta);|'
-run drive-exciter 's|    const float delta = exciter ? wet : wet - dry;|    const float delta = exciter \&\& 0 ? wet : wet - dry;|'
+run drive-mix 's|  return (dry + o->mix \* delta) \* o->trim_lin;|  return (dry + delta) * o->trim_lin;|'
+run drive-trim 's|  return (dry + o->mix \* delta) \* o->trim_lin;|  return dry + o->mix * delta;|'
+run drive-exciter 's|  const float delta = o->curve == OMX_DRIVE_EXCITER ? wet : wet - dry;|  const float delta = wet - dry;|'
 run drive-tone 's|tone ? (float)omx_curve_term_value(tone) : -1.0f,|tone ? (float)omx_curve_term_value(tone) : 0.0f,|'
 run drive-extents 's|    lo = OMX_CURVE_EXTENTS_DRIVE_LEVEL_MIN_DB;|    lo = -80.0;|'
 echo "curve-sabotage: all eighteen sabotages are caught"

@@ -18,10 +18,10 @@
  * - `transfer_curve`: input dB to output dB over the grid, `x + g(x)` with `g` omx_gaincomp_db(), or
  *   omx_gaincomp_db_shifted() for a gate whose knee range omx_gate_knee() resolves, the make-up added when a
  *   `makeup` term is present;
- * - a `transfer_curve` of the `drive` family: the drive kernel's static path in its own linear, signed units,
- *   sample in to sample out, through the kernel's own control mapping (omx_drive_instance_controls()) and its
- *   own biased shaper (omx_drive_sample()), faded by the mix and scaled by the trim as omx_drive_process() does
- *   on the full band (omx_curve_drive()).
+ * - a `transfer_curve` of the `drive` family: input dB to output dB like every transfer_curve, a steady level
+ *   through the drive kernel's static path, its own control mapping (omx_drive_instance_controls()) and its own
+ *   biased shaper (omx_drive_sample()), faded by the mix and scaled by the trim as omx_drive_process() does on
+ *   the full band (omx_curve_drive(), the sample itself omx_curve_drive_sample()).
  *
  * A missing term is a code, never a default (CURVE_CODES): no curve is drawn from a guess. The defaults that
  * are not guesses are the switches (a band or head filter with no `on` term runs) and the corner of a gain
@@ -451,22 +451,38 @@ static inline uint32_t omx_curve_transfer(const struct omx_curve_request *rq, do
 }
 
 /**
- * @brief The `drive` family's `transfer_curve`: the drive kernel's static path, sample in to sample out, from
- *        `x_min` to `x_max` in `points` evenly spaced samples, both edges included.
+ * @brief The drive kernel's static path at one sample: what omx_drive_process() does to `dry` on the full band, in
+ *        its float arithmetic. The biased shaper's output at `drive * dry`, less the dry (added whole for the
+ *        exciter, which runs in parallel), faded in by the mix, then the trim. Signed and linear: the waveshape,
+ *        which the drive's transfer_curve reads at a steady level's sample, and a later display kind draws as it is.
+ * @param o The atom's static controls (omx_drive_instance_controls()).
+ * @param bias The shaper's bias (omx_drive_bias_for()).
+ * @param dry The input sample.
+ * @return The output sample.
+ * @thread any
+ */
+static inline float omx_curve_drive_sample(const struct omx_drive *o, const struct omx_drive_bias *bias, float dry) {
+  const float wet = omx_drive_sample(o->curve, o->drive_lin * dry, bias);
+  const float delta = o->curve == OMX_DRIVE_EXCITER ? wet : wet - dry;
+  return (dry + o->mix * delta) * o->trim_lin;
+}
+
+/**
+ * @brief The `drive` family's `transfer_curve`: a steady input level in dB to the level the drive kernel's static
+ *        path gives it, in dB, from `x_min` to `x_max` in `points` evenly spaced levels, both edges included.
  *
  * Needs `drive` (dB) and `model` (the shaper, a DRIVE_CURVES index); `tone` (the character, -1..+1) reads -1,
  * `mix` 100 % and `output` 0 dB where the request binds none, so a card's picture, which draws no make-up and no
  * parallel mix, asks for neither. The words go through omx_drive_instance_controls(), the mapping the instance
- * runs (each clamped into its travel; a `model` that is no shaper's index reads as the instance's default), and
- * each sample through what omx_drive_process() does to it on the full band, in its float arithmetic:
- * `dry + mix * delta`, `delta` the biased shaper's output at `drive * x` less the dry (added whole for the
- * exciter, which runs in parallel), then the trim. What is not a function of one sample is not drawn: the band
- * split, the oversampler, the DC blocker, the roll-off and the auto-gain.
+ * runs (each clamped into its travel; a `model` that is no shaper's index reads as the instance's default). Each
+ * level's steady sample, omx_db_to_lin(x), goes through omx_curve_drive_sample(), what omx_drive_process() does
+ * to it on the full band, and its output is read back in dB by omx_lin_to_db(). What is not a function of one
+ * sample is not drawn: the band split, the oversampler, the DC blocker, the roll-off and the auto-gain.
  * @param rq The request, kind and family checked.
- * @param x_min The lowest input sample, full scale.
- * @param x_max The highest input sample, above `x_min`.
- * @param x The input samples.
- * @param y The output samples.
+ * @param x_min The lowest input level, dB.
+ * @param x_max The highest input level, dB, above `x_min`.
+ * @param x The input levels, dB.
+ * @param y The output levels, dB.
  * @param room Room in `x` and in `y`.
  * @param code The answer's code.
  * @return The points written; 0 with a code other than OMX_CURVE_OK.
@@ -490,15 +506,11 @@ static inline uint32_t omx_curve_drive(const struct omx_curve_request *rq, doubl
                               output ? (float)omx_curve_term_value(output) : 0.0f,
                               mv >= (double)OMX_DRIVE_SOFT && mv <= (double)OMX_DRIVE_EXCITER && mv == floor(mv) ? (int)mv : -1);
   const struct omx_drive_bias bias = omx_drive_bias_for(o.curve, o.even_w);
-  const int exciter = o.curve == OMX_DRIVE_EXCITER;
   const uint32_t n = rq->points;
   for (uint32_t i = 0; i < n; i++) {
     const double xi = i + 1u == n ? x_max : x_min + (x_max - x_min) * (double)i / (double)(n - 1u);
-    const float dry = (float)xi;
-    const float wet = omx_drive_sample(o.curve, o.drive_lin * dry, &bias);
-    const float delta = exciter ? wet : wet - dry;
     x[i] = xi;
-    y[i] = (double)((dry + o.mix * delta) * o.trim_lin);
+    y[i] = (double)omx_lin_to_db(omx_curve_drive_sample(&o, &bias, omx_db_to_lin((float)xi)));
   }
   *code = OMX_CURVE_OK;
   return n;
@@ -520,8 +532,8 @@ static inline uint32_t omx_curve_drive(const struct omx_curve_request *rq, doubl
  * `freqMinHz` to the lower of `freqMaxHz` and `nyquistFraction` of Nyquist, a transfer curve from `levelMinDb`
  * to `levelMaxDb`, a drive's from `driveLevelMinDb` to `driveLevelMaxDb`.
  * @param rq The request.
- * @param x The x of each point, ascending: Hz, input dB, or a drive's input sample.
- * @param y The y of each point: dB, output dB, or a drive's output sample.
+ * @param x The x of each point, ascending: Hz, or input dB.
+ * @param y The y of each point: dB, or output dB.
  * @param room Room in `x` and in `y`: CURVE_POINTS_MAX always suffices.
  * @param ex NULL, or the marks of the bands whose origin is not `user` and, when the request sets `user_only`, the
  *        curve over the `user` bands alone at the same x (OMX_CURVE_ROOM when `user_only` asks for it and `y_user` is
