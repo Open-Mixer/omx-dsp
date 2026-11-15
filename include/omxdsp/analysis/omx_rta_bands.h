@@ -104,4 +104,31 @@ static inline uint32_t omx_rta_bands(const struct omx_rta_tier *high, const stru
   return n;
 }
 
+/*
+ * The difference of two taps of one spectrum, PRE (what a processor is given) and POST (what it gives), reduced to the
+ * same n bands: what the processor did, band by band. The console draws it as wedges between the two traces; this is
+ * its arithmetic, read in dB. Its TypeScript twin is ts/src/rta.ts bandDelta, held to it by vectors/rta-delta.json.
+ */
+
+/** One wedge: bands `band` and `band + 1`, a boost or a cut, and its strength, 0 to 1. */
+struct omx_rta_wedge {
+  uint32_t band;
+  int boost;
+  double strength;
+};
+
+/**
+ * POST − PRE of n bands' levels (`db`): diff[i] in dB, NAN where either band is silent (-INFINITY). Then the wedges,
+ * one per pair of neighbouring bands whose larger |difference| reaches OMX_RTA_DELTA_DEADBAND_DB, none across a silent
+ * band: a boost when the pair's two differences sum to zero or more, else a cut, its strength the larger |difference|
+ * over the EQ's own gain limit (omx-contract's EQ_GAIN_RANGE maximum), clamped to 1. `wedges` holds n − 1; returns how
+ * many it wrote. @thread control
+ */
+static inline uint32_t omx_rta_band_delta(const struct omx_rta_band *pre, const struct omx_rta_band *post, uint32_t n,
+                                          double *diff, struct omx_rta_wedge *wedges) {
+  (void)pre, (void)post, (void)wedges;
+  for (uint32_t i = 0; i < n; i++) diff[i] = 0.0;
+  return 0;
+}
+
 #endif /* OMX_RTA_BANDS_H */

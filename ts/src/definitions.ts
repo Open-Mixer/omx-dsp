@@ -41,6 +41,9 @@ export const RTA_LOW_ADVANCE = 0.25;
 /** The frequencies of a spectrum display's labelled vertical graticule lines, Hz, on the log frequency axis: the decades and their 2 and 5 steps from 20 Hz to 20 kHz, every surface. (Hz) @see data/kernels/rta.json */
 export const RTA_GRID_FREQS: readonly number[] = [20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000];
 
+/** The smallest difference between two taps of a spectrum, POST - PRE in dB, that draws a wedge: a pair of neighbouring bands is a wedge when either band's difference reaches it. The console's overlay held it as 0.004 of its 100 dB span. (dB) @see data/kernels/rta.json */
+export const RTA_DELTA_DEADBAND_DB = 0.4;
+
 /** Where the low-pass section hands its poles over from the matched pair to the prewarped bilinear pair, as fractions of Nyquist, and how that band moves with Q. At `qHi` (1/sqrt(2), the 12 dB Butterworth) the band runs from `loAtHiQ` to `hiAtHiQ`; at `qLo` (0.5412, the low-Q half of the 24 dB Butterworth) and below, from `loAtLoQ` to `hiAtLoQ`; between the two it moves linearly. Above `qHi` the prototype peaks, and the band's end moves down to `hiAtPeakQ` by `qPeak`, held above it. Below the band the low-pass is the matched design unchanged. @see data/kernels/eq.json */
 export const LOWPASS_HANDOVER = {
   qHi: 0.7071067811865476,

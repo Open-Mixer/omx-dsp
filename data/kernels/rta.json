@@ -198,6 +198,19 @@
         10000,
         20000
       ]
+    },
+    "RTA_DELTA_DEADBAND_DB": {
+      "kind": "scalar",
+      "source": {
+        "from": {
+          "link": "web-ui/app/utils/eqCurveGeom.ts#DELTA_DEADBAND",
+          "at": "openmixer@caaa59d8f5e9532407bb135a6f05ca918798a0ba"
+        },
+        "impl": "include/omxdsp/analysis/omx_rta_bands.h#omx_rta_band_delta"
+      },
+      "doc": "The smallest difference between two taps of a spectrum, POST - PRE in dB, that draws a wedge: a pair of neighbouring bands is a wedge when either band's difference reaches it. The console's overlay held it as 0.004 of its 100 dB span.",
+      "unit": "dB",
+      "value": 0.4
     }
   }
 }

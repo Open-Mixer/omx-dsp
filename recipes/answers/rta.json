@@ -147,6 +147,16 @@
       ],
       "doc": "The frequencies of a spectrum display's labelled vertical graticule lines, Hz, on the log frequency axis: the decades and their 2 and 5 steps from 20 Hz to 20 kHz, every surface.",
       "unit": "Hz"
+    },
+    {
+      "name": "RTA_DELTA_DEADBAND_DB",
+      "source": {
+        "path": "eqCurveGeom.ts",
+        "export": "DELTA_DEADBAND"
+      },
+      "value": 0.4,
+      "doc": "The smallest difference between two taps of a spectrum, POST - PRE in dB, that draws a wedge: a pair of neighbouring bands is a wedge when either band's difference reaches it. The console's overlay held it as 0.004 of its 100 dB span.",
+      "unit": "dB"
     }
   ]
 }
