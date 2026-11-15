@@ -43,11 +43,26 @@ fi
 printf '%s\n' "$out" | grep -q '^flavour: FAIL' || fail "the consumer on $PLAIN failed without naming the flavour: $out"
 echo "flavour-check: on $PLAIN the same consumer fails, as it must"
 
+# TSan maps its shadow at fixed addresses, and a kernel with more ASLR bits (vm.mmap_rnd_bits 32) can place the program
+# where the shadow goes: "FATAL: ThreadSanitizer: unexpected memory mapping", by chance, run to run. The TSan programs
+# therefore run under `setarch -R` (no address randomisation) wherever it is allowed; where it is not (a container
+# whose seccomp refuses the personality) they run as they are, and that one fatal, by its own words, is NOT RUN.
+NOASLR=()
+if command -v setarch > /dev/null && setarch "$(uname -m)" -R true 2> /dev/null; then NOASLR=(setarch "$(uname -m)" -R); fi
 printf 'int main(void) { return 0; }\n' > "$OUT/probe.c"
-if $CC -fsanitize=thread -o "$OUT/probe" "$OUT/probe.c" 2>/dev/null && "$OUT/probe" 2>/dev/null; then
+if $CC -fsanitize=thread -o "$OUT/probe" "$OUT/probe.c" 2>/dev/null && "${NOASLR[@]}" "$OUT/probe" 2>/dev/null; then
   # shellcheck disable=SC2086
   $CC $FLAGS -fsanitize=thread -o "$OUT/tsan" test/omxdsp_flavour.c "$TSAN" -lm || fail "the consumer does not link the TSan archive"
-  TSAN_OPTIONS="halt_on_error=1 exitcode=66" "$OUT/tsan" || fail "the TSan consumer on $TSAN"
+  if ! tout="$(TSAN_OPTIONS="halt_on_error=1 exitcode=66" "${NOASLR[@]}" "$OUT/tsan" 2>&1)"; then
+    if [ "${#NOASLR[@]}" -eq 0 ] && grep -q 'ThreadSanitizer: unexpected memory mapping' <<< "$tout"; then
+      echo "flavour-check: NOT RUN — the TSan consumer: $(grep -m1 'unexpected memory mapping' <<< "$tout") (address randomisation, and setarch -R is not allowed here)"
+    else
+      printf '%s\n' "$tout"; fail "the TSan consumer on $TSAN"
+    fi
+  else
+    printf '%s\n' "$tout"
+    echo "flavour-check: the TSan consumer reads the contracts${NOASLR[*]:+ (under ${NOASLR[*]})}"
+  fi
 else
   echo "flavour-check: NOT RUN — the TSan consumer: the toolchain does not link and run -fsanitize=thread here"
 fi
