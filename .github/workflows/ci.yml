@@ -56,10 +56,10 @@ jobs:
       - name: Install the build tools
         run: |
           if command -v dnf >/dev/null; then
-            dnf install -y --setopt=install_weak_deps=False gcc make binutils gawk diffutils git curl tar gzip dnf5-plugins pkgconf-pkg-config
+            dnf install -y --setopt=tsflags=nodocs --setopt=install_weak_deps=False gcc make binutils gawk diffutils git curl tar gzip dnf5-plugins pkgconf-pkg-config
           else
             apt-get update -qq
-            apt-get install -y --no-install-recommends build-essential gawk diffutils git ca-certificates curl pkgconf dpkg-dev
+            apt-get -o Dpkg::Options::=--force-unsafe-io install -y --no-install-recommends build-essential gawk diffutils git ca-certificates curl pkgconf dpkg-dev
           fi
 
       - uses: actions/checkout@v4
@@ -79,9 +79,9 @@ jobs:
         run: |
           set -euo pipefail
           if command -v dnf >/dev/null; then
-            dnf builddep -y --setopt=install_weak_deps=False packaging/omx-dsp.spec
+            dnf builddep -y --setopt=tsflags=nodocs --setopt=install_weak_deps=False packaging/omx-dsp.spec
           else
-            apt-get build-dep -y --no-install-recommends ./
+            apt-get -o Dpkg::Options::=--force-unsafe-io build-dep -y --no-install-recommends ./
           fi
           pkg-config --modversion omx-contract
           sh tools/contract-include.sh
@@ -136,7 +136,7 @@ jobs:
       - name: Install the build tools
         run: |
           apt-get update -qq
-          apt-get install -y --no-install-recommends build-essential gawk diffutils git ca-certificates curl pkgconf dpkg-dev
+          apt-get -o Dpkg::Options::=--force-unsafe-io install -y --no-install-recommends build-essential gawk diffutils git ca-certificates curl pkgconf dpkg-dev
       - uses: actions/checkout@v4
 
       - name: The checkout is a git directory this job may read
@@ -144,7 +144,7 @@ jobs:
       - name: Add the OpenMixer repository
         uses: Open-Mixer/.github/.github/actions/add-openmixer@openmixer-v1
       - name: Install the build dependencies from the OpenMixer channel
-        run: apt-get build-dep -y --no-install-recommends ./
+        run: apt-get -o Dpkg::Options::=--force-unsafe-io build-dep -y --no-install-recommends ./
       # the parallel jobs from the job's CPU quota and the runner's declared CPUs, never the host's nproc
       - name: The parallel jobs this runner may run
         uses: Open-Mixer/.github/.github/actions/jobs@openmixer-v1
@@ -184,10 +184,10 @@ jobs:
         run: |
           set -euo pipefail
           if command -v dnf >/dev/null; then
-            dnf install -y --setopt=install_weak_deps=False git gcc make gawk dnf5-plugins pkgconf-pkg-config
+            dnf install -y --setopt=tsflags=nodocs --setopt=install_weak_deps=False git gcc make gawk dnf5-plugins pkgconf-pkg-config
           else
             apt-get update -qq
-            apt-get install -y --no-install-recommends git ca-certificates curl build-essential gawk pkgconf
+            apt-get -o Dpkg::Options::=--force-unsafe-io install -y --no-install-recommends git ca-certificates curl build-essential gawk pkgconf
           fi
 
       - name: Add the OpenMixer repository
@@ -197,9 +197,9 @@ jobs:
         run: |
           set -euo pipefail
           if command -v dnf >/dev/null; then
-            dnf install -y "omx-contract-devel-$OLD"
+            dnf install -y --setopt=tsflags=nodocs "omx-contract-devel-$OLD"
           else
-            apt-get install -y --no-install-recommends "libomx-contract-dev=$OLD"
+            apt-get -o Dpkg::Options::=--force-unsafe-io install -y --no-install-recommends "libomx-contract-dev=$OLD"
           fi
           test "$(pkg-config --modversion omx-contract)" = "$OLD"
 
@@ -354,7 +354,7 @@ jobs:
     steps:
       - name: Install the build tools
         run: |
-          dnf install -y --setopt=install_weak_deps=False git rpm-build dnf5-plugins gcc make tar gzip diffutils pkgconf-pkg-config python3
+          dnf install -y --setopt=tsflags=nodocs --setopt=install_weak_deps=False git rpm-build dnf5-plugins gcc make tar gzip diffutils pkgconf-pkg-config python3
 
       - name: Add the OpenMixer repository
         uses: Open-Mixer/.github/.github/actions/add-openmixer@openmixer-v1
@@ -409,7 +409,7 @@ jobs:
       - name: A consumer builds against omx-dsp-devel
         run: |
           set -euo pipefail
-          dnf install -y --setopt=install_weak_deps=False rpms/omx-dsp-devel-[0-9]*.${{ matrix.arch }}.rpm rpms/omx-dsp-contract-[0-9]*.noarch.rpm
+          dnf install -y --setopt=tsflags=nodocs --setopt=install_weak_deps=False rpms/omx-dsp-devel-[0-9]*.${{ matrix.arch }}.rpm rpms/omx-dsp-contract-[0-9]*.noarch.rpm
           test "$(pkg-config --modversion omxdsp)" = "$(make -s version)"
           pkg-config --cflags omxdsp | grep -q -- '-ffp-contract=off'
           gcc $(pkg-config --cflags omxdsp) -Itest/fx -include test/support/log10f_subst.h -O2 -o /tmp/golden test/fx/delay_golden.test.c $(pkg-config --libs omxdsp)
@@ -448,7 +448,7 @@ jobs:
       - name: Install the build tools
         run: |
           apt-get update -qq
-          apt-get install -y --no-install-recommends ca-certificates curl git dpkg-dev debhelper build-essential lintian gawk pkgconf python3
+          apt-get -o Dpkg::Options::=--force-unsafe-io install -y --no-install-recommends ca-certificates curl git dpkg-dev debhelper build-essential lintian gawk pkgconf python3
 
       - uses: actions/checkout@v4
         with:
@@ -465,7 +465,7 @@ jobs:
       - name: A consumer builds against libomxdsp-dev
         run: |
           set -euo pipefail
-          apt-get install -y --no-install-recommends ./debs/libomxdsp-dev_*.deb ./debs/omx-dsp-contract_*.deb ./debs/omx-rt-gate_*.deb
+          apt-get -o Dpkg::Options::=--force-unsafe-io install -y --no-install-recommends ./debs/libomxdsp-dev_*.deb ./debs/omx-dsp-contract_*.deb ./debs/omx-rt-gate_*.deb
           dpkg -L libomxdsp-dev > listing.txt   # read from a file: see the RPM job's listing
           # the contract directory is omx-dsp-contract's (omx-contract#150)
           ! grep -q '^/usr/share/omx-contract/' listing.txt
