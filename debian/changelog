@@ -1,3 +1,14 @@
+omx-dsp (0.32.3) unstable; urgency=medium
+
+  * flavour-check: the TSan consumer runs under setarch -R; where that is
+    not allowed, TSan's "unexpected memory mapping" is NOT RUN by name
+    instead of failing the build at random.
+  * The RPM spec's JACK build requirements (pkgconfig(jack) and jack2's
+    runtime); nothing in the library, its headers or the TypeScript twins
+    changes.
+
+ -- Pau Aliagas <linuxnow@gmail.com>  Sun, 15 Nov 2026 16:35:47 +0100
+
 omx-dsp (0.32.2) unstable; urgency=medium
 
   * rta: omx_rta_bands, the spectrum analyser's band reduction, and its

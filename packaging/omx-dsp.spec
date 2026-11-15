@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2026 Pau Aliagas <linuxnow@gmail.com>
 Name: omx-dsp
-Version: 0.32.2
+Version: 0.32.3
 Release: 1%{?dist}
 License: GPL-3.0-or-later
 Summary: The audio toolbox of the OpenMixer console, as a real-time-safe C library
@@ -148,6 +148,18 @@ Its documentation is on openmixer.org.
 %{_datadir}/omx-contract/contract.d/3/omx-dsp/
 
 %changelog
+* Sun Nov 15 2026 Pau Aliagas <linuxnow@gmail.com> - 0.32.3-1
+- packaging: the JACK headers by pkgconfig(jack) again, so the build image's
+  PipeWire JACK devel package satisfies them, and jack2's runtime
+  (jack-audio-connection-kit: jackd, libjack) by name for check-package's
+  omx-rt-gate host-buffer arm. 0.32.2's by-name jack2 devel requirement
+  conflicted with the preinstalled PipeWire one, and its RPMs were not built.
+  No built package requires jack2.
+- flavour-check: the TSan consumer runs under setarch -R; where that is not
+  allowed, TSan's "unexpected memory mapping" (address randomisation) is NOT
+  RUN by name instead of failing the package build at random.
+- Nothing in the library, its headers or the TypeScript twins changes.
+
 * Sun Nov 15 2026 Pau Aliagas <linuxnow@gmail.com> - 0.32.2-1
 - rta: omx_rta_bands, the spectrum analyser's band reduction (log-spaced bands
   from 20 Hz to the lower of 20 kHz and Nyquist, each band's RMS level and
