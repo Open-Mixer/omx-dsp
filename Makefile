@@ -430,6 +430,7 @@ checks:
 	bash tools/ci-matrix-follows-set.sh --self-test
 	bash tools/patch-names-check.sh
 	bash tools/patch-names-check.sh --self-test
+	bash test/patch-names-sabotage.sh
 	bash tools/gen-scratch-check.sh
 	bash tools/gen-scratch-check.sh --self-test
 	bash tools/fuzz-targets-check.sh
