@@ -41,6 +41,16 @@
 #                 as a wake: syscall(SYS_futex, <word>, FUTEX_WAKE or FUTEX_WAKE_PRIVATE, ...), both
 #                 spelled at the call. Any other operation, one in a variable, or one the call's
 #                 text does not show stays RT-BLOCK.
+#   thread-identity  the calling thread's own identity, read from its descriptor: pthread_self
+#                 (the thread pointer register: %fs on x86_64, TPIDR_EL0 on aarch64), pthread_equal
+#                 (a comparison of two such values) and pthread_gettid_np (glibc 2.42 and later:
+#                 the kernel id cached in the descriptor, no system call). Callable on any thread,
+#                 the audio thread among them: no system call, no allocation, no lock. A thread
+#                 pool needs it to know whether the audio thread that asks is the one it follows.
+#                 The narrowest kind: the gate names the three symbols it may hold
+#                 (THREAD_IDENTITY_RULED) and refuses at load a row of the class for any other;
+#                 pthread_getattr_np, pthread_getname_np and the like allocate or read /proc and
+#                 never enter it.
 #
 # The arm: externals-arm (tools/rt-gate/externals-arm.c, make rt-gate) calls each symbol over a
 # spread of arguments with the process's allocator interposed and requires zero allocations; every
