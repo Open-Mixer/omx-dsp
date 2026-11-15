@@ -1601,10 +1601,58 @@ static int callable_role(const char *field) {
 
 static void visit(int n);
 
+/* a futex wake through syscall, its operation spelled at the call: `syscall(SYS_futex, <word>,
+ * FUTEX_WAKE[_PRIVATE], ...)`, the first and third arguments read from the site's text (up to four
+ * lines from the column). The class `wake`, as sem_post is: it never waits. Any other operation,
+ * FUTEX_WAKE_OP among them, an operation held in a variable or one the text does not show reads
+ * red, as syscall is forbidden (forbidden.tbl). */
+static int syscall_is_futex_wake(const char *site) {
+  char *file;
+  int line, col;
+  if (!site_split(site, &file, &line, &col)) return 0;
+  struct srcfile *f = source(file);
+  free(file);
+  if (line < 1 || line > f->n || (size_t)col - 1 > strlen(f->lines[line - 1])) return 0;
+  char text[1024];
+  size_t have = 0;
+  for (int l = line; l <= f->n && l < line + 4; l++) {
+    const char *s = f->lines[l - 1] + (l == line ? col - 1 : 0);
+    for (; *s && have + 2 < sizeof text; s++) text[have++] = *s;
+    text[have++] = ' ';
+  }
+  text[have] = 0;
+  const char *p = text;
+  if (strncmp(p, "syscall", 7) || isalnum((unsigned char)p[7]) || p[7] == '_') return 0;
+  p += 7;
+  while (*p == ' ' || *p == '\t') p++;
+  if (*p++ != '(') return 0;
+  /* the top-level arguments, each trimmed */
+  char arg[3][64];
+  int na = 0, depth = 0;
+  size_t an = 0;
+  for (; *p && na < 3; p++) {
+    if (depth == 0 && (*p == ',' || *p == ')')) {
+      while (an && arg[na][an - 1] == ' ') an--;
+      arg[na][an] = 0;
+      na++;
+      an = 0;
+      if (*p == ')') break;
+      continue;
+    }
+    if (*p == '(' || *p == '[') depth++;
+    else if (*p == ')' || *p == ']') depth--;
+    if (na < 3 && (an || (*p != ' ' && *p != '\t')) && an + 1 < sizeof arg[0]) arg[na][an++] = *p == '\t' ? ' ' : *p;
+  }
+  if (na < 3) return 0;
+  if (strcmp(arg[0], "SYS_futex") && strcmp(arg[0], "__NR_futex")) return 0;
+  return !strcmp(arg[2], "FUTEX_WAKE") || !strcmp(arg[2], "FUTEX_WAKE_PRIVATE");
+}
+
 static void call_to(int tgt_raw, const char *site) {
   const struct root *r = CUR_ROOT;
   int tgt = resolve(tgt_raw);
   const char *name = N[tgt].name;
+  if (!strcmp(name, "syscall") && syscall_is_futex_wake(site)) return;   /* the class wake */
   int fi = map_get(&FORB_MAP, name);
   if (fi >= 0) {
     red(FORB[fi].code, name, site, r);

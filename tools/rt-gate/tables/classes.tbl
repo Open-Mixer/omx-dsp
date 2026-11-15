@@ -37,6 +37,10 @@
 #                 omx-rt-gate.c), today one, jack_port_get_buffer (ruled 2026-11-15). Any other host call, JACK's
 #                 included, is refused at load in this class and enters it only by a ruling, with its own arm case.
 #                 Where JACK is absent the arm cannot call it: its case is skipped and named, never passed.
+#                 syscall has no row (it is forbidden); the gate itself reads one of its operations
+#                 as a wake: syscall(SYS_futex, <word>, FUTEX_WAKE or FUTEX_WAKE_PRIVATE, ...), both
+#                 spelled at the call. Any other operation, one in a variable, or one the call's
+#                 text does not show stays RT-BLOCK.
 #
 # The arm: externals-arm (tools/rt-gate/externals-arm.c, make rt-gate) calls each symbol over a
 # spread of arguments with the process's allocator interposed and requires zero allocations; every
