@@ -459,7 +459,8 @@ static inline uint32_t omx_curve_transfer(const struct omx_curve_request *rq, do
  * @param bias The shaper's bias (omx_drive_bias_for()).
  * @param dry The input sample.
  * @return The output sample.
- * @thread any
+ * @note Pure: it reads only its arguments.
+ * @thread control
  */
 static inline float omx_curve_drive_sample(const struct omx_drive *o, const struct omx_drive_bias *bias, float dry) {
   const float wet = omx_drive_sample(o->curve, o->drive_lin * dry, bias);
