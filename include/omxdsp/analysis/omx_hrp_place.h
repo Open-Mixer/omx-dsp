@@ -4,9 +4,10 @@
  * omx_hrp_place.h — the harmonic resonance processor's PLACEMENT and STEPPING in C: which bands a voice's
  * per-harmonic gains become, and how far one move takes a band toward its depth.
  *
- * The console placed HRP bands in its own TypeScript (core's harmonicBands, the server planter's stepToward)
- * while this library's HRP insert placed them inline in its analysis pass. They now share this placement: the
- * console's server calls it through its native addon, and omx_hrp_lv2.h calls it from its pass.
+ * The console placed HRP bands in its own TypeScript (core's harmonicBands, the server planter's stepToward);
+ * this is that placement in C, which the console's server calls through its native addon. This library's HRP
+ * insert (omx_hrp_lv2.h) keeps its own pass for now: it works in float cut magnitudes over omx_hrp_select's
+ * candidates, and it has no range drop, so moving it onto this placement changes what the insert cuts.
  * ts/src/hrp-place.ts is its TypeScript twin, and test/analysis/fixtures/hrp_place.vectors is the one vector
  * file the C test and the twin test both read.
  *
