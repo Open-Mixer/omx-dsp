@@ -15,6 +15,8 @@
 #   maths         libm: arithmetic on the arguments, no allocation, no lock. Domain errors set errno
 #                 (a thread-local word) and return a value; nothing waits.
 #   bulk-memory   memcpy, memmove, memset, memcmp: a bounded pass over caller-owned bytes.
+#                 strnlen joins them: it reads at most its bound, as memcmp reads at most its
+#                 length, and stops sooner at a NUL. strlen has no bound and no row.
 #   word-atomic   an atomic read-modify-write on one machine word, lock-free on the target. At -O0
 #                 the compiler emits lock-free atomics inline on x86_64; on aarch64 gcc's default
 #                 -moutline-atomics emits a call to libgcc's __aarch64_<op><size>_<order> helper
@@ -101,6 +103,7 @@ memcpy bulk-memory externals-arm:memcpy a bounded pass over caller-owned bytes
 memmove bulk-memory externals-arm:memmove a bounded pass over caller-owned bytes
 memset bulk-memory externals-arm:memset a bounded pass over caller-owned bytes
 memcmp bulk-memory externals-arm:memcmp a bounded pass over caller-owned bytes
+strnlen bulk-memory externals-arm:strnlen a pass over caller-owned bytes, bounded by its length argument
 
 clock_gettime clock externals-arm:clock_gettime CLOCK_MONOTONIC through the vDSO: no system call
 
