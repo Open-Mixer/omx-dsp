@@ -26,6 +26,46 @@
       "value": 32768,
       "doc": "The largest RTA FFT the native ring holds — generated into `omx_contract_limits.h` as `OMX_RTA_FFT_SIZE_MAX`.",
       "unit": ""
+    },
+    {
+      "name": "RTA_BAND_F_MIN",
+      "source": {
+        "path": "spectrum-bands.ts",
+        "export": "BAND_F_MIN"
+      },
+      "value": 20,
+      "doc": "The lowest frequency any spectrum band covers; below it is infrasonic and not drawn.",
+      "unit": "Hz"
+    },
+    {
+      "name": "RTA_BAND_F_MAX_CAP",
+      "source": {
+        "path": "spectrum-bands.ts",
+        "export": "BAND_F_MAX_CAP"
+      },
+      "value": 20000,
+      "doc": "The highest frequency any spectrum band covers, before the Nyquist clamp (omx_rta_band_f_max).",
+      "unit": "Hz"
+    },
+    {
+      "name": "RTA_TIER_CROSSOVER_HZ",
+      "source": {
+        "path": "spectrum-bands.ts",
+        "export": "TIER_CROSSOVER_HZ"
+      },
+      "value": 300,
+      "doc": "A band centred below this samples the LOW (decimated) tier when the reading carries one; at or above it, the HIGH tier. Where the high tier's ~5.86 Hz bins still give ~51 bins per octave, above the finest panel's density.",
+      "unit": "Hz"
+    },
+    {
+      "name": "RTA_BAND_GATE_DB",
+      "source": {
+        "path": "spectrum-bands.ts",
+        "export": "BAND_GATE_DB"
+      },
+      "value": -60,
+      "doc": "Quiet gate of the band reduction: when no band rises above this, every band reads as silence, so a rig's idle floor never draws as a flat block. Keyed on the loudest band, not per band.",
+      "unit": "dB"
     }
   ]
 }

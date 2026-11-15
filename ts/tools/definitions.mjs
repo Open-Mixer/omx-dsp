@@ -23,7 +23,8 @@ const HEADER = join(TS, '..', 'include', 'omxdsp', 'omxdsp_definitions.h');
 const OUT = join(TS, 'src', 'definitions.ts');
 /** data file -> the constants of it a twin reads */
 const CONSTANTS = {
-  'rta.json': ['RTA_TARGET_BIN_HZ', 'RTA_FFT_SIZE_MAX'],
+  'rta.json': ['RTA_TARGET_BIN_HZ', 'RTA_FFT_SIZE_MAX', 'RTA_BAND_F_MIN', 'RTA_BAND_F_MAX_CAP', 'RTA_TIER_CROSSOVER_HZ',
+    'RTA_BAND_GATE_DB'],
   'eq.json': ['LOWPASS_HANDOVER', 'EQ_BAND_DEFAULTS'],
   'fbs.json': ['FBS_MAX_CUT_DB', 'FBS_RECLAMP_DEEPEN_DB', 'FBS_RECLAMP_BACKOFF_CAP', 'FBS_LIFT_RAMP_MS', 'FBS_LIFT_RAMP_STEPS', 'FBS_RELEASE_RATIO',
     'FBS_RELEASE_DONE_DB', 'FBS_RELEASE_DWELL_MS', 'FBS_RING_HZ_MIN', 'FBS_RING_HZ_MAX', 'FBS_SAME_RING_HZ', 'FBS_SAME_RING_SHARE',

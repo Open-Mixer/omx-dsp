@@ -8,6 +8,18 @@ export const RTA_TARGET_BIN_HZ = 5.9;
 /** The largest RTA FFT the native ring holds — generated into `omx_contract_limits.h` as `OMX_RTA_FFT_SIZE_MAX`. @see data/kernels/rta.json */
 export const RTA_FFT_SIZE_MAX = 32768;
 
+/** The lowest frequency any spectrum band covers; below it is infrasonic and not drawn. (Hz) @see data/kernels/rta.json */
+export const RTA_BAND_F_MIN = 20;
+
+/** The highest frequency any spectrum band covers, before the Nyquist clamp (omx_rta_band_f_max). (Hz) @see data/kernels/rta.json */
+export const RTA_BAND_F_MAX_CAP = 20000;
+
+/** A band centred below this samples the LOW (decimated) tier when the reading carries one; at or above it, the HIGH tier. Where the high tier's ~5.86 Hz bins still give ~51 bins per octave, above the finest panel's density. (Hz) @see data/kernels/rta.json */
+export const RTA_TIER_CROSSOVER_HZ = 300;
+
+/** Quiet gate of the band reduction: when no band rises above this, every band reads as silence, so a rig's idle floor never draws as a flat block. Keyed on the loudest band, not per band. (dB) @see data/kernels/rta.json */
+export const RTA_BAND_GATE_DB = -60;
+
 /** Where the low-pass section hands its poles over from the matched pair to the prewarped bilinear pair, as fractions of Nyquist, and how that band moves with Q. At `qHi` (1/sqrt(2), the 12 dB Butterworth) the band runs from `loAtHiQ` to `hiAtHiQ`; at `qLo` (0.5412, the low-Q half of the 24 dB Butterworth) and below, from `loAtLoQ` to `hiAtLoQ`; between the two it moves linearly. Above `qHi` the prototype peaks, and the band's end moves down to `hiAtPeakQ` by `qPeak`, held above it. Below the band the low-pass is the matched design unchanged. @see data/kernels/eq.json */
 export const LOWPASS_HANDOVER = {
   qHi: 0.7071067811865476,
