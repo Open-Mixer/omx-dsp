@@ -1,0 +1,16 @@
+Breaks the check of fuzz/fuzz_fx.c:329 (the compressor takes only the rates of the oracle grid).
+Caught by the seed input "comp-22050" of fuzz_fx.
+
+diff --git a/include/omxdsp/fx/omx_comp_instance.h b/include/omxdsp/fx/omx_comp_instance.h
+index 9db40dc..345c375 100644
+--- a/include/omxdsp/fx/omx_comp_instance.h
++++ b/include/omxdsp/fx/omx_comp_instance.h
+@@ -242,7 +242,7 @@ static inline void omx_comp_instance_resolve(OmxCompInstance *s, int bypass,
+  * @thread control
+  */
+ static inline int omx_comp_instance_init(OmxCompInstance *s, float sr) {
+-  if (!omx_instance_bind_positive(s, sizeof(*s), sr)) return 0;
++  if (!omx_instance_bind(s, sizeof(*s), sr)) return 0;
+   s->sr = sr;
+   omx_dyn_state_init(&s->st, 1u);
+   omx_tilt_design(&s->tilt, 1.0, OMX_COMP_INSTANCE_TILT_PIVOT_HZ, (double)sr);

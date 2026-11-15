@@ -182,7 +182,7 @@ VERSION    := $(shell sed -n 's/^\#define OMXDSP_VERSION_\(MAJOR\|MINOR\|PATCH\)
 
 
 
-.PHONY: fuzz fuzz-run fuzz-corpus all lib test lint docs clean contract-dir definitions definitions-check contract-proof contract-tests test-tsan suite negative consumer gen-once perturb fdelay-sabotage doppler-sabotage onepole-sabotage threads threads-sabotage checks cost-prel test-fx test-analysis install version golden-write flavours bench-mixmatrix bench-gate bench-drive bench-flanger check-log10f strip-input-identity analysis-engine-identity test-mix mix-engine-identity test-engine-kernels engine-kernels-identity magnitude-sabotage eq-sabotage curve-golden curve-sabotage meter-view-golden meter-view-sabotage geq-true-sabotage delay-taps-sabotage align-fdelay-sabotage pitch-rates-sabotage instance-rates-sabotage bandwidth-q-table bandwidth-q-sabotage eq-default-bands eq-defaults-table room-ts-golden public-sources private-refs deps deps-check cost-deesser note-map-sabotage exports copy-check
+.PHONY: fuzz fuzz-run fuzz-sabotage fuzz-records fuzz-coverage fuzz-corpus all lib test lint docs clean contract-dir definitions definitions-check contract-proof contract-tests test-tsan suite negative consumer gen-once perturb fdelay-sabotage doppler-sabotage onepole-sabotage threads threads-sabotage checks cost-prel test-fx test-analysis install version golden-write flavours bench-mixmatrix bench-gate bench-drive bench-flanger check-log10f strip-input-identity analysis-engine-identity test-mix mix-engine-identity test-engine-kernels engine-kernels-identity magnitude-sabotage eq-sabotage curve-golden curve-sabotage meter-view-golden meter-view-sabotage geq-true-sabotage delay-taps-sabotage align-fdelay-sabotage pitch-rates-sabotage instance-rates-sabotage bandwidth-q-table bandwidth-q-sabotage eq-default-bands eq-defaults-table room-ts-golden public-sources private-refs deps deps-check cost-deesser note-map-sabotage exports copy-check
 
 all: lib
 
@@ -1048,6 +1048,12 @@ bench-flanger: tools/flanger-cost.c $(LIB) $(HEADERS) $(FX_HEADERS) | $(BUILD)
 #   make fuzz                   build every harness
 #   make fuzz-run FUZZ_TIME=60  run each for the budget from its seed corpus; red on any crash, the
 #                               crashing input left in fuzz/findings/
+#   make fuzz-sabotage          each patch of fuzz/sabotage/ must make its harness abort on a seed, at the
+#                               check its header names
+#   make fuzz-records           each check's mutant: and input: record, alone, must make that check abort on
+#                               that seed; red on a check with no record and no not-a-property line
+#   make fuzz-coverage          line coverage of the library each harness reaches over its seed corpus, red
+#                               below fuzz/coverage-floor.txt or on a property check no seed reaches
 #   make fuzz-corpus            regenerate fuzz/corpus/ from the library's own tables (fuzz/gen-corpus.c)
 FUZZ_CC        ?= clang
 FUZZ_TIME      ?= 60
@@ -1073,6 +1079,43 @@ fuzz: $(FUZZ_BINS)
 
 fuzz-run: fuzz
 	FUZZ_BUILD=$(FUZZ_BUILD) FUZZ_TIME=$(FUZZ_TIME) fuzz/run.sh $(FUZZ_HARNESSES)
+
+fuzz-sabotage:
+	FUZZ_BUILD=$(FUZZ_BUILD) MAKE="$(MAKE)" fuzz/sabotage.sh
+
+# Each record built plain and native with fuzz/standalone.c for its driver, no sanitizer, with the
+# contracts, as the OSS Verify coverage build is.
+fuzz-records:
+	FUZZ_BUILD=$(FUZZ_BUILD) FUZZ_CC=$(FUZZ_CC) FPFLAGS="$(FPFLAGS)" fuzz/records.sh $(FUZZ_HARNESSES)
+
+# The coverage witness: the same harnesses without sanitizers, instrumented for llvm-cov, each run once over
+# its seed corpus (-runs=0 executes the corpus and nothing else); the llvm-cov and llvm-profdata of
+# FUZZ_CC's own LLVM.
+FUZZ_COV_BUILD := $(FUZZ_BUILD)/cov
+FUZZ_COV_FLAGS := -O0 -g -std=gnu11 -DOMX_CONTRACTS $(FPFLAGS) -fprofile-instr-generate -fcoverage-mapping
+FUZZ_COV_OBJS  := $(patsubst src/%.c,$(FUZZ_COV_BUILD)/obj/%.o,$(SRC))
+LLVM_COV       ?= llvm-cov
+LLVM_PROFDATA  ?= llvm-profdata
+
+$(FUZZ_COV_BUILD)/obj/%.o: src/%.c $(HEADERS) $(ANALYSIS_HEADERS)
+	@mkdir -p $(@D)
+	$(FUZZ_CC) $(FUZZ_COV_FLAGS) $(INC) -c -o $@ $<
+
+$(FUZZ_COV_BUILD)/libomxdsp.a: $(FUZZ_COV_OBJS)
+	$(AR) rcs $@ $(FUZZ_COV_OBJS)
+
+$(FUZZ_COV_BUILD)/fuzz_%: fuzz/fuzz_%.c $(FUZZ_DEPS) $(FUZZ_COV_BUILD)/libomxdsp.a
+	$(FUZZ_CC) $(FUZZ_COV_FLAGS) -fsanitize=fuzzer $(INC) -Ifuzz $< $(FUZZ_COV_BUILD)/libomxdsp.a -lm -o $@
+
+fuzz-coverage: $(FUZZ_HARNESSES:%=$(FUZZ_COV_BUILD)/fuzz_%)
+	@set -e; for h in $(FUZZ_HARNESSES); do \
+	  rm -f $(FUZZ_COV_BUILD)/$$h.profraw; \
+	  LLVM_PROFILE_FILE=$(FUZZ_COV_BUILD)/$$h.profraw $(FUZZ_COV_BUILD)/fuzz_$$h -runs=0 \
+	      fuzz/corpus/$$h/ >$(FUZZ_COV_BUILD)/$$h.log 2>&1 || \
+	    { cat $(FUZZ_COV_BUILD)/$$h.log; echo "fuzz-coverage: fuzz_$$h failed on its own corpus"; exit 1; }; \
+	  $(LLVM_PROFDATA) merge -sparse $(FUZZ_COV_BUILD)/$$h.profraw -o $(FUZZ_COV_BUILD)/$$h.profdata; \
+	done
+	@LLVM_COV=$(LLVM_COV) fuzz/coverage.sh $(FUZZ_COV_BUILD) $(FUZZ_HARNESSES)
 
 $(FUZZ_BUILD)/fuzz-gen-corpus: fuzz/gen-corpus.c fuzz/fuzz_fx.c $(FUZZ_DEPS) $(LIB_CONTRACTS)
 	@mkdir -p $(@D)

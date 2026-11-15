@@ -1,0 +1,16 @@
+Breaks the check of fuzz/fuzz_note_map.c:210 (the transpose goes the other way).
+Caught by the seed input "channel-1-up-an-octave" of fuzz_note_map.
+
+diff --git a/include/omxdsp/omx_note_map.h b/include/omxdsp/omx_note_map.h
+index 5c8850a..d268658 100644
+--- a/include/omxdsp/omx_note_map.h
++++ b/include/omxdsp/omx_note_map.h
+@@ -295,7 +295,7 @@ static inline int omx_note_map_event(struct omx_note_map *m, struct omx_note_msg
+     omx_note_map_mark(m, ch, key, 0);
+   } else if (kind == 0x90) {
+     if (!omx_note_map_takes_channel(m, ch) || key < m->leg.key_low || key > m->leg.key_high) return 0;
+-    const int to = key + m->leg.transpose;
++    const int to = key - m->leg.transpose;
+     if (to < 0 || to > 127) {
+       m->out_of_range++;
+       return 0;
