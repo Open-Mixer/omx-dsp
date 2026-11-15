@@ -399,3 +399,20 @@ slot 0 1000 -18 8 1 fbs-fixed bell
 tick 60250 c 1000 -18 s 1000
 log
 end
+
+# A tracked live band the operator re-tags fixed leaves the release ladder: the fixed pool never lifts. Its ramp
+# stops where the edit set it, nothing eases, lifts or re-arms, and a ring at its frequency merges with no re-arm.
+vector tracked-live-retagged-fixed-stops-releasing
+set 1 6 116 100 600
+tick 0 c 1000 -18 s 1000
+log notched 1000 0
+ticks 250 2250 250
+slot 0 1000 -15.6 8 1 fbs-live bell
+edit 0 fbs-fixed -16
+ticks 2500 60000 250
+log
+slot 0 1000 -16 8 1 fbs-fixed bell
+tick 60250 c 1000 -18 s 1000
+log
+count 1
+end
