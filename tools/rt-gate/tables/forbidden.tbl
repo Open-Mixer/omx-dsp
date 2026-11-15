@@ -75,7 +75,7 @@ ppoll RT-BLOCK waits on descriptors
 select RT-BLOCK waits on descriptors
 pselect RT-BLOCK waits on descriptors
 epoll_wait RT-BLOCK waits on descriptors
-syscall RT-BLOCK a raw system call, any of them
+syscall RT-BLOCK a raw system call, any of them but a futex wake spelled at the call (the class wake)
 
 # I/O: a file, a socket, the terminal
 open RT-IO a system call that can sleep on the file system

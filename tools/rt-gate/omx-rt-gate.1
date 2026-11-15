@@ -86,7 +86,11 @@ with its class from the closed set \fBmaths\fR, \fBbulk\-memory\fR,
 \fBword\-atomic\fR, \fBclock\fR, \fBftz\-register\fR, \fBwake\fR, the arm that
 measured it and the reason. \fBsem_post\fR is a wake, like FUTEX_WAKE: an atomic,
 and a futex wake only when a waiter sleeps; \fBsem_wait\fR and
-\fBsem_timedwait\fR stay forbidden. A row naming a site, a field, a file or a
+\fBsem_timedwait\fR stay forbidden. \fBsyscall\fR is forbidden, save one
+operation the gate reads at the call: \fBsyscall(SYS_futex,\fR \fIword\fR\fB,
+FUTEX_WAKE\fR or \fBFUTEX_WAKE_PRIVATE\fR\fB, ...)\fR is a wake. Any other
+operation, \fBFUTEX_WAKE_OP\fR among them, one held in a variable or one the
+call's text does not show stays \fBRT\-BLOCK\fR. A row naming a site, a field, a file or a
 function of omx-dsp, a class outside the set, a row without a reason or an arm,
 a duplicate, or a row for a forbidden symbol is refused at load.
 .TP

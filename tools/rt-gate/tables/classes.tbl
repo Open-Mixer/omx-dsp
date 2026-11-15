@@ -29,6 +29,10 @@
 #   wake          a wake that never waits. sem_post is a wake, like FUTEX_WAKE: an atomic increment,
 #                 and a futex wake only when a waiter sleeps; it never blocks the caller. sem_wait and
 #                 sem_timedwait are not wakes: they stay forbidden (forbidden.tbl, RT-BLOCK).
+#                 syscall has no row (it is forbidden); the gate itself reads one of its operations
+#                 as a wake: syscall(SYS_futex, <word>, FUTEX_WAKE or FUTEX_WAKE_PRIVATE, ...), both
+#                 spelled at the call. Any other operation, one in a variable, or one the call's
+#                 text does not show stays RT-BLOCK.
 #
 # The arm: externals-arm (tools/rt-gate/externals-arm.c, make rt-gate) calls each symbol over a
 # spread of arguments with the process's allocator interposed and requires zero allocations; every
