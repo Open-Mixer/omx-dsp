@@ -102,11 +102,13 @@ interface Slot {
   dwellStartMs: number | null;
   reclamps: number;
   ramp: { step: number; stage: number; fromDb: number; toDb: number; dueMs: number; seq: number } | null;
+  /** Seated or re-tagged live, adopted at the next tick. */
+  adopt: boolean;
 }
 
 const freeSlot = (): Slot => ({
   freqHz: 0, gainDb: 0, q: 0, on: false, origin: ORIGIN.user, shape: SHAPE.off, seq: 0,
-  live: false, plantedDb: 0, lastRingMs: 0, stage: 0, dwellStartMs: null, reclamps: 0, ramp: null,
+  live: false, plantedDb: 0, lastRingMs: 0, stage: 0, dwellStartMs: null, reclamps: 0, ramp: null, adopt: false,
 });
 
 /** `n < lo ? lo : n > hi ? hi : n`: core's clamp, a NaN passing through. */
@@ -148,6 +150,8 @@ export class FbsPlace {
   cooldownS: number = FBS_DEFAULT_COOLDOWN_SECONDS;
   nowMs = 0;
   memoryDropped = 0;
+  /** Bands the strip's EQ holds that are not the placement's. */
+  others = 0;
   protected slots: Slot[] = Array.from({ length: FBS_PLACE_SLOTS }, freeSlot);
   protected memory: Array<{ freqHz: number; reclamps: number; releasedMs: number }> = [];
   protected seq = 0;
@@ -199,8 +203,55 @@ export class FbsPlace {
   /** One detector tick: the ramp steps due, a band per newly confirmed ring, then the clean holds. */
   tick(nowMs: number, snapshotHz: readonly number[], confirmed: readonly FbsFind[]): void {
     this.advance(nowMs);
+    this.adopt();
     for (const c of confirmed) this.correct(c);
     this.holdSweep(snapshotHz);
+  }
+
+  /** How many bands the strip's EQ holds that the placement does not own (omx_fbs_place_set_others). */
+  setOthers(n: number): void {
+    this.others = n;
+  }
+
+  /** The band in slot k left the EQ: the slot frees, nothing said or remembered (omx_fbs_place_remove). */
+  remove(k: number): boolean {
+    const s = this.slots[k];
+    if (!s || s.origin === ORIGIN.user) return false;
+    this.release(k);
+    return true;
+  }
+
+  /** The operator re-tagged or re-gained slot k's band (omx_fbs_place_edit). */
+  edit(k: number, originIndex: number, gainDb: number): boolean {
+    const s = this.slots[k];
+    if (!s || s.origin === ORIGIN.user || originIndex < 0 || originIndex >= ORIGIN_WORDS.length) return false;
+    if (originIndex !== ORIGIN.fbsFixed && originIndex !== ORIGIN.fbsLive) return this.remove(k);
+    s.origin = originIndex;
+    s.gainDb = this.capGain(originIndex, gainDb);
+    if (originIndex === ORIGIN.fbsLive && !s.live) s.adopt = true;
+    if (originIndex === ORIGIN.fbsFixed) this.leaveLadder(k);
+    return true;
+  }
+
+  /** A band the EQ already holds, seated in the lowest free slot (omx_fbs_place_seat); the slot, or -1. */
+  seat(originIndex: number, freqHz: number, gainDb: number, q: number): number {
+    if (originIndex !== ORIGIN.fbsFixed && originIndex !== ORIGIN.fbsLive) return -1;
+    if (!Number.isFinite(freqHz) || !Number.isFinite(gainDb) || !Number.isFinite(q)) return -1;
+    const k = this.slots.findIndex((x) => x.origin === ORIGIN.user);
+    if (k < 0) return -1;
+    const fixed = originIndex === ORIGIN.fbsFixed;
+    const s = freeSlot();
+    s.origin = originIndex;
+    s.freqHz = clamp(freqHz, EQ_FREQ_RANGE.min, EQ_FREQ_RANGE.max);
+    s.shape = fixed ? SHAPE.notch : SHAPE.bell;
+    s.gainDb = this.capGain(originIndex, gainDb);
+    s.q = fixed ? clamp(q, EQ_NOTCH_Q_RANGE.min, EQ_NOTCH_Q_RANGE.max) : clamp(q, EQ_Q_RANGE.min, EQ_Q_RANGE.max);
+    s.on = true;
+    s.seq = ++this.seq;
+    s.plantedDb = s.gainDb;
+    s.adopt = !fixed;
+    this.slots[k] = s;
+    return k;
   }
 
   // ---- the rules, one method each ----------------------------------------------------------------------------
@@ -257,6 +308,8 @@ export class FbsPlace {
       this.emit('pool-full', c.freqHz, -1);
       return;
     }
+    // the strip's EQ is full (FBS_PLACE_SLOTS is the EQ's band count): its store refuses, and nothing is said
+    if (this.count() + this.othersCounted() >= FBS_PLACE_SLOTS) return;
     const k = this.slots.findIndex((s) => s.origin === ORIGIN.user);
     if (k < 0) return;
     const fixed = this.poolOfFind() === 'fixed';
@@ -277,6 +330,47 @@ export class FbsPlace {
     s.ramp = null;
     s.reclamps = fixed ? 0 : this.takeMemory(s.freqHz);
     this.emit('notched', c.freqHz, k);
+  }
+
+  /** The EQ's other bands, as the shared cap counts them. */
+  protected othersCounted(): number {
+    return this.others;
+  }
+
+  /** Every band seated or re-tagged live and not yet tracked, in band order: a fresh hold and its ring memory. */
+  protected adopt(): void {
+    for (const k of this.bySeq()) {
+      const s = this.slots[k]!;
+      if (!s.adopt) continue;
+      s.adopt = false;
+      if (!this.adoptsOrigin(s.origin)) continue;
+      s.live = true;
+      s.plantedDb = s.gainDb;
+      s.lastRingMs = this.adoptClock();
+      s.stage = 0;
+      s.dwellStartMs = null;
+      s.ramp = null;
+      s.reclamps = this.takeMemory(s.freqHz);
+    }
+  }
+
+  /** The fixed pool never lifts: a band re-tagged fixed leaves the release ladder where the edit left it. */
+  protected leaveLadder(k: number): void {
+    const s = this.slots[k]!;
+    s.live = false;
+    s.ramp = null;
+    s.stage = 0;
+    s.dwellStartMs = null;
+  }
+
+  /** Whether a pending band is adopted: only one whose origin is fbs-live at the tick. */
+  protected adoptsOrigin(originIndex: number): boolean {
+    return originIndex === ORIGIN.fbsLive;
+  }
+
+  /** The clock an adopted band's hold starts from. */
+  protected adoptClock(): number {
+    return this.nowMs;
   }
 
   protected holdSweep(snapshotHz: readonly number[]): void {

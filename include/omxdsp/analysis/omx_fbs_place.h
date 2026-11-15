@@ -28,6 +28,15 @@
  *    ringer re-plants with its doubled holds.
  *  - THE GAIN CAP BY ORIGIN: an fbs-* band holds [FBS_MAX_CUT_DB, 0]; every other origin the musical
  *    EQ_GAIN_RANGE, as the strip's store does.
+ *  - THE EQ IS SHARED: the slots are the placement's, but the bands land on one strip EQ the operator, the
+ *    defaults and other correctors also fill. The caller says how many it holds that are not the placement's
+ *    ({@link omx_fbs_place_set_others}); once the placement's own plus those reach EQ_MAX_BANDS, a plant is
+ *    refused with no action, after the pool-full check, as the strip's store refuses the band.
+ *  - THE OPERATOR'S EDITS: a planted band the operator deletes ({@link omx_fbs_place_remove}), re-tags or re-gains
+ *    ({@link omx_fbs_place_edit}) is what the strip's store says from then on, and the edit itself says nothing.
+ *    A band re-tagged fbs-fixed leaves the release ladder: the fixed pool never lifts.
+ *  - A RESTORE: a band the EQ already holds is seated ({@link omx_fbs_place_seat}); it counts against the pool
+ *    at once, and a live one is adopted at the next tick, with a fresh hold and its ring memory, as a planted one.
  *
  * SLOTS KEEP THEIR FINDS (spec 7.16): a plant takes the lowest free slot and a release frees its own,
  * so no other slot moves. Where several bands match one ring, the OLDEST plant answers, as the
@@ -98,6 +107,8 @@ typedef struct {
   double ramp_to_db;
   double ramp_due_ms;
   uint64_t ramp_seq;
+  /** A band seated or re-tagged fbs-live, adopted at the next tick if it is still fbs-live then. */
+  int adopt;
 } OmxFbsPlaceSlot;
 
 /** A fully released find's escalation, kept for the cooldown. */
@@ -132,6 +143,8 @@ typedef struct {
   OmxFbsPlaceEvent log[OMX_FBS_PLACE_LOG];
   uint32_t n_log;
   uint32_t log_dropped;
+  /** Bands the strip's EQ holds that are not the placement's (the operator's, the defaults, other correctors). */
+  uint32_t others;
 } OmxFbsPlace;
 
 /**
@@ -233,5 +246,59 @@ uint32_t omx_fbs_place_count(const OmxFbsPlace *p);
  * @thread worker
  */
 OmxBandReport omx_fbs_place_report(const OmxFbsPlace *p, uint32_t k);
+
+/**
+ * @brief How many bands the strip's EQ holds that the placement does not own: the operator's, the defaults, other
+ *        correctors', and a band re-tagged away from fbs-*. A plant that would take the EQ past EQ_MAX_BANDS is
+ *        refused with no action, after the pool-full check, as the strip's store refuses it.
+ * @param p The placement; NULL is a no-op.
+ * @param n The count; 0 (the default) leaves the EQ cap to the slots alone.
+ * @thread worker
+ */
+void omx_fbs_place_set_others(OmxFbsPlace *p, uint32_t n);
+
+/**
+ * @brief The band in slot k left the EQ (the operator deleted it): the slot frees at once, its ramp stops, and
+ *        nothing is said or remembered. No other slot moves.
+ * @param p The placement; NULL is a no-op.
+ * @param k The slot.
+ * @return 0, or -1 when k is not an occupied slot.
+ * @thread worker
+ */
+int omx_fbs_place_remove(OmxFbsPlace *p, uint32_t k);
+
+/**
+ * @brief The operator re-tagged or re-gained the band in slot k. To an origin that is not fbs-*, the band leaves
+ *        the placement as {@link omx_fbs_place_remove} (the caller then counts it in its others). To an fbs-*
+ *        origin, the slot takes it and the gain, held by that origin's cap. To fbs-live, the shape, Q, planted depth
+ *        and any release in flight stay, so a ramp runs on from where it began and a regrowth compares the edited
+ *        gain. To fbs-fixed, the band leaves the release ladder at the edited gain: the fixed pool never lifts, so
+ *        it never eases, lifts or re-arms again.
+ *        A band not yet live re-tagged fbs-live is adopted at the next tick if it is still fbs-live then. Nothing
+ *        is said.
+ * @param p The placement; NULL is a no-op.
+ * @param k The slot.
+ * @param origin An enum omx_curve_origins.
+ * @param gain_db The gain the operator set, dB.
+ * @return 0, or -1 when k is not an occupied slot or origin is not one.
+ * @thread worker
+ */
+int omx_fbs_place_edit(OmxFbsPlace *p, uint32_t k, int origin, double gain_db);
+
+/**
+ * @brief Seat a band the EQ already holds (a session restore) in the lowest free slot, after every band seated or
+ *        planted before it. A fixed band is a notch, its Q held in the notch Q's extent, and never lifts; a live one is a bell
+ *        adopted at the next tick if it is still fbs-live then: its hold starts then, its planted depth is its gain, its ring memory is taken,
+ *        and it releases through the same stages as a planted one. It counts against the pool at once, and the
+ *        pool cap does not refuse it.
+ * @param p The placement; NULL is a no-op.
+ * @param origin OMX_CURVE_ORIGINS_FBS_FIXED or OMX_CURVE_ORIGINS_FBS_LIVE.
+ * @param freq_hz The band's frequency, held in EQ_FREQ_RANGE.
+ * @param gain_db The band's gain, held by the origin's cap.
+ * @param q The band's Q, held in its shape's extent.
+ * @return The slot, or -1 when the origin is not fbs-*, a value is not finite, or no slot is free.
+ * @thread worker
+ */
+int omx_fbs_place_seat(OmxFbsPlace *p, int origin, double freq_hz, double gain_db, double q);
 
 #endif /* OMX_FBS_PLACE_H */

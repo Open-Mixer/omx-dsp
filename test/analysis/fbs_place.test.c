@@ -167,13 +167,27 @@ int main(int argc, char **argv) {
       const double c = omx_fbs_place_cents(num(w[1]), num(w[2]));
       snprintf(got, sizeof(got), "%.17g", c);
       check(near(c, num(w[3]), tol_cents), name, line, got);
+    } else if (strcmp(w[0], "remove") == 0 && n == 2) {
+      snprintf(got, sizeof(got), "remove refused");
+      check(omx_fbs_place_remove(&p, (uint32_t)num(w[1])) == 0, name, line, got);
+    } else if (strcmp(w[0], "edit") == 0 && n == 4) {
+      snprintf(got, sizeof(got), "edit refused");
+      check(omx_fbs_place_edit(&p, (uint32_t)num(w[1]), origin_of(w[2]), num(w[3])) == 0, name, line, got);
+    } else if (strcmp(w[0], "others") == 0 && n == 2) {
+      omx_fbs_place_set_others(&p, (uint32_t)num(w[1]));
+    } else if (strcmp(w[0], "seat") == 0 && n == 5) {
+      /* a user band is the EQ's, not the placement's: the seat refuses it, and the vector says so by a free slot */
+      const int k = omx_fbs_place_seat(&p, origin_of(w[1]), num(w[2]), num(w[3]), num(w[4]));
+      const int fbs = strcmp(w[1], "fbs-fixed") == 0 || strcmp(w[1], "fbs-live") == 0;
+      snprintf(got, sizeof(got), "seat returned %d", k);
+      check(fbs ? k >= 0 : k == -1, name, line, got);
     } else {
       check(0, name, line, "a line this test does not know");
     }
   }
   fclose(f);
   check(tol_gain > 0.0 && tol_cents > 0.0, "fbs_place", "the file states its tolerances", "none");
-  check(vectors >= 15, "fbs_place", "the file carries every vector", "fewer");
+  check(vectors >= 22, "fbs_place", "the file carries every vector", "fewer");
   printf("fbs_place: %d checks over %d vectors, %d failures\n", checks, vectors, failures);
   return failures ? 1 : 0;
 }
