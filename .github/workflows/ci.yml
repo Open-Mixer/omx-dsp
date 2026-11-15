@@ -240,18 +240,20 @@ jobs:
         run: make contract-tests OMX_CONTRACT=/tmp/omx-contract
 
   # The libFuzzer harnesses of fuzz/ (clang, libFuzzer, ASan, UBSan, the library's contracts), each run for 60 s from
-  # its seed corpus; red on any crash or broken contract, the crashing input uploaded. omx-contract's header is
-  # read from a checkout at OMX_CONTRACT_REF through OMX_CONTRACT_INC (no node and no install needed to fuzz).
+  # its seed corpus; red on any crash or broken contract, the crashing input uploaded. Then the checks prove
+  # themselves: every sabotage patch found at the check it names, every record met by its own check on its own seed,
+  # and every harness at its coverage floor with every check reached. omx-contract's header is read from a checkout
+  # at OMX_CONTRACT_REF through OMX_CONTRACT_INC (no node and no install needed to fuzz).
   fuzz:
     name: fuzz (60 s per harness)
     runs-on: ubuntu-latest
-    # a backstop: six harnesses of 60 s and their build end well inside this
+    # a backstop: six harnesses of 60 s, their build, and the three proofs, which run seeds only, end well inside this
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install clang and libFuzzer's runtime
-        run: sudo apt-get update -qq && sudo apt-get install -y --no-install-recommends clang libclang-rt-dev
+      - name: Install clang, libFuzzer's runtime and llvm-cov
+        run: sudo apt-get update -qq && sudo apt-get install -y --no-install-recommends clang libclang-rt-dev llvm
 
       - name: Fetch omx-contract at OMX_CONTRACT_REF
         run: |
@@ -271,6 +273,20 @@ jobs:
       - name: Fuzz each harness for 60 s
         id: handback-fuzz
         run: make fuzz-run FUZZ_TIME=60
+
+      # a property no breakage can make fail checks nothing: each patch must make its harness abort on the seed it
+      # names, at the check it names
+      - name: Find every sabotage patch, each at its own check
+        run: make fuzz-sabotage
+
+      # every check records the one-line bug it catches and the seed it catches it on, and each record, alone, makes
+      # that check abort on that seed; a check with neither a record nor a not-a-property line is red
+      - name: Meet every check's record
+        run: make fuzz-records
+
+      # the seed corpus must keep reaching the library lines it reaches today and every check
+      - name: Hold the coverage floor
+        run: make fuzz-coverage
 
       - name: Upload the crashing inputs
         if: failure()

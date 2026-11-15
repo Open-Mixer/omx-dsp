@@ -1,0 +1,16 @@
+Breaks the check of fuzz/fuzz_delay.c:301 (the delay in samples truncates instead of rounding).
+Caught by the seed input "integer-mono" of fuzz_delay.
+
+diff --git a/include/omxdsp/omx_idelay.h b/include/omxdsp/omx_idelay.h
+index 8c52b64..ac54633 100644
+--- a/include/omxdsp/omx_idelay.h
++++ b/include/omxdsp/omx_idelay.h
+@@ -62,7 +62,7 @@ static inline uint32_t omx_idelay_samples(float ms, float sr, uint32_t cap) {
+   OMX_PRE(sr <= 0.0f || OMX_RATE_IS_DECLARED(sr), "rate-is-declared");
+   OMX_PRE(ms - ms == 0.0f, "ms-is-finite");
+   if (ms <= 0.0f || cap == 0 || sr <= 0.0f) { OMX_POST(1, "delay-inside-the-ring"); return 0; }
+-  float s = ms * sr * 0.001f + 0.5f; /* round to nearest sample */
++  float s = ms * sr * 0.001f; /* round to nearest sample */
+   if (s <= 0.0f) { OMX_POST(1, "delay-inside-the-ring"); return 0; }
+   uint32_t d = s >= (float)cap ? cap : (uint32_t)s; /* no cast of a float past uint32_t's range */
+   d = d >= cap ? cap - 1 : d;
