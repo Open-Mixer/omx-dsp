@@ -17,6 +17,13 @@
 #   deepen          a re-arm snaps back without deepening
 #   hold-doubling   a re-clamp does not double the next hold
 #   memory          a re-plant forgets the ring memory
+#   remove-ignored  a band the operator deleted keeps its slot and its release
+#   edit-gain       an operator's gain edit is dropped
+#   retag-kept      a band re-tagged to a user band stays the placement's
+#   retag-no-adopt  a fixed band re-tagged fbs-live is never adopted
+#   others-ignored  the EQ's other bands are not counted against its band cap
+#   seat-no-adopt   a seated live band is never adopted
+#   adopt-hold      an adopted band's hold starts at time zero, not at its adoption
 #
 # CC, CFLAGS and CONTRACT_INC from the environment (make exports CONTRACT_INC).
 set -euo pipefail
@@ -66,4 +73,11 @@ sabotage edge edge-refused-never-clamped 's/c->freq_hz >= (double)OMX_FBS_RING_H
 sabotage deepen regrowth-re-arms-deeper-and-doubles-the-hold 's/s->planted_db - (double)OMX_FBS_RECLAMP_DEEPEN_DB;/s->planted_db - 0.0;/'
 sabotage hold-doubling regrowth-re-arms-deeper-and-doubles-the-hold 's/(double)(1u << doublings);/1.0; (void)doublings;/'
 sabotage memory ring-memory-keeps-the-escalation 's/: take_memory(p, s->freq_hz);/: 0u; (void)take_memory;/'
+sabotage remove-ignored operator-removes-mid-release 's/^  free_slot(\&p->slot\[k\]);$/  (void)0;/'
+sabotage edit-gain operator-regains-a-live-band 's/^  s->gain_db = omx_fbs_place_gain_cap(origin, gain_db);$/  (void)gain_db;/'
+sabotage retag-kept operator-retags-a-band 's/if (!is_fbs(origin)) return omx_fbs_place_remove(p, k);/if (!is_fbs(origin)) return 0;/'
+sabotage retag-no-adopt operator-retags-fixed-to-live 's/\&\& !s->live) s->adopt = 1;/\&\& !s->live) s->adopt = 0;/'
+sabotage others-ignored shared-eq-cap 's/omx_fbs_place_count(p) + p->others >=/omx_fbs_place_count(p) + 0u >=/'
+sabotage seat-no-adopt seat-a-restored-band 's/^  s->adopt = !fixed;$/  s->adopt = 0; (void)fixed;/'
+sabotage adopt-hold seat-a-restored-band 's/^    s->last_ring_ms = p->now_ms;$/    s->last_ring_ms = 0.0;/'
 echo "fbs-place-sabotage.sh: every rule's arm fails its vector"
