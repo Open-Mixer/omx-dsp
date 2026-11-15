@@ -10,7 +10,8 @@
  * A `{ "ref": NAME }` inside a sheet resolves to NAME in omx-dsp's data when it is one of its scalars, else to
  * the committed include/omxdsp/omxdsp_definitions.h, which is omx-contract's render of the same declarations
  * (make definitions-check holds it equal), so no value is written twice. The items of data/primitives/ in
- * PRIMITIVES are rendered the same way, a set as its ids in order (the value of each is its position).
+ * PRIMITIVES are rendered the same way, a set as its ids in order (the value of each is its position). A derived
+ * scalar (`{ derive, of }`) is read from that header too.
  */
 import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -32,6 +33,7 @@ const CONSTANTS = {
     'FBS_DEFAULT_HOLD_SECONDS', 'FBS_DEFAULT_MAX_AUTO_BANDS', 'FBS_DEFAULT_MERGE_CENTS', 'FBS_DEFAULT_COOLDOWN_SECONDS', 'FBS_DEFAULT_NOTCH_Q',
     'FBS_RING_MEMORY_SLOTS'],
   'hrp.json': ['HRP_GAIN_STEP_DB'],
+  'drive.json': ['DRIVE_BIAS_MAX'],
 };
 /** data file -> control name -> the exported name of its { min, max } travel */
 const TRAVELS = {
@@ -39,6 +41,7 @@ const TRAVELS = {
   'fbs.json': { bands: 'FBS_BANDS_RANGE', hold: 'FBS_HOLD_RANGE', merge: 'FBS_MERGE_RANGE', cooldown: 'FBS_COOLDOWN_RANGE' },
   'comp.json': { ratio: 'COMP_RATIO_RANGE', kneeDb: 'COMP_KNEE_DB_RANGE' },
   'gate.json': { ratio: 'GATE_RATIO_RANGE', rangeDb: 'GATE_RANGE_DB_RANGE' },
+  'drive.json': { amount: 'DRIVE_AMOUNT_RANGE', character: 'DRIVE_CHARACTER_RANGE', mix: 'DRIVE_MIX_RANGE', trim: 'DRIVE_TRIM_RANGE' },
 };
 /** data/primitives file -> the items of it a twin reads */
 const PRIMITIVES = {
@@ -86,6 +89,9 @@ export const render = () => {
       const c = constants[name];
       if (c?.kind === 'scalar' && typeof c.value === 'number') {
         lines.push('', doc(c.doc, file, c.unit), `export const ${name} = ${c.value};`);
+      } else if (c?.kind === 'scalar' && typeof c.value?.derive === 'string') {
+        // a derived scalar (`{ derive, of }`): its value as omx-contract rendered it into the header, never derived again here
+        lines.push('', doc(c.doc, file, c.unit), `export const ${name} = ${fromHeader(name)};`);
       } else if (c?.kind === 'sheet' && c.value && typeof c.value === 'object') {
         const body = Object.entries(c.value).map(([k, v]) => `  ${k}: ${resolve(v, own)},`);
         lines.push('', doc(c.doc, file), `export const ${name} = {`, ...body, '} as const;');

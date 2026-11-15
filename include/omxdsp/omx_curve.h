@@ -113,14 +113,17 @@ struct omx_curve_extra {
 /** @brief The wire words of CURVE_DISPLAYS, by value: the description's display words. */
 static const char *const OMX_CURVE_DISPLAY_WORDS[OMX_CURVE_DISPLAYS_COUNT] = {"eq_response", "transfer_curve"};
 /** @brief The wire words of CURVE_FAMILIES, by value: the description's family words. */
-static const char *const OMX_CURVE_FAMILY_WORDS[OMX_CURVE_FAMILIES_COUNT] = {"eq", "dynamics", "limiter", "gate", "deesser"};
+static const char *const OMX_CURVE_FAMILY_WORDS[OMX_CURVE_FAMILIES_COUNT] = {"eq",   "dynamics", "limiter",
+                                                                           "gate", "deesser",  "drive"};
 /** @brief The wire words of CURVE_ROLES, by value: the description's role words. */
 static const char *const OMX_CURVE_ROLE_WORDS[OMX_CURVE_ROLES_COUNT] = {
     "band_type", "band_freq", "band_gain", "band_q",  "band_on", "hpf_freq",   "hpf_slope",  "hpf_on",   "lpf_freq",
-    "lpf_slope", "lpf_on",    "threshold", "ratio",   "knee",    "makeup",     "range",      "knee_start", "knee_end"};
+    "lpf_slope", "lpf_on",    "threshold", "ratio",   "knee",    "makeup",     "range",      "knee_start", "knee_end",
+    "drive",     "tone",      "model",     "mix",     "output"};
 /** @brief The wire words of CURVE_UNITS, by value: the param-contract extension's unit tokens. */
 static const char *const OMX_CURVE_UNIT_WORDS[OMX_CURVE_UNITS_COUNT] = {"hz",   "khz", "db",   "dbfs", "dbu",
-                                                                        "lufs", "coef", "oct", "none", "ratio"};
+                                                                        "lufs", "coef", "oct", "none", "ratio",
+                                                                        "pc"};
 /** @brief The wire words of CURVE_SHAPES, by value; `unshaped` is spelt `-`. */
 static const char *const OMX_CURVE_SHAPE_WORDS[OMX_CURVE_SHAPES_COUNT] = {
     "off", "bell", "lowshelf", "highshelf", "highpass", "lowpass", "notch", "-", "allpass1", "allpass2"};
@@ -181,7 +184,15 @@ static inline int omx_curve_unit_accepted(enum omx_curve_roles role, enum omx_cu
   case OMX_CURVE_ROLES_RANGE:
   case OMX_CURVE_ROLES_KNEE_START:
   case OMX_CURVE_ROLES_KNEE_END:
+  case OMX_CURVE_ROLES_DRIVE:
+  case OMX_CURVE_ROLES_OUTPUT:
     return unit == OMX_CURVE_UNITS_DB;
+  case OMX_CURVE_ROLES_TONE:
+    return unit == OMX_CURVE_UNITS_NONE || unit == OMX_CURVE_UNITS_COEF;
+  case OMX_CURVE_ROLES_MODEL:
+    return unit == OMX_CURVE_UNITS_NONE;
+  case OMX_CURVE_ROLES_MIX:
+    return unit == OMX_CURVE_UNITS_PC;
   }
   return 0;
 }

@@ -21,13 +21,14 @@
     "source": {
       "impl": "include/omxdsp/omx_curve.h#omx_curve_points_marked"
     },
-    "doc": "The panel families omx_curve_points draws, by the description's family word. `eq` draws an eq_response; the other four a transfer_curve, the family choosing the gain computer's mode: `dynamics`, `limiter` and `deesser` act ABOVE the threshold, `gate` BELOW it with the shifted knee of the gate's knee range. Any other family has no closed form here.",
+    "doc": "The panel families omx_curve_points draws, by the description's family word. `eq` draws an eq_response; the other four a transfer_curve, the family choosing the gain computer's mode: `dynamics`, `limiter` and `deesser` act ABOVE the threshold, `gate` BELOW it with the shifted knee of the gate's knee range. `drive` draws a transfer_curve too, but in the waveshaper's own linear, signed units, sample in to sample out: the drive kernel's static path, its shaper biased by the character, faded by the mix and scaled by the trim (since 0.32.4). Any other family has no closed form here.",
     "ids": [
       "eq",
       "dynamics",
       "limiter",
       "gate",
-      "deesser"
+      "deesser",
+      "drive"
     ]
   },
   "CURVE_ROLES": {
@@ -36,7 +37,7 @@
     "source": {
       "impl": "include/omxdsp/omx_curve.h#omx_curve_points_marked"
     },
-    "doc": "The roles of a panel description a curve request reads, by the description's role word (the wire spells each id in snake case: `band_freq`, `knee_start`). The EQ's indexed band roles and head filters, and the gain computer's terms. A term of any other role is no term of the curve.",
+    "doc": "The roles of a panel description a curve request reads, by the description's role word (the wire spells each id in snake case: `band_freq`, `knee_start`). The EQ's indexed band roles and head filters, the gain computer's terms, and the drive's (since 0.32.4): `drive` the pre-shaper gain in dB, `tone` the character -1..+1 that biases the shaper, `model` the shaper (the drive kernel's curve, 0 soft, 1 tape, 2 tube, 3 exciter), `mix` the wet share in percent and `output` the trim in dB; a drive curve needs `drive` and `model`, and draws `tone` -1, `mix` 100 % and `output` 0 dB where a term is absent (a card's picture draws no make-up or parallel mix). A term of any other role is no term of the curve.",
     "ids": [
       "bandType",
       "bandFreq",
@@ -55,7 +56,12 @@
       "makeup",
       "range",
       "kneeStart",
-      "kneeEnd"
+      "kneeEnd",
+      "drive",
+      "tone",
+      "model",
+      "mix",
+      "output"
     ]
   },
   "CURVE_UNITS": {
@@ -64,7 +70,7 @@
     "source": {
       "impl": "include/omxdsp/omx_curve.h#omx_curve_unit_accepted"
     },
-    "doc": "The units a curve term's value may come in, the param-contract extension's unit tokens the served description gives a role. omx_curve_points converts once: `coef` to dB for a gain, `oct` to Q for a bandwidth, `khz` to Hz; a level in `db`, `dbfs`, `dbu` or `lufs` is read as dB from the threshold's own scale; `none` is a plain number, a switch or a choice; `ratio` a ratio. A unit its role does not accept is refused.",
+    "doc": "The units a curve term's value may come in, the param-contract extension's unit tokens the served description gives a role. omx_curve_points converts once: `coef` to dB for a gain, `oct` to Q for a bandwidth, `khz` to Hz; a level in `db`, `dbfs`, `dbu` or `lufs` is read as dB from the threshold's own scale; `none` is a plain number, a switch or a choice; `ratio` a ratio. A unit its role does not accept is refused. `pc` (since 0.32.4) is percent, the drive's `mix`.",
     "ids": [
       "hz",
       "khz",
@@ -75,7 +81,8 @@
       "coef",
       "oct",
       "none",
-      "ratio"
+      "ratio",
+      "pc"
     ]
   },
   "CURVE_SHAPES": {
@@ -146,14 +153,16 @@
     "source": {
       "impl": "include/omxdsp/omx_curve.h#omx_curve_points_marked"
     },
-    "doc": "A curve's default extents, where a request gives none: an eq_response from `freqMinHz` to the lower of `freqMaxHz` and `nyquistFraction` of Nyquist, each band's dB floored at `eqFloorDb` so a notch's null stays finite (the console's EQ draws to -120 dB); a transfer_curve's input from `levelMinDb` to `levelMaxDb`. Hz and dB.",
+    "doc": "A curve's default extents, where a request gives none: an eq_response from `freqMinHz` to the lower of `freqMaxHz` and `nyquistFraction` of Nyquist, each band's dB floored at `eqFloorDb` so a notch's null stays finite (the console's EQ draws to -120 dB); a transfer_curve's input from `levelMinDb` to `levelMaxDb`, and a drive's, in its linear signed units, from `sampleMin` to `sampleMax` (since 0.32.4). Hz, dB and full scale.",
     "value": {
       "freqMinHz": 20,
       "freqMaxHz": 20000,
       "nyquistFraction": 0.999,
       "eqFloorDb": -120,
       "levelMinDb": -80,
-      "levelMaxDb": 0
+      "levelMaxDb": 0,
+      "sampleMin": -1,
+      "sampleMax": 1
     }
   }
 }
