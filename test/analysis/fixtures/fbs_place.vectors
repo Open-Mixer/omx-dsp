@@ -20,6 +20,10 @@
 #   log [<action> <hz> <slot>]...       the actions since the last log line, in order (an empty line: none)
 #   cap <origin> <db> <held>            the per-origin gain cap
 #   cents <a> <b> <cents>               the merge radius's distance
+#   remove <k>                          the band in slot k left the EQ (the operator deleted it)
+#   edit <k> <origin> <gain>            the operator re-tagged or re-gained slot k's band
+#   others <n>                          the bands the strip's EQ holds that the placement does not own
+#   seat <origin> <hz> <gain> <q>       a band the EQ already holds (a session restore), seated in the lowest free slot
 #   end
 #
 # Tolerances: frequencies, Q, on, origin, shape, counts and the action order are exact; a gain within 1e-9 dB
@@ -261,4 +265,123 @@ slot 0 500 -6 8 1 fbs-live bell
 slot 1 4000 -9 8 1 fbs-live bell
 slot 2 2000 -6 8 1 fbs-live bell
 count 3
+end
+
+# The operator's own edits and the EQ the placement shares. The console's corrector reads its
+# EQ store every tick, so a band the operator deleted, re-tagged or re-gained is what the store says, and the
+# corrector says nothing about the edit itself.
+
+vector operator-removes-mid-release
+set 1 6 116 100 600
+tick 0 c 1000 -18 s 1000
+log notched 1000 0
+ticks 250 2250 250
+slot 0 1000 -15.6 8 1 fbs-live bell
+advance 2500
+remove 0
+tick 2500
+count 0
+free 0
+ticks 2750 20000 250
+log
+tick 20250 c 1000 -18
+log notched 1000 0
+slot 0 1000 -18 8 1 fbs-live bell
+end
+
+vector operator-regains-a-live-band
+set 1 6 116 100 600
+tick 0 c 1000 -18 s 1000
+log notched 1000 0
+edit 0 fbs-live -10
+slot 0 1000 -10 8 1 fbs-live bell
+ticks 250 1250 250
+advance 1300
+slot 0 1000 -10.2 8 1 fbs-live bell
+ticks 1500 4750 250
+log easing 1000 0
+slot 0 1000 -12 8 1 fbs-live bell
+edit 0 fbs-live -18
+tick 5000 s 1000
+log
+slot 0 1000 -18 8 1 fbs-live bell
+edit 0 fbs-live -40
+slot 0 1000 -24 8 1 fbs-live bell
+end
+
+vector operator-retags-a-band
+set never 6 116 100 600
+tick 0 c 1000 -18 c 2000 -12
+log notched 1000 0 notched 2000 1
+edit 0 user -18
+count 1
+free 0
+tick 250 c 1000 -18
+log notched 1000 0
+slot 0 1000 -18 8 1 fbs-live bell
+slot 1 2000 -12 8 1 fbs-live bell
+end
+
+vector operator-retags-fixed-to-live
+pool fixed
+set 1 6 116 100 600
+tick 0 c 1000 -18
+log notched 1000 0
+slot 0 1000 0 116 1 fbs-fixed notch
+pool live
+edit 0 fbs-live -9
+tick 500
+ticks 750 4250 250
+slot 0 1000 -6.3 116 1 fbs-live notch
+tick 4500
+log easing 1000 0
+slot 0 1000 -6 116 1 fbs-live notch
+end
+
+vector shared-eq-cap
+set never 6 116 100 600
+others 20
+tick 0 c 500 -18 c 700 -18 c 1000 -18 c 1400 -18 c 2000 -18
+log notched 500 0 notched 700 1 notched 1000 2 notched 1400 3
+count 4
+free 4
+others 19
+tick 250 c 2000 -18
+log notched 2000 4
+count 5
+tick 500 c 3000 -18 c 1005 -18
+log
+count 5
+set never 5 116 100 600
+tick 750 c 3000 -18
+log pool-full 3000 -1
+end
+
+vector seat-a-restored-band
+set 1 1 116 100 600
+seat fbs-live 1000 -18 8
+count 1
+slot 0 1000 -18 8 1 fbs-live bell
+tick 500 c 3000 -12
+log pool-full 3000 -1
+ticks 750 4250 250
+slot 0 1000 -12.6 8 1 fbs-live bell
+ticks 4500 120000 250
+log easing 1000 0 easing 1000 0 easing 1000 0 easing 1000 0 easing 1000 0 easing 1000 0 easing 1000 0 lifted 1000 0
+count 0
+free 0
+end
+
+vector seat-a-restored-fixed-band
+set 1 6 116 100 600
+seat fbs-fixed 2000 0 116
+seat user 3000 -6 8
+count 1
+slot 0 2000 0 116 1 fbs-fixed notch
+free 1
+tick 250 c 2010 -12
+ticks 500 60000 250
+log
+count 1
+slot 0 2000 0 116 1 fbs-fixed notch
 end
