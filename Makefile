@@ -408,6 +408,7 @@ checks:
 	bash tools/pole-rescale-guard.sh include src
 	bash tools/pole-rescale-guard.sh --self-test
 	sh tools/contract-include-selftest.sh
+	bash tools/contract-floor-shim.sh --check
 	bash tools/contract-single-source.sh
 	bash tools/contract-single-source.sh --self-test
 	bash tools/travel-grid-check.sh

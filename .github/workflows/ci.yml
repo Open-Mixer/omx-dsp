@@ -155,7 +155,9 @@ jobs:
 
   contract-floor:
     name: below the omx-contract floor the build refuses (${{ matrix.image }})
-    runs-on: ${{ github.event.pull_request.head.repo.fork && 'ubuntu-latest' || vars.OMX_RUNNER || 'ubuntu-latest' }}
+    # GitHub's hosted runners: a cheap job (nothing is served or built, #18) that the shared self-hosted pool starved in
+    # its package install (#16)
+    runs-on: ubuntu-latest
     timeout-minutes: 15
     strategy:
       fail-fast: false
@@ -168,48 +170,30 @@ jobs:
       run:
         shell: bash
     env:
+      # below the floor; the job makes this contract itself (tools/contract-floor-shim.sh), the channel never serves it
       OLD: 2.6.0
     steps:
       - name: Install the build tools
+        # a starved install is a red naming this step, never a cancel at the job's timeout (#16)
+        timeout-minutes: 8
         run: |
           set -euo pipefail
           if command -v dnf >/dev/null; then
-            dnf install -y --setopt=install_weak_deps=False git gcc make gawk dnf5-plugins pkgconf-pkg-config
+            dnf install -y --setopt=install_weak_deps=False git gcc make gawk pkgconf-pkg-config
           else
             apt-get update -qq
-            apt-get install -y --no-install-recommends git ca-certificates curl build-essential gawk pkgconf
+            apt-get install -y --no-install-recommends git ca-certificates build-essential gawk pkgconf
           fi
-
-      - name: Add the OpenMixer repository
-        uses: Open-Mixer/.github/.github/actions/add-openmixer@openmixer-v1
-
-      - name: Install omx-contract ${{ env.OLD }}
-        run: |
-          set -euo pipefail
-          if command -v dnf >/dev/null; then
-            dnf install -y "omx-contract-devel-$OLD"
-          else
-            apt-get install -y --no-install-recommends "libomx-contract-dev=$OLD"
-          fi
-          test "$(pkg-config --modversion omx-contract)" = "$OLD"
 
       - uses: actions/checkout@v4
 
       - name: The checkout is a git directory this job may read
         run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
-      - name: make lib fails, naming omx-contract, the floor and ${{ env.OLD }}
-        run: |
-          set +e -uo pipefail
-          floor="$(sh tools/contract-include.sh --floor)"
-          make lib > out.txt 2>&1; rc=$?
-          cat out.txt
-          [ "$rc" != 0 ] || { echo "make lib built against omx-contract $OLD, below the floor $floor"; exit 1; }
-          ! ls build/*.o >/dev/null 2>&1 || { echo "make compiled before refusing"; exit 1; }
-          for word in omx-contract "$floor" "$OLD"; do
-            grep -q "contract-include:.*$word" out.txt || { echo "the refusal does not name '$word'"; exit 1; }
-          done
-          echo "refused as it must be: $(grep -m1 'contract-include:' out.txt)"
+      # a shim omx-contract.pc at ${{ env.OLD }} first on PKG_CONFIG_PATH: make lib must fail before compiling, naming
+      # omx-contract, the floor and ${{ env.OLD }}; the same shim at the floor must be accepted (the sabotage arm)
+      - name: make lib fails, naming omx-contract, the floor and ${{ env.OLD }}; at the floor it is accepted
+        run: bash tools/contract-floor-shim.sh --check "$OLD"
 
   # data/ read back through omx-contract's reader (make contract-dir) and the committed definitions header held
   # equal to its render (make definitions-check), and the round-trip and completeness proofs over data/ and recipes/answers/
