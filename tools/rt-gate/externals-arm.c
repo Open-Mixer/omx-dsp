@@ -30,6 +30,7 @@
 #define _GNU_SOURCE
 #include <math.h>
 #include <pthread.h>
+#include <sched.h>
 #include <semaphore.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -119,6 +120,8 @@ static long case_pthread_gettid_np(void) {
 #endif
   return N;
 }
+/* cpu-identity: the CPU this thread runs on, through rseq or the vDSO */
+static long case_sched_getcpu(void) { for (int i = 0; i < N; i++) sinkl = sched_getcpu(); return N; }
 /* libgcc's outline atomics: the calls gcc emits for an atomic add on aarch64 (-moutline-atomics). The arm calls
  * each helper by its name there. The helpers exist only on aarch64; on another target the case runs the same
  * add, which that compiler emits inline, so the row's case is always measured and is the real symbol where the
@@ -308,7 +311,7 @@ static const struct arm_case CASES[] = {
     C(sin), C(cos), C(tan), C(sinh), C(exp), C(log), C(log2), C(log10), C(sqrt), C(floor), C(ceil), C(pow),
     C(hypot), C(atan2), C(fmin), C(fmax), C(copysign), C(lrint), C(lround), C(llround), C(ldexp),
     C(memcpy), C(memmove), C(memset), C(memcmp), C(strnlen), C(sem_post), C(clock_gettime),
-    C(pthread_self), C(pthread_equal), C(pthread_gettid_np),
+    C(pthread_self), C(pthread_equal), C(pthread_gettid_np), C(sched_getcpu),
     C(__aarch64_ldadd4_relax), C(__aarch64_ldadd4_rel), C(__aarch64_ldadd8_rel),
 };
 
