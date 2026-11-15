@@ -4,7 +4,7 @@ Source: omx-dsp
 Section: libdevel
 Priority: optional
 Maintainer: Pau Aliagas <linuxnow@gmail.com>
-Build-Depends: debhelper-compat (= 13), libomx-contract-dev (>= 3.18.0~), libomx-contract-dev (<< 4~), pkgconf
+Build-Depends: debhelper-compat (= 13), libomx-contract-dev (>= 3.18.0~), libomx-contract-dev (<< 4~), pkgconf, libjack-jackd2-dev, jackd2
 Standards-Version: 4.6.2
 Homepage: https://github.com/Open-Mixer/omx-dsp
 Rules-Requires-Root: no
@@ -39,12 +39,26 @@ Description: static real-time gate for plugin and engine C built on libomxdsp
  omx-rt-gate proves that the real-time code of a plugin or an audio engine
  never allocates, locks, sleeps, does I/O or logs. It compiles each real-time
  source with the project's own flags, reads the compiler's call graph, finds
- the functions a host calls from its audio thread in the plugin's LV2, CLAP or
- PipeWire tables, and follows every call from there, through libomxdsp's own
- code too. Each finding names the call, its place and the path from the entry
- point. The tables it judges against ship with it: one forbidden list, one
- class table and the thread roles of each ABI, with libomxdsp's thread tags
- and call graphs.
+ the functions a host calls from its audio thread in the plugin's LV2, CLAP,
+ PipeWire or JACK tables, and follows every call from there, through
+ libomxdsp's own code too. Each finding names the call, its place and the path
+ from the entry point. The tables it judges against ship with it: one
+ forbidden list, one class table and the thread roles of each ABI, with
+ libomxdsp's thread tags and call graphs.
+ .
+ Its documentation is on openmixer.org.
+
+Package: omx-rta-read
+Architecture: any
+Multi-Arch: foreign
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: spectrum of a JACK signal, read and never fed
+ omx-rta-read reads the spectrum of a processor's signal in a JACK graph,
+ what it is given and what it gives, and writes it as log-spaced bands, one
+ JSON line ten times a second, for a panel to draw. It is a JACK client with
+ input ports only, connected only from the ports it watches, so it never
+ feeds the mix. It runs only while something reads it. The window, the
+ bands and their gates are the OpenMixer console's, from libomxdsp.
  .
  Its documentation is on openmixer.org.
 

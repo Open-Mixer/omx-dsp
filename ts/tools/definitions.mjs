@@ -23,7 +23,9 @@ const HEADER = join(TS, '..', 'include', 'omxdsp', 'omxdsp_definitions.h');
 const OUT = join(TS, 'src', 'definitions.ts');
 /** data file -> the constants of it a twin reads */
 const CONSTANTS = {
-  'rta.json': ['RTA_TARGET_BIN_HZ', 'RTA_FFT_SIZE_MAX'],
+  'rta.json': ['RTA_TARGET_BIN_HZ', 'RTA_FFT_SIZE_MAX', 'RTA_BAND_F_MIN', 'RTA_BAND_F_MAX_CAP', 'RTA_TIER_CROSSOVER_HZ',
+    'RTA_BAND_GATE_DB', 'RTA_TAP_GATE_DB', 'RTA_LEVEL_DB_MIN', 'RTA_LEVEL_DB_MAX', 'RTA_LEVEL_GRID_DB', 'RTA_HZ',
+    'RTA_LOW_ADVANCE', 'RTA_GRID_FREQS', 'RTA_DELTA_DEADBAND_DB'],
   'eq.json': ['LOWPASS_HANDOVER', 'EQ_BAND_DEFAULTS'],
   'fbs.json': ['FBS_MAX_CUT_DB', 'FBS_RECLAMP_DEEPEN_DB', 'FBS_RECLAMP_BACKOFF_CAP', 'FBS_LIFT_RAMP_MS', 'FBS_LIFT_RAMP_STEPS', 'FBS_RELEASE_RATIO',
     'FBS_RELEASE_DONE_DB', 'FBS_RELEASE_DWELL_MS', 'FBS_RING_HZ_MIN', 'FBS_RING_HZ_MAX', 'FBS_SAME_RING_HZ', 'FBS_SAME_RING_SHARE',
@@ -87,7 +89,9 @@ export const render = () => {
       } else if (c?.kind === 'sheet' && c.value && typeof c.value === 'object') {
         const body = Object.entries(c.value).map(([k, v]) => `  ${k}: ${resolve(v, own)},`);
         lines.push('', doc(c.doc, file), `export const ${name} = {`, ...body, '} as const;');
-      } else throw new Error(`data/kernels/${file}: ${name} is no scalar or flat sheet`);
+      } else if (c?.kind === 'list' && Array.isArray(c.values) && c.values.every((v) => typeof v === 'number')) {
+        lines.push('', doc(c.doc, file, c.unit), `export const ${name}: readonly number[] = [${c.values.join(', ')}];`);
+      } else throw new Error(`data/kernels/${file}: ${name} is no scalar, flat sheet or list of numbers`);
     }
   }
   for (const [file, names] of Object.entries(PRIMITIVES)) {

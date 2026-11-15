@@ -13,7 +13,9 @@
 #      selftest.sh must FAIL on them;
 #   3. -O2 is no input: the planted malloc of fixtures/alloc-run.c is in the -O0 -fno-inline call
 #      graph and gone from the -O2 one (dead-code removal), which is why the gate compiles at -O0;
-#   4. the externals arm's own check: a case that allocates must read red (ARM --sabotage);
+#   4. the externals arm's own check: a case that allocates must read red (ARM --sabotage), and the jack case's
+#      (ARM --sabotage-jack, an allocation beside jack_port_get_buffer on the process thread), SKIPPED and named
+#      where the arm has no JACK;
 #   5. the self-run (with FLAGS, the library's include and build flags): a header under a scratch
 #      include/omxdsp with a function tagged `@thread audio` that allocates must read RT-ALLOC through
 #      the generated unit, and one without its tag must stop the tag check (TAG-MISSING).
@@ -80,6 +82,18 @@ if "$ARM" --sabotage > "$SCRATCH/4.log" 2>&1; then
   echo "sabotage: ok   $(tail -1 "$SCRATCH/4.log")"
 else
   echo "sabotage: FAIL $(tail -1 "$SCRATCH/4.log")"
+  fail=1
+fi
+
+# 4b. the jack case (host-buffer) reads an allocation beside jack_port_get_buffer on the process thread; where the
+# arm was built without JACK or no jackd is installed, the case is SKIPPED and named; a jackd that fails is red
+. "$HERE/jack2-env.sh"; { jack2_env || true; }
+if "$ARM" jack_port_get_buffer 2>&1 | grep -q '^SKIPPED'; then
+  echo "sabotage: SKIPPED 4b $("$ARM" jack_port_get_buffer 2>&1 | grep -m1 '^SKIPPED')"
+elif "$ARM" --sabotage-jack > "$SCRATCH/4b.log" 2>&1; then
+  echo "sabotage: ok   $(tail -1 "$SCRATCH/4b.log")"
+else
+  echo "sabotage: FAIL $(tail -1 "$SCRATCH/4b.log")"
   fail=1
 fi
 

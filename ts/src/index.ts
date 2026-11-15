@@ -44,10 +44,36 @@ export {
   METER_UNITS,
   METER_UNITS_LABELS,
   METER_VIEW,
+  RTA_BAND_F_MAX_CAP,
+  RTA_BAND_F_MIN,
+  RTA_BAND_GATE_DB,
+  RTA_DELTA_DEADBAND_DB,
   RTA_FFT_SIZE_MAX,
+  RTA_GRID_FREQS,
+  RTA_HZ,
+  RTA_LEVEL_DB_MAX,
+  RTA_LEVEL_DB_MIN,
+  RTA_LEVEL_GRID_DB,
+  RTA_LOW_ADVANCE,
+  RTA_TAP_GATE_DB,
   RTA_TARGET_BIN_HZ,
+  RTA_TIER_CROSSOVER_HZ,
 } from './definitions.js';
-export { fftSizeForRate } from './rta.js';
+export {
+  aggregateSpectrumBands,
+  bandDelta,
+  bandFMax,
+  fftSizeForRate,
+  hzToBin,
+  lowTierGainDb,
+  spectrumBandCentres,
+  type BandDelta,
+  type BandWedge,
+  type MagnitudeSeries,
+  type SpectrumBand,
+  type SpectrumBandOptions,
+  type SpectrumTierInput,
+} from './rta.js';
 export { gaincompDb, gaincompDbShifted, gateKnee, type GaincompMode, type GaincompParams } from './gaincomp.js';
 export {
   CURVE_WORDS,

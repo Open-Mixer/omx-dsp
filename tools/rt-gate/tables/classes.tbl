@@ -29,6 +29,14 @@
 #   wake          a wake that never waits. sem_post is a wake, like FUTEX_WAKE: an atomic increment,
 #                 and a futex wake only when a waiter sleeps; it never blocks the caller. sem_wait and
 #                 sem_timedwait are not wakes: they stay forbidden (forbidden.tbl, RT-BLOCK).
+#   host-buffer   an audio host's own lookup of a port's buffer for the current period, documented by the host for
+#                 its process thread: the one call a host's process callback cannot avoid, because it is how the
+#                 callback reaches its audio. jack_port_get_buffer returns the port's buffer for this cycle from
+#                 state the server prepared before calling it: no allocation, no lock, no system call. The class is
+#                 the narrowest in the table: it holds exactly the symbols the gate names (HOST_BUFFER_RULED in
+#                 omx-rt-gate.c), today one, jack_port_get_buffer (ruled 2026-11-15). Any other host call, JACK's
+#                 included, is refused at load in this class and enters it only by a ruling, with its own arm case.
+#                 Where JACK is absent the arm cannot call it: its case is skipped and named, never passed.
 #
 # The arm: externals-arm (tools/rt-gate/externals-arm.c, make rt-gate) calls each symbol over a
 # spread of arguments with the process's allocator interposed and requires zero allocations; every
@@ -87,3 +95,4 @@ sem_post wake externals-arm:sem_post an atomic increment; a futex wake only when
 __aarch64_ldadd4_relax word-atomic externals-arm:__aarch64_ldadd4_relax libgcc's outline atomic add, 4 bytes, relaxed: LSE ldadd or an exclusive loop, lock-free
 __aarch64_ldadd4_rel word-atomic externals-arm:__aarch64_ldadd4_rel libgcc's outline atomic add, 4 bytes, release: LSE ldaddl or an exclusive loop, lock-free
 __aarch64_ldadd8_rel word-atomic externals-arm:__aarch64_ldadd8_rel libgcc's outline atomic add, 8 bytes, release: LSE ldaddl or an exclusive loop, lock-free
+jack_port_get_buffer host-buffer externals-arm:jack_port_get_buffer JACK's own lookup of a port's buffer for this cycle, documented for the process thread: state the server prepared before the call, no allocation, no lock, no system call (ruled 2026-11-15; the only host-buffer row)

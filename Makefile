@@ -42,6 +42,9 @@
 #   make curve-golden  test/kernels/fixtures/curve_golden.h rewritten from omx_curve_points() (tools/curve-golden.c)
 #   make meter-view-sabotage  the meter view arm (mix/omx_meter_view.h) fails against seven sabotages
 #   make meter-view-golden  vectors/meter-view.json rewritten from the meter view law (tools/meter-view-golden.c)
+#   make rta-bands-sabotage  the band reduction and delta arms (analysis/omx_rta_bands.h) fail against twelve sabotages
+#   make rta-bands-golden  vectors/rta-bands.json rewritten from the band reduction (tools/rta-bands-golden.c)
+#   make rta-delta-golden  vectors/rta-delta.json rewritten from the difference of two taps (tools/rta-delta-golden.c)
 #   make geq-true-sabotage  the graphic EQ's true-mode oracle fails against seven sabotages
 #   make delay-taps-sabotage  the FX delay's read-tap oracle fails against ten sabotages
 #   make align-fdelay-sabotage  the strip alignment stage's oracle fails against five sabotages
@@ -182,7 +185,7 @@ VERSION    := $(shell sed -n 's/^\#define OMXDSP_VERSION_\(MAJOR\|MINOR\|PATCH\)
 
 
 
-.PHONY: fuzz fuzz-run fuzz-sabotage fuzz-records fuzz-coverage fuzz-corpus all lib test lint docs clean contract-dir definitions definitions-check contract-proof contract-tests test-tsan suite negative consumer gen-once perturb fdelay-sabotage doppler-sabotage onepole-sabotage threads threads-sabotage checks cost-prel test-fx test-analysis install version golden-write flavours bench-mixmatrix bench-gate bench-drive bench-flanger check-log10f strip-input-identity analysis-engine-identity test-mix mix-engine-identity test-engine-kernels engine-kernels-identity magnitude-sabotage eq-sabotage curve-golden curve-sabotage meter-view-golden meter-view-sabotage geq-true-sabotage delay-taps-sabotage align-fdelay-sabotage pitch-rates-sabotage instance-rates-sabotage bandwidth-q-table bandwidth-q-sabotage eq-default-bands eq-defaults-table room-ts-golden public-sources private-refs deps deps-check cost-deesser note-map-sabotage exports copy-check
+.PHONY: fuzz fuzz-run fuzz-sabotage fuzz-records fuzz-coverage fuzz-corpus all lib test lint docs clean contract-dir definitions definitions-check contract-proof contract-tests test-tsan suite negative consumer gen-once perturb fdelay-sabotage doppler-sabotage onepole-sabotage threads threads-sabotage checks cost-prel test-fx test-analysis install version golden-write flavours bench-mixmatrix bench-gate bench-drive bench-flanger check-log10f strip-input-identity analysis-engine-identity test-mix mix-engine-identity test-engine-kernels engine-kernels-identity magnitude-sabotage eq-sabotage curve-golden curve-sabotage meter-view-golden rta-bands-golden meter-view-sabotage rta-bands-sabotage geq-true-sabotage delay-taps-sabotage align-fdelay-sabotage pitch-rates-sabotage instance-rates-sabotage bandwidth-q-table bandwidth-q-sabotage eq-default-bands eq-defaults-table room-ts-golden public-sources private-refs deps deps-check cost-deesser note-map-sabotage exports copy-check
 
 all: lib
 
@@ -227,7 +230,7 @@ KERNELS_INC = $(BUILD)/kernels-suite.inc.c $(BUILD)/kernels-perturb.inc.c
 $(KERNELS_INC) &: $(wildcard test/kernels/*.c) tools/kernels-gen.sh | $(BUILD)
 	$(KERNELS_GEN) $(BUILD)
 
-$(BUILD)/omxdsp_suite: test/omxdsp_suite.c $(KERNELS) $(KERNELS_INC) $(LIB_CONTRACTS) $(HEADERS) $(MIX_HEADERS)
+$(BUILD)/omxdsp_suite: test/omxdsp_suite.c $(KERNELS) $(KERNELS_INC) $(LIB_CONTRACTS) $(HEADERS) $(MIX_HEADERS) $(ANALYSIS_HEADERS) vectors/rta-bands.json vectors/rta-delta.json
 	$(CC) $(TESTFLAGS) -I$(BUILD) -o $@ test/omxdsp_suite.c $(LIB_CONTRACTS) -lm
 
 $(BUILD)/omxdsp_threads: test/omxdsp_threads.c $(LIB_CONTRACTS) $(HEADERS) | $(BUILD)
@@ -329,6 +332,29 @@ $(BUILD)/meter_view_golden: tools/meter-view-golden.c test/kernels/fixtures/mete
 
 meter-view-golden: $(BUILD)/meter_view_golden
 	./$(BUILD)/meter_view_golden > vectors/meter-view.json
+
+# The band reduction's vectors (vectors/rta-bands.json, read back by the suite's rta_bands arm and the TypeScript twin's
+# test, installed beside the exports) are written by tools/rta-bands-golden.c from
+# test/kernels/fixtures/rta_bands_scenarios.h: `make rta-bands-golden` rewrites them, in the commit that changes the
+# reduction, and the diff is the review.
+$(BUILD)/rta_bands_golden: tools/rta-bands-golden.c test/kernels/fixtures/rta_bands_scenarios.h $(HEADERS) $(ANALYSIS_HEADERS) | $(BUILD)
+	$(CC) $(CFLAGS_PLAIN) $(INC) -o $@ $< -lm
+
+rta-bands-golden: $(BUILD)/rta_bands_golden
+	./$(BUILD)/rta_bands_golden > vectors/rta-bands.json
+
+# The difference of two taps' vectors (vectors/rta-delta.json, read back by the suite's rta_delta arm and the twin's
+# test, installed beside the exports), written the same way by tools/rta-delta-golden.c.
+$(BUILD)/rta_delta_golden: tools/rta-delta-golden.c test/kernels/fixtures/rta_bands_scenarios.h $(HEADERS) $(ANALYSIS_HEADERS) | $(BUILD)
+	$(CC) $(CFLAGS_PLAIN) $(INC) -o $@ $< -lm
+.PHONY: rta-delta-golden
+rta-delta-golden: $(BUILD)/rta_delta_golden
+	./$(BUILD)/rta_delta_golden > vectors/rta-delta.json
+
+# The band reduction arm fails against six sabotages of omx_rta_bands.h and the declared numbers
+# (test/rta-bands-sabotage.sh); the real suite is the control.
+rta-bands-sabotage: test/omxdsp_suite.c test/rta-bands-sabotage.sh $(KERNELS) vectors/rta-bands.json vectors/rta-delta.json $(LIB_CONTRACTS) $(HEADERS) $(ANALYSIS_HEADERS) | $(BUILD)
+	CC="$(CC)" CFLAGS="$(CFLAGS)" bash test/rta-bands-sabotage.sh $(BUILD)/rta-bands-sabotage $(LIB_CONTRACTS)
 
 # The meter view arm fails against seven sabotages of omx_meter_view.h, omx_meter.h and the declared numbers
 # (test/meter-view-sabotage.sh); the real suite is the control.
@@ -853,9 +879,12 @@ $(RT_GATE): tools/rt-gate/omx-rt-gate.c | $(BUILD)
 	$(CC) $(CFLAGS_PLAIN) -DOMX_RT_GATE_DATADIR='"$(DATADIR)/omxdsp/rt-gate"' -o $@ $< $(LDFLAGS)
 
 # -O0 -fno-builtin: every case calls the real symbol, none folded or inlined away
+# jack_port_get_buffer (host-buffer) is measured with JACK where jack.pc is found, and named SKIPPED where it is not
+RT_GATE_ARM_JACK := $(shell pkg-config --exists jack 2>/dev/null && echo -DOMX_RT_GATE_ARM_JACK $$(pkg-config --cflags jack))
+RT_GATE_ARM_JACK_LIBS := $(if $(RT_GATE_ARM_JACK),$(shell pkg-config --libs jack))
 $(RT_GATE_ARM): tools/rt-gate/externals-arm.c | $(BUILD)
 	@mkdir -p $(@D)
-	$(CC) -O0 -fno-builtin -Wall -Wextra -Werror -o $@ $< -lm
+	$(CC) -O0 -fno-builtin -Wall -Wextra -Werror $(RT_GATE_ARM_JACK) -o $@ $< -lm $(RT_GATE_ARM_JACK_LIBS)
 
 # the thread tags: every function the shipped headers declare carries exactly one `@thread audio|worker|control`
 # in the comment above it, under each set of flags a consumer builds with (the plain libm, this toolchain's
@@ -938,7 +967,8 @@ rt-gate-installed: rt-gate-ship | $(BUILD)
 .PHONY: rt-gate rt-gate-arm rt-gate-selftest rt-gate-sabotage rt-gate-tags rt-gate-selfrun rt-gate-ship install-rt-gate rt-gate-installed
 rt-gate-arm: $(RT_GATE_ARM) $(RT_GATE_TABLES)/classes.tbl
 	@awk '!/^#/ && NF && $$3 !~ /^externals-arm:/ { print "rt-gate-arm: " FILENAME ":" FNR ": " $$1 " names no externals-arm case"; bad = 1 } END { exit bad }' $(RT_GATE_TABLES)/classes.tbl
-	./$(RT_GATE_ARM) $$(awk '!/^#/ && NF { sub(/^externals-arm:/, "", $$3); print $$3 }' $(RT_GATE_TABLES)/classes.tbl)
+	. tools/rt-gate/jack2-env.sh; { jack2_env || true; }; \
+	  ./$(RT_GATE_ARM) $$(awk '!/^#/ && NF { sub(/^externals-arm:/, "", $$3); print $$3 }' $(RT_GATE_TABLES)/classes.tbl)
 
 rt-gate-selftest: $(RT_GATE) $(RT_GATE_FIXTURES) $(wildcard $(RT_GATE_TABLES)/*) $(RT_GATE_TAGS) $(RT_GATE_DIR)/graphs-release.stamp
 	CC="$(CC)" TMPDIR="$(abspath $(BUILD))" bash tools/rt-gate/selftest.sh $(abspath $(RT_GATE)) $(abspath $(RT_GATE_TABLES)) \
@@ -966,7 +996,47 @@ check-package: $(CHECK_PACKAGE)
 	@echo "omxdsp: make check-package green"
 
 .PHONY: test-parallel
-test-parallel: lib checks gen-once suite negative magnitude-sabotage eq-sabotage curve-sabotage meter-view-sabotage geq-true-sabotage delay-taps-sabotage align-fdelay-sabotage pitch-rates-sabotage instance-rates-sabotage bandwidth-q-table bandwidth-q-sabotage eq-default-bands consumer perturb fdelay-sabotage doppler-sabotage onepole-sabotage note-map-sabotage threads threads-sabotage test-fx test-analysis test-engine-kernels test-mix flavours fastmath fastmath-diff fastmath-sabotage fastmath-plain fastmath-partial rt-gate rt-gate-sabotage
+test-parallel: lib checks gen-once suite negative magnitude-sabotage eq-sabotage curve-sabotage meter-view-sabotage rta-bands-sabotage geq-true-sabotage delay-taps-sabotage align-fdelay-sabotage pitch-rates-sabotage instance-rates-sabotage bandwidth-q-table bandwidth-q-sabotage eq-default-bands consumer perturb fdelay-sabotage doppler-sabotage onepole-sabotage note-map-sabotage threads threads-sabotage test-fx test-analysis test-engine-kernels test-mix flavours fastmath fastmath-diff fastmath-sabotage fastmath-plain fastmath-partial rt-gate rt-gate-sabotage
+
+# ---- omx-rta-read (tools/omx-rta-read): the spectrum of a JACK signal, read and never fed; built where jack.pc is found
+#   make rta-read           the program
+#   make rta-read-test      the null test on a private dummy JACK server (test/rta-read/null-test.sh)
+#   make rta-read-sabotage  the null test fails a reader that feeds the mix and one whose taps are not one instant
+#   make rta-read-gate      its process callback judged whole by omx-rt-gate --abi jack, and three sabotages caught
+RTA_READ_DIR     = $(BUILD)/rta-read
+RTA_READ         = $(RTA_READ_DIR)/omx-rta-read
+RTA_READ_FIXTURE = $(RTA_READ_DIR)/rta-read-fixture
+RTA_READ_CFLAGS  = $(CFLAGS_PLAIN) $(FPFLAGS) $(INC)
+
+$(RTA_READ): tools/omx-rta-read/omx-rta-read.c $(HEADERS) $(ANALYSIS_HEADERS) $(MIX_HEADERS) | $(BUILD)
+	@mkdir -p $(@D)
+	$(CC) $(RTA_READ_CFLAGS) $$(pkg-config --cflags jack) -o $@ $< -lm $$(pkg-config --libs jack)
+
+$(RTA_READ_FIXTURE): test/rta-read/fixture.c | $(BUILD)
+	@mkdir -p $(@D)
+	$(CC) $(CFLAGS_PLAIN) $$(pkg-config --cflags jack) -o $@ $< -lm $$(pkg-config --libs jack)
+
+.PHONY: rta-read rta-read-test rta-read-sabotage rta-read-gate install-rta-read
+rta-read: $(RTA_READ)
+
+# Only the omx-rta-read package needs JACK: without jack.pc the program is not built, and install says so.
+install-rta-read:
+	@if pkg-config --exists jack; then \
+	  $(MAKE) --no-print-directory $(RTA_READ) && \
+	  install -d $(DESTDIR)$(BINDIR) $(DESTDIR)$(MANDIR)/man1 && \
+	  install -m 0755 $(RTA_READ) $(DESTDIR)$(BINDIR)/omx-rta-read && \
+	  install -m 0644 tools/omx-rta-read/omx-rta-read.1 $(DESTDIR)$(MANDIR)/man1/; \
+	else echo "install: omx-rta-read not built: no jack.pc"; fi
+
+rta-read-test: $(RTA_READ) $(RTA_READ_FIXTURE) test/rta-read/null-test.sh
+	TMPDIR="$(abspath $(BUILD))" bash test/rta-read/null-test.sh $(abspath $(RTA_READ)) $(abspath $(RTA_READ_FIXTURE))
+
+rta-read-sabotage: $(RTA_READ_FIXTURE) test/rta-read/sabotage.sh test/rta-read/null-test.sh tools/omx-rta-read/omx-rta-read.c
+	CC="$(CC)" TMPDIR="$(abspath $(BUILD))" bash test/rta-read/sabotage.sh $(abspath $(RTA_READ_FIXTURE)) $(RTA_READ_CFLAGS)
+
+rta-read-gate: $(RT_GATE) $(RT_GATE_TAGS) $(RT_GATE_DIR)/graphs-release.stamp test/rta-read/gate.sh tools/omx-rta-read/omx-rta-read.c
+	CC="$(CC)" TMPDIR="$(abspath $(BUILD))" bash test/rta-read/gate.sh $(abspath $(RT_GATE)) $(abspath $(RT_GATE_TABLES)) \
+	  $(abspath $(RT_GATE_GRAPHS)) $(abspath $(RT_GATE_TAGS)) "-I$(abspath include) -isystem $(CONTRACT_INC) $(FPFLAGS)"
 
 # ---- install ------------------------------------------------------------------------------------
 
@@ -988,7 +1058,7 @@ $(BUILD)/omxdsp-tsan.pc: omxdsp.pc.in include/omxdsp/omxdsp.h Makefile packaging
 	sed $(PC_SED) -e 's|@NAME@|omxdsp-tsan|' -e 's|@FLAVOUR@|contracts compiled in, under ThreadSanitizer|' \
 	    -e 's|@CFLAGS@| $(TSAN_CFLAGS) $(MVEC_CFLAGS)|' -e 's|@LIBS@| $(TSAN_LIBS) $(MVEC_LIBS)|' $< | sed 's/ *$$//' > $@
 
-install: $(LIBS_ALL) $(PC_ALL) $(EXPORTS) install-rt-gate
+install: $(LIBS_ALL) $(PC_ALL) $(EXPORTS) install-rt-gate install-rta-read
 	install -d $(DESTDIR)$(INCLUDEDIR)/omxdsp/fx $(DESTDIR)$(INCLUDEDIR)/omxdsp/analysis $(DESTDIR)$(INCLUDEDIR)/omxdsp/mix $(DESTDIR)$(LIBDIR)/pkgconfig \
 	  $(DESTDIR)$(BINDIR) $(DESTDIR)$(DATADIR)/omxdsp $(DESTDIR)$(MANDIR)/man1
 	install -m 0644 include/omxdsp/*.h $(DESTDIR)$(INCLUDEDIR)/omxdsp/
@@ -1003,6 +1073,8 @@ install: $(LIBS_ALL) $(PC_ALL) $(EXPORTS) install-rt-gate
 	install -m 0644 $(EXPORTS) $(DESTDIR)$(DATADIR)/omxdsp/
 	install -m 0644 test/analysis/hrp_peaking_corpus.h $(DESTDIR)$(DATADIR)/omxdsp/
 	install -m 0644 vectors/meter-view.json $(DESTDIR)$(DATADIR)/omxdsp/meter-view-vectors.json
+	install -m 0644 vectors/rta-bands.json $(DESTDIR)$(DATADIR)/omxdsp/rta-bands-vectors.json
+	install -m 0644 vectors/rta-delta.json $(DESTDIR)$(DATADIR)/omxdsp/rta-delta-vectors.json
 	install -m 0755 tools/omx-dsp-copy-check.sh $(DESTDIR)$(BINDIR)/omx-dsp-copy-check
 	install -m 0644 omx-dsp-copy-check.1 $(DESTDIR)$(MANDIR)/man1/
 
