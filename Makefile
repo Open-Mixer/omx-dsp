@@ -656,6 +656,9 @@ golden-write: $(foreach k,$(FX_KERNELS),$(BUILD)/fx_$(k)_golden) $(foreach k,$(F
 # fbs_place holds the feedback corrector's placement (omx_fbs_place.h) to the shared vector file
 # test/analysis/fixtures/fbs_place.vectors, which ts/test/fbs-place.test.mjs holds the twin to;
 # test/analysis/fbs-place-sabotage.sh breaks each placement rule once and requires its vector to fail.
+# hrp_place holds the harmonic resonance processor's placement and stepping (omx_hrp_place.h) to the shared vector
+# file test/analysis/fixtures/hrp_place.vectors, which ts/test/hrp-place.test.mjs holds the twin to;
+# test/analysis/hrp-place-sabotage.sh breaks each rule once and requires its line to fail.
 # live_shells holds both correctors' live-shell cores (omx_fbs_lv2.h, omx_hrp_lv2.h) by value: a host with no
 # worker, the mode word, report bit-exact against cut, omx-fbs's staged fade at the nine rates and its quanta,
 # slots keeping their finds; test/analysis/live-shells-sabotage.sh breaks each once, and makes run() call the
@@ -669,7 +672,7 @@ golden-write: $(foreach k,$(FX_KERNELS),$(BUILD)/fx_$(k)_golden) $(foreach k,$(F
 # thread: room_ts holds them to core's TypeScript through the parity table test/analysis/fixtures/room_ts.h;
 # align_fit, room and sweep hold them to closed forms at the nine oracle rates and count allocations;
 # test/analysis/room-sabotage.sh breaks each of their kernels once and requires both kinds to fail.
-ANALYSIS_TESTS = fbs_detect fbs_place live_shells rta hrp_pitch hrp_track hrp_attribute hrp_baseline hrp_correct hrp_render hrp_lv2 hrp_lv2_rates rates golden \
+ANALYSIS_TESTS = fbs_detect fbs_place hrp_place live_shells rta hrp_pitch hrp_track hrp_attribute hrp_baseline hrp_correct hrp_render hrp_lv2 hrp_lv2_rates rates golden \
                  room_ts align_fit room sweep
 ANALYSIS_LDFLAGS_rates = -Wl,--wrap=malloc,--wrap=calloc,--wrap=realloc,--wrap=free
 ANALYSIS_LDFLAGS_golden = -Wl,--wrap=log10f
@@ -690,6 +693,7 @@ test-analysis: analysis-oracles
 	CC="$(CC)" CFLAGS="$(CFLAGS)" bash test/analysis/room-sabotage.sh $(BUILD)/room-sabotage
 	CC="$(CC)" CFLAGS="$(CFLAGS)" bash test/analysis/hrp-lv2-rates-sabotage.sh $(BUILD)/hrp-lv2-rates-sabotage
 	CC="$(CC)" CFLAGS="$(CFLAGS)" bash test/analysis/fbs-place-sabotage.sh $(BUILD)/fbs-place-sabotage
+	CC="$(CC)" CFLAGS="$(CFLAGS)" bash test/analysis/hrp-place-sabotage.sh $(BUILD)/hrp-place-sabotage
 	CC="$(CC)" CFLAGS="$(CFLAGS)" bash test/analysis/live-shells-sabotage.sh $(BUILD)/live-shells-sabotage
 
 analysis-engine-identity: $(LIB)
