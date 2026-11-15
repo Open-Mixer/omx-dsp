@@ -414,6 +414,8 @@ checks:
 	bash tools/travel-grid-check.sh --self-test
 	sh tools/no-host-nproc.sh --self-test
 	sh tools/no-host-nproc.sh
+	sh tools/ci-install-options.sh --self-test
+	sh tools/ci-install-options.sh
 	bash tools/check-package-check.sh
 	bash tools/check-package-check.sh --self-test
 	CC="$(CC)" TMPDIR="$(abspath $(BUILD))" bash tools/clone-check.sh
