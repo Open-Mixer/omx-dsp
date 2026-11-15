@@ -102,6 +102,15 @@ export function runVector(v, tol, make = (pool) => new FbsPlace(pool)) {
         if (!near(got, num(w[3]), tol.cents)) fail.push(`${at}: read ${got}`);
         break;
       }
+      case 'remove': if (!p.remove(num(w[1]))) fail.push(`${at}: refused`); break;
+      case 'edit': if (!p.edit(num(w[1]), ORIGIN_WORDS.indexOf(w[2]), num(w[3]))) fail.push(`${at}: refused`); break;
+      case 'others': p.setOthers(num(w[1])); break;
+      case 'seat': {
+        const k = p.seat(ORIGIN_WORDS.indexOf(w[1]), num(w[2]), num(w[3]), num(w[4]));
+        const fbs = w[1] === 'fbs-fixed' || w[1] === 'fbs-live';
+        if (fbs ? k < 0 : k !== -1) fail.push(`${at}: seat returned ${k}`);
+        break;
+      }
       default: throw new Error(`${at}: no such line`);
     }
   }
@@ -145,6 +154,10 @@ describe('every rule has an arm that turns a vector red', () => {
       p.release = (k) => { free(k); const s = p.slots; for (let i = k; i + 1 < s.length; i++) s[i] = s[i + 1]; free(s.length - 1); };
     },
     'the youngest band answers a merge': (p) => { const own = p.bySeq.bind(p); p.bySeq = () => own().reverse(); },
+    'a deleted band keeps its slot': (p) => { p.remove = () => true; },
+    'the EQ\'s other bands not counted': (p) => { p.othersCounted = () => 0; },
+    'a seated or re-tagged band never adopted': (p) => { p.adopt = () => {}; },
+    'an adopted band\'s hold starts at zero': (p) => { p.adoptClock = () => 0; },
   };
   for (const [name, override] of Object.entries(arms)) it(name, () => assert.ok(runAll(arm(override)).length > 0, `${name} stayed green`));
   it('the per-origin cap arm is the console\'s for every origin', () => {
