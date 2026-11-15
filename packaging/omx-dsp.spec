@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2026 Pau Aliagas <linuxnow@gmail.com>
 Name: omx-dsp
-Version: 0.32.1
+Version: 0.32.2
 Release: 1%{?dist}
 License: GPL-3.0-or-later
 Summary: The audio toolbox of the OpenMixer console, as a real-time-safe C library
@@ -145,6 +145,36 @@ Its documentation is on openmixer.org.
 %{_datadir}/omx-contract/contract.d/3/omx-dsp/
 
 %changelog
+* Sun Nov 15 2026 Pau Aliagas <linuxnow@gmail.com> - 0.32.2-1
+- rta: omx_rta_bands, the spectrum analyser's band reduction (log-spaced bands
+  from 20 Hz to the lower of 20 kHz and Nyquist, each band's RMS level and
+  peak, the low-zoom tier under 300 Hz, the quiet gate at -60 dB), and its
+  TypeScript twin aggregateSpectrumBands, held by one vector file (#24, #31).
+- rta: omx_rta_band_delta, the difference of two taps (POST - PRE per band,
+  the wedges past a 0.4 dB deadband), and its twin bandDelta, held by one
+  vector file (#24, #31).
+- rta: the analyser's numbers declared in rta.json: band limits, tier
+  crossover, quiet gates, refresh rate, low-zoom advance, level window and
+  grid, graticule frequencies, the difference's deadband (#24, #31).
+- rt-gate: the host-buffer class, closed to jack_port_get_buffer, measured by
+  the externals arm on jack2; jack.abi judges a JACK process callback whole
+  (#24, #31).
+- omx-rta-read: new package, the spectrum of a JACK signal read and never
+  fed, before and after a processor, with their difference; null-tested on a
+  private JACK server (#24, #31).
+- fbs: the placement's calls for the operator's edits, the shared EQ cap and
+  a restored band (set_others, remove, edit, seat); FBS_RING_MEMORY_SLOTS
+  (#27).
+- hrp: the placement and stepping in C (omx_hrp_place.h) and its TypeScript
+  twin, held by one vector file; the console's clamp shared by both
+  placements (#30).
+- lint: the patch-release policy written down (BUILDING.md) and enforced:
+  patch-names-check reads every header and every declaration, allows a
+  patch to add and refuses one that removes or changes (#33).
+- fuzz: the bell, converter and take checks carry their records (#14, #17).
+- Additive: no existing function, signature, constant, behaviour or package
+  changes.
+
 * Fri Nov 13 2026 Pau Aliagas <linuxnow@gmail.com> - 0.32.1-1
 - Built against omx-contract >= 3.18.0 and below 4 (was 3.9.0), the newest the
   channel serves, with its ceiling (D30).
