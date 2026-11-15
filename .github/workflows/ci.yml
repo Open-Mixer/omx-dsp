@@ -2,17 +2,15 @@
 # Copyright (C) 2026 Pau Aliagas <linuxnow@gmail.com>
 name: ci
 
-# On every push and pull request: the whole suite on Fedora, both Debian releases and Ubuntu 24.04,
+# By workflow_dispatch (on a pull request's head before it is merged: gh workflow run ci.yml --ref <branch>): the whole suite on Fedora, both Debian releases and Ubuntu 24.04,
 # on both architectures; on workflow_dispatch the packages built, their file lists checked and a consumer outside the tree built
 # against each; omx-contract installed from the OpenMixer channel at the floor the packaging
 # declares, and refused below its floor. The packages and the release workflow as a dry run only on workflow_dispatch
-# (fast-release dispatches it on a release head). Nothing is signed or published here. Every job reads this
+# (fast-release dispatches it on a release head). The fast checks, the documentation check among them, run on every
+# pull request from public-sources.yml. Nothing is signed or published here. Every job reads this
 # repository and other public ones, and runs on GitHub's runners.
 
 on:
-  pull_request:
-  push:
-    branches: [main, dedupe/all]
   workflow_dispatch:
 
 permissions:
@@ -24,8 +22,7 @@ env:
   OMX_CONTRACT_REF: v3.18.0
 
 concurrency:
-  # A new push to a pull request cancels the run it supersedes. Every other run (main, a tag) has a group of its own
-  # and is never cancelled; the run id keeps two pushes to main from replacing each other while one is queued.
+  # Every dispatch has a group of its own (the run id) and is never cancelled.
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
@@ -316,19 +313,6 @@ jobs:
           path: fuzz/findings/
           if-no-files-found: ignore
 
-  docs:
-    name: make docs (the public headers are fully documented)
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install doxygen
-        run: sudo apt-get update -qq && sudo apt-get install -y --no-install-recommends doxygen
-
-      - name: make docs
-        run: make docs
-
   rpm:
     name: omx-dsp-devel (fc44, ${{ matrix.arch }})
     if: github.event_name == 'workflow_dispatch'
@@ -490,8 +474,3 @@ jobs:
     with:
       publish: false
       arm: false  # arm64/aarch64 build at release only
-
-  # the checks every OpenMixer repository runs on what it publishes: commit messages, private references, and no
-  # local copy of either (Open-Mixer/.github's public-sources-check)
-  public-sources:
-    uses: Open-Mixer/.github/.github/workflows/public-sources-check.yml@openmixer-v1

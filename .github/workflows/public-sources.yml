@@ -23,3 +23,19 @@ jobs:
       - uses: Open-Mixer/.github/.github/actions/trigger-gate@openmixer-v1
         with:
           lint-workflow: public-sources.yml
+  docs:
+    name: make docs (the public headers are fully documented)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install doxygen
+        run: sudo apt-get update -qq && sudo apt-get install -y --no-install-recommends doxygen
+
+      - name: make docs
+        run: make docs
+  # the checks every OpenMixer repository runs on what it publishes: commit messages, private references, and no
+  # local copy of either (Open-Mixer/.github's public-sources-check)
+  public-sources:
+    uses: Open-Mixer/.github/.github/workflows/public-sources-check.yml@openmixer-v1
