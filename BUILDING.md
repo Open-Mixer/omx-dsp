@@ -332,3 +332,20 @@ in the code.
 tag releases both through the OpenMixer release workflows; the version is
 `OMXDSP_VERSION_*` in `include/omxdsp/omxdsp.h`, the spec's `Version:` and the top of
 `debian/changelog`, and CI refuses them disagreeing.
+
+### What a patch release may change
+
+omx-dsp ships a static archive and its headers together, in one package, so a program is always built against the
+headers of the archive it links. Within that:
+
+- A **patch** (`x.y.z` to `x.y.z+1`) may add public names (a function, a macro, a type, an enumerator, a header) and
+  append fields to a struct its init function zeroes. Nothing built against an earlier patch can tell.
+- A **minor** (`x.y` to `x.y+1`) is needed for anything an earlier build could tell: a changed signature, a removed or
+  reordered field or enumerator, a removed name, or changed behaviour (a kernel's golden vectors move:
+  `make golden-write` is a minor's).
+
+`tools/patch-names-check.sh` (part of `make lint`) enforces the header side. When `omxdsp.h` says patch > 0, it reads
+every header under `include/omxdsp/`, at every earlier tag of the same minor and in the tree, and refuses a macro,
+function, static inline, typedef or extern that is gone or whose declaration changed, and a struct, union or enum
+whose earlier members are not, unchanged and in order, its first members now. An added name is allowed and counted.
+`test/patch-names-sabotage.sh` breaks each of those rules in a copy of the check and requires its self-test to fail.

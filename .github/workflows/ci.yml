@@ -2,17 +2,15 @@
 # Copyright (C) 2026 Pau Aliagas <linuxnow@gmail.com>
 name: ci
 
-# On every push and pull request: the whole suite on Fedora, both Debian releases and Ubuntu 24.04,
+# By workflow_dispatch (on a pull request's head before it is merged: gh workflow run ci.yml --ref <branch>): the whole suite on Fedora, both Debian releases and Ubuntu 24.04,
 # on both architectures; on workflow_dispatch the packages built, their file lists checked and a consumer outside the tree built
 # against each; omx-contract installed from the OpenMixer channel at the floor the packaging
 # declares, and refused below its floor. The packages and the release workflow as a dry run only on workflow_dispatch
-# (fast-release dispatches it on a release head). Nothing is signed or published here. Every job reads this
+# (fast-release dispatches it on a release head). The fast checks, the documentation check among them, run on every
+# pull request from public-sources.yml. Nothing is signed or published here. Every job reads this
 # repository and other public ones, and runs on GitHub's runners.
 
 on:
-  pull_request:
-  push:
-    branches: [main, dedupe/all]
   workflow_dispatch:
 
 permissions:
@@ -24,8 +22,7 @@ env:
   OMX_CONTRACT_REF: v3.18.0
 
 concurrency:
-  # A new push to a pull request cancels the run it supersedes. Every other run (main, a tag) has a group of its own
-  # and is never cancelled; the run id keeps two pushes to main from replacing each other while one is queued.
+  # Every dispatch has a group of its own (the run id) and is never cancelled.
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.run_id }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
@@ -56,10 +53,10 @@ jobs:
       - name: Install the build tools
         run: |
           if command -v dnf >/dev/null; then
-            dnf install -y --setopt=install_weak_deps=False gcc make binutils gawk diffutils git curl tar gzip dnf5-plugins pkgconf-pkg-config
+            dnf install -y --setopt=tsflags=nodocs --setopt=install_weak_deps=False gcc make binutils gawk diffutils git curl tar gzip dnf5-plugins pkgconf-pkg-config
           else
             apt-get update -qq
-            apt-get install -y --no-install-recommends build-essential gawk diffutils git ca-certificates curl pkgconf dpkg-dev
+            apt-get -o Dpkg::Options::=--force-unsafe-io install -y --no-install-recommends build-essential gawk diffutils git ca-certificates curl pkgconf dpkg-dev
           fi
 
       - uses: actions/checkout@v4
@@ -79,9 +76,9 @@ jobs:
         run: |
           set -euo pipefail
           if command -v dnf >/dev/null; then
-            dnf builddep -y --setopt=install_weak_deps=False packaging/omx-dsp.spec
+            dnf builddep -y --setopt=tsflags=nodocs --setopt=install_weak_deps=False packaging/omx-dsp.spec
           else
-            apt-get build-dep -y --no-install-recommends ./
+            apt-get -o Dpkg::Options::=--force-unsafe-io build-dep -y --no-install-recommends ./
           fi
           pkg-config --modversion omx-contract
           sh tools/contract-include.sh
@@ -109,9 +106,14 @@ jobs:
         id: handback-release-arm-gate
         run: tools/release-arm-gate-selftest.sh && tools/release-arm-gate-selftest.sh --sabotage
 
+      # the parallel jobs from the job's CPU quota and the runner's declared CPUs, never the host's nproc
+      - name: The parallel jobs this runner may run
+        uses: Open-Mixer/.github/.github/actions/jobs@openmixer-v1
+        with:
+          max: ${{ vars.OMX_RUNNER_CPUS || '3' }}
       - name: make test
         id: handback-test
-        run: make -j"$(nproc)" test
+        run: make -j"$OMX_JOBS" test
 
   # The sabotage of the range: omx-contract 2.6.0, which the channel still serves and which is below
   # the floor the spec declares, must stop the build at once with a message that names the
@@ -131,7 +133,7 @@ jobs:
       - name: Install the build tools
         run: |
           apt-get update -qq
-          apt-get install -y --no-install-recommends build-essential gawk diffutils git ca-certificates curl pkgconf dpkg-dev
+          apt-get -o Dpkg::Options::=--force-unsafe-io install -y --no-install-recommends build-essential gawk diffutils git ca-certificates curl pkgconf dpkg-dev
       - uses: actions/checkout@v4
 
       - name: The checkout is a git directory this job may read
@@ -139,9 +141,14 @@ jobs:
       - name: Add the OpenMixer repository
         uses: Open-Mixer/.github/.github/actions/add-openmixer@openmixer-v1
       - name: Install the build dependencies from the OpenMixer channel
-        run: apt-get build-dep -y --no-install-recommends ./
+        run: apt-get -o Dpkg::Options::=--force-unsafe-io build-dep -y --no-install-recommends ./
+      # the parallel jobs from the job's CPU quota and the runner's declared CPUs, never the host's nproc
+      - name: The parallel jobs this runner may run
+        uses: Open-Mixer/.github/.github/actions/jobs@openmixer-v1
+        with:
+          max: ${{ vars.OMX_RUNNER_CPUS || '3' }}
       - name: The library the twins are checked against
-        run: make -j"$(nproc)" lib
+        run: make -j"$OMX_JOBS" lib
       - uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -174,10 +181,10 @@ jobs:
         run: |
           set -euo pipefail
           if command -v dnf >/dev/null; then
-            dnf install -y --setopt=install_weak_deps=False git gcc make gawk dnf5-plugins pkgconf-pkg-config
+            dnf install -y --setopt=tsflags=nodocs --setopt=install_weak_deps=False git gcc make gawk dnf5-plugins pkgconf-pkg-config
           else
             apt-get update -qq
-            apt-get install -y --no-install-recommends git ca-certificates curl build-essential gawk pkgconf
+            apt-get -o Dpkg::Options::=--force-unsafe-io install -y --no-install-recommends git ca-certificates curl build-essential gawk pkgconf
           fi
 
       - name: Add the OpenMixer repository
@@ -187,9 +194,9 @@ jobs:
         run: |
           set -euo pipefail
           if command -v dnf >/dev/null; then
-            dnf install -y "omx-contract-devel-$OLD"
+            dnf install -y --setopt=tsflags=nodocs "omx-contract-devel-$OLD"
           else
-            apt-get install -y --no-install-recommends "libomx-contract-dev=$OLD"
+            apt-get -o Dpkg::Options::=--force-unsafe-io install -y --no-install-recommends "libomx-contract-dev=$OLD"
           fi
           test "$(pkg-config --modversion omx-contract)" = "$OLD"
 
@@ -316,19 +323,6 @@ jobs:
           path: fuzz/findings/
           if-no-files-found: ignore
 
-  docs:
-    name: make docs (the public headers are fully documented)
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install doxygen
-        run: sudo apt-get update -qq && sudo apt-get install -y --no-install-recommends doxygen
-
-      - name: make docs
-        run: make docs
-
   rpm:
     name: omx-dsp-devel (fc44, ${{ matrix.arch }})
     if: github.event_name == 'workflow_dispatch'
@@ -344,7 +338,7 @@ jobs:
     steps:
       - name: Install the build tools
         run: |
-          dnf install -y --setopt=install_weak_deps=False git rpm-build dnf5-plugins gcc make tar gzip diffutils pkgconf-pkg-config python3
+          dnf install -y --setopt=tsflags=nodocs --setopt=install_weak_deps=False git rpm-build dnf5-plugins gcc make tar gzip diffutils pkgconf-pkg-config python3
 
       - name: Add the OpenMixer repository
         uses: Open-Mixer/.github/.github/actions/add-openmixer@openmixer-v1
@@ -399,7 +393,7 @@ jobs:
       - name: A consumer builds against omx-dsp-devel
         run: |
           set -euo pipefail
-          dnf install -y --setopt=install_weak_deps=False rpms/omx-dsp-devel-[0-9]*.${{ matrix.arch }}.rpm rpms/omx-dsp-contract-[0-9]*.noarch.rpm
+          dnf install -y --setopt=tsflags=nodocs --setopt=install_weak_deps=False rpms/omx-dsp-devel-[0-9]*.${{ matrix.arch }}.rpm rpms/omx-dsp-contract-[0-9]*.noarch.rpm
           test "$(pkg-config --modversion omxdsp)" = "$(make -s version)"
           pkg-config --cflags omxdsp | grep -q -- '-ffp-contract=off'
           gcc $(pkg-config --cflags omxdsp) -Itest/fx -include test/support/log10f_subst.h -O2 -o /tmp/golden test/fx/delay_golden.test.c $(pkg-config --libs omxdsp)
@@ -438,7 +432,7 @@ jobs:
       - name: Install the build tools
         run: |
           apt-get update -qq
-          apt-get install -y --no-install-recommends ca-certificates curl git dpkg-dev debhelper build-essential lintian gawk pkgconf python3
+          apt-get -o Dpkg::Options::=--force-unsafe-io install -y --no-install-recommends ca-certificates curl git dpkg-dev debhelper build-essential lintian gawk pkgconf python3
 
       - uses: actions/checkout@v4
         with:
@@ -455,7 +449,7 @@ jobs:
       - name: A consumer builds against libomxdsp-dev
         run: |
           set -euo pipefail
-          apt-get install -y --no-install-recommends ./debs/libomxdsp-dev_*.deb ./debs/omx-dsp-contract_*.deb ./debs/omx-rt-gate_*.deb
+          apt-get -o Dpkg::Options::=--force-unsafe-io install -y --no-install-recommends ./debs/libomxdsp-dev_*.deb ./debs/omx-dsp-contract_*.deb ./debs/omx-rt-gate_*.deb
           dpkg -L libomxdsp-dev > listing.txt   # read from a file: see the RPM job's listing
           # the contract directory is omx-dsp-contract's (omx-contract#150)
           ! grep -q '^/usr/share/omx-contract/' listing.txt
@@ -490,8 +484,3 @@ jobs:
     with:
       publish: false
       arm: false  # arm64/aarch64 build at release only
-
-  # the checks every OpenMixer repository runs on what it publishes: commit messages, private references, and no
-  # local copy of either (Open-Mixer/.github's public-sources-check)
-  public-sources:
-    uses: Open-Mixer/.github/.github/workflows/public-sources-check.yml@openmixer-v1
