@@ -518,7 +518,7 @@ static inline uint32_t omx_curve_drive(const struct omx_curve_request *rq, doubl
  * (OMX_CURVE_TERM_MISSING, OMX_CURVE_KIND_UNKNOWN), an EQ's anchors within CURVE_POINTS_MAX
  * (OMX_CURVE_POINTS_RANGE) and the room (OMX_CURVE_ROOM). With no extents, an EQ runs from CURVE_EXTENTS
  * `freqMinHz` to the lower of `freqMaxHz` and `nyquistFraction` of Nyquist, a transfer curve from `levelMinDb`
- * to `levelMaxDb`, a drive's from `sampleMin` to `sampleMax`.
+ * to `levelMaxDb`, a drive's from `driveLevelMinDb` to `driveLevelMaxDb`.
  * @param rq The request.
  * @param x The x of each point, ascending: Hz, input dB, or a drive's input sample.
  * @param y The y of each point: dB, output dB, or a drive's output sample.
@@ -559,8 +559,8 @@ static inline uint32_t omx_curve_points_marked(const struct omx_curve_request *r
     lo = OMX_CURVE_EXTENTS_FREQ_MIN_HZ;
     hi = nyq < OMX_CURVE_EXTENTS_FREQ_MAX_HZ ? nyq : OMX_CURVE_EXTENTS_FREQ_MAX_HZ;
   } else if (rq->family == OMX_CURVE_FAMILIES_DRIVE) {
-    lo = OMX_CURVE_EXTENTS_SAMPLE_MIN;
-    hi = OMX_CURVE_EXTENTS_SAMPLE_MAX;
+    lo = OMX_CURVE_EXTENTS_DRIVE_LEVEL_MIN_DB;
+    hi = OMX_CURVE_EXTENTS_DRIVE_LEVEL_MAX_DB;
   } else {
     lo = OMX_CURVE_EXTENTS_LEVEL_MIN_DB;
     hi = OMX_CURVE_EXTENTS_LEVEL_MAX_DB;

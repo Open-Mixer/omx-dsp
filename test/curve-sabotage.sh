@@ -22,7 +22,7 @@
 #   drive-trim     the drive's output trim left out;
 #   drive-exciter  the exciter drawn as a crossfade, not added in parallel;
 #   drive-tone     a drive with no tone drawn at tone 0, not -1;
-#   drive-extents  a drive's default grid from -2, not sampleMin.
+#   drive-extents  a drive's default grid from -80 dB, not driveLevelMinDb.
 # The tree is never edited; a sed that matches nothing is a failure, not a skip. The real suite, run by
 # `make suite`, is the control.
 # Usage: CC=… CFLAGS=… CONTRACT_INC=… curve-sabotage.sh <scratch-dir> <libomxdsp-contracts.a>
@@ -77,5 +77,5 @@ run drive-mix 's|    y\[i\] = (double)((dry + o.mix \* delta) \* o.trim_lin);|  
 run drive-trim 's|    y\[i\] = (double)((dry + o.mix \* delta) \* o.trim_lin);|    y[i] = (double)(dry + o.mix * delta);|'
 run drive-exciter 's|    const float delta = exciter ? wet : wet - dry;|    const float delta = exciter \&\& 0 ? wet : wet - dry;|'
 run drive-tone 's|tone ? (float)omx_curve_term_value(tone) : -1.0f,|tone ? (float)omx_curve_term_value(tone) : 0.0f,|'
-run drive-extents 's|    lo = OMX_CURVE_EXTENTS_SAMPLE_MIN;|    lo = -2.0;|'
+run drive-extents 's|    lo = OMX_CURVE_EXTENTS_DRIVE_LEVEL_MIN_DB;|    lo = -80.0;|'
 echo "curve-sabotage: all eighteen sabotages are caught"

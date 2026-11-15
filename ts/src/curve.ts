@@ -185,7 +185,7 @@ export function curvePoints(rq: CurveRequest): CurveAnswer {
   let lo: number, hi: number;
   if (rq.extents) [lo, hi] = [rq.extents.min, rq.extents.max];
   else if (eq) [lo, hi] = [CURVE_EXTENTS.freqMinHz, Math.min(CURVE_EXTENTS.freqMaxHz, (CURVE_EXTENTS.nyquistFraction * rq.sampleRate) / 2)];
-  else if (rq.family === 'drive') [lo, hi] = [CURVE_EXTENTS.sampleMin, CURVE_EXTENTS.sampleMax];
+  else if (rq.family === 'drive') [lo, hi] = [CURVE_EXTENTS.driveLevelMinDb, CURVE_EXTENTS.driveLevelMaxDb];
   else [lo, hi] = [CURVE_EXTENTS.levelMinDb, CURVE_EXTENTS.levelMaxDb];
   if (!(hi > lo) || (eq && !(lo > 0))) return { code: 'pointsRange' };
   const find = (role: string, index = 0): CurveTerm | undefined => {
