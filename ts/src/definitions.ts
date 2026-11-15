@@ -20,6 +20,27 @@ export const RTA_TIER_CROSSOVER_HZ = 300;
 /** Quiet gate of the band reduction: when no band rises above this, every band reads as silence, so a rig's idle floor never draws as a flat block. Keyed on the loudest band, not per band. (dB) @see data/kernels/rta.json */
 export const RTA_BAND_GATE_DB = -60;
 
+/** Quiet gate of a tap's raw spectrum, before any banding: when no bin rises above this the whole tap reads as the floor. The console's overlay frame applies it; a banded reading is gated by RTA_BAND_GATE_DB instead. (dB) @see data/kernels/rta.json */
+export const RTA_TAP_GATE_DB = -60;
+
+/** The floor of a spectrum display's level window: the bottom of the frame, every surface. (dB) @see data/kernels/rta.json */
+export const RTA_LEVEL_DB_MIN = -72;
+
+/** The ceiling of a spectrum display's level window: the top of the frame, where a band's peak reaching it draws a clip tick. (dB) @see data/kernels/rta.json */
+export const RTA_LEVEL_DB_MAX = 0;
+
+/** The spacing of a spectrum display's one dB graticule, from the ceiling down to the floor. (dB) @see data/kernels/rta.json */
+export const RTA_LEVEL_GRID_DB = 12;
+
+/** How often a watched spectrum is read and published: an operator-cadence poll, never the audio thread. (Hz) @see data/kernels/rta.json */
+export const RTA_HZ = 10;
+
+/** How far the low zoom's window must have advanced, as a fraction of that window, before it is recomputed; between recomputes the last zoom rides the fresh main spectrum unchanged. @see data/kernels/rta.json */
+export const RTA_LOW_ADVANCE = 0.25;
+
+/** The frequencies of a spectrum display's labelled vertical graticule lines, Hz, on the log frequency axis: the decades and their 2 and 5 steps from 20 Hz to 20 kHz, every surface. (Hz) @see data/kernels/rta.json */
+export const RTA_GRID_FREQS: readonly number[] = [20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 20000];
+
 /** Where the low-pass section hands its poles over from the matched pair to the prewarped bilinear pair, as fractions of Nyquist, and how that band moves with Q. At `qHi` (1/sqrt(2), the 12 dB Butterworth) the band runs from `loAtHiQ` to `hiAtHiQ`; at `qLo` (0.5412, the low-Q half of the 24 dB Butterworth) and below, from `loAtLoQ` to `hiAtLoQ`; between the two it moves linearly. Above `qHi` the prototype peaks, and the band's end moves down to `hiAtPeakQ` by `qPeak`, held above it. Below the band the low-pass is the matched design unchanged. @see data/kernels/eq.json */
 export const LOWPASS_HANDOVER = {
   qHi: 0.7071067811865476,

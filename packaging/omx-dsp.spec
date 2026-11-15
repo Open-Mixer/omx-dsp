@@ -17,6 +17,7 @@ BuildRequires: diffutils
 BuildRequires: pkgconfig
 BuildRequires: omx-contract-devel >= 3.18.0
 BuildRequires: omx-contract-devel < 4
+BuildRequires: pkgconfig(jack)
 
 # Headers and a static archive only: nothing of this package is loaded at run time.
 %global debug_package %{nil}
@@ -49,12 +50,24 @@ Requires: gcc
 omx-rt-gate proves that the real-time code of a plugin or an audio engine
 never allocates, locks, sleeps, does I/O or logs. It compiles each real-time
 source with the project's own flags, reads the compiler's call graph, finds the
-functions a host calls from its audio thread in the plugin's LV2, CLAP or
-PipeWire tables, and follows every call from there, through libomxdsp's own
-code too. Each finding names the call, its place and the path from the entry
-point. The tables it judges against ship with it: one forbidden list, one
+functions a host calls from its audio thread in the plugin's LV2, CLAP,
+PipeWire or JACK tables, and follows every call from there, through libomxdsp's
+own code too. Each finding names the call, its place and the path from the
+entry point. The tables it judges against ship with it: one forbidden list, one
 class table and the thread roles of each ABI, with libomxdsp's thread tags and
 call graphs.
+Its documentation is on openmixer.org.
+
+%package -n omx-rta-read
+Summary: The spectrum of a JACK signal, read and never fed
+
+%description -n omx-rta-read
+omx-rta-read reads the spectrum of a processor's signal in a JACK graph, what
+it is given and what it gives, and writes it as log-spaced bands, one JSON line
+ten times a second, for a panel to draw. It is a JACK client with input ports
+only, connected only from the ports it watches, so it never feeds the mix. It
+runs only while something reads it. The window, the bands and their gates are
+the OpenMixer console's, from libomxdsp.
 Its documentation is on openmixer.org.
 
 %package contract
@@ -86,7 +99,7 @@ Its documentation is on openmixer.org.
 
 %build
 %set_build_flags
-%make_build lib rt-gate-ship
+%make_build lib rt-gate-ship rta-read
 
 %install
 %make_install PREFIX=%{_prefix} LIBDIR=%{_libdir} INCLUDEDIR=%{_includedir}
@@ -110,12 +123,19 @@ Its documentation is on openmixer.org.
 %exclude %{_bindir}/omx-rt-gate
 %exclude %{_mandir}/man1/omx-rt-gate.1*
 %exclude %{_datadir}/omxdsp/rt-gate/
+%exclude %{_bindir}/omx-rta-read
+%exclude %{_mandir}/man1/omx-rta-read.1*
 
 %files -n omx-rt-gate
 %license LICENSE
 %{_bindir}/omx-rt-gate
 %{_mandir}/man1/omx-rt-gate.1*
 %{_datadir}/omxdsp/rt-gate/
+
+%files -n omx-rta-read
+%license LICENSE
+%{_bindir}/omx-rta-read
+%{_mandir}/man1/omx-rta-read.1*
 
 %files contract
 %license LICENSE

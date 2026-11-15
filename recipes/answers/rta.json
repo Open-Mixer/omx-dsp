@@ -66,6 +66,87 @@
       "value": -60,
       "doc": "Quiet gate of the band reduction: when no band rises above this, every band reads as silence, so a rig's idle floor never draws as a flat block. Keyed on the loudest band, not per band.",
       "unit": "dB"
+    },
+    {
+      "name": "RTA_LEVEL_DB_MIN",
+      "source": {
+        "path": "spectrum.ts",
+        "export": "DB_MIN"
+      },
+      "value": -72,
+      "doc": "The floor of a spectrum display's level window: the bottom of the frame, every surface.",
+      "unit": "dB"
+    },
+    {
+      "name": "RTA_LEVEL_DB_MAX",
+      "source": {
+        "path": "spectrum.ts",
+        "export": "DB_MAX"
+      },
+      "value": 0,
+      "doc": "The ceiling of a spectrum display's level window: the top of the frame, where a band's peak reaching it draws a clip tick.",
+      "unit": "dB"
+    },
+    {
+      "name": "RTA_LEVEL_GRID_DB",
+      "source": {
+        "path": "spectrum.ts",
+        "export": "DB_GRID_STEP"
+      },
+      "value": 12,
+      "doc": "The spacing of a spectrum display's one dB graticule, from the ceiling down to the floor.",
+      "unit": "dB"
+    },
+    {
+      "name": "RTA_HZ",
+      "source": {
+        "path": "rta.ts",
+        "export": "RTA_HZ"
+      },
+      "value": 10,
+      "doc": "How often a watched spectrum is read and published: an operator-cadence poll, never the audio thread.",
+      "unit": "Hz"
+    },
+    {
+      "name": "RTA_LOW_ADVANCE",
+      "source": {
+        "path": "rta.ts",
+        "export": "LOW_TIER_REFRESH_FRACTION"
+      },
+      "value": 0.25,
+      "doc": "How far the low zoom's window must have advanced, as a fraction of that window, before it is recomputed; between recomputes the last zoom rides the fresh main spectrum unchanged.",
+      "unit": ""
+    },
+    {
+      "name": "RTA_TAP_GATE_DB",
+      "source": {
+        "path": "spectrum-bands.ts",
+        "export": "RTA_TAP_GATE_DB"
+      },
+      "value": -60,
+      "doc": "Quiet gate of a tap's raw spectrum, before any banding: when no bin rises above this the whole tap reads as the floor. The console's overlay frame applies it; a banded reading is gated by RTA_BAND_GATE_DB instead.",
+      "unit": "dB"
+    },
+    {
+      "name": "RTA_GRID_FREQS",
+      "source": {
+        "path": "spectrum.ts",
+        "export": "GRID_FREQS"
+      },
+      "value": [
+        20,
+        50,
+        100,
+        200,
+        500,
+        1000,
+        2000,
+        5000,
+        10000,
+        20000
+      ],
+      "doc": "The frequencies of a spectrum display's labelled vertical graticule lines, Hz, on the log frequency axis: the decades and their 2 and 5 steps from 20 Hz to 20 kHz, every surface.",
+      "unit": "Hz"
     }
   ]
 }

@@ -980,6 +980,46 @@ check-package: $(CHECK_PACKAGE)
 .PHONY: test-parallel
 test-parallel: lib checks gen-once suite negative magnitude-sabotage eq-sabotage curve-sabotage meter-view-sabotage rta-bands-sabotage geq-true-sabotage delay-taps-sabotage align-fdelay-sabotage pitch-rates-sabotage instance-rates-sabotage bandwidth-q-table bandwidth-q-sabotage eq-default-bands consumer perturb fdelay-sabotage doppler-sabotage onepole-sabotage note-map-sabotage threads threads-sabotage test-fx test-analysis test-engine-kernels test-mix flavours fastmath fastmath-diff fastmath-sabotage fastmath-plain fastmath-partial rt-gate rt-gate-sabotage
 
+# ---- omx-rta-read (tools/omx-rta-read): the spectrum of a JACK signal, read and never fed; built where jack.pc is found
+#   make rta-read           the program
+#   make rta-read-test      the null test on a private dummy JACK server (test/rta-read/null-test.sh)
+#   make rta-read-sabotage  the null test fails a reader that feeds the mix and one whose taps are not one instant
+#   make rta-read-gate      its process callback judged whole by omx-rt-gate --abi jack, and three sabotages caught
+RTA_READ_DIR     = $(BUILD)/rta-read
+RTA_READ         = $(RTA_READ_DIR)/omx-rta-read
+RTA_READ_FIXTURE = $(RTA_READ_DIR)/rta-read-fixture
+RTA_READ_CFLAGS  = $(CFLAGS_PLAIN) $(FPFLAGS) $(INC)
+
+$(RTA_READ): tools/omx-rta-read/omx-rta-read.c $(HEADERS) $(ANALYSIS_HEADERS) $(MIX_HEADERS) | $(BUILD)
+	@mkdir -p $(@D)
+	$(CC) $(RTA_READ_CFLAGS) $$(pkg-config --cflags jack) -o $@ $< -lm $$(pkg-config --libs jack)
+
+$(RTA_READ_FIXTURE): test/rta-read/fixture.c | $(BUILD)
+	@mkdir -p $(@D)
+	$(CC) $(CFLAGS_PLAIN) $$(pkg-config --cflags jack) -o $@ $< -lm $$(pkg-config --libs jack)
+
+.PHONY: rta-read rta-read-test rta-read-sabotage rta-read-gate install-rta-read
+rta-read: $(RTA_READ)
+
+# Only the omx-rta-read package needs JACK: without jack.pc the program is not built, and install says so.
+install-rta-read:
+	@if pkg-config --exists jack; then \
+	  $(MAKE) --no-print-directory $(RTA_READ) && \
+	  install -d $(DESTDIR)$(BINDIR) $(DESTDIR)$(MANDIR)/man1 && \
+	  install -m 0755 $(RTA_READ) $(DESTDIR)$(BINDIR)/omx-rta-read && \
+	  install -m 0644 tools/omx-rta-read/omx-rta-read.1 $(DESTDIR)$(MANDIR)/man1/; \
+	else echo "install: omx-rta-read not built: no jack.pc"; fi
+
+rta-read-test: $(RTA_READ) $(RTA_READ_FIXTURE) test/rta-read/null-test.sh
+	TMPDIR="$(abspath $(BUILD))" bash test/rta-read/null-test.sh $(abspath $(RTA_READ)) $(abspath $(RTA_READ_FIXTURE))
+
+rta-read-sabotage: $(RTA_READ_FIXTURE) test/rta-read/sabotage.sh test/rta-read/null-test.sh tools/omx-rta-read/omx-rta-read.c
+	CC="$(CC)" TMPDIR="$(abspath $(BUILD))" bash test/rta-read/sabotage.sh $(abspath $(RTA_READ_FIXTURE)) $(RTA_READ_CFLAGS)
+
+rta-read-gate: $(RT_GATE) $(RT_GATE_TAGS) $(RT_GATE_DIR)/graphs-release.stamp test/rta-read/gate.sh tools/omx-rta-read/omx-rta-read.c
+	CC="$(CC)" TMPDIR="$(abspath $(BUILD))" bash test/rta-read/gate.sh $(abspath $(RT_GATE)) $(abspath $(RT_GATE_TABLES)) \
+	  $(abspath $(RT_GATE_GRAPHS)) $(abspath $(RT_GATE_TAGS)) "-I$(abspath include) -isystem $(CONTRACT_INC) $(FPFLAGS)"
+
 # ---- install ------------------------------------------------------------------------------------
 
 version:
@@ -1000,7 +1040,7 @@ $(BUILD)/omxdsp-tsan.pc: omxdsp.pc.in include/omxdsp/omxdsp.h Makefile packaging
 	sed $(PC_SED) -e 's|@NAME@|omxdsp-tsan|' -e 's|@FLAVOUR@|contracts compiled in, under ThreadSanitizer|' \
 	    -e 's|@CFLAGS@| $(TSAN_CFLAGS) $(MVEC_CFLAGS)|' -e 's|@LIBS@| $(TSAN_LIBS) $(MVEC_LIBS)|' $< | sed 's/ *$$//' > $@
 
-install: $(LIBS_ALL) $(PC_ALL) $(EXPORTS) install-rt-gate
+install: $(LIBS_ALL) $(PC_ALL) $(EXPORTS) install-rt-gate install-rta-read
 	install -d $(DESTDIR)$(INCLUDEDIR)/omxdsp/fx $(DESTDIR)$(INCLUDEDIR)/omxdsp/analysis $(DESTDIR)$(INCLUDEDIR)/omxdsp/mix $(DESTDIR)$(LIBDIR)/pkgconfig \
 	  $(DESTDIR)$(BINDIR) $(DESTDIR)$(DATADIR)/omxdsp $(DESTDIR)$(MANDIR)/man1
 	install -m 0644 include/omxdsp/*.h $(DESTDIR)$(INCLUDEDIR)/omxdsp/
