@@ -95,3 +95,4 @@ sem_post wake externals-arm:sem_post an atomic increment; a futex wake only when
 __aarch64_ldadd4_relax word-atomic externals-arm:__aarch64_ldadd4_relax libgcc's outline atomic add, 4 bytes, relaxed: LSE ldadd or an exclusive loop, lock-free
 __aarch64_ldadd4_rel word-atomic externals-arm:__aarch64_ldadd4_rel libgcc's outline atomic add, 4 bytes, release: LSE ldaddl or an exclusive loop, lock-free
 __aarch64_ldadd8_rel word-atomic externals-arm:__aarch64_ldadd8_rel libgcc's outline atomic add, 8 bytes, release: LSE ldaddl or an exclusive loop, lock-free
+jack_port_get_buffer host-buffer externals-arm:jack_port_get_buffer JACK's own lookup of a port's buffer for this cycle, documented for the process thread: state the server prepared before the call, no allocation, no lock, no system call (ruled 2026-11-15; the only host-buffer row)

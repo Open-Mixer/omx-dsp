@@ -861,9 +861,12 @@ $(RT_GATE): tools/rt-gate/omx-rt-gate.c | $(BUILD)
 	$(CC) $(CFLAGS_PLAIN) -DOMX_RT_GATE_DATADIR='"$(DATADIR)/omxdsp/rt-gate"' -o $@ $< $(LDFLAGS)
 
 # -O0 -fno-builtin: every case calls the real symbol, none folded or inlined away
+# jack_port_get_buffer (host-buffer) is measured with JACK where jack.pc is found, and named SKIPPED where it is not
+RT_GATE_ARM_JACK := $(shell pkg-config --exists jack 2>/dev/null && echo -DOMX_RT_GATE_ARM_JACK $$(pkg-config --cflags jack))
+RT_GATE_ARM_JACK_LIBS := $(if $(RT_GATE_ARM_JACK),$(shell pkg-config --libs jack))
 $(RT_GATE_ARM): tools/rt-gate/externals-arm.c | $(BUILD)
 	@mkdir -p $(@D)
-	$(CC) -O0 -fno-builtin -Wall -Wextra -Werror -o $@ $< -lm
+	$(CC) -O0 -fno-builtin -Wall -Wextra -Werror $(RT_GATE_ARM_JACK) -o $@ $< -lm $(RT_GATE_ARM_JACK_LIBS)
 
 # the thread tags: every function the shipped headers declare carries exactly one `@thread audio|worker|control`
 # in the comment above it, under each set of flags a consumer builds with (the plain libm, this toolchain's
@@ -946,7 +949,8 @@ rt-gate-installed: rt-gate-ship | $(BUILD)
 .PHONY: rt-gate rt-gate-arm rt-gate-selftest rt-gate-sabotage rt-gate-tags rt-gate-selfrun rt-gate-ship install-rt-gate rt-gate-installed
 rt-gate-arm: $(RT_GATE_ARM) $(RT_GATE_TABLES)/classes.tbl
 	@awk '!/^#/ && NF && $$3 !~ /^externals-arm:/ { print "rt-gate-arm: " FILENAME ":" FNR ": " $$1 " names no externals-arm case"; bad = 1 } END { exit bad }' $(RT_GATE_TABLES)/classes.tbl
-	./$(RT_GATE_ARM) $$(awk '!/^#/ && NF { sub(/^externals-arm:/, "", $$3); print $$3 }' $(RT_GATE_TABLES)/classes.tbl)
+	. tools/rt-gate/jack2-env.sh; { jack2_env || true; }; \
+	  ./$(RT_GATE_ARM) $$(awk '!/^#/ && NF { sub(/^externals-arm:/, "", $$3); print $$3 }' $(RT_GATE_TABLES)/classes.tbl)
 
 rt-gate-selftest: $(RT_GATE) $(RT_GATE_FIXTURES) $(wildcard $(RT_GATE_TABLES)/*) $(RT_GATE_TAGS) $(RT_GATE_DIR)/graphs-release.stamp
 	CC="$(CC)" TMPDIR="$(abspath $(BUILD))" bash tools/rt-gate/selftest.sh $(abspath $(RT_GATE)) $(abspath $(RT_GATE_TABLES)) \
