@@ -119,17 +119,20 @@ export const FBS_RING_MEMORY_SLOTS = 32;
 /** How far ONE reconcile pass may move an HRP band's gain, in dB — the gain smoothing, done at the control level because the native cascade applies pushed coefficients verbatim and the design forbids interpolating there. An unbounded gain step is a waveform discontinuity — the click heard when a correction entered or left at full depth (found live, 2026-08-20, the evening increment 9 raised the enter/leave rate). Bounded, a correction ENTERS by deepening from silence and LEAVES by walking to exactly 0 dB — the provable parked identity (`eqBandIsIdentity`) — from which removal is bit-identical. Two decibels per pass at the corrector's 10 Hz cadence walks the full HRP_MAX_CUT_DB travel in ~300 ms: the same order as the tracker's stability hold and FBS's lift steps, while each individual move stays below audibility on a Q-5 bell. (dB) @see data/kernels/hrp.json */
 export const HRP_GAIN_STEP_DB = 2;
 
+/** The bias at `character = +1`, in the SHAPER's own input units — `OMX_DRIVE_BIAS_MAX`. DERIVED, not chosen. In the saturating limit every knee tends to `sgn`, the output is a rectangular wave of duty `d = ½ + asin(b)/π`, and its `n`th harmonic goes as `sin(nπd)/n` — so `|H2|` is maximal at `d = ¾`, which is `b = sin(π/4) = 1/√2` exactly. Measured too: the H2-maximising bias for a full-scale sine at unity drive is 0.712 (soft), 0.658 (tape), 0.645 (tube), and this one value costs 0.000 / 0.035 / 0.088 dB of H2 against each curve's own optimum. ONE normalised bias for all three knees, not three. @see data/kernels/drive.json */
+export const DRIVE_BIAS_MAX = 0.7071067811865476;
+
 /** The displays a panel description draws from a closed form, the kinds omx_curve_points answers: an EQ's magnitude response, x in Hz and y in dB, and a dynamics stage's static transfer curve, input dB to output dB. The wire spells each id in snake case (`eq_response`, `transfer_curve`), the description's own display word. @see data/primitives/curve.json */
 export const CURVE_DISPLAYS = ['eqResponse', 'transferCurve'] as const;
 
-/** The panel families omx_curve_points draws, by the description's family word. `eq` draws an eq_response; the other four a transfer_curve, the family choosing the gain computer's mode: `dynamics`, `limiter` and `deesser` act ABOVE the threshold, `gate` BELOW it with the shifted knee of the gate's knee range. Any other family has no closed form here. @see data/primitives/curve.json */
-export const CURVE_FAMILIES = ['eq', 'dynamics', 'limiter', 'gate', 'deesser'] as const;
+/** The panel families omx_curve_points draws, by the description's family word. `eq` draws an eq_response; the other four a transfer_curve, the family choosing the gain computer's mode: `dynamics`, `limiter` and `deesser` act ABOVE the threshold, `gate` BELOW it with the shifted knee of the gate's knee range. `drive` draws a transfer_curve too, but in the waveshaper's own linear, signed units, sample in to sample out: the drive kernel's static path, its shaper biased by the character, faded by the mix and scaled by the trim (since 0.32.4). Any other family has no closed form here. @see data/primitives/curve.json */
+export const CURVE_FAMILIES = ['eq', 'dynamics', 'limiter', 'gate', 'deesser', 'drive'] as const;
 
-/** The roles of a panel description a curve request reads, by the description's role word (the wire spells each id in snake case: `band_freq`, `knee_start`). The EQ's indexed band roles and head filters, and the gain computer's terms. A term of any other role is no term of the curve. @see data/primitives/curve.json */
-export const CURVE_ROLES = ['bandType', 'bandFreq', 'bandGain', 'bandQ', 'bandOn', 'hpfFreq', 'hpfSlope', 'hpfOn', 'lpfFreq', 'lpfSlope', 'lpfOn', 'threshold', 'ratio', 'knee', 'makeup', 'range', 'kneeStart', 'kneeEnd'] as const;
+/** The roles of a panel description a curve request reads, by the description's role word (the wire spells each id in snake case: `band_freq`, `knee_start`). The EQ's indexed band roles and head filters, the gain computer's terms, and the drive's (since 0.32.4): `drive` the pre-shaper gain in dB, `tone` the character -1..+1 that biases the shaper, `model` the shaper (the drive kernel's curve, 0 soft, 1 tape, 2 tube, 3 exciter), `mix` the wet share in percent and `output` the trim in dB; a drive curve needs `drive` and `model`, and draws `tone` -1, `mix` 100 % and `output` 0 dB where a term is absent (a card's picture draws no make-up or parallel mix). A term of any other role is no term of the curve. @see data/primitives/curve.json */
+export const CURVE_ROLES = ['bandType', 'bandFreq', 'bandGain', 'bandQ', 'bandOn', 'hpfFreq', 'hpfSlope', 'hpfOn', 'lpfFreq', 'lpfSlope', 'lpfOn', 'threshold', 'ratio', 'knee', 'makeup', 'range', 'kneeStart', 'kneeEnd', 'drive', 'tone', 'model', 'mix', 'output'] as const;
 
-/** The units a curve term's value may come in, the param-contract extension's unit tokens the served description gives a role. omx_curve_points converts once: `coef` to dB for a gain, `oct` to Q for a bandwidth, `khz` to Hz; a level in `db`, `dbfs`, `dbu` or `lufs` is read as dB from the threshold's own scale; `none` is a plain number, a switch or a choice; `ratio` a ratio. A unit its role does not accept is refused. @see data/primitives/curve.json */
-export const CURVE_UNITS = ['hz', 'khz', 'db', 'dbfs', 'dbu', 'lufs', 'coef', 'oct', 'none', 'ratio'] as const;
+/** The units a curve term's value may come in, the param-contract extension's unit tokens the served description gives a role. omx_curve_points converts once: `coef` to dB for a gain, `oct` to Q for a bandwidth, `khz` to Hz; a level in `db`, `dbfs`, `dbu` or `lufs` is read as dB from the threshold's own scale; `none` is a plain number, a switch or a choice; `ratio` a ratio. A unit its role does not accept is refused. `pc` (since 0.32.4) is percent, the drive's `mix`. @see data/primitives/curve.json */
+export const CURVE_UNITS = ['hz', 'khz', 'db', 'dbfs', 'dbu', 'lufs', 'coef', 'oct', 'none', 'ratio', 'pc'] as const;
 
 /** The shape of an EQ band, as the caller resolves it from the description: a `band_type` role's `shapes` list indexed by the control's choice value, or the fixed `shape` of a band no control selects. `off` is a band that is not drawn, and so is `unshaped`, spelt `-` on the wire, a choice value with no shape. The others design the band through omx_eq_design: a bell, the two shelves, the pass filters, the notch, and the first- and second-order allpasses, which draw what they run, 0 dB. @see data/primitives/curve.json */
 export const CURVE_SHAPES = ['off', 'bell', 'lowshelf', 'highshelf', 'highpass', 'lowpass', 'notch', 'unshaped', 'allpass1', 'allpass2'] as const;
@@ -143,7 +146,7 @@ export const CURVE_CODES = ['ok', 'kindUnknown', 'termMissing', 'unitRefused', '
 /** The most points one curve carries, an EQ's band anchors included: a reply of x with four significant digits and y to 0.01 dB, about 13 bytes a point, fits the 4096-byte line a host's reply is built in. Every caller reads it here; it moves with that buffer, in this one place. @see data/primitives/curve.json */
 export const CURVE_POINTS_MAX = 256;
 
-/** A curve's default extents, where a request gives none: an eq_response from `freqMinHz` to the lower of `freqMaxHz` and `nyquistFraction` of Nyquist, each band's dB floored at `eqFloorDb` so a notch's null stays finite (the console's EQ draws to -120 dB); a transfer_curve's input from `levelMinDb` to `levelMaxDb`. Hz and dB. @see data/primitives/curve.json */
+/** A curve's default extents, where a request gives none: an eq_response from `freqMinHz` to the lower of `freqMaxHz` and `nyquistFraction` of Nyquist, each band's dB floored at `eqFloorDb` so a notch's null stays finite (the console's EQ draws to -120 dB); a transfer_curve's input from `levelMinDb` to `levelMaxDb`, and a drive's, in its linear signed units, from `sampleMin` to `sampleMax` (since 0.32.4). Hz, dB and full scale. @see data/primitives/curve.json */
 export const CURVE_EXTENTS = {
   freqMinHz: 20,
   freqMaxHz: 20000,
@@ -151,6 +154,8 @@ export const CURVE_EXTENTS = {
   eqFloorDb: -120,
   levelMinDb: -80,
   levelMaxDb: 0,
+  sampleMin: -1,
+  sampleMax: 1,
 } as const;
 
 /** The floor of the linear-to-decibel conversions (`omx_lin_to_db`, `omx_lin_to_db_poly`): an amplitude below `lin` reads as `lin`, so silence is `db` dB, never -inf or NaN. `db` is `20·log10(lin)`. A design constant, not a control. @see data/primitives/lin-to-db-floor.json */
@@ -218,3 +223,15 @@ export const GATE_RATIO_RANGE = { min: 1, max: 100 } as const;
 
 /** The travel of rangeDb, from its table GATE_LIMITS. @see data/kernels/gate.json */
 export const GATE_RANGE_DB_RANGE = { min: -90, max: 0 } as const;
+
+/** The PRE-CURVE gain, in dB. 0 dB is unity into the curve, so a stage switched on at its defaults changes almost nothing — which is what an `on` switch should mean. The ceiling is where every curve is saturating hard on any signal a console carries. @see data/kernels/drive.json */
+export const DRIVE_AMOUNT_RANGE = { min: 0, max: 36 } as const;
+
+/** The EVEN/ODD harmonic balance. −1 is pure odd (the curve itself), +1 is pure even, 0 an equal blend — the kernel splits its own distortion residue into an odd and an even half and fades between them, so the two ends are exact rather than approximate (`mix_drive.h`, measured: H2 at −317 dBc at −1, H3 at −118 dBc at +1). Unitless, and signed by construction. NOT NORMALIZED_RANGE: this is a BALANCE with a meaningful centre, and a 0..1 travel would put its centre at 0.5 and its neutral nowhere. @see data/kernels/drive.json */
+export const DRIVE_CHARACTER_RANGE = { min: -1, max: 1 } as const;
+
+/** The wet/dry, as a PERCENT — the unit a drive control is read in on every desk that has one. Deliberately not NORMALIZED_RANGE (which is unitless 0..1): a mix a surface must label "0.35" when the operator thinks in "35 %" is a control whose declaration is fighting its reader. The kernel divides by 100 where it resolves the atom, in one place. The come-up is 100 %, not the reverb's modest 30: a saturator's insert use is IN the path. The `exciter` curve seeds itself lower (DRIVE_EXCITER_SEED), because that is a property of the TOPOLOGY and not of the travel. @see data/kernels/drive.json */
+export const DRIVE_MIX_RANGE = { min: 0, max: 100 } as const;
+
+/** The POST-stage make-up, in dB. Symmetric enough either way that an operator can null the stage in and out against the bypass, which is how a colour stage is actually judged. @see data/kernels/drive.json */
+export const DRIVE_TRIM_RANGE = { min: -24, max: 12 } as const;

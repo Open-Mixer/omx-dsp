@@ -18,6 +18,11 @@ import {
   CURVE_ROLES,
   CURVE_SHAPES,
   CURVE_UNITS,
+  DRIVE_AMOUNT_RANGE,
+  DRIVE_BIAS_MAX,
+  DRIVE_CHARACTER_RANGE,
+  DRIVE_MIX_RANGE,
+  DRIVE_TRIM_RANGE,
   EQ_BAND_DEFAULTS,
   GATE_RANGE_DB_RANGE,
   GATE_RATIO_RANGE,
@@ -25,6 +30,7 @@ import {
 } from './definitions.js';
 import { clampEqQFor, magnitudeSumDb, octavesToQ, type BiquadBand, type BiquadType } from './eq.js';
 import { gaincompDb, gaincompDbShifted, gateKnee } from './gaincomp.js';
+import { dbToLinearGain } from './units.js';
 
 /** A set id as the description spells it: `eqResponse` is `eq_response`; the unshaped band is `-`. */
 const wordOf = (id: string): string => (id === 'unshaped' ? '-' : id.replace(/[A-Z]/g, (c) => `_${c.toLowerCase()}`));
@@ -112,6 +118,7 @@ const ACCEPTS: Readonly<Record<string, readonly string[]>> = {
   threshold: ['db', 'dbfs', 'dbu', 'lufs'],
   ratio: ['ratio', 'coef'],
   knee: ['db'], makeup: ['db'], range: ['db'], knee_start: ['db'], knee_end: ['db'],
+  drive: ['db'], output: ['db'], tone: ['none', 'coef'], model: ['none'], mix: ['pc'],
 };
 
 /** omx_lin_to_db: a linear factor to dB, floored at LIN_TO_DB_FLOOR. */
@@ -178,6 +185,7 @@ export function curvePoints(rq: CurveRequest): CurveAnswer {
   let lo: number, hi: number;
   if (rq.extents) [lo, hi] = [rq.extents.min, rq.extents.max];
   else if (eq) [lo, hi] = [CURVE_EXTENTS.freqMinHz, Math.min(CURVE_EXTENTS.freqMaxHz, (CURVE_EXTENTS.nyquistFraction * rq.sampleRate) / 2)];
+  else if (rq.family === 'drive') [lo, hi] = [CURVE_EXTENTS.sampleMin, CURVE_EXTENTS.sampleMax];
   else [lo, hi] = [CURVE_EXTENTS.levelMinDb, CURVE_EXTENTS.levelMaxDb];
   if (!(hi > lo) || (eq && !(lo > 0))) return { code: 'pointsRange' };
   const find = (role: string, index = 0): CurveTerm | undefined => {
@@ -185,7 +193,7 @@ export function curvePoints(rq: CurveRequest): CurveAnswer {
     for (const t of rq.terms) if (t.role === role && (t.index ?? 0) === index) found = t;
     return found;
   };
-  return eq ? eqPoints(rq, find, lo, hi) : transferPoints(rq, find, lo, hi);
+  return eq ? eqPoints(rq, find, lo, hi) : rq.family === 'drive' ? drivePoints(rq, find, lo, hi) : transferPoints(rq, find, lo, hi);
 }
 
 type Find = (role: string, index?: number) => CurveTerm | undefined;
@@ -274,6 +282,49 @@ function transferPoints(rq: CurveRequest, find: Find, lo: number, hi: number): C
     const lv = i + 1 === n ? hi : lo + ((hi - lo) * i) / (n - 1);
     const g = below ? gaincompDbShifted(p, shiftDb, lv) : gaincompDb(p, lv);
     points.push({ x: lv, y: lv + g + mk });
+  }
+  return rq.userOnly ? { points, marks: [], userPoints: points } : { points, marks: [] };
+}
+
+/* ---- the drive: the twin of omx_curve_drive, through the twins of omx_drive_instance_controls, omx_drive_shape,
+ * omx_drive_bias_for and omx_drive_sample, each IEEE single operation rounded as the kernel rounds it. */
+
+const fr = Math.fround;
+/** The drive kernel's shapers, by DRIVE_CURVES index: soft and exciter tanh, tape u/sqrt(1+u^2), tube u/(1+|u|). */
+const DRIVE_TAPE = 1, DRIVE_TUBE = 2, DRIVE_EXCITER = 3;
+/** The shaper an index that is no shaper's reads as: the instance's default, soft (OMX_DRIVE_INSTANCE_CURVE_DEFAULT). */
+const DRIVE_CURVE_DEFAULT = 0;
+
+function driveShape(curve: number, u: number): number {
+  if (curve === DRIVE_TAPE) return fr(u / fr(Math.sqrt(fr(1 + fr(u * u)))));
+  if (curve === DRIVE_TUBE) return fr(u / fr(1 + Math.abs(u)));
+  return fr(Math.tanh(u));
+}
+
+const clampTravel = (v: number, r: { readonly min: number; readonly max: number }): number => {
+  const x = fr(v);
+  return x < r.min ? r.min : x > r.max ? r.max : x;
+};
+const dbToLinF = (db: number): number => fr(dbToLinearGain(db));
+
+function drivePoints(rq: CurveRequest, find: Find, lo: number, hi: number): CurveAnswer {
+  const amount = find('drive'), model = find('model'), tone = find('tone'), mix = find('mix'), output = find('output');
+  if (!amount || !model) return { code: 'termMissing' };
+  const mv = valueOf(model);
+  const curve = mv >= 0 && mv <= DRIVE_EXCITER && Number.isInteger(mv) ? mv : DRIVE_CURVE_DEFAULT;
+  const driveLin = dbToLinF(clampTravel(valueOf(amount), DRIVE_AMOUNT_RANGE));
+  const evenW = fr(0.5 * fr(clampTravel(tone ? valueOf(tone) : -1, DRIVE_CHARACTER_RANGE) + 1));
+  const wetShare = fr(fr(0.01) * clampTravel(mix ? valueOf(mix) : 100, DRIVE_MIX_RANGE));
+  const trimLin = dbToLinF(clampTravel(output ? valueOf(output) : 0, DRIVE_TRIM_RANGE));
+  const b = fr(evenW * fr(DRIVE_BIAS_MAX)), off = driveShape(curve, b), inv = fr(1 / fr(1 + off));
+  const n = rq.points;
+  const points: CurvePoint[] = [];
+  for (let i = 0; i < n; i++) {
+    const xi = i + 1 === n ? hi : lo + ((hi - lo) * i) / (n - 1);
+    const dry = fr(xi);
+    const wet = fr(fr(driveShape(curve, fr(fr(driveLin * dry) + b)) - off) * inv);
+    const delta = curve === DRIVE_EXCITER ? wet : fr(wet - dry);
+    points.push({ x: xi, y: fr(fr(dry + fr(wetShare * delta)) * trimLin) });
   }
   return rq.userOnly ? { points, marks: [], userPoints: points } : { points, marks: [] };
 }
