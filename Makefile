@@ -42,6 +42,8 @@
 #   make curve-golden  test/kernels/fixtures/curve_golden.h rewritten from omx_curve_points() (tools/curve-golden.c)
 #   make meter-view-sabotage  the meter view arm (mix/omx_meter_view.h) fails against seven sabotages
 #   make meter-view-golden  vectors/meter-view.json rewritten from the meter view law (tools/meter-view-golden.c)
+#   make rta-bands-sabotage  the band reduction arm (analysis/omx_rta_bands.h) fails against six sabotages
+#   make rta-bands-golden  vectors/rta-bands.json rewritten from the band reduction (tools/rta-bands-golden.c)
 #   make geq-true-sabotage  the graphic EQ's true-mode oracle fails against seven sabotages
 #   make delay-taps-sabotage  the FX delay's read-tap oracle fails against ten sabotages
 #   make align-fdelay-sabotage  the strip alignment stage's oracle fails against five sabotages
@@ -182,7 +184,7 @@ VERSION    := $(shell sed -n 's/^\#define OMXDSP_VERSION_\(MAJOR\|MINOR\|PATCH\)
 
 
 
-.PHONY: fuzz fuzz-run fuzz-sabotage fuzz-records fuzz-coverage fuzz-corpus all lib test lint docs clean contract-dir definitions definitions-check contract-proof contract-tests test-tsan suite negative consumer gen-once perturb fdelay-sabotage doppler-sabotage onepole-sabotage threads threads-sabotage checks cost-prel test-fx test-analysis install version golden-write flavours bench-mixmatrix bench-gate bench-drive bench-flanger check-log10f strip-input-identity analysis-engine-identity test-mix mix-engine-identity test-engine-kernels engine-kernels-identity magnitude-sabotage eq-sabotage curve-golden curve-sabotage meter-view-golden meter-view-sabotage geq-true-sabotage delay-taps-sabotage align-fdelay-sabotage pitch-rates-sabotage instance-rates-sabotage bandwidth-q-table bandwidth-q-sabotage eq-default-bands eq-defaults-table room-ts-golden public-sources private-refs deps deps-check cost-deesser note-map-sabotage exports copy-check
+.PHONY: fuzz fuzz-run fuzz-sabotage fuzz-records fuzz-coverage fuzz-corpus all lib test lint docs clean contract-dir definitions definitions-check contract-proof contract-tests test-tsan suite negative consumer gen-once perturb fdelay-sabotage doppler-sabotage onepole-sabotage threads threads-sabotage checks cost-prel test-fx test-analysis install version golden-write flavours bench-mixmatrix bench-gate bench-drive bench-flanger check-log10f strip-input-identity analysis-engine-identity test-mix mix-engine-identity test-engine-kernels engine-kernels-identity magnitude-sabotage eq-sabotage curve-golden curve-sabotage meter-view-golden rta-bands-golden meter-view-sabotage rta-bands-sabotage geq-true-sabotage delay-taps-sabotage align-fdelay-sabotage pitch-rates-sabotage instance-rates-sabotage bandwidth-q-table bandwidth-q-sabotage eq-default-bands eq-defaults-table room-ts-golden public-sources private-refs deps deps-check cost-deesser note-map-sabotage exports copy-check
 
 all: lib
 
@@ -227,7 +229,7 @@ KERNELS_INC = $(BUILD)/kernels-suite.inc.c $(BUILD)/kernels-perturb.inc.c
 $(KERNELS_INC) &: $(wildcard test/kernels/*.c) tools/kernels-gen.sh | $(BUILD)
 	$(KERNELS_GEN) $(BUILD)
 
-$(BUILD)/omxdsp_suite: test/omxdsp_suite.c $(KERNELS) $(KERNELS_INC) $(LIB_CONTRACTS) $(HEADERS) $(MIX_HEADERS)
+$(BUILD)/omxdsp_suite: test/omxdsp_suite.c $(KERNELS) $(KERNELS_INC) $(LIB_CONTRACTS) $(HEADERS) $(MIX_HEADERS) $(ANALYSIS_HEADERS) vectors/rta-bands.json
 	$(CC) $(TESTFLAGS) -I$(BUILD) -o $@ test/omxdsp_suite.c $(LIB_CONTRACTS) -lm
 
 $(BUILD)/omxdsp_threads: test/omxdsp_threads.c $(LIB_CONTRACTS) $(HEADERS) | $(BUILD)
@@ -329,6 +331,21 @@ $(BUILD)/meter_view_golden: tools/meter-view-golden.c test/kernels/fixtures/mete
 
 meter-view-golden: $(BUILD)/meter_view_golden
 	./$(BUILD)/meter_view_golden > vectors/meter-view.json
+
+# The band reduction's vectors (vectors/rta-bands.json, read back by the suite's rta_bands arm and the TypeScript twin's
+# test, installed beside the exports) are written by tools/rta-bands-golden.c from
+# test/kernels/fixtures/rta_bands_scenarios.h: `make rta-bands-golden` rewrites them, in the commit that changes the
+# reduction, and the diff is the review.
+$(BUILD)/rta_bands_golden: tools/rta-bands-golden.c test/kernels/fixtures/rta_bands_scenarios.h $(HEADERS) $(ANALYSIS_HEADERS) | $(BUILD)
+	$(CC) $(CFLAGS_PLAIN) $(INC) -o $@ $< -lm
+
+rta-bands-golden: $(BUILD)/rta_bands_golden
+	./$(BUILD)/rta_bands_golden > vectors/rta-bands.json
+
+# The band reduction arm fails against six sabotages of omx_rta_bands.h and the declared numbers
+# (test/rta-bands-sabotage.sh); the real suite is the control.
+rta-bands-sabotage: test/omxdsp_suite.c test/rta-bands-sabotage.sh $(KERNELS) vectors/rta-bands.json $(LIB_CONTRACTS) $(HEADERS) $(ANALYSIS_HEADERS) | $(BUILD)
+	CC="$(CC)" CFLAGS="$(CFLAGS)" bash test/rta-bands-sabotage.sh $(BUILD)/rta-bands-sabotage $(LIB_CONTRACTS)
 
 # The meter view arm fails against seven sabotages of omx_meter_view.h, omx_meter.h and the declared numbers
 # (test/meter-view-sabotage.sh); the real suite is the control.
@@ -957,7 +974,7 @@ check-package: $(CHECK_PACKAGE)
 	@echo "omxdsp: make check-package green"
 
 .PHONY: test-parallel
-test-parallel: lib checks gen-once suite negative magnitude-sabotage eq-sabotage curve-sabotage meter-view-sabotage geq-true-sabotage delay-taps-sabotage align-fdelay-sabotage pitch-rates-sabotage instance-rates-sabotage bandwidth-q-table bandwidth-q-sabotage eq-default-bands consumer perturb fdelay-sabotage doppler-sabotage onepole-sabotage note-map-sabotage threads threads-sabotage test-fx test-analysis test-engine-kernels test-mix flavours fastmath fastmath-diff fastmath-sabotage fastmath-plain fastmath-partial rt-gate rt-gate-sabotage
+test-parallel: lib checks gen-once suite negative magnitude-sabotage eq-sabotage curve-sabotage meter-view-sabotage rta-bands-sabotage geq-true-sabotage delay-taps-sabotage align-fdelay-sabotage pitch-rates-sabotage instance-rates-sabotage bandwidth-q-table bandwidth-q-sabotage eq-default-bands consumer perturb fdelay-sabotage doppler-sabotage onepole-sabotage note-map-sabotage threads threads-sabotage test-fx test-analysis test-engine-kernels test-mix flavours fastmath fastmath-diff fastmath-sabotage fastmath-plain fastmath-partial rt-gate rt-gate-sabotage
 
 # ---- install ------------------------------------------------------------------------------------
 
@@ -994,6 +1011,7 @@ install: $(LIBS_ALL) $(PC_ALL) $(EXPORTS) install-rt-gate
 	install -m 0644 $(EXPORTS) $(DESTDIR)$(DATADIR)/omxdsp/
 	install -m 0644 test/analysis/hrp_peaking_corpus.h $(DESTDIR)$(DATADIR)/omxdsp/
 	install -m 0644 vectors/meter-view.json $(DESTDIR)$(DATADIR)/omxdsp/meter-view-vectors.json
+	install -m 0644 vectors/rta-bands.json $(DESTDIR)$(DATADIR)/omxdsp/rta-bands-vectors.json
 	install -m 0755 tools/omx-dsp-copy-check.sh $(DESTDIR)$(BINDIR)/omx-dsp-copy-check
 	install -m 0644 omx-dsp-copy-check.1 $(DESTDIR)$(MANDIR)/man1/
 

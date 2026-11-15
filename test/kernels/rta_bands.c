@@ -116,6 +116,7 @@ static int rb_file_case(const char *line, uint32_t *bad) {
 }
 
 static void arm_rta_bands(void) {
+  g_arm = "rta_bands";
   static const float rates[OMX_ORACLE_FULL_RATES_COUNT] = OMX_ORACLE_FULL_RATES_INIT;
 
   ok(omx_rta_bands(&rb_c.h, NULL, 0u, rb_out) == 0u, "no band asked is no band answered", 1, 0);
