@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2026 Pau Aliagas <linuxnow@gmail.com>
 Name: omx-dsp
-Version: 0.32.2
+Version: 0.32.3
 Release: 1%{?dist}
 License: GPL-3.0-or-later
 Summary: The audio toolbox of the OpenMixer console, as a real-time-safe C library
@@ -17,9 +17,12 @@ BuildRequires: diffutils
 BuildRequires: pkgconfig
 BuildRequires: omx-contract-devel >= 3.18.0
 BuildRequires: omx-contract-devel < 4
-# jack2 by name, not pkgconfig(jack): PipeWire's devel package provides that too, and omx-rt-gate's host-buffer
-# arm and omx-rta-read's null test measure against jack2's jackd and libjack, failing by name on PipeWire's.
-BuildRequires: jack-audio-connection-kit-devel
+# The JACK headers by pkgconfig(jack), so a host with PipeWire's JACK (the build image preinstalls its devel package)
+# builds this; and jack2's RUNTIME by name, jackd and its libjack, which check-package's omx-rt-gate host-buffer arm
+# starts and loads, failing by name on PipeWire's. It installs beside PipeWire's JACK libraries. A build requirement
+# only: no package of this spec requires jack2 (omx-rta-read needs libjack.so.0, which either provides).
+BuildRequires: pkgconfig(jack)
+BuildRequires: jack-audio-connection-kit
 
 # Headers and a static archive only: nothing of this package is loaded at run time.
 %global debug_package %{nil}
@@ -145,6 +148,18 @@ Its documentation is on openmixer.org.
 %{_datadir}/omx-contract/contract.d/3/omx-dsp/
 
 %changelog
+* Sun Nov 15 2026 Pau Aliagas <linuxnow@gmail.com> - 0.32.3-1
+- packaging: the JACK headers by pkgconfig(jack) again, so the build image's
+  PipeWire JACK devel package satisfies them, and jack2's runtime
+  (jack-audio-connection-kit: jackd, libjack) by name for check-package's
+  omx-rt-gate host-buffer arm. 0.32.2's by-name jack2 devel requirement
+  conflicted with the preinstalled PipeWire one, and its RPMs were not built.
+  No built package requires jack2.
+- flavour-check: the TSan consumer runs under setarch -R; where that is not
+  allowed, TSan's "unexpected memory mapping" (address randomisation) is NOT
+  RUN by name instead of failing the package build at random.
+- Nothing in the library, its headers or the TypeScript twins changes.
+
 * Sun Nov 15 2026 Pau Aliagas <linuxnow@gmail.com> - 0.32.2-1
 - rta: omx_rta_bands, the spectrum analyser's band reduction (log-spaced bands
   from 20 Hz to the lower of 20 kHz and Nyquist, each band's RMS level and
