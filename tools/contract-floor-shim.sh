@@ -76,4 +76,12 @@ if printf '%s\n' "$job" | grep -qE 'omx-contract-devel-\$|libomx-contract-dev=\$
 fi
 printf '%s\n' "$job" | grep -q 'tools/contract-floor-shim.sh --check' || fail "ci.yml's contract-floor job does not run tools/contract-floor-shim.sh --check"
 [ "$bad" = 0 ] && echo "ok   ci.yml's contract-floor job serves itself its below-floor contract"
+
+# 4. the job runs where it is not starved (omx-dsp#16): a cheap job on GitHub's hosted runners, never the shared
+#    self-hosted pool whose saturated disks left its debian cell cancelled in the package install; and its install is
+#    bounded by its own timeout, so a starved install is a red naming the step, never a cancel at the job's timeout
+printf '%s\n' "$job" | grep -qE '^    runs-on: ubuntu-latest$' || fail "ci.yml's contract-floor job does not run on ubuntu-latest (omx-dsp#16)"
+printf '%s\n' "$job" | awk '/- name: Install the build tools/{f=1;next} f&&/^      - /{exit} f&&/timeout-minutes:/{ok=1} END{exit !ok}' \
+  || fail "ci.yml's contract-floor job does not bound 'Install the build tools' with its own timeout-minutes (omx-dsp#16)"
+[ "$bad" = 0 ] && echo "ok   ci.yml's contract-floor job runs on GitHub's runners, its install bounded by its own timeout"
 exit "$bad"
