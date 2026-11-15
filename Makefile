@@ -651,6 +651,9 @@ golden-write: $(foreach k,$(FX_KERNELS),$(BUILD)/fx_$(k)_golden) $(foreach k,$(F
 # fbs_place holds the feedback corrector's placement (omx_fbs_place.h) to the shared vector file
 # test/analysis/fixtures/fbs_place.vectors, which ts/test/fbs-place.test.mjs holds the twin to;
 # test/analysis/fbs-place-sabotage.sh breaks each placement rule once and requires its vector to fail.
+# hrp_place holds the harmonic resonance processor's placement and stepping (omx_hrp_place.h) to the shared vector
+# file test/analysis/fixtures/hrp_place.vectors, which ts/test/hrp-place.test.mjs holds the twin to;
+# test/analysis/hrp-place-sabotage.sh breaks each rule once and requires its line to fail.
 # live_shells holds both correctors' live-shell cores (omx_fbs_lv2.h, omx_hrp_lv2.h) by value: a host with no
 # worker, the mode word, report bit-exact against cut, omx-fbs's staged fade at the nine rates and its quanta,
 # slots keeping their finds; test/analysis/live-shells-sabotage.sh breaks each once, and makes run() call the
@@ -685,6 +688,7 @@ test-analysis: analysis-oracles
 	CC="$(CC)" CFLAGS="$(CFLAGS)" bash test/analysis/room-sabotage.sh $(BUILD)/room-sabotage
 	CC="$(CC)" CFLAGS="$(CFLAGS)" bash test/analysis/hrp-lv2-rates-sabotage.sh $(BUILD)/hrp-lv2-rates-sabotage
 	CC="$(CC)" CFLAGS="$(CFLAGS)" bash test/analysis/fbs-place-sabotage.sh $(BUILD)/fbs-place-sabotage
+	CC="$(CC)" CFLAGS="$(CFLAGS)" bash test/analysis/hrp-place-sabotage.sh $(BUILD)/hrp-place-sabotage
 	CC="$(CC)" CFLAGS="$(CFLAGS)" bash test/analysis/live-shells-sabotage.sh $(BUILD)/live-shells-sabotage
 
 analysis-engine-identity: $(LIB)

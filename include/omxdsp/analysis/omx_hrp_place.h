@@ -66,16 +66,21 @@ typedef struct OmxHrpPlacedBand {
  * @param limits The cut, boost and band bounds.
  * @param out Room for n_gains bands; the first (return value) are written, in harmonic order.
  * @return How many bands were placed (0 when the inputs are refused).
+ * @thread worker
  */
 uint32_t omx_hrp_place_bands(double f0_hz, const double *gains_db, uint32_t n_gains, double q,
                              const OmxHrpPlaceLimits *limits, OmxHrpPlacedBand *out);
 
-/** @brief Is a band at freq_hz placeable (inside EQ_FREQ_RANGE, both bounds kept)? A NaN is not. */
+/**
+ * @brief Is a band at freq_hz placeable (inside EQ_FREQ_RANGE, both bounds kept)? A NaN is not.
+ * @thread worker
+ */
 int omx_hrp_place_in_range(double freq_hz);
 
 /**
  * @brief One bounded move of `current` toward `target`: the target when it is within HRP_GAIN_STEP_DB, else one
  * step toward it. A NaN in gives a NaN out, as the console's arithmetic does.
+ * @thread worker
  */
 double omx_hrp_step_toward(double current, double target);
 
