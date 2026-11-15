@@ -17,9 +17,12 @@ BuildRequires: diffutils
 BuildRequires: pkgconfig
 BuildRequires: omx-contract-devel >= 3.18.0
 BuildRequires: omx-contract-devel < 4
-# jack2 by name, not pkgconfig(jack): PipeWire's devel package provides that too, and omx-rt-gate's host-buffer
-# arm and omx-rta-read's null test measure against jack2's jackd and libjack, failing by name on PipeWire's.
-BuildRequires: jack-audio-connection-kit-devel
+# The JACK headers by pkgconfig(jack), so a host with PipeWire's JACK (the build image preinstalls its devel package)
+# builds this; and jack2's RUNTIME by name, jackd and its libjack, which check-package's omx-rt-gate host-buffer arm
+# starts and loads, failing by name on PipeWire's. It installs beside PipeWire's JACK libraries. A build requirement
+# only: no package of this spec requires jack2 (omx-rta-read needs libjack.so.0, which either provides).
+BuildRequires: pkgconfig(jack)
+BuildRequires: jack-audio-connection-kit
 
 # Headers and a static archive only: nothing of this package is loaded at run time.
 %global debug_package %{nil}
