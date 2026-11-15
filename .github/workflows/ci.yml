@@ -155,7 +155,9 @@ jobs:
 
   contract-floor:
     name: below the omx-contract floor the build refuses (${{ matrix.image }})
-    runs-on: ${{ github.event.pull_request.head.repo.fork && 'ubuntu-latest' || vars.OMX_RUNNER || 'ubuntu-latest' }}
+    # GitHub's hosted runners: a cheap job (nothing is served or built, #18) that the shared self-hosted pool starved in
+    # its package install (#16)
+    runs-on: ubuntu-latest
     timeout-minutes: 15
     strategy:
       fail-fast: false
@@ -172,6 +174,8 @@ jobs:
       OLD: 2.6.0
     steps:
       - name: Install the build tools
+        # a starved install is a red naming this step, never a cancel at the job's timeout (#16)
+        timeout-minutes: 8
         run: |
           set -euo pipefail
           if command -v dnf >/dev/null; then
