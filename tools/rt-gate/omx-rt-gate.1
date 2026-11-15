@@ -83,8 +83,12 @@ above.
 .B classes.tbl
 \fIsymbol class arm:case reason\fR: the external symbols a root may call, each
 with its class from the closed set \fBmaths\fR, \fBbulk\-memory\fR,
-\fBword\-atomic\fR, \fBclock\fR, \fBftz\-register\fR, \fBwake\fR, the arm that
-measured it and the reason. \fBsem_post\fR is a wake, like FUTEX_WAKE: an atomic,
+\fBword\-atomic\fR, \fBclock\fR, \fBftz\-register\fR, \fBwake\fR,
+\fBthread\-identity\fR, the arm that measured it and the reason.
+\fBthread\-identity\fR is the calling thread's own identity, read from its
+descriptor with no system call, allocation or lock, on any thread: closed to
+\fBpthread_self\fR, \fBpthread_equal\fR and \fBpthread_gettid_np\fR (glibc
+2.42 and later); a row of the class for any other symbol is refused at load. \fBsem_post\fR is a wake, like FUTEX_WAKE: an atomic,
 and a futex wake only when a waiter sleeps; \fBsem_wait\fR and
 \fBsem_timedwait\fR stay forbidden. \fBsyscall\fR is forbidden, save one
 operation the gate reads at the call: \fBsyscall(SYS_futex,\fR \fIword\fR\fB,
