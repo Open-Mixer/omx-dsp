@@ -115,6 +115,7 @@ refused "a row without the arm that measured it" classes.tbl "cosf maths"
 refused "a duplicate row" classes.tbl "$(grep -m1 '^[a-z_]* maths ' "$TABLES/classes.tbl")"
 refused "a row for a forbidden symbol" classes.tbl "malloc bulk-memory externals-arm:malloc planted"
 refused "a thread-identity row for an unruled pthread call" classes.tbl "pthread_getattr_np thread-identity externals-arm:pthread_getattr_np planted"
+refused "a cpu-identity row for an unruled call" classes.tbl "sched_getaffinity cpu-identity externals-arm:sched_getaffinity planted"
 refused "a forbidden row outside the closed codes" forbidden.tbl "snprintf RT-MAYBE planted"
 refused "an empty forbidden list" forbidden.tbl EMPTY
 refused "a per-consumer list" consumer.tbl "snprintf maths externals-arm:snprintf a consumer's own"
