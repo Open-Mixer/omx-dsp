@@ -365,7 +365,7 @@ describe('curvePoints agrees with omx_curve_points at every oracle rate', () => 
     let k = 0;
     for (const model of [0, 1, 2, 3, 9]) for (const [amount, tone, mix, output] of [[0, -1, 100, 0], [12, -0.3, 37.5, -6], [36, 1, 0, 4.5], [40, 0.5, 70, 12], [18, undefined, undefined, undefined]]) {
       k++;
-      driveReqs.push({ kind: 'transfer_curve', family: 'drive', sampleRate: sr, points: [129, 41, 256, 2, 13][k % 5], ...(k % 4 === 0 ? { extents: { min: -2, max: 2 } } : {}), terms: [
+      driveReqs.push({ kind: 'transfer_curve', family: 'drive', sampleRate: sr, points: [129, 41, 256, 2, 13][k % 5], ...(k % 4 === 0 ? { extents: { min: -90, max: 6 } } : {}), terms: [
         { role: 'drive', value: amount, unit: 'db' }, { role: 'model', value: model, unit: 'none' },
         ...(tone === undefined ? [] : [{ role: 'tone', value: tone, unit: k % 2 ? 'coef' : 'none' }]),
         ...(mix === undefined ? [] : [{ role: 'mix', value: mix, unit: 'pc' }]),
@@ -378,7 +378,7 @@ describe('curvePoints agrees with omx_curve_points at every oracle rate', () => 
     assert.ok(driveAsked.answers.every((a) => a[0] === 0 && a[1] >= 2), 'every drive request draws');
     const r = curveAgainst(driveAsked, curvePoints, T.curvePointsDrive);
     assert.deepEqual(r.failures.slice(0, 5), []);
-    process.stderr.write(`curvePoints drive: largest gap ${r.worst} (full scale)\n`);
+    process.stderr.write(`curvePoints drive: largest gap ${r.worst} dB\n`);
   });
   it('SABOTAGE drive: the tone one control step (0.01) off, the next shaper, the mix 1 % off, a missing output read as +1 dB: each red', () => {
     const near = (role, f) => (rq) => curvePoints(withTerm(rq, (t) => (t.role === role ? { ...t, value: f(t.value) } : t)));

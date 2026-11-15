@@ -307,6 +307,14 @@ const clampTravel = (v: number, r: { readonly min: number; readonly max: number 
 };
 const dbToLinF = (db: number): number => fr(dbToLinearGain(db));
 
+/** The twin of omx_curve_drive_sample(): the static path at one sample, signed and linear (the waveshape). */
+function driveSample(curve: number, driveLin: number, b: number, off: number, inv: number, wetShare: number, trimLin: number, dry: number): number {
+  const wet = fr(fr(driveShape(curve, fr(fr(driveLin * dry) + b)) - off) * inv);
+  const delta = curve === DRIVE_EXCITER ? wet : fr(wet - dry);
+  return fr(fr(dry + fr(wetShare * delta)) * trimLin);
+}
+
+/** The twin of omx_curve_drive(): a steady level in dB to the level the drive's static path gives it, in dB. */
 function drivePoints(rq: CurveRequest, find: Find, lo: number, hi: number): CurveAnswer {
   const amount = find('drive'), model = find('model'), tone = find('tone'), mix = find('mix'), output = find('output');
   if (!amount || !model) return { code: 'termMissing' };
@@ -317,14 +325,13 @@ function drivePoints(rq: CurveRequest, find: Find, lo: number, hi: number): Curv
   const wetShare = fr(fr(0.01) * clampTravel(mix ? valueOf(mix) : 100, DRIVE_MIX_RANGE));
   const trimLin = dbToLinF(clampTravel(output ? valueOf(output) : 0, DRIVE_TRIM_RANGE));
   const b = fr(evenW * fr(DRIVE_BIAS_MAX)), off = driveShape(curve, b), inv = fr(1 / fr(1 + off));
+  const sample = (dry: number): number => driveSample(curve, driveLin, b, off, inv, wetShare, trimLin, dry);
   const n = rq.points;
   const points: CurvePoint[] = [];
   for (let i = 0; i < n; i++) {
     const xi = i + 1 === n ? hi : lo + ((hi - lo) * i) / (n - 1);
-    const dry = fr(xi);
-    const wet = fr(fr(driveShape(curve, fr(fr(driveLin * dry) + b)) - off) * inv);
-    const delta = curve === DRIVE_EXCITER ? wet : fr(wet - dry);
-    points.push({ x: xi, y: fr(fr(dry + fr(wetShare * delta)) * trimLin) });
+    // a steady level in, its level out: the level's sample through the static path, read back in dB
+    points.push({ x: xi, y: linToDb(sample(dbToLinF(fr(xi)))) });
   }
   return rq.userOnly ? { points, marks: [], userPoints: points } : { points, marks: [] };
 }
