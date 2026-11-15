@@ -47,8 +47,13 @@ jobs:
         run: |
           set -euo pipefail
           apt-get build-dep -y --no-install-recommends ./
+      # the parallel jobs from the job's CPU quota and the runner's declared CPUs, never the host's nproc
+      - name: The parallel jobs this runner may run
+        uses: Open-Mixer/.github/.github/actions/jobs@openmixer-v1
+        with:
+          max: ${{ vars.OMX_RUNNER_CPUS || '3' }}
       - name: The library the twins are checked against
-        run: make -j"$(nproc)" lib
+        run: make -j"$OMX_JOBS" lib
       - uses: actions/setup-node@v4
         with:
           node-version: 22
