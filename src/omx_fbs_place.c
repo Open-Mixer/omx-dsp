@@ -379,10 +379,10 @@ int omx_fbs_place_seat(OmxFbsPlace *p, int origin, double freq_hz, double gain_d
   OmxFbsPlaceSlot *s = &p->slot[k];
   free_slot(s);
   s->origin = origin;
-  s->freq_hz = clamp(freq_hz, OMX_EQ_FREQ_RANGE_MIN, OMX_EQ_FREQ_RANGE_MAX);
+  s->freq_hz = omx_place_clamp(freq_hz, OMX_EQ_FREQ_RANGE_MIN, OMX_EQ_FREQ_RANGE_MAX);
   s->shape = fixed ? OMX_CURVE_SHAPES_NOTCH : OMX_CURVE_SHAPES_BELL;
   s->gain_db = omx_fbs_place_gain_cap(origin, gain_db);
-  s->q = fixed ? clamp(q, OMX_EQ_NOTCH_Q_RANGE_MIN_DOUBLE, OMX_EQ_NOTCH_Q_RANGE_MAX) : clamp(q, OMX_EQ_Q_RANGE_MIN_DOUBLE, OMX_EQ_Q_RANGE_MAX);
+  s->q = fixed ? omx_place_clamp(q, OMX_EQ_NOTCH_Q_RANGE_MIN_DOUBLE, OMX_EQ_NOTCH_Q_RANGE_MAX) : omx_place_clamp(q, OMX_EQ_Q_RANGE_MIN_DOUBLE, OMX_EQ_Q_RANGE_MAX);
   s->on = 1;
   s->seq = ++p->seq;
   s->planted_db = s->gain_db;
