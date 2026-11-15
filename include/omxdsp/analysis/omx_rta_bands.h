@@ -41,25 +41,25 @@ struct omx_rta_band {
   double peak_db;
 };
 
-/** The highest frequency a band covers at `rate`: OMX_RTA_BAND_F_MAX_CAP, or the Nyquist where that is lower. */
+/** The highest frequency a band covers at `rate`: OMX_RTA_BAND_F_MAX_CAP, or the Nyquist where that is lower. @thread control */
 static inline double omx_rta_band_f_max(double rate) {
   const double nyquist = rate / 2.0;
   return (double)OMX_RTA_BAND_F_MAX_CAP < nyquist ? (double)OMX_RTA_BAND_F_MAX_CAP : nyquist;
 }
 
-/** The dB that level-matches a low-tier band to the high tier: the bin-density ratio; 0 for a degenerate tier. */
+/** The dB that level-matches a low-tier band to the high tier: the bin-density ratio; 0 for a degenerate tier. @thread control */
 static inline double omx_rta_low_gain_db(const struct omx_rta_tier *high, const struct omx_rta_tier *low) {
   const double ratio = (double)low->fft_size / low->rate / ((double)high->fft_size / high->rate);
   if (!isfinite(ratio) || ratio <= 0.0) return 0.0;
   return 10.0 * log10(ratio);
 }
 
-/** Linear amplitude to dB, silence as -INFINITY: the twin's linearGainToDb. */
+/** Linear amplitude to dB, silence as -INFINITY: the twin's linearGainToDb. @thread control */
 static inline double omx_rta_band_db(double lin) {
   return lin <= 0.0 ? -INFINITY : 20.0 * log10(lin);
 }
 
-/** RMS and peak (linear) of `tier` over the bins covering [f0, f1); a band spanning none samples the nearest. */
+/** RMS and peak (linear) of `tier` over the bins covering [f0, f1); a band spanning none samples the nearest. @thread control */
 static inline void omx_rta_band_stats(const struct omx_rta_tier *tier, double f0, double f1, double *rms, double *peak) {
   const int64_t last = (int64_t)tier->bins - 1;
   int64_t i0 = (int64_t)floor(f0 * tier->fft_size / tier->rate);
@@ -79,7 +79,7 @@ static inline void omx_rta_band_stats(const struct omx_rta_tier *tier, double f0
   *peak = top;
 }
 
-/** Reduce `high` (and `low` under the crossover, when not NULL) to `n` bands into `out`; the count written. */
+/** Reduce `high` (and `low` under the crossover, when not NULL) to `n` bands into `out`; the count written. @thread control */
 static inline uint32_t omx_rta_bands(const struct omx_rta_tier *high, const struct omx_rta_tier *low, uint32_t n,
                                      struct omx_rta_band *out) {
   if (n < 1u) return 0u;
