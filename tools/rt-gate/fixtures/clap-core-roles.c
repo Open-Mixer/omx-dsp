@@ -3,7 +3,7 @@
 /* A call through a field omx-clap-core.abi does not declare stays red, with the ABI bound (clap-core-roles.clean.c). */
 // abi: lv2 omx-clap-core
 // expect: 1
-// expect-red: RT-INDIRECT r.is_worker at fixtures/clap-core-roles.c:13:13 via run[audio]
+// expect-red: RT-INDIRECT r.is_worker at fixtures/clap-core-roles.c:13:25 via run[audio]
 #include "lv2-mini.h"
 struct role { int (*is_worker)(void *ctx); void *ctx; };
 struct plug { struct role role; int on; float *out; };

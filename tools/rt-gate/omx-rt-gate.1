@@ -100,15 +100,18 @@ call's text does not show stays \fBRT\-BLOCK\fR. A row naming a site, a field, a
 function of omx-dsp, a class outside the set, a row without a reason or an arm,
 a duplicate, or a row for a forbidden symbol is refused at load.
 .TP
-.B lv2.abi, clap.abi, pipewire.abi
+.B lv2.abi, clap.abi, pipewire.abi, omx-clap-core.abi
 the roles of each ABI: \fBplugin\fR fields the bound side provides (its roots),
 \fBhost\fR fields the other side provides (callable with their role),
 \fBhanded\fR parameters (LV2 work's respond) and the \fBresult\fR rows.
 \fB\-\-abi lv2\fR binds the plugin side, \fB\-\-abi lv2:host\fR the host side.
+\fBomx\-clap\-core.abi\fR is omx-clap-core's embedding API: the audio-role predicate and
+the log sink its embedder hands it, called on the audio thread; \fB\-\-abi omx\-clap\-core\fR
+binds the library, \fB\-\-abi omx\-clap\-core:host\fR the embedder.
 .SH OPTIONS
 .TP
 .BI \-\-abi " NAME" "\fR[\fB:host\fR]"
-An ABI the units bind: \fBlv2\fR, \fBclap\fR, \fBpipewire\fR.
+An ABI the units bind: \fBlv2\fR, \fBclap\fR, \fBpipewire\fR, \fBomx\-clap\-core\fR.
 .TP
 .BI \-\-tags " FILE"
 The thread tags of a library's functions. The installed omx-dsp tags are read
