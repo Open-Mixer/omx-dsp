@@ -1,0 +1,77 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Pau Aliagas <linuxnow@gmail.com>
+#
+# hrp_place.vectors: the harmonic resonance processor's placement and stepping by value.
+# One file, read by the C placement's test (test/analysis/hrp_place.test.c) and by its TypeScript twin's
+# (ts/test/hrp-place.test.mjs): both are held to the values below, so they are held to each other. The values are
+# the console's harmonicBands and the HRP planter's stepToward worked by hand; the console holds its own copies to
+# this file on its side until it calls this placement instead.
+#
+#   place <name> <f0> <q> <maxCut> <maxBoost> <maxBands> g [<gain>]... => [<harmonic> <freq> <gain> <q>]...
+#        one call of the placement: the bands it returns, in order (nothing after => : no band)
+#   step <name> <current> <target> <result>
+#        one bounded move of a gain toward its target (HRP_GAIN_STEP_DB, 2 dB, per move)
+#   nan, inf and -inf are the IEEE values.
+#
+# Tolerances: harmonics, counts and order are exact, and so are frequencies, gains and steps (a product of a
+# harmonic and f0, a clamp, a sum: one rounding each, the same in both). Q is within 1e-6 because the contract
+# renders the bell's lower bound as the float 0.3f into C and as 0.3 into TypeScript.
+tolerance q 1e-6
+
+# --- the console's case: Q 5, a 6 dB cut, no boost, a ladder of twelve ---------------------------------------
+place clamps-and-sparse 100 5 6 0 12 g 0 -3 0 -6.5 2 => 2 200 -3 5 4 400 -6 5
+place fundamental-allowed 100 5 6 0 12 g -2 => 1 100 -2 5
+place non-integer-f0 110.5 5 6 0 12 g 0 0 -1.25 => 3 331.5 -1.25 5
+place no-gains 100 5 6 0 12 g =>
+place negative-zero 100 5 6 0 12 g -0 =>
+place non-finite-gains-skipped 100 5 6 0 12 g nan inf -inf -1 => 4 400 -1 5
+
+# --- DROP, NEVER CLAMP: EQ_FREQ_RANGE (20 to 20000 Hz) with both bounds kept --------------------------------
+place low-edge-kept 20 5 6 0 12 g -1 => 1 20 -1 5
+place below-range-dropped 10 5 6 0 12 g -1 -1 => 2 20 -1 5
+place high-edge-kept 2000 5 6 0 12 g 0 0 0 0 0 0 0 0 0 -2 -4 => 10 20000 -2 5
+place above-range-dropped 1900 5 6 0 12 g 0 0 0 0 0 0 0 0 0 0 -3 =>
+
+# --- the refusals: an input that cannot be placed plants nothing --------------------------------------------
+place f0-zero 0 5 6 0 12 g -1 =>
+place f0-negative -5 5 6 0 12 g -1 =>
+place f0-nan nan 5 6 0 12 g -1 =>
+place f0-inf inf 5 6 0 12 g -1 =>
+place q-nan 100 nan 6 0 12 g -1 =>
+place q-inf 100 inf 6 0 12 g -1 =>
+place cut-negative 100 5 -1 0 12 g -1 =>
+place cut-nan 100 5 nan 0 12 g -1 =>
+place boost-negative 100 5 6 -1 12 g -1 =>
+place bands-zero 100 5 6 0 0 g -1 =>
+place bands-below-one 100 5 6 0 0.5 g -1 =>
+place bands-inf 100 5 6 0 inf g -1 =>
+place bands-nan 100 5 6 0 nan g -1 =>
+
+# --- the bell's Q extent (EQ_Q_RANGE 0.3 to 8) -----------------------------------------------------------------
+place q-above-clamped 100 12 6 0 12 g -1 => 1 100 -1 8
+place q-below-clamped 100 0.2 6 0 12 g -1 => 1 100 -1 0.3
+place q-inside-kept 100 1 6 0 12 g -1 => 1 100 -1 1
+
+# --- a declared boost is granted up to its bound -----------------------------------------------------------------
+place boost-granted 100 5 6 3 12 g 0 5 => 2 200 3 5
+
+# --- the cap keeps the LARGEST corrections, ties to the lower harmonic, then harmonic order ------------------
+place cap-largest 100 5 6 0 2 g 0 -1 -4 -2 -4 => 3 300 -4 5 5 500 -4 5
+place cap-fractional 100 5 6 0 2.9 g 0 -1 -4 -2 -4 => 3 300 -4 5 5 500 -4 5
+place cap-not-reached 100 5 6 0 4 g 0 -1 -4 -2 -4 => 2 200 -1 5 3 300 -4 5 4 400 -2 5 5 500 -4 5
+place cap-tie-lower-harmonic 100 5 6 0 1 g 0 -3 -3 => 2 200 -3 5
+
+# --- one move toward the target, never further than HRP_GAIN_STEP_DB ---------------------------------------
+step plant-first-move 0 -6 -2
+step plant-second-move -2 -6 -4
+step plant-arrives -4 -6 -6
+step within-a-step -5 -6 -6
+step exactly-a-step -4 -2 -2
+step release-move -6 0 -4
+step at-target 0 0 0
+step small-to-target 0.5 -0.25 -0.25
+step doubles-not-floats -3.7 0 -1.7000000000000002
+step toward-inf 0 inf 2
+step toward-minus-inf 0 -inf -2
+step nan-target 1 nan nan
+step nan-current nan 0 nan
