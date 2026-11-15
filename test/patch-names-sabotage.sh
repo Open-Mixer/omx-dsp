@@ -26,5 +26,11 @@ sabotage change-allowed    's/} else if (now\[k\] != was\[k\]) { bad++; /} else 
 sabotage members-unordered 's/if (!prefix(now\[k\], was\[k\]))/if (0)/'
 sabotage additions-refused 's/{ added++; /{ added++; bad++; /'
 sabotage first-tag-only    's/for ((k = 0; k < pat; k++))/for ((k = 0; k < 1; k++))/'
+sabotage moves-unread      's/print "MOVED " p\[2\]/print "KEPT " p[2]/'
+sabotage no-size-names     's/(_COUNT|_SIZE|_SLOTS|/(_NONE|_NONE2|_NONE3|/'
+sabotage no-bounds         's/rec("bound", bp\[j\], "")/norec("bound", bp[j], "")/'
+sabotage no-closure        's/!(vp\[j\] in size)) { size\[vp\[j\]\] = 1; grew = 1 }/!(vp[j] in size)) { grew = 0 }/'
+sabotage proof-ignored     's/    if \[ -n "\$proof" \]; then/    if true; then/'
+sabotage any-value-proof   's/\$1 == v \&\& \$2 == n \&\& \$3 == x/$1 == v \&\& $2 == n/'
 [ "$fail" -eq 0 ] && echo "patch-names-sabotage: all $n sabotages are caught"
 exit "$fail"
