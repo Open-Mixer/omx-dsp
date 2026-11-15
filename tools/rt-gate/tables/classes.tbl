@@ -105,6 +105,9 @@ memcmp bulk-memory externals-arm:memcmp a bounded pass over caller-owned bytes
 clock_gettime clock externals-arm:clock_gettime CLOCK_MONOTONIC through the vDSO: no system call
 
 sem_post wake externals-arm:sem_post an atomic increment; a futex wake only when a waiter sleeps
+pthread_self thread-identity externals-arm:pthread_self the thread pointer register, read
+pthread_equal thread-identity externals-arm:pthread_equal two thread descriptors compared
+pthread_gettid_np thread-identity externals-arm:pthread_gettid_np the kernel id cached in the thread's descriptor (glibc 2.42 and later), no system call
 
 __aarch64_ldadd4_relax word-atomic externals-arm:__aarch64_ldadd4_relax libgcc's outline atomic add, 4 bytes, relaxed: LSE ldadd or an exclusive loop, lock-free
 __aarch64_ldadd4_rel word-atomic externals-arm:__aarch64_ldadd4_rel libgcc's outline atomic add, 4 bytes, release: LSE ldaddl or an exclusive loop, lock-free
