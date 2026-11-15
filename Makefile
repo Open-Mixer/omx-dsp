@@ -412,6 +412,8 @@ checks:
 	bash tools/contract-single-source.sh --self-test
 	bash tools/travel-grid-check.sh
 	bash tools/travel-grid-check.sh --self-test
+	sh tools/no-host-nproc.sh --self-test
+	sh tools/no-host-nproc.sh
 	bash tools/check-package-check.sh
 	bash tools/check-package-check.sh --self-test
 	CC="$(CC)" TMPDIR="$(abspath $(BUILD))" bash tools/clone-check.sh
