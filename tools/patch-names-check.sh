@@ -19,7 +19,15 @@
 #   variable  an extern declaration                            must still exist, unchanged
 #   struct, union, enum   its members at the tag must be the FIRST members now, in the same order and unchanged
 #                         (appending is a patch)
-# A removed or changed one is refused, naming it; an added one is allowed and counted. Behaviour is not something this
+# A removed or changed one is refused, naming it; an added one is allowed and counted.
+#
+# A macro's VALUE is read for one kind of macro, a count or size: one named so (_COUNT _SIZE _SLOTS _CAP _LEN _LENGTH
+# _CAPACITY), one an array bound reads in a public header, and every macro the value of one of those reads. A moved
+# value there can resize a struct or array that a program built against the earlier patch shares with this one, so it
+# is refused (`moved: NAME`) unless tools/patch-count-proofs.txt carries its proof, one line per moved macro:
+#   <this version> <NAME> <its new value, without spaces> <the proof: no struct or array shared across the ABI is
+#                                                          sized by it, and no consumer stores it>
+# Otherwise it is a minor. Any other macro's value is behaviour (below). Behaviour is not something this
 # check can read: the kernels' golden vectors hold it (`make golden-write` only in a minor). Patch 0, or no earlier
 # tag of the minor, compares nothing. A signature is compared as text with its whitespace and comments normalised
 # away, so renaming a parameter reads as a change: rename in a minor.
@@ -35,7 +43,8 @@ set -euo pipefail
 HEADER_RE='^include/omxdsp/.*\.h$'
 
 # The declarations of the headers on stdin (each file after a line "\001FILE <path>"), one per line:
-# KIND <tab> NAME <tab> VALUE, KIND one of macro function typedef variable struct union enum.
+# KIND <tab> NAME <tab> VALUE, KIND one of macro function typedef variable struct union enum, and two that only the
+# count and size reading uses: define (the value of an object-like macro) and bound (a name an array bound reads).
 EXTRACT='
 function rec(kind, name, value,   k) {
   if (name == "") return
@@ -139,7 +148,7 @@ function statement(s,   kind, tail, name) {
   name = s; sub(/=.*$/, "", name)
   rec("variable", lastident(name), s)
 }
-function file(text,   code, i, n, c, j, lines, nl, l, line, s, h, b, m, ext) {
+function file(text,   code, i, n, c, j, lines, nl, l, line, s, h, b, m, ext, bt, bb, bp, nb) {
   # comments out (their newlines kept, so a preprocessor line never swallows code), literals kept
   code = ""; n = length(text); i = 1
   while (i <= n) {
@@ -166,9 +175,18 @@ function file(text,   code, i, n, c, j, lines, nl, l, line, s, h, b, m, ext) {
     if (line ~ /^[ \t]*#/) {
       if (match(line, /^[ \t]*#[ \t]*define[ \t]+[A-Za-z_][A-Za-z0-9_]*/)) {
         s = substr(line, RSTART, RLENGTH); sub(/^.*[ \t]/, "", s); rec("macro", s, "")
+        # the value of an object-like macro (a function-like one has no value to read)
+        m = substr(line, RSTART + RLENGTH); if (m !~ /^\(/) rec("define", s, norm(m))
       }
     } else code = code line " "
     line = ""
+  }
+  # every upper-case name an array bound reads: [NAME], [NAME * 2], [(A + B)]
+  bt = code
+  while (match(bt, /\[[^]]*\]/)) {
+    bb = substr(bt, RSTART + 1, RLENGTH - 2); bt = substr(bt, RSTART + RLENGTH)
+    nb = split(bb, bp, /[^A-Za-z0-9_]+/)
+    for (j = 1; j <= nb; j++) if (bp[j] ~ /^[A-Z][A-Z0-9_]*$/) rec("bound", bp[j], "")
   }
   # top-level statements
   s = ""; agg = ""; ext = 0; n = length(code); i = 1
@@ -215,15 +233,31 @@ list() {
 }
 
 # The declarations at a tag (file 1) against the working tree's (file 2): a removed or changed one is printed and
-# fails; the last line is "ADDED <count> <the first names>".
+# fails; a count or size macro whose value moved is printed "MOVED <name> <tab> <was> <tab> <now>" (the caller
+# looks for its proof); the last line is "ADDED <count> <the first names>".
 COMPARE='
 BEGIN { FS = "\t" }
 function prefix(now, was) { return was == "" || now == was || index(now, was ";") == 1 }
+function kept(kind) { return kind != "define" && kind != "bound" }
 NR == FNR { was[$1 FS $2] = $3; wk[++nw] = $1 FS $2; next }
-{ now[$1 FS $2] = $3; if (!(($1 FS $2) in was)) { added++; if (added <= 12) addl = addl " " $2 } }
+{ now[$1 FS $2] = $3; if (kept($1) && !(($1 FS $2) in was)) { added++; if (added <= 12) addl = addl " " $2 } }
 END {
+  # the counts and sizes: named so, or read by an array bound, and every name their values read, to a fixed point
+  for (k in now) { split(k, p, FS); if (p[1] == "bound" || (p[1] == "define" && p[2] ~ /(_COUNT|_SIZE|_SLOTS|_CAP|_LEN|_LENGTH|_CAPACITY)$/)) size[p[2]] = 1 }
+  do {
+    grew = 0
+    for (k in now) {
+      split(k, p, FS); if (p[1] != "define" || !(p[2] in size)) continue
+      nv = split(now[k], vp, /[^A-Za-z0-9_]+/)
+      for (j = 1; j <= nv; j++) if (vp[j] ~ /^[A-Z][A-Z0-9_]*$/ && !(vp[j] in size)) { size[vp[j]] = 1; grew = 1 }
+    }
+  } while (grew)
   for (i = 1; i <= nw; i++) {
     k = wk[i]; split(k, p, FS)
+    if (!kept(p[1])) {
+      if (p[1] == "define" && (p[2] in size) && (k in now) && now[k] != was[k]) print "MOVED " p[2] FS was[k] FS now[k]
+      continue
+    }
     if (!(k in now)) { bad++; print "  removed: " p[1] " " p[2]; continue }
     if (p[1] == "struct" || p[1] == "union" || p[1] == "enum") {
       if (!prefix(now[k], was[k])) { bad++; print "  changed: " p[1] " " p[2] " (a member removed, reordered or changed): was {" was[k] "} now {" now[k] "}" }
@@ -234,7 +268,7 @@ END {
 }'
 
 check() {
-  local repo=$1 h=$1/include/omxdsp/omxdsp.h maj min pat k now base out fail=0 bases="" added=""
+  local repo=$1 h=$1/include/omxdsp/omxdsp.h maj min pat k now base out fail=0 bases="" added="" moved="" name was val proof
   maj=$(sed -nE 's/^#define OMXDSP_VERSION_MAJOR ([0-9]+).*/\1/p' "$h")
   min=$(sed -nE 's/^#define OMXDSP_VERSION_MINOR ([0-9]+).*/\1/p' "$h")
   pat=$(sed -nE 's/^#define OMXDSP_VERSION_PATCH ([0-9]+).*/\1/p' "$h")
@@ -247,12 +281,28 @@ check() {
     list "$repo" "v$maj.$min.$k" > "$base"
     if out=$(LC_ALL=C awk "$COMPARE" "$base" "$now"); then :; else
       echo "patch-names-check: $maj.$min.$pat removes or changes what v$maj.$min.$k declares; that is a minor:" >&2
-      grep -v '^ADDED ' <<< "$out" >&2 || true
+      grep -vE '^(ADDED|MOVED) ' <<< "$out" >&2 || true
       fail=1
     fi
     bases="$bases v$maj.$min.$k"; added=$(sed -n 's/^ADDED //p' <<< "$out")
+    moved="$moved$(sed -n 's/^MOVED //p' <<< "$out")"$'\n'
   done
   rm -f "$now" "$base"
+  # each moved count or size once (its value against the earliest tag that differs), and its proof for this version
+  # and this value
+  while IFS=$'\t' read -r name was val; do
+    [ -n "$name" ] || continue
+    proof=$(awk -v v="$maj.$min.$pat" -v n="$name" -v x="${val// /}" \
+      '$1 == v && $2 == n && $3 == x { sub(/^[^ ]+ +[^ ]+ +[^ ]+ */, ""); print; exit }' \
+      "$repo/tools/patch-count-proofs.txt" 2> /dev/null || true)
+    if [ -n "$proof" ]; then
+      echo "patch-names-check: $maj.$min.$pat moves $name, a count or size (was \`$was\` now \`$val\`): a patch by its proof: $proof"
+    else
+      echo "patch-names-check: $maj.$min.$pat moves a count or size; that is a minor unless tools/patch-count-proofs.txt carries its proof:" >&2
+      echo "  moved: $name: was \`$was\` now \`$val\` (prove no struct or array shared across the ABI is sized by it and no consumer stores it, then list \"$maj.$min.$pat $name ${val// /} <the proof>\")" >&2
+      fail=1
+    fi
+  done < <(awk -F '\t' 'NF && !seen[$1]++' <<< "$moved")
   [ "$fail" -eq 0 ] || return 1
   if [ -z "$bases" ]; then echo "patch-names-check: no earlier tag of $maj.$min, nothing to compare"; return 0; fi
   if [ "${added%% *}" = 0 ]; then echo "patch-names-check: $maj.$min.$pat removes and changes nothing declared at$bases, and adds nothing"

@@ -348,4 +348,12 @@ headers of the archive it links. Within that:
 every header under `include/omxdsp/`, at every earlier tag of the same minor and in the tree, and refuses a macro,
 function, static inline, typedef or extern that is gone or whose declaration changed, and a struct, union or enum
 whose earlier members are not, unchanged and in order, its first members now. An added name is allowed and counted.
+
+A count or size is the one macro whose **value** a patch may not move unread: a macro named as one (`_COUNT`, `_SIZE`,
+`_SLOTS`, `_CAP`, `_LEN`, `_LENGTH`, `_CAPACITY`), one that an array bound in a public header reads, and every macro the
+value of one of those reads. Moving it can resize a struct or array a program built against the earlier patch shares
+with this one. The check refuses it (`moved: NAME`) unless `tools/patch-count-proofs.txt` lists its proof for this
+version and this value: `<version> <NAME> <new value, no spaces> <the proof>`, the proof being that no struct or array
+shared across the ABI is sized by it (grep the public headers) and no consumer stores it (grep every consumer
+repository; one that reads it at run time is fine). The PR states the proof too. Without one it is a minor.
 `test/patch-names-sabotage.sh` breaks each of those rules in a copy of the check and requires its self-test to fail.
