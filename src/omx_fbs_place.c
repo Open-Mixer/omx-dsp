@@ -311,12 +311,14 @@ static void hold_sweep(OmxFbsPlace *p, const double *snapshot_hz, uint32_t n_sna
   }
 }
 
-/* adoptUntracked: every fbs-live band not yet tracked, in band order, starts a fresh hold and takes its ring memory */
+/* adoptUntracked: every band not yet tracked whose origin is fbs-live NOW, in band order, starts a fresh hold
+ * and takes its ring memory; the console reads the tag at the tick, so a band re-tagged fixed is never tracked */
 static void adopt(OmxFbsPlace *p) {
   for (int k = next_by_seq(p, 0); k >= 0; k = next_by_seq(p, p->slot[k].seq)) {
     OmxFbsPlaceSlot *s = &p->slot[k];
     if (!s->adopt) continue;
     s->adopt = 0;
+    if (s->origin != OMX_CURVE_ORIGINS_FBS_LIVE) continue;
     s->live = 1;
     s->planted_db = s->gain_db;
     s->last_ring_ms = p->now_ms;

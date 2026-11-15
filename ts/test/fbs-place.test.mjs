@@ -158,6 +158,7 @@ describe('every rule has an arm that turns a vector red', () => {
     'the EQ\'s other bands not counted': (p) => { p.othersCounted = () => 0; },
     'a seated or re-tagged band never adopted': (p) => { p.adopt = () => {}; },
     'an adopted band\'s hold starts at zero': (p) => { p.adoptClock = () => 0; },
+    'a pending band adopted whatever its origin': (p) => { p.adoptsOrigin = () => true; },
   };
   for (const [name, override] of Object.entries(arms)) it(name, () => assert.ok(runAll(arm(override)).length > 0, `${name} stayed green`));
   it('the per-origin cap arm is the console\'s for every origin', () => {

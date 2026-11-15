@@ -342,6 +342,7 @@ export class FbsPlace {
       const s = this.slots[k]!;
       if (!s.adopt) continue;
       s.adopt = false;
+      if (!this.adoptsOrigin(s.origin)) continue;
       s.live = true;
       s.plantedDb = s.gainDb;
       s.lastRingMs = this.adoptClock();
@@ -350,6 +351,11 @@ export class FbsPlace {
       s.ramp = null;
       s.reclamps = this.takeMemory(s.freqHz);
     }
+  }
+
+  /** Whether a pending band is adopted: only one whose origin is fbs-live at the tick. */
+  protected adoptsOrigin(originIndex: number): boolean {
+    return originIndex === ORIGIN.fbsLive;
   }
 
   /** The clock an adopted band's hold starts from. */

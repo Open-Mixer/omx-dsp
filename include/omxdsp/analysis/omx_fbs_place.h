@@ -271,7 +271,8 @@ int omx_fbs_place_remove(OmxFbsPlace *p, uint32_t k);
  *        the placement as {@link omx_fbs_place_remove} (the caller then counts it in its others). To an fbs-*
  *        origin, the slot takes it and the gain, held by that origin's cap; the shape, Q, planted depth and any
  *        release in flight stay, so a ramp runs on from where it began and a regrowth compares the edited gain.
- *        A band not yet live re-tagged fbs-live is adopted at the next tick. Nothing is said.
+ *        A band not yet live re-tagged fbs-live is adopted at the next tick if it is still fbs-live then. Nothing
+ *        is said.
  * @param p The placement; NULL is a no-op.
  * @param k The slot.
  * @param origin An enum omx_curve_origins.
@@ -284,7 +285,7 @@ int omx_fbs_place_edit(OmxFbsPlace *p, uint32_t k, int origin, double gain_db);
 /**
  * @brief Seat a band the EQ already holds (a session restore) in the lowest free slot, after every band seated or
  *        planted before it. A fixed band is a notch, its Q held in the notch Q's extent, and never lifts; a live one is a bell
- *        adopted at the next tick: its hold starts then, its planted depth is its gain, its ring memory is taken,
+ *        adopted at the next tick if it is still fbs-live then: its hold starts then, its planted depth is its gain, its ring memory is taken,
  *        and it releases through the same stages as a planted one. It counts against the pool at once, and the
  *        pool cap does not refuse it.
  * @param p The placement; NULL is a no-op.
