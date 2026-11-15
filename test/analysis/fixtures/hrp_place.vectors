@@ -3,9 +3,11 @@
 #
 # hrp_place.vectors: the harmonic resonance processor's placement and stepping by value.
 # One file, read by the C placement's test (test/analysis/hrp_place.test.c) and by its TypeScript twin's
-# (ts/test/hrp-place.test.mjs): both are held to the values below, so they are held to each other. The values are
-# the console's harmonicBands and the HRP planter's stepToward worked by hand; the console holds its own copies to
-# this file on its side until it calls this placement instead.
+# (ts/test/hrp-place.test.mjs): both are held to the values below, so they are held to each other. THE CONSOLE IS
+# THE ORACLE: every value after => and every step result is what the console's own harmonicBands and its HRP
+# planter's stepToward (HRP_GAIN_STEP_DB 2) returned when run over the inputs on the same line, and all 44 lines
+# were compared number for number with those returns before this file was kept. A new line is derived the same way,
+# never worked by hand.
 #
 #   place <name> <f0> <q> <maxCut> <maxBoost> <maxBands> g [<gain>]... => [<harmonic> <freq> <gain> <q>]...
 #        one call of the placement: the bands it returns, in order (nothing after => : no band)
