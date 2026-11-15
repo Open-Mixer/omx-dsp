@@ -267,11 +267,12 @@ if [ "${1:-}" = "--self-test" ]; then
   ver() { sed -i -E "s/^#define OMXDSP_VERSION_PATCH [0-9]+/#define OMXDSP_VERSION_PATCH $1/" include/omxdsp/omxdsp.h; }
   printf '%s\n' '#ifndef OMXDSP_H' '#define OMXDSP_H' '#define OMXDSP_VERSION_MAJOR 0' '#define OMXDSP_VERSION_MINOR 1' \
     '#define OMXDSP_VERSION_PATCH 0' '#define OMX_OLD 1 /* a macro */' \
+    '#define OMX_A_COUNT 2u' '#define OMX_A_GAIN 3.0' '#define OMX_A_ROWS 4' '#define OMX_A_TABLE_N OMX_A_ROWS' \
     'static inline double omx_old(double q) { return q; }' '#endif' > include/omxdsp/omxdsp.h
   printf '%s\n' '#ifdef __cplusplus' 'extern "C" {' '#endif' '/* omx_place(int) once */' \
     'typedef struct OmxA { double x; /* the first */' '  uint32_t n; } OmxA;' \
     'enum omx_a_kind { OMX_A_ONE = 1, OMX_A_TWO, };' 'typedef void (*omx_a_cb)(void *user);' \
-    'extern const double omx_a_table[4];' \
+    'extern const double omx_a_table[4];' 'extern const double omx_a_rows[OMX_A_TABLE_N];' \
     'uint32_t omx_a_place(double f0_hz, const double *gains_db,' '                     uint32_t n);' \
     'int omx_a_in_range(double freq_hz);' '#ifdef __cplusplus' '}' '#endif' > include/omxdsp/analysis/omx_a.h
   printf '%s\n' 'OMXDSP_LAYOUT(m, struct omx_m)' 'struct omx_m { int on; };' 'OMXDSP_LAYOUT(n, int)' 'static inline int omx_m_on(const struct omx_m *m) {' '  return m->on;' '}' \
@@ -285,7 +286,7 @@ if [ "${1:-}" = "--self-test" ]; then
     if [ "$2" = 1 ] && [ -n "${3:-}" ] && ! grep -qF -- "$3" <<< "$out"; then echo "patch-names-check --self-test: FAIL, $1 is refused without naming '$3'"; fail=1; fi
     return 0
   }
-  reset() { git checkout -q -- include; git clean -qfd include; ver "$1"; }
+  reset() { git checkout -q -- include; git clean -qfd include; rm -f tools/patch-count-proofs.txt; ver "$1"; }
   ver 1; must "an unchanged patch" 0
   # what a patch may add: names in every header, an appended field and enumerator, a new header
   echo '#define OMX_NEW 2' >> include/omxdsp/omxdsp.h
@@ -318,6 +319,20 @@ if [ "${1:-}" = "--self-test" ]; then
   must "a changed extern" 1 "changed: variable omx_a_table"
   reset 1; sed -i 's/struct omx_m { int on; };/struct omx_m { long on; };/' include/omxdsp/mix/omx_m.h
   must "a changed field in mix/" 1 "changed: struct omx_m"
+  # a count or size macro (by its name, or an array bound in a public header, directly or through another macro)
+  # whose value moves is a patch only with its proof in tools/patch-count-proofs.txt; any other value is not read
+  reset 1; sed -i 's/^#define OMX_A_COUNT 2u/#define OMX_A_COUNT 3u/' include/omxdsp/omxdsp.h
+  must "a moved _COUNT macro without its proof" 1 "moved: OMX_A_COUNT"
+  mkdir -p tools; echo '0.1.1 OMX_A_COUNT 3u no ABI-shared struct or array is sized by it' > tools/patch-count-proofs.txt
+  must "a moved _COUNT macro with its proof" 0
+  sed -i 's/^0\.1\.1 /0.1.9 /' tools/patch-count-proofs.txt
+  must "a moved _COUNT macro with another version's proof" 1 "moved: OMX_A_COUNT"
+  echo '0.1.1 OMX_A_COUNT 4u a proof for another value' > tools/patch-count-proofs.txt
+  must "a moved _COUNT macro with another value's proof" 1 "moved: OMX_A_COUNT"
+  reset 1; sed -i 's/^#define OMX_A_ROWS 4/#define OMX_A_ROWS 5/' include/omxdsp/omxdsp.h
+  must "a macro an array bound reads through another macro, moved" 1 "moved: OMX_A_ROWS"
+  reset 1; sed -i 's/^#define OMX_A_GAIN 3.0/#define OMX_A_GAIN 4.0/' include/omxdsp/omxdsp.h
+  must "a moved value that sizes nothing" 0
   # what an earlier patch added is held too
   reset 1; echo 'int omx_a_later(void);' >> include/omxdsp/analysis/omx_a.h
   git add -A; git -c user.name=t -c user.email=t@t commit -qm patch1; git tag v0.1.1
@@ -327,7 +342,7 @@ if [ "${1:-}" = "--self-test" ]; then
   # a minor compares nothing
   reset 0; sed -i '/^int omx_a_in_range/d' include/omxdsp/analysis/omx_a.h
   must "a minor's removal" 0
-  [ "$fail" -eq 0 ] && echo "patch-names-check --self-test: an additive patch passes; a removed or changed macro, function, inline, typedef, extern, field or enumerator, in any header, is named; a minor compares nothing"
+  [ "$fail" -eq 0 ] && echo "patch-names-check --self-test: an additive patch passes; a removed or changed macro, function, inline, typedef, extern, field or enumerator, in any header, is named; a count or size macro whose value moves is named unless its proof is listed; a minor compares nothing"
   exit "$fail"
 fi
 check "$(cd "${1:-$(dirname "$0")/..}" && pwd)"
