@@ -116,6 +116,30 @@ typedef struct {
 } OmxDriveInstance;
 
 /**
+ * The atom's static controls from the host's words: the shaper (`curve`, a DRIVE_CURVES index, any other value
+ * reading as the declared default), the pre-shaper gain from `amount` (dB), the bias weight from `character`
+ * (-1..+1, folded to (character + 1) / 2), the wet share from `mix` (percent) and the make-up from `trim` (dB),
+ * each clamped into its declared travel, a non-finite word reading as the declared default. The one mapping:
+ * omx_drive_instance_resolve() applies it to the atom it runs, and omx_curve_points() draws the drive's
+ * transfer curve through it, so the curve is what the kernel runs at those words. Pure.
+ * @thread any
+ */
+static inline void omx_drive_instance_controls(struct omx_drive *o, float amount, float character, float mix,
+                                               float trim, int curve) {
+  o->curve = curve >= OMX_DRIVE_SOFT && curve <= OMX_DRIVE_EXCITER ? curve : OMX_DRIVE_INSTANCE_CURVE_DEFAULT;
+  o->drive_lin = omx_db_to_lin(omx_clamp_or(amount, (float)OMX_DRIVE_AMOUNT_RANGE_MIN, (float)OMX_DRIVE_AMOUNT_RANGE_MAX,
+                                            OMX_DRIVE_INSTANCE_AMOUNT_DEFAULT));
+  /* even_w = (character + 1) / 2, the same fold resolve_fx_drive does. */
+  o->even_w = 0.5f * (omx_clamp_or(character, (float)OMX_DRIVE_CHARACTER_RANGE_MIN, (float)OMX_DRIVE_CHARACTER_RANGE_MAX,
+                                   OMX_DRIVE_INSTANCE_CHARACTER_DEFAULT) +
+                      1.0f);
+  o->mix = 0.01f * omx_clamp_or(mix, (float)OMX_DRIVE_MIX_RANGE_MIN, (float)OMX_DRIVE_MIX_RANGE_MAX,
+                                OMX_DRIVE_INSTANCE_MIX_DEFAULT);
+  o->trim_lin = omx_db_to_lin(omx_clamp_or(trim, (float)OMX_DRIVE_TRIM_RANGE_MIN, (float)OMX_DRIVE_TRIM_RANGE_MAX,
+                                           OMX_DRIVE_INSTANCE_TRIM_DEFAULT));
+}
+
+/**
  * Resolve the host's control values into the atom for this cycle. `bypass` non-zero disables the
  * atom. The arguments are the drive kernel's contract controls, in their declared order and user
  * units: `amount` (dB), `character` (-1..+1), `band_freq` (Hz), `mix` (percent) and `trim` (dB)
@@ -145,18 +169,8 @@ static inline void omx_drive_instance_resolve(OmxDriveInstance *s, int bypass, f
    * in [0,1], and the two gains finite and positive. */
   struct omx_drive *o = &s->atom;
   o->enabled = bypass ? 0 : 1;
-  o->curve = curve >= OMX_DRIVE_SOFT && curve <= OMX_DRIVE_EXCITER ? curve : OMX_DRIVE_INSTANCE_CURVE_DEFAULT;
+  omx_drive_instance_controls(o, amount, character, mix, trim, curve);
   o->band = band >= OMX_DRIVE_BAND_FULL && band <= OMX_DRIVE_BAND_TILT ? band : OMX_DRIVE_INSTANCE_BAND_DEFAULT;
-  o->drive_lin = omx_db_to_lin(omx_clamp_or(amount, (float)OMX_DRIVE_AMOUNT_RANGE_MIN, (float)OMX_DRIVE_AMOUNT_RANGE_MAX,
-                                            OMX_DRIVE_INSTANCE_AMOUNT_DEFAULT));
-  /* even_w = (character + 1) / 2, the same fold resolve_fx_drive does. */
-  o->even_w = 0.5f * (omx_clamp_or(character, (float)OMX_DRIVE_CHARACTER_RANGE_MIN, (float)OMX_DRIVE_CHARACTER_RANGE_MAX,
-                                   OMX_DRIVE_INSTANCE_CHARACTER_DEFAULT) +
-                      1.0f);
-  o->mix = 0.01f * omx_clamp_or(mix, (float)OMX_DRIVE_MIX_RANGE_MIN, (float)OMX_DRIVE_MIX_RANGE_MAX,
-                                OMX_DRIVE_INSTANCE_MIX_DEFAULT);
-  o->trim_lin = omx_db_to_lin(omx_clamp_or(trim, (float)OMX_DRIVE_TRIM_RANGE_MIN, (float)OMX_DRIVE_TRIM_RANGE_MAX,
-                                           OMX_DRIVE_INSTANCE_TRIM_DEFAULT));
   o->auto_gain = auto_gain == 0 || auto_gain == 1 ? auto_gain : OMX_DRIVE_INSTANCE_AUTO_GAIN_DEFAULT;
   o->stereo_link = stereo_link == 0 || stereo_link == 1 ? stereo_link : OMX_DRIVE_INSTANCE_STEREO_LINK_DEFAULT;
   const int hf = hf_rolloff == OMX_DRIVE_HF_ROLLOFFS_OFF || hf_rolloff == OMX_DRIVE_HF_ROLLOFFS_12000 ||
