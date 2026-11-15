@@ -13,6 +13,9 @@
  *   rta-read-fixture disconnect <from> <to>    one disconnection
  *   rta-read-fixture graph                     every port, `port <name> in|out`, then each of its connections,
  *                                              `conn <port> <other>`: what jack_lsp -p -c reads, by the API
+ *   rta-read-fixture watch <seconds>           the server's DSP load (jack_cpu_load, sampled ten times a second) and
+ *                                              its xruns (its xrun callback) over <seconds>; prints
+ *                                              `watch seconds=<s> load_mean=<%> load_max=<%> xruns=<n>`
  * source and pass run until SIGTERM. Exit 0, or 1 on a mismatch or a refusal.
  */
 #define _GNU_SOURCE
@@ -75,6 +78,9 @@ static int run_capture(jack_nframes_t n, void *arg) {
 
 static void on_term(int s) { (void)s; done = 1; }
 
+static atomic_long xruns;
+static int on_xrun(void *arg) { (void)arg; atomic_fetch_add(&xruns, 1); return 0; }
+
 static int open_client(const char *name) {
   client = jack_client_open(name, JackNoStartServer, NULL);
   if (!client) fprintf(stderr, "rta-read-fixture: no server for %s\n", name);
@@ -104,6 +110,24 @@ int main(int argc, char **argv) {
       jack_free(cs);
     }
     jack_free(ports);
+    jack_client_close(client);
+    return 0;
+  }
+  if (!strcmp(mode, "watch")) {
+    const double seconds = argc == 3 ? strtod(argv[2], NULL) : 0.0;
+    if (!(seconds > 0.0) || !open_client("rta-read-fixture-watch")) return 1;
+    if (jack_set_xrun_callback(client, on_xrun, NULL) || jack_activate(client)) return 1;
+    double sum = 0.0, top = 0.0;
+    long samples = 0;
+    for (long i = 0; i < (long)(seconds * 10.0) && !done; i++) {
+      usleep(100000);
+      const double l = jack_cpu_load(client);
+      sum += l, samples++;
+      if (l > top) top = l;
+    }
+    jack_deactivate(client);
+    printf("watch seconds=%.0f load_mean=%.2f load_max=%.2f xruns=%ld\n", samples / 10.0, samples ? sum / samples : 0.0,
+           top, atomic_load(&xruns));
     jack_client_close(client);
     return 0;
   }

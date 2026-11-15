@@ -27,12 +27,13 @@ omx-rta-read [--post <port>]... [--pre <port>]... --bands <n> [--low] [--name <c
 ## What it writes
 
 ```json
-{"at":96000,"rate":48000,"hz":[21.1,23.5,...],"post":{"db":[-25.58,...],"peak":[-34.31,...]},"pre":{"db":[...],"peak":[...]}}
+{"at":96000,"rate":48000,"hz":[21.1,23.5,...],"post":{"db":[-25.58,...],"peak":[-34.31,...]},"pre":{"db":[...],"peak":[...]},"diff":[-6.02,...]}
 ```
 
 `at` is the frame count at the end of the window, `hz` each band's centre, `db` the band's level (the RMS across its
 bins) and `peak` its loudest bin, in dBFS to 0.01; silence is `null`. A tap's object is there only when the tap is
-read. PRE and POST in one line are the same instant: both are taken at one frame position, so POST − PRE per band is
+read. PRE and POST in one line are the same instant: both are taken at one frame position, so POST − PRE per band,
+which the line carries as `diff` when both taps are read (`omx_rta_band_delta`; null where either tap is silent), is
 what the processor did to the signal (a steady signal through a plugin with latency reads right; a transient's
 difference is smeared by that latency). Nothing is written until every leg holds a whole window of audio since the
 reader connected: an empty panel, not a guess.
@@ -60,7 +61,7 @@ it on a private JACK server with the dummy backend: a source plays through a pas
 capture is bit-identical, sample for sample against the signal's closed form, with the reader absent and with it
 watching both sides of the pass-through; the reader has no output port; every other port's connections are unchanged;
 a feeder that joins or leaves the processor's input is followed; POST − PRE through a 0.5 gain is −6.02 dB in every
-band. `make rta-read-sabotage` shows the test is not blind: a reader that feeds the processor's input, and one whose
+band, and the line's `diff` says the same. `make rta-read-sabotage` shows the test is not blind: a reader that feeds the processor's input, and one whose
 two taps are a period apart, are each caught.
 
 Its process callback only copies each period into omx-dsp's capture ring. `make rta-read-gate` has omx-rt-gate judge
@@ -69,7 +70,31 @@ buffer lookup, the one host call it may make.
 
 ## Cost
 
-Owed: the reader's CPU per watched panel, on a Raspberry Pi 5 at 48 kHz, for each mode (`post`, `pre`, `both`, with
-and without `--low`), is not measured yet. Its audio thread only copies; the cost is the control thread's transforms,
-ten times a second, and only while a panel watches. The low zoom (three decimations over 65536 samples) and reading
-both taps are the expected large terms. When nothing watches, no reader runs and nothing is spent.
+Its audio thread only copies; the cost is the control thread's transforms, ten times a second, and only while a panel
+watches. When nothing watches, no reader runs and nothing is spent. The low zoom (three decimations over 65536
+samples) and reading both taps are the expected large terms.
+
+Owed: the figures below, on a Raspberry Pi 5. `tools/omx-rta-read/pi-budget.sh` measures them on the Pi, as root,
+holding its lock (`/root/pi-busy`): a private realtime jack2 server on the dummy backend (Zynthian's card and server
+untouched), a fixed source through a 0.5 pass-through, `--bands 160`, 60 s per cell once the reader's window is full.
+CPU is the reader's, all its threads, as % of one core; the DSP load and xruns are the server's; lines/s shows the
+reader was working (10 at `OMX_RTA_HZ`). `both+diff` is both taps, with the `diff` they carry; there is no separate
+delta cost. The run's header (board, kernel, jackd, the libjack the reader loaded, the governor, whether Zynthian ran)
+goes with the table.
+
+| rate | period | mode | low zoom | reader CPU, % of one core | jackd CPU, % | DSP load mean / max, % | xruns | lines/s |
+|---|---|---|---|---|---|---|---|---|
+| 48000 | 256 | none | - | - | owed | owed | owed | - |
+| 48000 | 256 | post | off | owed | owed | owed | owed | owed |
+| 48000 | 256 | post | on | owed | owed | owed | owed | owed |
+| 48000 | 256 | pre | off | owed | owed | owed | owed | owed |
+| 48000 | 256 | pre | on | owed | owed | owed | owed | owed |
+| 48000 | 256 | both+diff | off | owed | owed | owed | owed | owed |
+| 48000 | 256 | both+diff | on | owed | owed | owed | owed | owed |
+| 96000 | 256 | none | - | - | owed | owed | owed | - |
+| 96000 | 256 | post | off | owed | owed | owed | owed | owed |
+| 96000 | 256 | post | on | owed | owed | owed | owed | owed |
+| 96000 | 256 | pre | off | owed | owed | owed | owed | owed |
+| 96000 | 256 | pre | on | owed | owed | owed | owed | owed |
+| 96000 | 256 | both+diff | off | owed | owed | owed | owed | owed |
+| 96000 | 256 | both+diff | on | owed | owed | owed | owed | owed |
