@@ -104,6 +104,8 @@ export {
   type FbsFind,
   type FbsPool,
 } from './fbs-place.js';
+export { hrpPlaceBands, hrpPlaceInRange, hrpStepToward, type HrpPlaceLimits, type HrpPlacedBand } from './hrp-place.js';
+export { EQ_FREQ_RANGE, HRP_GAIN_STEP_DB } from './definitions.js';
 export { EQ_GAIN_RANGE, FBS_MAX_CUT_DB } from './definitions.js';
 export {
   METER_GR_EMPTY,

@@ -10,9 +10,8 @@
 #include <string.h>
 
 #include <omxdsp/analysis/omx_hrp_track.h>
+#include <omxdsp/analysis/omx_place_clamp.h>
 
-/* The console's clamp: a NaN passes through. */
-static double clamp(double n, double lo, double hi) { return n < lo ? lo : (n > hi ? hi : n); }
 
 /* Math.round: half up, exactly (x - floor(x) is exact in double). */
 static double round_half_up(double x) {
@@ -59,18 +58,21 @@ void omx_fbs_place_set(OmxFbsPlace *p, double hold_s, double max_bands, double n
   if (hold_s == OMX_FBS_HOLD_NEVER)
     p->hold_s = OMX_FBS_HOLD_NEVER;
   else
-    p->hold_s = isfinite(hold_s) ? clamp(hold_s, OMX_FBS_HOLD_RANGE_MIN, OMX_FBS_HOLD_RANGE_MAX)
+    p->hold_s = isfinite(hold_s) ? omx_place_clamp(hold_s, OMX_FBS_HOLD_RANGE_MIN, OMX_FBS_HOLD_RANGE_MAX)
                                  : (double)OMX_FBS_DEFAULT_HOLD_SECONDS;
   p->max_bands = isfinite(max_bands)
-                     ? (uint32_t)clamp(round_half_up(max_bands), OMX_FBS_MIN_AUTO_BANDS, OMX_FBS_BANDS_RANGE_MAX)
+                     ? (uint32_t)omx_place_clamp(round_half_up(max_bands), OMX_FBS_MIN_AUTO_BANDS,
+                                                 OMX_FBS_BANDS_RANGE_MAX)
                      : (uint32_t)OMX_FBS_DEFAULT_MAX_AUTO_BANDS;
-  p->notch_q = isfinite(notch_q) ? clamp(notch_q, OMX_EQ_NOTCH_Q_RANGE_MIN_DOUBLE, OMX_EQ_NOTCH_Q_RANGE_MAX)
-                                 : (double)OMX_FBS_DEFAULT_NOTCH_Q;
+  p->notch_q = isfinite(notch_q)
+                   ? omx_place_clamp(notch_q, OMX_EQ_NOTCH_Q_RANGE_MIN_DOUBLE, OMX_EQ_NOTCH_Q_RANGE_MAX)
+                   : (double)OMX_FBS_DEFAULT_NOTCH_Q;
   p->merge_cents = isfinite(merge_cents)
-                       ? clamp(round_half_up(merge_cents), OMX_FBS_MERGE_RANGE_MIN, OMX_FBS_MERGE_RANGE_MAX)
+                       ? omx_place_clamp(round_half_up(merge_cents), OMX_FBS_MERGE_RANGE_MIN, OMX_FBS_MERGE_RANGE_MAX)
                        : (double)OMX_FBS_DEFAULT_MERGE_CENTS;
   p->cooldown_s = isfinite(cooldown_s)
-                      ? clamp(round_half_up(cooldown_s), OMX_FBS_COOLDOWN_RANGE_MIN, OMX_FBS_COOLDOWN_RANGE_MAX)
+                      ? omx_place_clamp(round_half_up(cooldown_s), OMX_FBS_COOLDOWN_RANGE_MIN,
+                                        OMX_FBS_COOLDOWN_RANGE_MAX)
                       : (double)OMX_FBS_DEFAULT_COOLDOWN_SECONDS;
 }
 
@@ -86,7 +88,7 @@ double omx_fbs_place_gain_cap(int origin, double db) {
     if (db > 0.0) db = 0.0;
     return db;
   }
-  return clamp(db, OMX_EQ_GAIN_RANGE_MIN, OMX_EQ_GAIN_RANGE_MAX);
+  return omx_place_clamp(db, OMX_EQ_GAIN_RANGE_MIN, OMX_EQ_GAIN_RANGE_MAX);
 }
 
 /* sameRingFreq */
@@ -269,11 +271,11 @@ static void correct(OmxFbsPlace *p, const OmxFbsCandidate *c) {
   OmxFbsPlaceSlot *s = &p->slot[k];
   free_slot(s);
   s->origin = fixed ? OMX_CURVE_ORIGINS_FBS_FIXED : OMX_CURVE_ORIGINS_FBS_LIVE;
-  s->freq_hz = clamp(c->freq_hz, OMX_EQ_FREQ_RANGE_MIN, OMX_EQ_FREQ_RANGE_MAX);
+  s->freq_hz = omx_place_clamp(c->freq_hz, OMX_EQ_FREQ_RANGE_MIN, OMX_EQ_FREQ_RANGE_MAX);
   s->shape = fixed ? OMX_CURVE_SHAPES_NOTCH : OMX_CURVE_SHAPES_BELL;
   s->gain_db = omx_fbs_place_gain_cap(s->origin, fixed ? 0.0 : c->depth_db);
-  s->q = fixed ? clamp(p->notch_q, OMX_EQ_NOTCH_Q_RANGE_MIN_DOUBLE, OMX_EQ_NOTCH_Q_RANGE_MAX)
-               : clamp(p->notch_q, OMX_EQ_Q_RANGE_MIN_DOUBLE, OMX_EQ_Q_RANGE_MAX);
+  s->q = fixed ? omx_place_clamp(p->notch_q, OMX_EQ_NOTCH_Q_RANGE_MIN_DOUBLE, OMX_EQ_NOTCH_Q_RANGE_MAX)
+               : omx_place_clamp(p->notch_q, OMX_EQ_Q_RANGE_MIN_DOUBLE, OMX_EQ_Q_RANGE_MAX);
   s->on = 1;
   s->seq = ++p->seq;
   s->live = !fixed;

@@ -31,6 +31,7 @@ const CONSTANTS = {
     'FBS_RELEASE_DONE_DB', 'FBS_RELEASE_DWELL_MS', 'FBS_RING_HZ_MIN', 'FBS_RING_HZ_MAX', 'FBS_SAME_RING_HZ', 'FBS_SAME_RING_SHARE',
     'FBS_DEFAULT_HOLD_SECONDS', 'FBS_DEFAULT_MAX_AUTO_BANDS', 'FBS_DEFAULT_MERGE_CENTS', 'FBS_DEFAULT_COOLDOWN_SECONDS', 'FBS_DEFAULT_NOTCH_Q',
     'FBS_RING_MEMORY_SLOTS'],
+  'hrp.json': ['HRP_GAIN_STEP_DB'],
 };
 /** data file -> control name -> the exported name of its { min, max } travel */
 const TRAVELS = {
