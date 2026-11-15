@@ -126,9 +126,19 @@ struct omx_rta_wedge {
  */
 static inline uint32_t omx_rta_band_delta(const struct omx_rta_band *pre, const struct omx_rta_band *post, uint32_t n,
                                           double *diff, struct omx_rta_wedge *wedges) {
-  (void)pre, (void)post, (void)wedges;
-  for (uint32_t i = 0; i < n; i++) diff[i] = 0.0;
-  return 0;
+  for (uint32_t i = 0; i < n; i++)
+    diff[i] = isinf(pre[i].db) || isinf(post[i].db) ? (double)NAN : post[i].db - pre[i].db;
+  const double full = (double)OMX_EQ_GAIN_RANGE_MAX;
+  uint32_t k = 0;
+  for (uint32_t i = 0; i + 1u < n; i++) {
+    const double d0 = diff[i], d1 = diff[i + 1u];
+    if (isnan(d0) || isnan(d1)) continue;
+    const double magnitude = fmax(fabs(d0), fabs(d1));
+    if (magnitude < OMX_RTA_DELTA_DEADBAND_DB_DOUBLE) continue;
+    const double strength = magnitude / full;
+    wedges[k++] = (struct omx_rta_wedge){i, d0 + d1 >= 0.0, strength < 1.0 ? strength : 1.0};
+  }
+  return k;
 }
 
 #endif /* OMX_RTA_BANDS_H */

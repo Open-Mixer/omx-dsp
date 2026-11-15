@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Pau Aliagas <linuxnow@gmail.com>
-/** The twins of omx_rta.h omx_rta_fft_size_for and omx_rta_bands.h omx_rta_bands, moved verbatim from the console (its spectrum bands); every limit is omx-dsp's own (data/kernels/rta.json). */
+/** The twins of omx_rta.h omx_rta_fft_size_for and omx_rta_bands.h omx_rta_bands and omx_rta_band_delta, moved verbatim from the console (its spectrum bands and its EQ curve's delta wedges); every limit is omx-dsp's own (data/kernels/rta.json) or omx-contract's (EQ_GAIN_RANGE). */
 
 import {
   RTA_TARGET_BIN_HZ,
@@ -9,6 +9,8 @@ import {
   RTA_BAND_F_MAX_CAP,
   RTA_TIER_CROSSOVER_HZ,
   RTA_BAND_GATE_DB,
+  RTA_DELTA_DEADBAND_DB,
+  EQ_GAIN_RANGE,
 } from './definitions.js';
 import { linearGainToDb } from './units.js';
 
@@ -156,4 +158,48 @@ export function aggregateSpectrumBands(
     return bands.map((x) => ({ hz: x.hz, db: silence, peakDb: silence }));
   }
   return bands;
+}
+
+/** One wedge of the difference: bands `band` and `band + 1`, a boost or a cut, its strength 0 to 1. */
+export interface BandWedge {
+  band: number;
+  boost: boolean;
+  strength: number;
+}
+
+/** The difference of two taps: POST − PRE per band (NaN where either is silent) and its wedges. */
+export interface BandDelta {
+  diff: number[];
+  wedges: BandWedge[];
+}
+
+/**
+ * The twin of omx_rta_bands.h's `omx_rta_band_delta`: POST − PRE of two tap readings' band levels (dB, silence
+ * -Infinity), NaN where either band is silent; then one wedge per pair of neighbouring bands whose larger |difference|
+ * reaches RTA_DELTA_DEADBAND_DB, none across a silent band: a boost when the pair sums to zero or more, else a cut, its
+ * strength the larger |difference| over EQ_GAIN_RANGE's maximum, clamped to 1. The two readings must have as many
+ * bands (a RangeError otherwise: the C has one count for both). Held to the kernel by vectors/rta-delta.json
+ * (test/rta-delta.test.mjs).
+ */
+export function bandDelta(preDb: readonly number[], postDb: readonly number[]): BandDelta {
+  const n = preDb.length;
+  if (postDb.length !== n) throw new RangeError(`bandDelta: ${n} PRE bands and ${postDb.length} POST bands`);
+  const diff = new Array<number>(n);
+  for (let i = 0; i < n; i++) {
+    const a = preDb[i]!;
+    const b = postDb[i]!;
+    diff[i] = !Number.isFinite(a) || !Number.isFinite(b) ? NaN : b - a;
+  }
+  const full = EQ_GAIN_RANGE.max;
+  const wedges: BandWedge[] = [];
+  for (let i = 0; i + 1 < n; i++) {
+    const d0 = diff[i]!;
+    const d1 = diff[i + 1]!;
+    if (Number.isNaN(d0) || Number.isNaN(d1)) continue;
+    const magnitude = Math.max(Math.abs(d0), Math.abs(d1));
+    if (magnitude < RTA_DELTA_DEADBAND_DB) continue;
+    const strength = magnitude / full;
+    wedges.push({ band: i, boost: d0 + d1 >= 0, strength: strength < 1 ? strength : 1 });
+  }
+  return { diff, wedges };
 }

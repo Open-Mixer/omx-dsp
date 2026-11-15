@@ -27,12 +27,14 @@ omx_rta_bands (the window, the bands, the tier crossover and the quiet gate
 are omx-dsp's declared numbers) and written:
 .PP
 .RS
-{"at":\fIframes\fR,"rate":\fIHz\fR,"hz":[...],"post":{"db":[...],"peak":[...]},"pre":{...}}
+{"at":\fIframes\fR,"rate":\fIHz\fR,"hz":[...],"post":{"db":[...],"peak":[...]},"pre":{...},"diff":[...]}
 .RE
 .PP
 each band's centre in Hz, its level (the RMS across its bins) and its peak (its
 loudest bin) in dBFS to 0.01, silence as null; a tap's object only when it is
-read. Before the first whole window nothing is written.
+read; with both taps, \fBdiff\fR, POST \- PRE per band (omx-dsp's
+omx_rta_band_delta), null where either tap is silent. Before the first whole
+window nothing is written.
 .SH OPTIONS
 .TP
 .BI \-\-post " port"

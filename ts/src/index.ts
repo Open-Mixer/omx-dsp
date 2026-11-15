@@ -61,11 +61,14 @@ export {
 } from './definitions.js';
 export {
   aggregateSpectrumBands,
+  bandDelta,
   bandFMax,
   fftSizeForRate,
   hzToBin,
   lowTierGainDb,
   spectrumBandCentres,
+  type BandDelta,
+  type BandWedge,
   type MagnitudeSeries,
   type SpectrumBand,
   type SpectrumBandOptions,

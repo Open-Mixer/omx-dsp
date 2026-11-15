@@ -42,8 +42,9 @@
 #   make curve-golden  test/kernels/fixtures/curve_golden.h rewritten from omx_curve_points() (tools/curve-golden.c)
 #   make meter-view-sabotage  the meter view arm (mix/omx_meter_view.h) fails against seven sabotages
 #   make meter-view-golden  vectors/meter-view.json rewritten from the meter view law (tools/meter-view-golden.c)
-#   make rta-bands-sabotage  the band reduction arm (analysis/omx_rta_bands.h) fails against six sabotages
+#   make rta-bands-sabotage  the band reduction and delta arms (analysis/omx_rta_bands.h) fail against twelve sabotages
 #   make rta-bands-golden  vectors/rta-bands.json rewritten from the band reduction (tools/rta-bands-golden.c)
+#   make rta-delta-golden  vectors/rta-delta.json rewritten from the difference of two taps (tools/rta-delta-golden.c)
 #   make geq-true-sabotage  the graphic EQ's true-mode oracle fails against seven sabotages
 #   make delay-taps-sabotage  the FX delay's read-tap oracle fails against ten sabotages
 #   make align-fdelay-sabotage  the strip alignment stage's oracle fails against five sabotages
@@ -229,7 +230,7 @@ KERNELS_INC = $(BUILD)/kernels-suite.inc.c $(BUILD)/kernels-perturb.inc.c
 $(KERNELS_INC) &: $(wildcard test/kernels/*.c) tools/kernels-gen.sh | $(BUILD)
 	$(KERNELS_GEN) $(BUILD)
 
-$(BUILD)/omxdsp_suite: test/omxdsp_suite.c $(KERNELS) $(KERNELS_INC) $(LIB_CONTRACTS) $(HEADERS) $(MIX_HEADERS) $(ANALYSIS_HEADERS) vectors/rta-bands.json
+$(BUILD)/omxdsp_suite: test/omxdsp_suite.c $(KERNELS) $(KERNELS_INC) $(LIB_CONTRACTS) $(HEADERS) $(MIX_HEADERS) $(ANALYSIS_HEADERS) vectors/rta-bands.json vectors/rta-delta.json
 	$(CC) $(TESTFLAGS) -I$(BUILD) -o $@ test/omxdsp_suite.c $(LIB_CONTRACTS) -lm
 
 $(BUILD)/omxdsp_threads: test/omxdsp_threads.c $(LIB_CONTRACTS) $(HEADERS) | $(BUILD)
@@ -342,9 +343,17 @@ $(BUILD)/rta_bands_golden: tools/rta-bands-golden.c test/kernels/fixtures/rta_ba
 rta-bands-golden: $(BUILD)/rta_bands_golden
 	./$(BUILD)/rta_bands_golden > vectors/rta-bands.json
 
+# The difference of two taps' vectors (vectors/rta-delta.json, read back by the suite's rta_delta arm and the twin's
+# test, installed beside the exports), written the same way by tools/rta-delta-golden.c.
+$(BUILD)/rta_delta_golden: tools/rta-delta-golden.c test/kernels/fixtures/rta_bands_scenarios.h $(HEADERS) $(ANALYSIS_HEADERS) | $(BUILD)
+	$(CC) $(CFLAGS_PLAIN) $(INC) -o $@ $< -lm
+.PHONY: rta-delta-golden
+rta-delta-golden: $(BUILD)/rta_delta_golden
+	./$(BUILD)/rta_delta_golden > vectors/rta-delta.json
+
 # The band reduction arm fails against six sabotages of omx_rta_bands.h and the declared numbers
 # (test/rta-bands-sabotage.sh); the real suite is the control.
-rta-bands-sabotage: test/omxdsp_suite.c test/rta-bands-sabotage.sh $(KERNELS) vectors/rta-bands.json $(LIB_CONTRACTS) $(HEADERS) $(ANALYSIS_HEADERS) | $(BUILD)
+rta-bands-sabotage: test/omxdsp_suite.c test/rta-bands-sabotage.sh $(KERNELS) vectors/rta-bands.json vectors/rta-delta.json $(LIB_CONTRACTS) $(HEADERS) $(ANALYSIS_HEADERS) | $(BUILD)
 	CC="$(CC)" CFLAGS="$(CFLAGS)" bash test/rta-bands-sabotage.sh $(BUILD)/rta-bands-sabotage $(LIB_CONTRACTS)
 
 # The meter view arm fails against seven sabotages of omx_meter_view.h, omx_meter.h and the declared numbers
@@ -1056,6 +1065,7 @@ install: $(LIBS_ALL) $(PC_ALL) $(EXPORTS) install-rt-gate install-rta-read
 	install -m 0644 test/analysis/hrp_peaking_corpus.h $(DESTDIR)$(DATADIR)/omxdsp/
 	install -m 0644 vectors/meter-view.json $(DESTDIR)$(DATADIR)/omxdsp/meter-view-vectors.json
 	install -m 0644 vectors/rta-bands.json $(DESTDIR)$(DATADIR)/omxdsp/rta-bands-vectors.json
+	install -m 0644 vectors/rta-delta.json $(DESTDIR)$(DATADIR)/omxdsp/rta-delta-vectors.json
 	install -m 0755 tools/omx-dsp-copy-check.sh $(DESTDIR)$(BINDIR)/omx-dsp-copy-check
 	install -m 0644 omx-dsp-copy-check.1 $(DESTDIR)$(MANDIR)/man1/
 

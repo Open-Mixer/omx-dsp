@@ -3,8 +3,14 @@
 /*
  * The difference of two taps (analysis/omx_rta_bands.h omx_rta_band_delta), held by its closed form: hand-made band
  * levels whose differences are known exactly, a boost, a cut, a pair of opposite signs, the deadband from both sides,
- * a silent band, a strength past the EQ's gain limit, and too few bands for a pair.
+ * a silent band, a strength past the EQ's gain limit, and too few bands for a pair; then vectors/rta-delta.json, the
+ * file the TypeScript twin (ts/src/rta.ts bandDelta) is held to, each case run again from its own inputs. It reads the
+ * file with rta_bands.c's helpers (rb_load, rbj_num, rbj_arr), which the suite includes first.
  */
+#ifndef OMX_RTA_DELTA_VECTORS
+#define OMX_RTA_DELTA_VECTORS "vectors/rta-delta.json"
+#endif
+
 #define RD_N 8u
 
 static struct omx_rta_band rd_pre[RD_N], rd_post[RD_N];
@@ -17,6 +23,55 @@ static void rd_set(double base, const double *d) {
     rd_pre[i] = (struct omx_rta_band){100.0 * (i + 1), base, base};
     rd_post[i] = (struct omx_rta_band){100.0 * (i + 1), base + d[i], base + d[i]};
   }
+}
+
+/* The wedges after `"wedges": [` as [band, boost, strength] triples into `out` (room `max`); their count, or -1. */
+static int rdj_wedges(const char *line, struct omx_rta_wedge *out, int max) {
+  const char *p = strstr(line, "\"wedges\": [");
+  if (!p) return -1;
+  p += 11;
+  int n = 0;
+  while (*p == '[') {
+    char *end;
+    if (n >= max) return -1;
+    const double band = strtod(p + 1, &end);
+    if (*end != ',') return -1;
+    const double boost = strtod(end + 1, &end);
+    if (*end != ',') return -1;
+    const double strength = strtod(end + 1, &end);
+    if (*end != ']') return -1;
+    out[n++] = (struct omx_rta_wedge){(uint32_t)band, (int)boost, strength};
+    p = end + 1;
+    while (*p == ',' || *p == ' ') p++;
+  }
+  return *p == ']' ? n : -1;
+}
+
+/* One line of the file run again from its own inputs; 1 when it was a case. A diff is null where either tap is
+ * silent (rbj_arr reads null as -INFINITY). */
+static int rd_file_case(const char *line, uint32_t *bad) {
+  if (!strstr(line, "\"case\": \"")) return 0;
+  static double pre_db[RB_MAX_BANDS], post_db[RB_MAX_BANDS], want[RB_MAX_BANDS], got[RB_MAX_BANDS];
+  static struct omx_rta_band pre[RB_MAX_BANDS], post[RB_MAX_BANDS];
+  static struct omx_rta_wedge want_w[RB_MAX_BANDS], got_w[RB_MAX_BANDS];
+  const double nb = rbj_num(line, "n");
+  const int np = rbj_arr(line, "preDb", pre_db, RB_MAX_BANDS), nq = rbj_arr(line, "postDb", post_db, RB_MAX_BANDS),
+            nd = rbj_arr(line, "diff", want, RB_MAX_BANDS), nw = rdj_wedges(line, want_w, RB_MAX_BANDS);
+  if (!(nb >= 1 && nb <= RB_MAX_BANDS) || np != (int)nb || nq != np || nd != np || nw < 0) {
+    (*bad)++;
+    return 1;
+  }
+  for (int i = 0; i < np; i++) pre[i] = (struct omx_rta_band){0.0, pre_db[i], pre_db[i]};
+  for (int i = 0; i < np; i++) post[i] = (struct omx_rta_band){0.0, post_db[i], post_db[i]};
+  const uint32_t k = omx_rta_band_delta(pre, post, (uint32_t)np, got, got_w);
+  int wrong = k != (uint32_t)nw;
+  for (int i = 0; i < np && !wrong; i++)
+    wrong = isinf(want[i]) ? !isnan(got[i]) : !(fabs(got[i] - want[i]) <= 1e-9);
+  for (uint32_t j = 0; j < k && !wrong; j++)
+    wrong = got_w[j].band != want_w[j].band || got_w[j].boost != want_w[j].boost ||
+            !(fabs(got_w[j].strength - want_w[j].strength) <= 1e-12);
+  *bad += (uint32_t)wrong;
+  return 1;
 }
 
 static void arm_rta_delta(void) {
@@ -76,7 +131,8 @@ static void arm_rta_delta(void) {
   ok(isnan(rd_diff[3]) && rd_diff[2] == 12.0, "a silent band's diff is NAN, its neighbours' are numbers", rd_diff[3], NAN);
   uint32_t across = 0;
   for (uint32_t j = 0; j < k; j++) across += rd_w[j].band == 2u || rd_w[j].band == 3u;
-  ok(across == 0 && k == 3u, "no pair across a silent band draws; the others do", k, 3);
+  ok(across == 0 && k == 2u && rd_w[0].band == 1u && rd_w[1].band == 4u,
+     "no pair across a silent band draws; the pairs beside it do (bands 1 and 4)", k, 2);
   rd_set(-30.0, boost);
   rd_pre[0].db = -INFINITY;
   omx_rta_band_delta(rd_pre, rd_post, RD_N, rd_diff, rd_w);
@@ -89,7 +145,20 @@ static void arm_rta_delta(void) {
   ok(k == 2u && rd_w[0].strength == 1.0, "a 30 dB boost is at full strength, clamped to 1", k ? rd_w[0].strength : -1, 1);
 
   /* too few bands for a pair */
-  ok(omx_rta_band_delta(rd_pre, rd_post, 1u, rd_diff, rd_w) == 0u && rd_diff[0] == 30.0 - 30.0 + rd_post[0].db - rd_pre[0].db,
-     "one band: its diff, no wedge", 1, 0);
+  ok(omx_rta_band_delta(rd_pre, rd_post, 1u, rd_diff, rd_w) == 0u && rd_diff[0] == 0.0, "one band: its diff, no wedge",
+     rd_diff[0], 0);
   ok(omx_rta_band_delta(rd_pre, rd_post, 0u, rd_diff, rd_w) == 0u, "no band: nothing", 1, 0);
+
+  /* the file: every case run again from its own inputs, the same difference and wedges */
+  char *s = rb_load(OMX_RTA_DELTA_VECTORS);
+  ok(s != NULL, "the vector file " OMX_RTA_DELTA_VECTORS " reads", 0, 1);
+  if (!s) return;
+  ok(rbj_num(s, "deadbandDb") == dead && rbj_num(s, "fullScaleDb") == full, "the file's law is the declared one",
+     rbj_num(s, "deadbandDb"), dead);
+  uint32_t cases = 0, bad = 0;
+  for (char *line = strtok(s, "\n"); line; line = strtok(NULL, "\n")) cases += (uint32_t)rd_file_case(line, &bad);
+  free(s);
+  ok(cases == RB_FILE_RATES_COUNT * 7u * 4u + 1u, "the file holds every pair at every file rate and band count, and the edges",
+     cases, RB_FILE_RATES_COUNT * 7u * 4u + 1u);
+  ok(bad == 0, "every case of the file is what omx_rta_band_delta answers", bad, 0);
 }

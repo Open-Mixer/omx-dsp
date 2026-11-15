@@ -10,6 +10,8 @@
 #               and from src:out, the port feeding pass:in (PRE), and every other port's connections are what they
 #               were without it;
 #   follow      a second source connected to pass:in is followed onto the PRE leg, and dropped when disconnected;
+#   diff        every line with both taps carries "diff": null exactly where either tap is silent, else POST - PRE
+#               within 0.011 dB of the line's own levels (each printed to 0.01), and -6.02 dB within 0.015 dB;
 #   instant     with both taps at one frame position, POST - PRE is 20 log10(0.5) = -6.02 dB within 0.015 dB (the
 #               lines carry dB to 0.01) in every band where both taps are above the gate;
 #   ends        SIGTERM ends it 0, a closed stdout 3, a watched port gone 4, each naming why on stderr.
@@ -93,6 +95,26 @@ node -e '
   process.exit(ok ? 0 : 1);
 ' "$S/lines" > "$S/instant.out"
 if [ $? -eq 0 ]; then ok "$(sed 's/^ok *//' "$S/instant.out")"; else bad "$(sed 's/^FAIL //' "$S/instant.out")"; fi
+
+# the diff: the reader's own POST - PRE, on every line
+node -e '
+  const lines = require("fs").readFileSync(process.argv[1], "utf8").trim().split("\n").filter(Boolean).map(JSON.parse);
+  let wrong = 0, missing = 0, numbers = 0, worst = 0;
+  for (const l of lines) {
+    if (!Array.isArray(l.diff) || l.diff.length !== l.hz.length) { missing++; continue; }
+    l.diff.forEach((d, b) => {
+      const p = l.post.db[b], q = l.pre.db[b];
+      if (p === null || q === null) { if (d !== null) wrong++; return; }
+      if (d === null || Math.abs(d - (p - q)) > 0.011) { wrong++; return; }
+      numbers++;
+      worst = Math.max(worst, Math.abs(d - 20 * Math.log10(0.5)));
+    });
+  }
+  const ok = lines.length > 0 && missing === 0 && wrong === 0 && numbers > 0 && worst <= 0.015;
+  console.log(`${ok ? "ok  " : "FAIL"} diff: on ${lines.length - missing} of ${lines.length} lines, ${wrong} bands wrong, ${numbers} are -6.02 dB within ${worst.toFixed(4)} dB`);
+  process.exit(ok ? 0 : 1);
+' "$S/lines" > "$S/diff.out"
+if [ $? -eq 0 ]; then ok "$(sed 's/^ok *//' "$S/diff.out")"; else bad "$(sed 's/^FAIL //' "$S/diff.out")"; fi
 
 # follow the graph: a second feeder of pass:in joins the PRE leg, and leaves it
 "$F" source src2 & pids+=($!)

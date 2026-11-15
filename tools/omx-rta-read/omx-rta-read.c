@@ -16,8 +16,9 @@
  * A control thread (this program's main) wakes at OMX_RTA_HZ; once every leg's ring holds a whole window of audio
  * since the connect it reads each tap at ONE frame position, so PRE and POST are the same instant, reduces each to
  * --bands bands and writes one JSON line:
- *   {"at":<frames>,"rate":<Hz>,"hz":[...],"post":{"db":[...],"peak":[...]},"pre":{"db":[...],"peak":[...]}}
- * a tap's object only when it is read, dB to 0.01, silence as null. Before the first whole window it writes nothing.
+ *   {"at":<frames>,"rate":<Hz>,"hz":[...],"post":{"db":[...],"peak":[...]},"pre":{"db":[...],"peak":[...]},"diff":[...]}
+ * a tap's object only when it is read, and with both taps "diff", POST - PRE per band (omx_rta_band_delta), null where
+ * either is silent; dB to 0.01, silence as null. Before the first whole window it writes nothing.
  *
  * It ends, closing its client, on SIGTERM or SIGINT (exit 0), a closed stdout (3), a watched port gone (4), the
  * server gone (5); a usage error is 2 and a refusal by the server 6. The reason is on stderr.
@@ -118,7 +119,7 @@ static int low_due(uint64_t at, uint64_t last, int have) {
 }
 
 static void print_db(FILE *o, double v) {
-  if (isinf(v) && v < 0) fputs("null", o);
+  if ((isinf(v) && v < 0) || isnan(v)) fputs("null", o);
   else fprintf(o, "%.2f", v);
 }
 
@@ -127,6 +128,8 @@ static struct omx_rta_tap_work work;
 static struct omx_rta_tap_reading reading[TAPS];
 static float leg_buf[LEGS][OMX_RTA_LOW_WINDOW];
 static struct omx_rta_band bands[TAPS][BANDS_MAX];
+static double diff[BANDS_MAX];
+static struct omx_rta_wedge wedges[BANDS_MAX];
 
 /* One tap's window at frame position `pos` (every ring's write index), mono-summed into `w`. */
 static void tap_window(const struct tap *t, uint32_t pos, float *w, uint32_t n) {
@@ -252,6 +255,12 @@ int main(int argc, char **argv) {
       printf("],\"peak\":[");
       for (long b = 0; b < nb; b++) { if (b) putchar(','); print_db(stdout, bands[t][b].peak_db); }
       printf("]}");
+    }
+    if (taps[TAP_POST].legs && taps[TAP_PRE].legs) {
+      omx_rta_band_delta(bands[TAP_PRE], bands[TAP_POST], (uint32_t)nb, diff, wedges);
+      printf(",\"diff\":[");
+      for (long b = 0; b < nb; b++) { if (b) putchar(','); print_db(stdout, diff[b]); }
+      printf("]");
     }
     printf("}\n");
     if (fflush(stdout) != 0 || ferror(stdout)) { code = EXIT_STDOUT, why = "stdout is closed"; break; }
