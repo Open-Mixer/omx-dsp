@@ -1,0 +1,61 @@
+.\" SPDX-License-Identifier: GPL-3.0-or-later
+.\" Copyright (C) 2026 Pau Aliagas <linuxnow@gmail.com>
+.TH OMX-RTA-READ 1 2026-11-15 omx-dsp "OpenMixer"
+.SH NAME
+omx-rta-read \- the spectrum of a JACK signal, read and never fed
+.SH SYNOPSIS
+.B omx-rta-read
+[\fB\-\-post\fR \fIport\fR]... [\fB\-\-pre\fR \fIport\fR]... \fB\-\-bands\fR \fIn\fR
+[\fB\-\-low\fR] [\fB\-\-name\fR \fIclient\fR]
+.SH DESCRIPTION
+omx-rta-read reads the spectrum of a processor's signal in a JACK graph and
+writes it as log-spaced bands, one JSON line at a time, for a panel to draw.
+It is a JACK client with input ports only, connected only FROM the ports it
+watches: it never feeds anything.
+.PP
+Two taps, each of one or two legs (a pair is read as its mono sum).
+\fB\-\-post\fR names an output port of the processor: what it gives.
+\fB\-\-pre\fR names an INPUT port of the processor: the reader connects from
+every port connected to it, which is what the processor is given, and follows
+the graph when that set changes. A tap is read only when it is named.
+.PP
+Its process callback writes each leg's period into omx-dsp's capture ring and
+nothing else; omx-rt-gate(1) judges it whole (\fB\-\-abi jack\fR). Ten times a
+second, once every leg holds a whole window of audio since the connect, both
+taps are read at one frame position, reduced to \fIn\fR bands by omx-dsp's
+omx_rta_bands (the window, the bands, the tier crossover and the quiet gate
+are omx-dsp's declared numbers) and written:
+.PP
+.RS
+{"at":\fIframes\fR,"rate":\fIHz\fR,"hz":[...],"post":{"db":[...],"peak":[...]},"pre":{...},"diff":[...]}
+.RE
+.PP
+each band's centre in Hz, its level (the RMS across its bins) and its peak (its
+loudest bin) in dBFS to 0.01, silence as null; a tap's object only when it is
+read; with both taps, \fBdiff\fR, POST \- PRE per band (omx-dsp's
+omx_rta_band_delta), null where either tap is silent. Before the first whole
+window nothing is written.
+.SH OPTIONS
+.TP
+.BI \-\-post " port"
+An output port to read. Twice for a stereo pair.
+.TP
+.BI \-\-pre " port"
+An input port whose feeders to read. Twice for a stereo pair.
+.TP
+.BI \-\-bands " n"
+The number of bands, 1 to 1024.
+.TP
+.B \-\-low
+Also read the low zoom (an eighth of the rate, eight times the resolution) and
+use it for the bands under the crossover.
+.TP
+.BI \-\-name " client"
+The JACK client name (default omx-rta-read).
+.SH EXIT STATUS
+0 on SIGTERM or SIGINT; 2 a usage error; 3 its standard output closed (the
+reader of the pipe is gone); 4 a watched port is gone; 5 the JACK server is
+gone; 6 the server refused the client or a connection. The reason is written
+on standard error.
+.SH SEE ALSO
+omx-rt-gate(1)

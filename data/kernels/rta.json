@@ -29,6 +29,188 @@
       "doc": "The largest RTA FFT the native ring holds — generated into `omx_contract_limits.h` as `OMX_RTA_FFT_SIZE_MAX`.",
       "unit": "",
       "value": 32768
+    },
+    "RTA_BAND_F_MIN": {
+      "kind": "scalar",
+      "source": {
+        "from": {
+          "link": "core/src/spectrum-bands.ts#BAND_F_MIN",
+          "at": "openmixer@caaa59d8f5e9532407bb135a6f05ca918798a0ba"
+        },
+        "impl": "include/omxdsp/analysis/omx_rta_bands.h#omx_rta_bands"
+      },
+      "doc": "The lowest frequency any spectrum band covers; below it is infrasonic and not drawn.",
+      "unit": "Hz",
+      "value": 20
+    },
+    "RTA_BAND_F_MAX_CAP": {
+      "kind": "scalar",
+      "source": {
+        "from": {
+          "link": "core/src/spectrum-bands.ts#BAND_F_MAX_CAP",
+          "at": "openmixer@caaa59d8f5e9532407bb135a6f05ca918798a0ba"
+        },
+        "impl": "include/omxdsp/analysis/omx_rta_bands.h#omx_rta_band_f_max"
+      },
+      "doc": "The highest frequency any spectrum band covers, before the Nyquist clamp (omx_rta_band_f_max).",
+      "unit": "Hz",
+      "value": 20000
+    },
+    "RTA_TIER_CROSSOVER_HZ": {
+      "kind": "scalar",
+      "source": {
+        "from": {
+          "link": "core/src/spectrum-bands.ts#TIER_CROSSOVER_HZ",
+          "at": "openmixer@caaa59d8f5e9532407bb135a6f05ca918798a0ba"
+        },
+        "impl": "include/omxdsp/analysis/omx_rta_bands.h#omx_rta_bands"
+      },
+      "doc": "A band centred below this samples the LOW (decimated) tier when the reading carries one; at or above it, the HIGH tier. Where the high tier's ~5.86 Hz bins still give ~51 bins per octave, above the finest panel's density.",
+      "unit": "Hz",
+      "value": 300
+    },
+    "RTA_BAND_GATE_DB": {
+      "kind": "scalar",
+      "source": {
+        "from": {
+          "link": "core/src/spectrum-bands.ts#BAND_GATE_DB",
+          "at": "openmixer@caaa59d8f5e9532407bb135a6f05ca918798a0ba"
+        },
+        "impl": "include/omxdsp/analysis/omx_rta_bands.h#omx_rta_bands"
+      },
+      "doc": "Quiet gate of the band reduction: when no band rises above this, every band reads as silence, so a rig's idle floor never draws as a flat block. Keyed on the loudest band, not per band.",
+      "unit": "dB",
+      "value": -60
+    },
+    "RTA_LEVEL_DB_MIN": {
+      "kind": "scalar",
+      "source": {
+        "from": {
+          "link": "web-ui/app/utils/spectrum.ts#DB_MIN",
+          "at": "openmixer@caaa59d8f5e9532407bb135a6f05ca918798a0ba"
+        },
+        "impl": {
+          "link": "web-ui/app/utils/spectrum.ts#DB_MIN",
+          "at": "openmixer@caaa59d8f5e9532407bb135a6f05ca918798a0ba"
+        }
+      },
+      "doc": "The floor of a spectrum display's level window: the bottom of the frame, every surface.",
+      "unit": "dB",
+      "value": -72
+    },
+    "RTA_LEVEL_DB_MAX": {
+      "kind": "scalar",
+      "source": {
+        "from": {
+          "link": "web-ui/app/utils/spectrum.ts#DB_MAX",
+          "at": "openmixer@caaa59d8f5e9532407bb135a6f05ca918798a0ba"
+        },
+        "impl": {
+          "link": "web-ui/app/utils/spectrum.ts#DB_MAX",
+          "at": "openmixer@caaa59d8f5e9532407bb135a6f05ca918798a0ba"
+        }
+      },
+      "doc": "The ceiling of a spectrum display's level window: the top of the frame, where a band's peak reaching it draws a clip tick.",
+      "unit": "dB",
+      "value": 0
+    },
+    "RTA_LEVEL_GRID_DB": {
+      "kind": "scalar",
+      "source": {
+        "from": {
+          "link": "web-ui/app/utils/spectrum.ts#DB_GRID_STEP",
+          "at": "openmixer@caaa59d8f5e9532407bb135a6f05ca918798a0ba"
+        },
+        "impl": {
+          "link": "web-ui/app/utils/spectrum.ts#DB_GRID_STEP",
+          "at": "openmixer@caaa59d8f5e9532407bb135a6f05ca918798a0ba"
+        }
+      },
+      "doc": "The spacing of a spectrum display's one dB graticule, from the ceiling down to the floor.",
+      "unit": "dB",
+      "value": 12
+    },
+    "RTA_HZ": {
+      "kind": "scalar",
+      "source": {
+        "from": {
+          "link": "server/src/rta.ts#RTA_HZ",
+          "at": "openmixer@caaa59d8f5e9532407bb135a6f05ca918798a0ba"
+        },
+        "impl": "tools/omx-rta-read/omx-rta-read.c#main"
+      },
+      "doc": "How often a watched spectrum is read and published: an operator-cadence poll, never the audio thread.",
+      "unit": "Hz",
+      "value": 10
+    },
+    "RTA_LOW_ADVANCE": {
+      "kind": "scalar",
+      "source": {
+        "from": {
+          "link": "server/src/rta.ts#LOW_TIER_REFRESH_FRACTION",
+          "at": "openmixer@caaa59d8f5e9532407bb135a6f05ca918798a0ba"
+        },
+        "impl": "tools/omx-rta-read/omx-rta-read.c#low_due"
+      },
+      "doc": "How far the low zoom's window must have advanced, as a fraction of that window, before it is recomputed; between recomputes the last zoom rides the fresh main spectrum unchanged.",
+      "unit": "",
+      "value": 0.25
+    },
+    "RTA_TAP_GATE_DB": {
+      "kind": "scalar",
+      "source": {
+        "from": {
+          "link": "core/src/spectrum-bands.ts#RTA_TAP_GATE_DB",
+          "at": "openmixer@caaa59d8f5e9532407bb135a6f05ca918798a0ba"
+        },
+        "impl": {
+          "link": "server/src/rta.ts#OVERLAY_GATE_DB",
+          "at": "openmixer@caaa59d8f5e9532407bb135a6f05ca918798a0ba"
+        }
+      },
+      "doc": "Quiet gate of a tap's raw spectrum, before any banding: when no bin rises above this the whole tap reads as the floor. The console's overlay frame applies it; a banded reading is gated by RTA_BAND_GATE_DB instead.",
+      "unit": "dB",
+      "value": -60
+    },
+    "RTA_GRID_FREQS": {
+      "kind": "list",
+      "source": {
+        "from": {
+          "link": "web-ui/app/utils/spectrum.ts#GRID_FREQS",
+          "at": "openmixer@caaa59d8f5e9532407bb135a6f05ca918798a0ba"
+        },
+        "impl": {
+          "link": "web-ui/app/utils/spectrum.ts#GRID_FREQS",
+          "at": "openmixer@caaa59d8f5e9532407bb135a6f05ca918798a0ba"
+        }
+      },
+      "doc": "The frequencies of a spectrum display's labelled vertical graticule lines, Hz, on the log frequency axis: the decades and their 2 and 5 steps from 20 Hz to 20 kHz, every surface.",
+      "unit": "Hz",
+      "values": [
+        20,
+        50,
+        100,
+        200,
+        500,
+        1000,
+        2000,
+        5000,
+        10000,
+        20000
+      ]
+    },
+    "RTA_DELTA_DEADBAND_DB": {
+      "kind": "scalar",
+      "source": {
+        "from": {
+          "link": "web-ui/app/utils/eqCurveGeom.ts#DELTA_DEADBAND",
+          "at": "openmixer@caaa59d8f5e9532407bb135a6f05ca918798a0ba"
+        },
+        "impl": "include/omxdsp/analysis/omx_rta_bands.h#omx_rta_band_delta"
+      },
+      "doc": "The smallest difference between two taps of a spectrum, POST - PRE in dB, that draws a wedge: a pair of neighbouring bands is a wedge when either band's difference reaches it. The console's overlay held it as 0.004 of its 100 dB span.",
+      "unit": "dB",
+      "value": 0.4
     }
   }
 }

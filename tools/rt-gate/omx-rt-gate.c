@@ -182,7 +182,10 @@ static int role_of(const char *s) {
 static const char *FORBIDDEN_CODES[] = {"RT-ALLOC", "RT-LOCK", "RT-BLOCK", "RT-IO", "RT-LOG", NULL};
 /* the classes a classification row may carry: nothing else, so no waiver, no known red, no
  * "cannot prove" */
-static const char *CLASSES[] = {"maths", "bulk-memory", "word-atomic", "clock", "ftz-register", "wake", NULL};
+static const char *CLASSES[] = {"maths", "bulk-memory", "word-atomic", "clock", "ftz-register", "wake", "host-buffer", NULL};
+/* host-buffer is the narrowest class: the symbols it may hold are named here, each by a ruling (classes.tbl). A row of
+ * that class for any other symbol is refused at load, so no other host call enters it by a table edit alone. */
+static const char *HOST_BUFFER_RULED[] = {"jack_port_get_buffer", NULL};
 
 static int in_set(const char *s, const char **set) {
   for (int i = 0; set[i]; i++)
@@ -307,7 +310,11 @@ static void load_classes(const char *path) {
     if (k < 3 || !rest) { refuse(where, "a classification row is `<symbol> <class> <arm>:<case> <reason>`: no reason or no arm"); continue; }
     const char *shape = waiver_shape(w[0]);
     if (shape) { refuse(where, "`%s` names %s, a row names a symbol: a waiver is refused", w[0], shape); continue; }
-    if (!in_set(w[1], CLASSES)) { refuse(where, "`%s` is not a class (maths bulk-memory word-atomic clock ftz-register wake)", w[1]); continue; }
+    if (!in_set(w[1], CLASSES)) { refuse(where, "`%s` is not a class (maths bulk-memory word-atomic clock ftz-register wake host-buffer)", w[1]); continue; }
+    if (!strcmp(w[1], "host-buffer") && !in_set(w[0], HOST_BUFFER_RULED)) {
+      refuse(where, "`%s` is no ruled host-buffer symbol (jack_port_get_buffer): another host call enters the class only by a ruling", w[0]);
+      continue;
+    }
     if (!arm_shape(w[2])) { refuse(where, "`%s` names no arm that measured it (`<arm>:<case>`)", w[2]); continue; }
     if (map_get(&FORB_MAP, w[0]) >= 0) { refuse(where, "`%s` is forbidden: a forbidden symbol has no class", w[0]); continue; }
     if (map_get(&CLS_MAP, w[0]) >= 0) { refuse(where, "`%s` is classified twice", w[0]); continue; }

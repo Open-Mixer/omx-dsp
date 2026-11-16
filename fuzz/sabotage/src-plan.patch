@@ -1,0 +1,16 @@
+Breaks the check of fuzz/fuzz_src.c:107 (the plan interpolates by the input rate).
+Caught by the seed input "44100-48000" of fuzz_src.
+
+diff --git a/include/omxdsp/omx_src.h b/include/omxdsp/omx_src.h
+index 716fc53..a44de12 100644
+--- a/include/omxdsp/omx_src.h
++++ b/include/omxdsp/omx_src.h
+@@ -86,7 +86,7 @@ struct omx_src_plan {
+ static inline int omx_src_plan_of(uint32_t in_rate, uint32_t out_rate, struct omx_src_plan *out) {
+   if (in_rate == 0u || out_rate == 0u || out == NULL) return -1;
+   const uint32_t g = omx_src_gcd(out_rate, in_rate);
+-  const uint32_t l = out_rate / g;
++  const uint32_t l = in_rate / g;
+   const uint32_t m = in_rate / g;
+   if (l > OMX_SRC_MAX_L) return -1;
+   out->l = l;

@@ -360,6 +360,35 @@ describe('curvePoints agrees with omx_curve_points at every oracle rate', () => 
     assert.ok(curveAgainst(trAsked, ks, T.curvePointsTransfer).failures.length > 10);
   });
 
+  const driveReqs = [];
+  for (const sr of RATES) {
+    let k = 0;
+    for (const model of [0, 1, 2, 3, 9]) for (const [amount, tone, mix, output] of [[0, -1, 100, 0], [12, -0.3, 37.5, -6], [36, 1, 0, 4.5], [40, 0.5, 70, 12], [18, undefined, undefined, undefined]]) {
+      k++;
+      driveReqs.push({ kind: 'transfer_curve', family: 'drive', sampleRate: sr, points: [129, 41, 256, 2, 13][k % 5], ...(k % 4 === 0 ? { extents: { min: -90, max: 6 } } : {}), terms: [
+        { role: 'drive', value: amount, unit: 'db' }, { role: 'model', value: model, unit: 'none' },
+        ...(tone === undefined ? [] : [{ role: 'tone', value: tone, unit: k % 2 ? 'coef' : 'none' }]),
+        ...(mix === undefined ? [] : [{ role: 'mix', value: mix, unit: 'pc' }]),
+        ...(output === undefined ? [] : [{ role: 'output', value: output, unit: 'db' }])] });
+    }
+  }
+  const driveAsked = askCurves(driveReqs);
+  it('transfer_curve of the drive: every shaper at every rate draws and agrees within the float shaper bound', () => {
+    assert.equal(driveAsked.reqs.length, 25 * RATES.length);
+    assert.ok(driveAsked.answers.every((a) => a[0] === 0 && a[1] >= 2), 'every drive request draws');
+    const r = curveAgainst(driveAsked, curvePoints, T.curvePointsDrive);
+    assert.deepEqual(r.failures.slice(0, 5), []);
+    process.stderr.write(`curvePoints drive: largest gap ${r.worst} dB\n`);
+  });
+  it('SABOTAGE drive: the tone one control step (0.01) off, the next shaper, the mix 1 % off, a missing output read as +1 dB: each red', () => {
+    const near = (role, f) => (rq) => curvePoints(withTerm(rq, (t) => (t.role === role ? { ...t, value: f(t.value) } : t)));
+    assert.ok(curveAgainst(driveAsked, near('tone', (v) => (v === 1 ? 0.99 : v + 0.01)), T.curvePointsDrive).failures.length > 10);
+    assert.ok(curveAgainst(driveAsked, near('model', (v) => (v + 1) % 4), T.curvePointsDrive).failures.length > 10);
+    assert.ok(curveAgainst(driveAsked, near('mix', (v) => (v === 100 ? 99 : v + 1)), T.curvePointsDrive).failures.length > 10);
+    const plusOne = (rq) => curvePoints(rq.terms.some((t) => t.role === 'output') ? rq : { ...rq, terms: [...rq.terms, { role: 'output', value: 1, unit: 'db' }] });
+    assert.ok(curveAgainst(driveAsked, plusOne, T.curvePointsDrive).failures.length > 10);
+  });
+
   it('the ruled defaults agree: a band with no Q, the allpasses, a `-` band, a limiter with no ratio', () => {
     const reqs = [];
     for (const sr of RATES) {

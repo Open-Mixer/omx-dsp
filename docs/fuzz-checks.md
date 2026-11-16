@@ -3,7 +3,7 @@
 
 # The checks of the fuzz targets
 
-Every property the harnesses of `fuzz/` hold the library to, read one by one: 104 checks, each an
+Every property the harnesses of `fuzz/` hold the library to, read one by one: 105 checks, each an
 `if (...) abort();` with its comment above it, and the stops that are not properties. This is the reading OSS Verify's
 enrollment review asks for (items F5 and F8 of its `review.md`): does each check prove what its comment says, in both
 directions, and does its expected value come from the harness rather than from the library under test.
@@ -26,7 +26,7 @@ How to read a row:
 
 ## Verdicts
 
-All 104 checks are OK. Five were WEAK before this reading, and are fixed in the harnesses as they stand now:
+All 105 checks are OK. Five were WEAK before this reading, and are fixed in the harnesses as they stand now:
 
 - `fuzz_fx`: a refused init was held to run() as the identity, but which rates an init refuses was the library's own
   answer. A face bound to the grid that took every rate, or a dynamics face that took only the grid, passed every
@@ -102,15 +102,15 @@ of `fuzz_fx.c` (the init check), `fuzz_eq.c` (the bell and the shelf) and `fuzz_
 | `fuzz_eq.c:165` | Each coefficient of the bank is finite. | finite | `omx_eq_design.h:492` `coeffs[n]);` → `coeffs[n]), coeffs[n][0] = NAN;`, on `bank-0` | OK |
 | `fuzz_eq.c:175` | A section is parked exactly when its band is a peaking or shelf band at 0 dB. | the harness's `parked()`: a peaking or shelf band at 0 dB | `omx_eq_design.h:493` `? 0u : 1u` → `? 1u : 1u`, on `parked-and-live` | OK |
 | `fuzz_eq.c:185` | A section has the gain at DC of the i-th band that is on. The denominator is positive in a stable section; the tolerance leaves room for its rounding at the lowest corner (about 1e-5). | the harness's `dc_gain()`: 10^(g/20) for a low shelf, 0 for high-pass and band-pass, else 1 | `omx_eq_design.h:492` `b->kind, b->freq_hz, b->q, b->gain_db` → `bands->kind, bands->freq_hz, bands->q, bands->gain_db`, on `shelf-then-shelf` | OK |
-| `fuzz_eq.c:200` | A peaking section has its band's gain at the band's centre, on its side of 0 dB: a boost boosts and a cut cuts, by at least the gain asked, to 0.1 % (the prototype bell is exactly the gain there; the matched design is that or more near Nyquist, never less). For a bell a console sets: from 20 Hz, no narrower than Q 100; below that the bell is narrower than its double coefficients resolve. | the band's gain in dB, against the harness's own evaluation of \|H\| at the clamped centre | `omx_eq_design.h:164` `omx_eq_matched_pair(w0, 1.0 / (2.0 * A * qq), p);` → `omx_eq_matched_pair(w0, A / (2.0 * qq), p);`, on `peak-then-shelf`<br>`omx_eq_design.h:160` `exp(gain_db * (M_LN10 / 40.0))` → `exp(-gain_db * (M_LN10 / 40.0))`, on `peak-then-shelf` | OK |
-| `fuzz_eq.c:212` | A high shelf whose corner is at most an eighth of the rate has at Nyquist, three octaves or more above it, at least a quarter of its band's gain, on its side of 0 dB: past its midpoint a shelf of any Q has gone at least half way to its gain, and the check asks half of that. | a quarter of the band's gain, against the harness's own evaluation of \|H\| at Nyquist | `omx_eq_design.h:180` `omx_eq_matched_pair(w0 * sa, 1.0 / (2.0 * qq), p);` → `omx_eq_matched_pair(w0 / sa, 1.0 / (2.0 * qq), p);`, on `peak-then-shelf` | OK |
-| `fuzz_eq.c:227` | The bank's magnitude is finite at any frequency. | finite | `omx_magnitude.h:129` `db_out[i] = db;` → `db_out[i] = NAN;`, on `bank-0` | OK |
-| `fuzz_eq.c:235` | A bank with no live section is 0 dB. | 0 dB, with `live` counted by the harness's `parked()` | `omx_magnitude.h:125` `double db = 0.0;` → `double db = 1.0;`, on `bank-3` | OK |
-| `fuzz_eq.c:258` | The cascade gives finite samples for finite samples. | `fuzz_all_finite()` | `omx_biquad.h:196` `enabled, state, NULL);` → `enabled, state, NULL); buf[0] = NAN;`, on `bank-2` | OK |
-| `fuzz_eq.c:266` | A bank with no live section leaves the block as it was, bit for bit. | the harness's copy of the block | `omx_biquad.h:196` `enabled, state, NULL);` → `enabled, state, NULL); buf[0] = 0.5f;`, on `eq-off-mono` | OK |
-| `fuzz_eq.c:273` | In a stereo run, a bank with no live section leaves the right leg as it was too. | the harness's copy of the right leg | `omx_biquad.h:170` `OMX_POST(!r \|\|` → `if (r && !nl) r[0] = 0.5f; OMX_POST(!r \|\|`, on `bank-3` | OK |
-| `fuzz_eq.c:287` | The width to Q conversion is finite and not negative. | finite and not below 0 | `omx_eq_design.h:319` `1.0 / (2.0 *` → `-1.0 / (2.0 *`, on `bank-0` | OK |
-| `fuzz_eq.c:296` | The octaves to Q conversion is finite and above 0. | finite and above 0 | `omx_eq_design.h:420` `if (q < OMX_EQ_Q_MIN) q = OMX_EQ_Q_MIN;` → `q = -q;`, on `bank-0` | OK |
+| `fuzz_eq.c:206` | A peaking section has its band's gain at the band's centre, on its side of 0 dB: a boost boosts and a cut cuts, by at least the gain asked, to 0.1 % (the prototype bell is exactly the gain there; the matched design is that or more near Nyquist, never less). With its centre at most an eighth of the rate, where the matched design is the prototype bell, it is also at most the gain asked, to 5 % (the design is within 1.6 % there, from Q 1e-3 to 100 at any rate). For a bell a console sets: from 20 Hz, no narrower than Q 100; below that the bell is narrower than its double coefficients resolve. | the band's gain in dB, against the harness's own evaluation of \|H\| at the clamped centre | `omx_eq_design.h:164` `omx_eq_matched_pair(w0, 1.0 / (2.0 * A * qq), p);` → `omx_eq_matched_pair(w0, A / (2.0 * qq), p);`, on `peak-then-shelf`<br>`omx_eq_design.h:160` `exp(gain_db * (M_LN10 / 40.0))` → `exp(-gain_db * (M_LN10 / 40.0))`, on `peak-then-shelf`<br>`omx_eq_design.h:164` `1.0 / (2.0 * A * qq)` → `1.0 / (2.0 * A * A * qq)`, on `peak-then-shelf` | OK |
+| `fuzz_eq.c:218` | A high shelf whose corner is at most an eighth of the rate has at Nyquist, three octaves or more above it, at least a quarter of its band's gain, on its side of 0 dB: past its midpoint a shelf of any Q has gone at least half way to its gain, and the check asks half of that. | a quarter of the band's gain, against the harness's own evaluation of \|H\| at Nyquist | `omx_eq_design.h:180` `omx_eq_matched_pair(w0 * sa, 1.0 / (2.0 * qq), p);` → `omx_eq_matched_pair(w0 / sa, 1.0 / (2.0 * qq), p);`, on `peak-then-shelf` | OK |
+| `fuzz_eq.c:233` | The bank's magnitude is finite at any frequency. | finite | `omx_magnitude.h:129` `db_out[i] = db;` → `db_out[i] = NAN;`, on `bank-0` | OK |
+| `fuzz_eq.c:241` | A bank with no live section is 0 dB. | 0 dB, with `live` counted by the harness's `parked()` | `omx_magnitude.h:125` `double db = 0.0;` → `double db = 1.0;`, on `bank-3` | OK |
+| `fuzz_eq.c:264` | The cascade gives finite samples for finite samples. | `fuzz_all_finite()` | `omx_biquad.h:196` `enabled, state, NULL);` → `enabled, state, NULL); buf[0] = NAN;`, on `bank-2` | OK |
+| `fuzz_eq.c:272` | A bank with no live section leaves the block as it was, bit for bit. | the harness's copy of the block | `omx_biquad.h:196` `enabled, state, NULL);` → `enabled, state, NULL); buf[0] = 0.5f;`, on `eq-off-mono` | OK |
+| `fuzz_eq.c:279` | In a stereo run, a bank with no live section leaves the right leg as it was too. | the harness's copy of the right leg | `omx_biquad.h:170` `OMX_POST(!r \|\|` → `if (r && !nl) r[0] = 0.5f; OMX_POST(!r \|\|`, on `bank-3` | OK |
+| `fuzz_eq.c:293` | The width to Q conversion is finite and not negative. | finite and not below 0 | `omx_eq_design.h:319` `1.0 / (2.0 *` → `-1.0 / (2.0 *`, on `bank-0` | OK |
+| `fuzz_eq.c:302` | The octaves to Q conversion is finite and above 0. | finite and above 0 | `omx_eq_design.h:420` `if (q < OMX_EQ_Q_MIN) q = OMX_EQ_Q_MIN;` → `q = -q;`, on `bank-0` | OK |
 
 ## `fuzz_src`: the sample-rate converter
 
@@ -123,9 +123,10 @@ of `fuzz_fx.c` (the init check), `fuzz_eq.c` (the bell and the shelf) and `fuzz_
 | `fuzz_src.c:157` | A take is the same however it is cut into blocks, bit for bit. | the same take run whole, a second conversion | `omx_src.h:345` `i < in_n` → `i + 1u < in_n`, on `44100-48000` | OK |
 | `fuzz_src.c:171` | Without a flush, a take makes no more than a whole file's frames and the half length of the filter. | n * l / m by the harness's arithmetic, plus half the taps | `omx_src.h:322` `s->acc += (uint64_t)s->m` → `s->acc += (uint64_t)s->m / 2u`, on `96000-48000` | OK |
 | `fuzz_src.c:179` | A take makes no more samples than the capacity of what went in, n * l / m + 2, by the harness's arithmetic. | n * l / m + 2 by the harness's arithmetic | `omx_src.h:322` `s->acc += (uint64_t)s->m` → `s->acc += (uint64_t)s->m / 2u`, on `48000-44100` | OK |
-| `fuzz_src.c:187` | Each output is finite, and inside the input's peak times the filter's worst gain. | the input's peak times the sum of the absolute coefficients of the worst phase, summed by the harness | `omx_src.h:292` `c[k] * h[k]` → `1000.0f * c[k] * h[k]`, on `44100-48000` | OK |
-| `fuzz_src.c:196` | An identity plan returns the take unchanged. | the harness's copy of the take | `omx_src.h:175` `coef[0] = 1.0f` → `coef[0] = 0.5f`, on `48000-48000` | OK |
-| `fuzz_src.c:207` | The coefficients of each phase sum to 1, the rule of the table in omx_src.h. The bound on the outputs above takes its gain from this table, so this is what holds the table's scale. | 1, the rule of the table in omx_src.h, summed by the harness | `omx_src.h:208` `*= g;` → `*= 2.0f * g;`, on `44100-48000` | OK |
+| `fuzz_src.c:188` | A flushed take makes at least a whole file's frames, n * l / m, by the harness's arithmetic: the flush walks the filter's tail out, so no input is left in the history. | n * l / m by the harness's arithmetic | `omx_src.h:320` `(s->acc / (uint64_t)s->l) < s->consumed` → `(s->acc / (uint64_t)s->l) < s->consumed && s->l == s->m`, on `32000-48000` | OK |
+| `fuzz_src.c:196` | Each output is finite, and inside the input's peak times the filter's worst gain. | the input's peak times the sum of the absolute coefficients of the worst phase, summed by the harness | `omx_src.h:292` `c[k] * h[k]` → `1000.0f * c[k] * h[k]`, on `44100-48000` | OK |
+| `fuzz_src.c:205` | An identity plan returns the take unchanged. | the harness's copy of the take | `omx_src.h:175` `coef[0] = 1.0f` → `coef[0] = 0.5f`, on `48000-48000` | OK |
+| `fuzz_src.c:216` | The coefficients of each phase sum to 1, the rule of the table in omx_src.h. The bound on the outputs above takes its gain from this table, so this is what holds the table's scale. | 1, the rule of the table in omx_src.h, summed by the harness | `omx_src.h:208` `*= g;` → `*= 2.0f * g;`, on `44100-48000` | OK |
 
 ## `fuzz_delay`: the delay lines
 

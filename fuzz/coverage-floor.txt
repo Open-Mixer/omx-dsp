@@ -1,0 +1,8 @@
+# Covered library lines each harness seed corpus reaches (make fuzz-coverage, fuzz/coverage.sh).
+# A harness below its floor turns fuzz-coverage red. harness covered-lines
+fx 5213
+laws 193
+eq 406
+src 120
+delay 214
+note_map 121

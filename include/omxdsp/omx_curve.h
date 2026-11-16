@@ -17,7 +17,11 @@
  *   anchors included;
  * - `transfer_curve`: input dB to output dB over the grid, `x + g(x)` with `g` omx_gaincomp_db(), or
  *   omx_gaincomp_db_shifted() for a gate whose knee range omx_gate_knee() resolves, the make-up added when a
- *   `makeup` term is present.
+ *   `makeup` term is present;
+ * - a `transfer_curve` of the `drive` family: input dB to output dB like every transfer_curve, a steady level
+ *   through the drive kernel's static path, its own control mapping (omx_drive_instance_controls()) and its own
+ *   biased shaper (omx_drive_sample()), faded by the mix and scaled by the trim as omx_drive_process() does on
+ *   the full band (omx_curve_drive(), the sample itself omx_curve_drive_sample()).
  *
  * A missing term is a code, never a default (CURVE_CODES): no curve is drawn from a guess. The defaults that
  * are not guesses are the switches (a band or head filter with no `on` term runs) and the corner of a gain
@@ -33,6 +37,7 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "fx/omx_drive_instance.h"
 #include "fx/omx_eq_instance.h"
 #include "omx_eq_design.h"
 #include "omx_gaincomp.h"
@@ -113,14 +118,17 @@ struct omx_curve_extra {
 /** @brief The wire words of CURVE_DISPLAYS, by value: the description's display words. */
 static const char *const OMX_CURVE_DISPLAY_WORDS[OMX_CURVE_DISPLAYS_COUNT] = {"eq_response", "transfer_curve"};
 /** @brief The wire words of CURVE_FAMILIES, by value: the description's family words. */
-static const char *const OMX_CURVE_FAMILY_WORDS[OMX_CURVE_FAMILIES_COUNT] = {"eq", "dynamics", "limiter", "gate", "deesser"};
+static const char *const OMX_CURVE_FAMILY_WORDS[OMX_CURVE_FAMILIES_COUNT] = {"eq",   "dynamics", "limiter",
+                                                                           "gate", "deesser",  "drive"};
 /** @brief The wire words of CURVE_ROLES, by value: the description's role words. */
 static const char *const OMX_CURVE_ROLE_WORDS[OMX_CURVE_ROLES_COUNT] = {
     "band_type", "band_freq", "band_gain", "band_q",  "band_on", "hpf_freq",   "hpf_slope",  "hpf_on",   "lpf_freq",
-    "lpf_slope", "lpf_on",    "threshold", "ratio",   "knee",    "makeup",     "range",      "knee_start", "knee_end"};
+    "lpf_slope", "lpf_on",    "threshold", "ratio",   "knee",    "makeup",     "range",      "knee_start", "knee_end",
+    "drive",     "tone",      "model",     "mix",     "output"};
 /** @brief The wire words of CURVE_UNITS, by value: the param-contract extension's unit tokens. */
 static const char *const OMX_CURVE_UNIT_WORDS[OMX_CURVE_UNITS_COUNT] = {"hz",   "khz", "db",   "dbfs", "dbu",
-                                                                        "lufs", "coef", "oct", "none", "ratio"};
+                                                                        "lufs", "coef", "oct", "none", "ratio",
+                                                                        "pc"};
 /** @brief The wire words of CURVE_SHAPES, by value; `unshaped` is spelt `-`. */
 static const char *const OMX_CURVE_SHAPE_WORDS[OMX_CURVE_SHAPES_COUNT] = {
     "off", "bell", "lowshelf", "highshelf", "highpass", "lowpass", "notch", "-", "allpass1", "allpass2"};
@@ -181,7 +189,15 @@ static inline int omx_curve_unit_accepted(enum omx_curve_roles role, enum omx_cu
   case OMX_CURVE_ROLES_RANGE:
   case OMX_CURVE_ROLES_KNEE_START:
   case OMX_CURVE_ROLES_KNEE_END:
+  case OMX_CURVE_ROLES_DRIVE:
+  case OMX_CURVE_ROLES_OUTPUT:
     return unit == OMX_CURVE_UNITS_DB;
+  case OMX_CURVE_ROLES_TONE:
+    return unit == OMX_CURVE_UNITS_NONE || unit == OMX_CURVE_UNITS_COEF;
+  case OMX_CURVE_ROLES_MODEL:
+    return unit == OMX_CURVE_UNITS_NONE;
+  case OMX_CURVE_ROLES_MIX:
+    return unit == OMX_CURVE_UNITS_PC;
   }
   return 0;
 }
@@ -434,6 +450,73 @@ static inline uint32_t omx_curve_transfer(const struct omx_curve_request *rq, do
   return n;
 }
 
+/**
+ * @brief The drive kernel's static path at one sample: what omx_drive_process() does to `dry` on the full band, in
+ *        its float arithmetic. The biased shaper's output at `drive * dry`, less the dry (added whole for the
+ *        exciter, which runs in parallel), faded in by the mix, then the trim. Signed and linear: the waveshape,
+ *        which the drive's transfer_curve reads at a steady level's sample, and a later display kind draws as it is.
+ * @param o The atom's static controls (omx_drive_instance_controls()).
+ * @param bias The shaper's bias (omx_drive_bias_for()).
+ * @param dry The input sample.
+ * @return The output sample.
+ * @note Pure: it reads only its arguments.
+ * @thread control
+ */
+static inline float omx_curve_drive_sample(const struct omx_drive *o, const struct omx_drive_bias *bias, float dry) {
+  const float wet = omx_drive_sample(o->curve, o->drive_lin * dry, bias);
+  const float delta = o->curve == OMX_DRIVE_EXCITER ? wet : wet - dry;
+  return (dry + o->mix * delta) * o->trim_lin;
+}
+
+/**
+ * @brief The `drive` family's `transfer_curve`: a steady input level in dB to the level the drive kernel's static
+ *        path gives it, in dB, from `x_min` to `x_max` in `points` evenly spaced levels, both edges included.
+ *
+ * Needs `drive` (dB) and `model` (the shaper, a DRIVE_CURVES index); `tone` (the character, -1..+1) reads -1,
+ * `mix` 100 % and `output` 0 dB where the request binds none, so a card's picture, which draws no make-up and no
+ * parallel mix, asks for neither. The words go through omx_drive_instance_controls(), the mapping the instance
+ * runs (each clamped into its travel; a `model` that is no shaper's index reads as the instance's default). Each
+ * level's steady sample, omx_db_to_lin(x), goes through omx_curve_drive_sample(), what omx_drive_process() does
+ * to it on the full band, and its output is read back in dB by omx_lin_to_db(). What is not a function of one
+ * sample is not drawn: the band split, the oversampler, the DC blocker, the roll-off and the auto-gain.
+ * @param rq The request, kind and family checked.
+ * @param x_min The lowest input level, dB.
+ * @param x_max The highest input level, dB, above `x_min`.
+ * @param x The input levels, dB.
+ * @param y The output levels, dB.
+ * @param room Room in `x` and in `y`.
+ * @param code The answer's code.
+ * @return The points written; 0 with a code other than OMX_CURVE_OK.
+ * @note Thread-safe on distinct output.
+ * @thread control
+ */
+static inline uint32_t omx_curve_drive(const struct omx_curve_request *rq, double x_min, double x_max, double *x,
+                                       double *y, uint32_t room, int *code) {
+  const struct omx_curve_term *amount = omx_curve_find(rq, OMX_CURVE_ROLES_DRIVE, 0),
+                              *model = omx_curve_find(rq, OMX_CURVE_ROLES_MODEL, 0),
+                              *tone = omx_curve_find(rq, OMX_CURVE_ROLES_TONE, 0),
+                              *mix = omx_curve_find(rq, OMX_CURVE_ROLES_MIX, 0),
+                              *output = omx_curve_find(rq, OMX_CURVE_ROLES_OUTPUT, 0);
+  if (!amount || !model) return (*code = OMX_CURVE_TERM_MISSING), 0u;
+  if (room < rq->points) return (*code = OMX_CURVE_ROOM), 0u;
+  const double mv = omx_curve_term_value(model);
+  struct omx_drive o;
+  memset(&o, 0, sizeof o);
+  omx_drive_instance_controls(&o, (float)omx_curve_term_value(amount), tone ? (float)omx_curve_term_value(tone) : -1.0f,
+                              mix ? (float)omx_curve_term_value(mix) : 100.0f,
+                              output ? (float)omx_curve_term_value(output) : 0.0f,
+                              mv >= (double)OMX_DRIVE_SOFT && mv <= (double)OMX_DRIVE_EXCITER && mv == floor(mv) ? (int)mv : -1);
+  const struct omx_drive_bias bias = omx_drive_bias_for(o.curve, o.even_w);
+  const uint32_t n = rq->points;
+  for (uint32_t i = 0; i < n; i++) {
+    const double xi = i + 1u == n ? x_max : x_min + (x_max - x_min) * (double)i / (double)(n - 1u);
+    x[i] = xi;
+    y[i] = (double)omx_lin_to_db(omx_curve_drive_sample(&o, &bias, omx_db_to_lin((float)xi)));
+  }
+  *code = OMX_CURVE_OK;
+  return n;
+}
+
 #define OMX_CONTRACT_STAGE "curve/points"
 /**
  * @brief The points of one display of a panel description, and the marks of the bands a feedback corrector planted:
@@ -441,14 +524,14 @@ static inline uint32_t omx_curve_transfer(const struct omx_curve_request *rq, do
  *        `curvePoints` alike (omx_curve_points() is it with no marks).
  *
  * Checked in this order, the first failure answered: the kind and family (OMX_CURVE_KIND_UNKNOWN: an
- * `eq_response` of the `eq` family, a `transfer_curve` of `dynamics`, `limiter`, `gate` or `deesser`); the grid
+ * `eq_response` of the `eq` family, a `transfer_curve` of `dynamics`, `limiter`, `gate`, `deesser` or `drive`); the grid
  * points, 2 to CURVE_POINTS_MAX (OMX_CURVE_POINTS_RANGE); the rate, the extents and every value finite and the
  * rate positive (OMX_CURVE_VALUE_NOT_FINITE); every unit accepted by its role (OMX_CURVE_UNIT_REFUSED); the
  * extents bounding a range, an EQ's above 0 Hz (OMX_CURVE_POINTS_RANGE); then the model's own terms
  * (OMX_CURVE_TERM_MISSING, OMX_CURVE_KIND_UNKNOWN), an EQ's anchors within CURVE_POINTS_MAX
  * (OMX_CURVE_POINTS_RANGE) and the room (OMX_CURVE_ROOM). With no extents, an EQ runs from CURVE_EXTENTS
  * `freqMinHz` to the lower of `freqMaxHz` and `nyquistFraction` of Nyquist, a transfer curve from `levelMinDb`
- * to `levelMaxDb`.
+ * to `levelMaxDb`, a drive's from `driveLevelMinDb` to `driveLevelMaxDb`.
  * @param rq The request.
  * @param x The x of each point, ascending: Hz, or input dB.
  * @param y The y of each point: dB, or output dB.
@@ -488,13 +571,18 @@ static inline uint32_t omx_curve_points_marked(const struct omx_curve_request *r
     const double nyq = OMX_CURVE_EXTENTS_NYQUIST_FRACTION_DOUBLE * rq->sample_rate / 2.0;
     lo = OMX_CURVE_EXTENTS_FREQ_MIN_HZ;
     hi = nyq < OMX_CURVE_EXTENTS_FREQ_MAX_HZ ? nyq : OMX_CURVE_EXTENTS_FREQ_MAX_HZ;
+  } else if (rq->family == OMX_CURVE_FAMILIES_DRIVE) {
+    lo = OMX_CURVE_EXTENTS_DRIVE_LEVEL_MIN_DB;
+    hi = OMX_CURVE_EXTENTS_DRIVE_LEVEL_MAX_DB;
   } else {
     lo = OMX_CURVE_EXTENTS_LEVEL_MIN_DB;
     hi = OMX_CURVE_EXTENTS_LEVEL_MAX_DB;
   }
   if (!(hi > lo) || (eq && !(lo > 0.0))) return (*code = OMX_CURVE_POINTS_RANGE), 0u;
   if (ex && rq->user_only && !ex->y_user) return (*code = OMX_CURVE_ROOM), 0u;
-  const uint32_t n = eq ? omx_curve_eq(rq, lo, hi, x, y, room, ex, code) : omx_curve_transfer(rq, lo, hi, x, y, room, code);
+  const uint32_t n = eq                                     ? omx_curve_eq(rq, lo, hi, x, y, room, ex, code)
+                     : rq->family == OMX_CURVE_FAMILIES_DRIVE ? omx_curve_drive(rq, lo, hi, x, y, room, code)
+                                                              : omx_curve_transfer(rq, lo, hi, x, y, room, code);
   if (ex && !eq && n) {
     ex->nmarks = 0;
     if (ex->y_user)

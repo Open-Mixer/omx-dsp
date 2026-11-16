@@ -1,3 +1,57 @@
+omx-dsp (0.32.4) unstable; urgency=medium
+
+  * curve: the drive family, a drive's transfer curve sample in to sample
+    out through the drive kernel's own control mapping and biased shaper;
+    roles drive, tone, model, mix and output, the unit pc, the sample
+    extents. The TypeScript twin draws it too. Added names only; the three
+    moved curve counts are proven in tools/patch-count-proofs.txt.
+  * patch-names-check: a count or size macro whose value moves in a patch
+    needs its proof line.
+
+ -- Pau Aliagas <linuxnow@gmail.com>  Sun, 15 Nov 2026 20:55:00 +0100
+
+omx-dsp (0.32.3) unstable; urgency=medium
+
+  * flavour-check: the TSan consumer runs under setarch -R; where that is
+    not allowed, TSan's "unexpected memory mapping" is NOT RUN by name
+    instead of failing the build at random.
+  * The RPM spec's JACK build requirements (pkgconfig(jack) and jack2's
+    runtime); nothing in the library, its headers or the TypeScript twins
+    changes.
+
+ -- Pau Aliagas <linuxnow@gmail.com>  Sun, 15 Nov 2026 16:35:47 +0100
+
+omx-dsp (0.32.2) unstable; urgency=medium
+
+  * rta: omx_rta_bands, the spectrum analyser's band reduction, and its
+    TypeScript twin, held by one vector file (#24, #31).
+  * rta: omx_rta_band_delta, the difference of two taps, and its twin (#24, #31).
+  * rta: the analyser's numbers declared in rta.json (#24, #31).
+  * rt-gate: the host-buffer class, closed to jack_port_get_buffer; jack.abi
+    (#24, #31).
+  * omx-rta-read: new package, the spectrum of a JACK signal read and never
+    fed (#24, #31).
+  * fbs: the placement's calls for the operator's edits, the shared EQ cap
+    and a restored band; FBS_RING_MEMORY_SLOTS (#27).
+  * hrp: the placement and stepping in C and its TypeScript twin (#30).
+  * lint: the patch-release policy written down and enforced; a patch adds,
+    a minor changes (#33).
+  * fuzz: the bell, converter and take checks carry their records (#14, #17).
+  * Additive: nothing existing changes.
+
+ -- Pau Aliagas <linuxnow@gmail.com>  Sun, 15 Nov 2026 16:00:02 +0100
+
+omx-dsp (0.32.1) unstable; urgency=medium
+
+  * Built against omx-contract >= 3.18.0 and below 4 (was 3.9.0), the newest
+    the channel serves, with its ceiling (D30).
+  * The organisation's name: FreeMixer becomes Open-Mixer and OpenMixer; the
+    package metadata names the Open-Mixer repository.
+  * release: the DEBs built beside the RPMs; a staged run publishes to the
+    staging channel (#1).
+
+ -- Pau Aliagas <linuxnow@gmail.com>  Fri, 13 Nov 2026 17:00:00 +0100
+
 omx-dsp (0.32.0) unstable; urgency=medium
 
   * fbs: the placement in C (omx_fbs_place.h): both pools, the staged

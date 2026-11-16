@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Pau Aliagas <linuxnow@gmail.com>
+#
+# jack.abi — the thread role of a JACK client, declared once (omx-rt-gate(1)). JACK takes its process callback by a
+# call (jack_set_process_callback), not by a table, so a client stores the callback in the `process` field of an
+# `omx_jack_process` and registers it from that field: the function stored there is the root, judged as audio. The
+# one JACK call a process callback may make is jack_port_get_buffer, class host-buffer (classes.tbl, ruled
+# 2026-11-15); any other JACK call it reaches is red until a ruling classifies it.
+plugin omx_jack_process process audio

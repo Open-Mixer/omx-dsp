@@ -10,9 +10,8 @@
 #include <string.h>
 
 #include <omxdsp/analysis/omx_hrp_track.h>
+#include <omxdsp/analysis/omx_place_clamp.h>
 
-/* The console's clamp: a NaN passes through. */
-static double clamp(double n, double lo, double hi) { return n < lo ? lo : (n > hi ? hi : n); }
 
 /* Math.round: half up, exactly (x - floor(x) is exact in double). */
 static double round_half_up(double x) {
@@ -59,18 +58,21 @@ void omx_fbs_place_set(OmxFbsPlace *p, double hold_s, double max_bands, double n
   if (hold_s == OMX_FBS_HOLD_NEVER)
     p->hold_s = OMX_FBS_HOLD_NEVER;
   else
-    p->hold_s = isfinite(hold_s) ? clamp(hold_s, OMX_FBS_HOLD_RANGE_MIN, OMX_FBS_HOLD_RANGE_MAX)
+    p->hold_s = isfinite(hold_s) ? omx_place_clamp(hold_s, OMX_FBS_HOLD_RANGE_MIN, OMX_FBS_HOLD_RANGE_MAX)
                                  : (double)OMX_FBS_DEFAULT_HOLD_SECONDS;
   p->max_bands = isfinite(max_bands)
-                     ? (uint32_t)clamp(round_half_up(max_bands), OMX_FBS_MIN_AUTO_BANDS, OMX_FBS_BANDS_RANGE_MAX)
+                     ? (uint32_t)omx_place_clamp(round_half_up(max_bands), OMX_FBS_MIN_AUTO_BANDS,
+                                                 OMX_FBS_BANDS_RANGE_MAX)
                      : (uint32_t)OMX_FBS_DEFAULT_MAX_AUTO_BANDS;
-  p->notch_q = isfinite(notch_q) ? clamp(notch_q, OMX_EQ_NOTCH_Q_RANGE_MIN_DOUBLE, OMX_EQ_NOTCH_Q_RANGE_MAX)
-                                 : (double)OMX_FBS_DEFAULT_NOTCH_Q;
+  p->notch_q = isfinite(notch_q)
+                   ? omx_place_clamp(notch_q, OMX_EQ_NOTCH_Q_RANGE_MIN_DOUBLE, OMX_EQ_NOTCH_Q_RANGE_MAX)
+                   : (double)OMX_FBS_DEFAULT_NOTCH_Q;
   p->merge_cents = isfinite(merge_cents)
-                       ? clamp(round_half_up(merge_cents), OMX_FBS_MERGE_RANGE_MIN, OMX_FBS_MERGE_RANGE_MAX)
+                       ? omx_place_clamp(round_half_up(merge_cents), OMX_FBS_MERGE_RANGE_MIN, OMX_FBS_MERGE_RANGE_MAX)
                        : (double)OMX_FBS_DEFAULT_MERGE_CENTS;
   p->cooldown_s = isfinite(cooldown_s)
-                      ? clamp(round_half_up(cooldown_s), OMX_FBS_COOLDOWN_RANGE_MIN, OMX_FBS_COOLDOWN_RANGE_MAX)
+                      ? omx_place_clamp(round_half_up(cooldown_s), OMX_FBS_COOLDOWN_RANGE_MIN,
+                                        OMX_FBS_COOLDOWN_RANGE_MAX)
                       : (double)OMX_FBS_DEFAULT_COOLDOWN_SECONDS;
 }
 
@@ -86,7 +88,7 @@ double omx_fbs_place_gain_cap(int origin, double db) {
     if (db > 0.0) db = 0.0;
     return db;
   }
-  return clamp(db, OMX_EQ_GAIN_RANGE_MIN, OMX_EQ_GAIN_RANGE_MAX);
+  return omx_place_clamp(db, OMX_EQ_GAIN_RANGE_MIN, OMX_EQ_GAIN_RANGE_MAX);
 }
 
 /* sameRingFreq */
@@ -262,6 +264,8 @@ static void correct(OmxFbsPlace *p, const OmxFbsCandidate *c) {
     emit(p, OMX_FBS_POOL_FULL, c->freq_hz, -1);
     return;
   }
+  /* the strip's EQ is full: its store returns the EQ unchanged, and the corrector says nothing */
+  if ((uint64_t)omx_fbs_place_count(p) + p->others >= (uint64_t)OMX_EQ_MAX_BANDS) return;
   uint32_t k = 0;
   while (k < OMX_FBS_PLACE_SLOTS && p->slot[k].origin != OMX_CURVE_ORIGINS_USER) k++;
   if (k >= OMX_FBS_PLACE_SLOTS) return;
@@ -269,11 +273,11 @@ static void correct(OmxFbsPlace *p, const OmxFbsCandidate *c) {
   OmxFbsPlaceSlot *s = &p->slot[k];
   free_slot(s);
   s->origin = fixed ? OMX_CURVE_ORIGINS_FBS_FIXED : OMX_CURVE_ORIGINS_FBS_LIVE;
-  s->freq_hz = clamp(c->freq_hz, OMX_EQ_FREQ_RANGE_MIN, OMX_EQ_FREQ_RANGE_MAX);
+  s->freq_hz = omx_place_clamp(c->freq_hz, OMX_EQ_FREQ_RANGE_MIN, OMX_EQ_FREQ_RANGE_MAX);
   s->shape = fixed ? OMX_CURVE_SHAPES_NOTCH : OMX_CURVE_SHAPES_BELL;
   s->gain_db = omx_fbs_place_gain_cap(s->origin, fixed ? 0.0 : c->depth_db);
-  s->q = fixed ? clamp(p->notch_q, OMX_EQ_NOTCH_Q_RANGE_MIN_DOUBLE, OMX_EQ_NOTCH_Q_RANGE_MAX)
-               : clamp(p->notch_q, OMX_EQ_Q_RANGE_MIN_DOUBLE, OMX_EQ_Q_RANGE_MAX);
+  s->q = fixed ? omx_place_clamp(p->notch_q, OMX_EQ_NOTCH_Q_RANGE_MIN_DOUBLE, OMX_EQ_NOTCH_Q_RANGE_MAX)
+               : omx_place_clamp(p->notch_q, OMX_EQ_Q_RANGE_MIN_DOUBLE, OMX_EQ_Q_RANGE_MAX);
   s->on = 1;
   s->seq = ++p->seq;
   s->live = !fixed;
@@ -307,10 +311,81 @@ static void hold_sweep(OmxFbsPlace *p, const double *snapshot_hz, uint32_t n_sna
   }
 }
 
+/* adoptUntracked: every band not yet tracked whose origin is fbs-live NOW, in band order, starts a fresh hold
+ * and takes its ring memory; the console reads the tag at the tick, so a band re-tagged fixed is never tracked */
+static void adopt(OmxFbsPlace *p) {
+  for (int k = next_by_seq(p, 0); k >= 0; k = next_by_seq(p, p->slot[k].seq)) {
+    OmxFbsPlaceSlot *s = &p->slot[k];
+    if (!s->adopt) continue;
+    s->adopt = 0;
+    if (s->origin != OMX_CURVE_ORIGINS_FBS_LIVE) continue;
+    s->live = 1;
+    s->planted_db = s->gain_db;
+    s->last_ring_ms = p->now_ms;
+    s->stage = 0u;
+    s->dwelling = 0;
+    s->ramping = 0;
+    s->reclamps = take_memory(p, s->freq_hz);
+  }
+}
+
 void omx_fbs_place_tick(OmxFbsPlace *p, double now_ms, const double *snapshot_hz, uint32_t n_snapshot,
                         const OmxFbsCandidate *confirmed, uint32_t n_confirmed) {
   if (!p) return;
   omx_fbs_place_advance(p, now_ms);
+  adopt(p);
   for (uint32_t i = 0; confirmed && i < n_confirmed; i++) correct(p, &confirmed[i]);
   hold_sweep(p, snapshot_hz ? snapshot_hz : (const double *)0, snapshot_hz ? n_snapshot : 0u);
+}
+
+void omx_fbs_place_set_others(OmxFbsPlace *p, uint32_t n) {
+  if (p) p->others = n;
+}
+
+/* the band is gone from the store: holdSweep and the ramp drop its tracking, and the pool reads one fewer */
+int omx_fbs_place_remove(OmxFbsPlace *p, uint32_t k) {
+  if (!p || k >= OMX_FBS_PLACE_SLOTS || p->slot[k].origin == OMX_CURVE_ORIGINS_USER) return -1;
+  free_slot(&p->slot[k]);
+  return 0;
+}
+
+/* an operator PATCH on an fbs band: the store holds the new tag and the gain its cap allows */
+int omx_fbs_place_edit(OmxFbsPlace *p, uint32_t k, int origin, double gain_db) {
+  if (!p || k >= OMX_FBS_PLACE_SLOTS || p->slot[k].origin == OMX_CURVE_ORIGINS_USER) return -1;
+  if (origin < 0 || origin >= (int)OMX_CURVE_ORIGINS_COUNT) return -1;
+  if (!is_fbs(origin)) return omx_fbs_place_remove(p, k);
+  OmxFbsPlaceSlot *s = &p->slot[k];
+  s->origin = origin;
+  s->gain_db = omx_fbs_place_gain_cap(origin, gain_db);
+  if (origin == OMX_CURVE_ORIGINS_FBS_LIVE && !s->live) s->adopt = 1;
+  /* the fixed pool never lifts: a band re-tagged fixed leaves the release ladder where the edit left it (a
+   * pending adoption is refused by adopt(), which reads the origin at the tick) */
+  if (origin == OMX_CURVE_ORIGINS_FBS_FIXED) {
+    s->live = 0;
+    s->ramping = 0;
+    s->stage = 0u;
+    s->dwelling = 0;
+  }
+  return 0;
+}
+
+/* a restored band: in the store before the corrector sees it, so it counts at once and a live one is adopted */
+int omx_fbs_place_seat(OmxFbsPlace *p, int origin, double freq_hz, double gain_db, double q) {
+  if (!p || !is_fbs(origin) || !isfinite(freq_hz) || !isfinite(gain_db) || !isfinite(q)) return -1;
+  uint32_t k = 0;
+  while (k < OMX_FBS_PLACE_SLOTS && p->slot[k].origin != OMX_CURVE_ORIGINS_USER) k++;
+  if (k >= OMX_FBS_PLACE_SLOTS) return -1;
+  const int fixed = origin == OMX_CURVE_ORIGINS_FBS_FIXED;
+  OmxFbsPlaceSlot *s = &p->slot[k];
+  free_slot(s);
+  s->origin = origin;
+  s->freq_hz = omx_place_clamp(freq_hz, OMX_EQ_FREQ_RANGE_MIN, OMX_EQ_FREQ_RANGE_MAX);
+  s->shape = fixed ? OMX_CURVE_SHAPES_NOTCH : OMX_CURVE_SHAPES_BELL;
+  s->gain_db = omx_fbs_place_gain_cap(origin, gain_db);
+  s->q = fixed ? omx_place_clamp(q, OMX_EQ_NOTCH_Q_RANGE_MIN_DOUBLE, OMX_EQ_NOTCH_Q_RANGE_MAX) : omx_place_clamp(q, OMX_EQ_Q_RANGE_MIN_DOUBLE, OMX_EQ_Q_RANGE_MAX);
+  s->on = 1;
+  s->seq = ++p->seq;
+  s->planted_db = s->gain_db;
+  s->adopt = !fixed;
+  return (int)k;
 }

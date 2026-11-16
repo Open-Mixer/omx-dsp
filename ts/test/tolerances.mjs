@@ -38,6 +38,12 @@ export const TOLERANCES = {
   gateKnee: { abs: 0 },
   // A transfer curve is x + that gain (+ make-up) in double on both sides: bit for bit.
   curvePointsTransfer: { abs: 0 },
+  // A drive curve is a steady level through the float shaper on both sides, read back in dB. tanhf against Math.tanh
+  // rounded to float is a float ulp or two of the sample; on a dB axis that is relative to the output, largest where
+  // the output is small or the mix's crossfade cancels (wet - dry small), and the dB value is itself a float on each
+  // side. Measured over the 225 requests (4 shapers and a model past them, clamped and absent terms, -60..0 and
+  // -90..+6 dB grids, 9 rates): largest gap 3.05e-5 dB. Bound 4e-5 dB; the sabotages below each move a curve by more.
+  curvePointsDrive: { abs: 4e-5 },
   // An EQ curve is magnitudeSumDb over up to ten sections at x from Math.pow against libm pow (a few ulp of x):
   // the worst gap measured is 2.7e-10 dB; 1e-8 dB is the sum tolerance above, and a Q moved by less than the
   // engine's float narrowing (2^-25 relative) moves the curve by more.

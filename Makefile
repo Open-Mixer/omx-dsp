@@ -42,6 +42,9 @@
 #   make curve-golden  test/kernels/fixtures/curve_golden.h rewritten from omx_curve_points() (tools/curve-golden.c)
 #   make meter-view-sabotage  the meter view arm (mix/omx_meter_view.h) fails against seven sabotages
 #   make meter-view-golden  vectors/meter-view.json rewritten from the meter view law (tools/meter-view-golden.c)
+#   make rta-bands-sabotage  the band reduction and delta arms (analysis/omx_rta_bands.h) fail against twelve sabotages
+#   make rta-bands-golden  vectors/rta-bands.json rewritten from the band reduction (tools/rta-bands-golden.c)
+#   make rta-delta-golden  vectors/rta-delta.json rewritten from the difference of two taps (tools/rta-delta-golden.c)
 #   make geq-true-sabotage  the graphic EQ's true-mode oracle fails against seven sabotages
 #   make delay-taps-sabotage  the FX delay's read-tap oracle fails against ten sabotages
 #   make align-fdelay-sabotage  the strip alignment stage's oracle fails against five sabotages
@@ -182,7 +185,7 @@ VERSION    := $(shell sed -n 's/^\#define OMXDSP_VERSION_\(MAJOR\|MINOR\|PATCH\)
 
 
 
-.PHONY: fuzz fuzz-run fuzz-corpus all lib test lint docs clean contract-dir definitions definitions-check contract-proof contract-tests test-tsan suite negative consumer gen-once perturb fdelay-sabotage doppler-sabotage onepole-sabotage threads threads-sabotage checks cost-prel test-fx test-analysis install version golden-write flavours bench-mixmatrix bench-gate bench-drive bench-flanger check-log10f strip-input-identity analysis-engine-identity test-mix mix-engine-identity test-engine-kernels engine-kernels-identity magnitude-sabotage eq-sabotage curve-golden curve-sabotage meter-view-golden meter-view-sabotage geq-true-sabotage delay-taps-sabotage align-fdelay-sabotage pitch-rates-sabotage instance-rates-sabotage bandwidth-q-table bandwidth-q-sabotage eq-default-bands eq-defaults-table room-ts-golden public-sources private-refs deps deps-check cost-deesser note-map-sabotage exports copy-check
+.PHONY: fuzz fuzz-run fuzz-sabotage fuzz-records fuzz-coverage fuzz-corpus all lib test lint docs clean contract-dir definitions definitions-check contract-proof contract-tests test-tsan suite negative consumer gen-once perturb fdelay-sabotage doppler-sabotage onepole-sabotage threads threads-sabotage checks cost-prel test-fx test-analysis install version golden-write flavours bench-mixmatrix bench-gate bench-drive bench-flanger check-log10f strip-input-identity analysis-engine-identity test-mix mix-engine-identity test-engine-kernels engine-kernels-identity magnitude-sabotage eq-sabotage curve-golden curve-sabotage meter-view-golden rta-bands-golden meter-view-sabotage rta-bands-sabotage geq-true-sabotage delay-taps-sabotage align-fdelay-sabotage pitch-rates-sabotage instance-rates-sabotage bandwidth-q-table bandwidth-q-sabotage eq-default-bands eq-defaults-table room-ts-golden public-sources private-refs deps deps-check cost-deesser note-map-sabotage exports copy-check
 
 all: lib
 
@@ -227,7 +230,7 @@ KERNELS_INC = $(BUILD)/kernels-suite.inc.c $(BUILD)/kernels-perturb.inc.c
 $(KERNELS_INC) &: $(wildcard test/kernels/*.c) tools/kernels-gen.sh | $(BUILD)
 	$(KERNELS_GEN) $(BUILD)
 
-$(BUILD)/omxdsp_suite: test/omxdsp_suite.c $(KERNELS) $(KERNELS_INC) $(LIB_CONTRACTS) $(HEADERS) $(MIX_HEADERS)
+$(BUILD)/omxdsp_suite: test/omxdsp_suite.c $(KERNELS) $(KERNELS_INC) $(LIB_CONTRACTS) $(HEADERS) $(MIX_HEADERS) $(ANALYSIS_HEADERS) vectors/rta-bands.json vectors/rta-delta.json
 	$(CC) $(TESTFLAGS) -I$(BUILD) -o $@ test/omxdsp_suite.c $(LIB_CONTRACTS) -lm
 
 $(BUILD)/omxdsp_threads: test/omxdsp_threads.c $(LIB_CONTRACTS) $(HEADERS) | $(BUILD)
@@ -330,6 +333,29 @@ $(BUILD)/meter_view_golden: tools/meter-view-golden.c test/kernels/fixtures/mete
 meter-view-golden: $(BUILD)/meter_view_golden
 	./$(BUILD)/meter_view_golden > vectors/meter-view.json
 
+# The band reduction's vectors (vectors/rta-bands.json, read back by the suite's rta_bands arm and the TypeScript twin's
+# test, installed beside the exports) are written by tools/rta-bands-golden.c from
+# test/kernels/fixtures/rta_bands_scenarios.h: `make rta-bands-golden` rewrites them, in the commit that changes the
+# reduction, and the diff is the review.
+$(BUILD)/rta_bands_golden: tools/rta-bands-golden.c test/kernels/fixtures/rta_bands_scenarios.h $(HEADERS) $(ANALYSIS_HEADERS) | $(BUILD)
+	$(CC) $(CFLAGS_PLAIN) $(INC) -o $@ $< -lm
+
+rta-bands-golden: $(BUILD)/rta_bands_golden
+	./$(BUILD)/rta_bands_golden > vectors/rta-bands.json
+
+# The difference of two taps' vectors (vectors/rta-delta.json, read back by the suite's rta_delta arm and the twin's
+# test, installed beside the exports), written the same way by tools/rta-delta-golden.c.
+$(BUILD)/rta_delta_golden: tools/rta-delta-golden.c test/kernels/fixtures/rta_bands_scenarios.h $(HEADERS) $(ANALYSIS_HEADERS) | $(BUILD)
+	$(CC) $(CFLAGS_PLAIN) $(INC) -o $@ $< -lm
+.PHONY: rta-delta-golden
+rta-delta-golden: $(BUILD)/rta_delta_golden
+	./$(BUILD)/rta_delta_golden > vectors/rta-delta.json
+
+# The band reduction arm fails against six sabotages of omx_rta_bands.h and the declared numbers
+# (test/rta-bands-sabotage.sh); the real suite is the control.
+rta-bands-sabotage: test/omxdsp_suite.c test/rta-bands-sabotage.sh $(KERNELS) vectors/rta-bands.json vectors/rta-delta.json $(LIB_CONTRACTS) $(HEADERS) $(ANALYSIS_HEADERS) | $(BUILD)
+	CC="$(CC)" CFLAGS="$(CFLAGS)" bash test/rta-bands-sabotage.sh $(BUILD)/rta-bands-sabotage $(LIB_CONTRACTS)
+
 # The meter view arm fails against seven sabotages of omx_meter_view.h, omx_meter.h and the declared numbers
 # (test/meter-view-sabotage.sh); the real suite is the control.
 meter-view-sabotage: test/omxdsp_suite.c test/meter-view-sabotage.sh $(KERNELS) vectors/meter-view.json $(LIB_CONTRACTS) $(HEADERS) $(MIX_HEADERS) | $(BUILD)
@@ -412,6 +438,10 @@ checks:
 	bash tools/contract-single-source.sh --self-test
 	bash tools/travel-grid-check.sh
 	bash tools/travel-grid-check.sh --self-test
+	sh tools/no-host-nproc.sh --self-test
+	sh tools/no-host-nproc.sh
+	sh tools/ci-install-options.sh --self-test
+	sh tools/ci-install-options.sh
 	bash tools/check-package-check.sh
 	bash tools/check-package-check.sh --self-test
 	CC="$(CC)" TMPDIR="$(abspath $(BUILD))" bash tools/clone-check.sh
@@ -422,10 +452,15 @@ checks:
 	bash tools/face-conformance.sh --self-test
 	bash tools/rate-list-check.sh
 	bash tools/rate-list-check.sh --self-test
+	bash tools/ci-matrix-follows-set.sh
+	bash tools/ci-matrix-follows-set.sh --self-test
 	bash tools/patch-names-check.sh
 	bash tools/patch-names-check.sh --self-test
+	bash test/patch-names-sabotage.sh
 	bash tools/gen-scratch-check.sh
 	bash tools/gen-scratch-check.sh --self-test
+	bash tools/fuzz-targets-check.sh
+	bash tools/fuzz-targets-check.sh --self-test
 
 lint: checks
 
@@ -647,6 +682,9 @@ golden-write: $(foreach k,$(FX_KERNELS),$(BUILD)/fx_$(k)_golden) $(foreach k,$(F
 # fbs_place holds the feedback corrector's placement (omx_fbs_place.h) to the shared vector file
 # test/analysis/fixtures/fbs_place.vectors, which ts/test/fbs-place.test.mjs holds the twin to;
 # test/analysis/fbs-place-sabotage.sh breaks each placement rule once and requires its vector to fail.
+# hrp_place holds the harmonic resonance processor's placement and stepping (omx_hrp_place.h) to the shared vector
+# file test/analysis/fixtures/hrp_place.vectors, which ts/test/hrp-place.test.mjs holds the twin to;
+# test/analysis/hrp-place-sabotage.sh breaks each rule once and requires its line to fail.
 # live_shells holds both correctors' live-shell cores (omx_fbs_lv2.h, omx_hrp_lv2.h) by value: a host with no
 # worker, the mode word, report bit-exact against cut, omx-fbs's staged fade at the nine rates and its quanta,
 # slots keeping their finds; test/analysis/live-shells-sabotage.sh breaks each once, and makes run() call the
@@ -660,7 +698,7 @@ golden-write: $(foreach k,$(FX_KERNELS),$(BUILD)/fx_$(k)_golden) $(foreach k,$(F
 # thread: room_ts holds them to core's TypeScript through the parity table test/analysis/fixtures/room_ts.h;
 # align_fit, room and sweep hold them to closed forms at the nine oracle rates and count allocations;
 # test/analysis/room-sabotage.sh breaks each of their kernels once and requires both kinds to fail.
-ANALYSIS_TESTS = fbs_detect fbs_place live_shells rta hrp_pitch hrp_track hrp_attribute hrp_baseline hrp_correct hrp_render hrp_lv2 hrp_lv2_rates rates golden \
+ANALYSIS_TESTS = fbs_detect fbs_place hrp_place live_shells rta hrp_pitch hrp_track hrp_attribute hrp_baseline hrp_correct hrp_render hrp_lv2 hrp_lv2_rates rates golden \
                  room_ts align_fit room sweep
 ANALYSIS_LDFLAGS_rates = -Wl,--wrap=malloc,--wrap=calloc,--wrap=realloc,--wrap=free
 ANALYSIS_LDFLAGS_golden = -Wl,--wrap=log10f
@@ -681,6 +719,7 @@ test-analysis: analysis-oracles
 	CC="$(CC)" CFLAGS="$(CFLAGS)" bash test/analysis/room-sabotage.sh $(BUILD)/room-sabotage
 	CC="$(CC)" CFLAGS="$(CFLAGS)" bash test/analysis/hrp-lv2-rates-sabotage.sh $(BUILD)/hrp-lv2-rates-sabotage
 	CC="$(CC)" CFLAGS="$(CFLAGS)" bash test/analysis/fbs-place-sabotage.sh $(BUILD)/fbs-place-sabotage
+	CC="$(CC)" CFLAGS="$(CFLAGS)" bash test/analysis/hrp-place-sabotage.sh $(BUILD)/hrp-place-sabotage
 	CC="$(CC)" CFLAGS="$(CFLAGS)" bash test/analysis/live-shells-sabotage.sh $(BUILD)/live-shells-sabotage
 
 analysis-engine-identity: $(LIB)
@@ -755,6 +794,12 @@ mix-engine-identity:
 flavours: $(LIBS_ALL) test/omxdsp_flavour.c $(HEADERS) | $(BUILD)
 	CC="$(CC)" NM="$(NM)" bash tools/flavour-check.sh $(BUILD)/flavour "$(TESTFLAGS)" \
 	  $(LIB) $(LIB_CONTRACTS) $(LIB_TSAN)
+
+# flavour-check's TSan probe names its own failure (it does not link; TSan's mapping fatal; anything else) and runs
+# under setarch -R where that is allowed: a stand-in compiler and setarch act out each case.
+.PHONY: flavour-probe-sabotage
+flavour-probe-sabotage: $(LIBS_ALL) test/omxdsp_flavour.c tools/flavour-check.sh test/flavour-probe-sabotage.sh | $(BUILD)
+	CC="$(CC)" NM="$(NM)" TMPDIR="$(abspath $(BUILD))" bash test/flavour-probe-sabotage.sh $(LIB) $(LIB_CONTRACTS) $(LIB_TSAN) "$(TESTFLAGS)"
 
 # copy-check runs alone, before the rest: under the test job's -j it once missed a planted copy
 # while the other checks ran beside it (#227), and a check that can miss a planted copy can pass a
@@ -840,9 +885,12 @@ $(RT_GATE): tools/rt-gate/omx-rt-gate.c | $(BUILD)
 	$(CC) $(CFLAGS_PLAIN) -DOMX_RT_GATE_DATADIR='"$(DATADIR)/omxdsp/rt-gate"' -o $@ $< $(LDFLAGS)
 
 # -O0 -fno-builtin: every case calls the real symbol, none folded or inlined away
+# jack_port_get_buffer (host-buffer) is measured with JACK where jack.pc is found, and named SKIPPED where it is not
+RT_GATE_ARM_JACK := $(shell pkg-config --exists jack 2>/dev/null && echo -DOMX_RT_GATE_ARM_JACK $$(pkg-config --cflags jack))
+RT_GATE_ARM_JACK_LIBS := $(if $(RT_GATE_ARM_JACK),$(shell pkg-config --libs jack))
 $(RT_GATE_ARM): tools/rt-gate/externals-arm.c | $(BUILD)
 	@mkdir -p $(@D)
-	$(CC) -O0 -fno-builtin -Wall -Wextra -Werror -o $@ $< -lm
+	$(CC) -O0 -fno-builtin -Wall -Wextra -Werror $(RT_GATE_ARM_JACK) -o $@ $< -lm $(RT_GATE_ARM_JACK_LIBS)
 
 # the thread tags: every function the shipped headers declare carries exactly one `@thread audio|worker|control`
 # in the comment above it, under each set of flags a consumer builds with (the plain libm, this toolchain's
@@ -925,7 +973,8 @@ rt-gate-installed: rt-gate-ship | $(BUILD)
 .PHONY: rt-gate rt-gate-arm rt-gate-selftest rt-gate-sabotage rt-gate-tags rt-gate-selfrun rt-gate-ship install-rt-gate rt-gate-installed
 rt-gate-arm: $(RT_GATE_ARM) $(RT_GATE_TABLES)/classes.tbl
 	@awk '!/^#/ && NF && $$3 !~ /^externals-arm:/ { print "rt-gate-arm: " FILENAME ":" FNR ": " $$1 " names no externals-arm case"; bad = 1 } END { exit bad }' $(RT_GATE_TABLES)/classes.tbl
-	./$(RT_GATE_ARM) $$(awk '!/^#/ && NF { sub(/^externals-arm:/, "", $$3); print $$3 }' $(RT_GATE_TABLES)/classes.tbl)
+	. tools/rt-gate/jack2-env.sh; { jack2_env || true; }; \
+	  ./$(RT_GATE_ARM) $$(awk '!/^#/ && NF { sub(/^externals-arm:/, "", $$3); print $$3 }' $(RT_GATE_TABLES)/classes.tbl)
 
 rt-gate-selftest: $(RT_GATE) $(RT_GATE_FIXTURES) $(wildcard $(RT_GATE_TABLES)/*) $(RT_GATE_TAGS) $(RT_GATE_DIR)/graphs-release.stamp
 	CC="$(CC)" TMPDIR="$(abspath $(BUILD))" bash tools/rt-gate/selftest.sh $(abspath $(RT_GATE)) $(abspath $(RT_GATE_TABLES)) \
@@ -953,7 +1002,47 @@ check-package: $(CHECK_PACKAGE)
 	@echo "omxdsp: make check-package green"
 
 .PHONY: test-parallel
-test-parallel: lib checks gen-once suite negative magnitude-sabotage eq-sabotage curve-sabotage meter-view-sabotage geq-true-sabotage delay-taps-sabotage align-fdelay-sabotage pitch-rates-sabotage instance-rates-sabotage bandwidth-q-table bandwidth-q-sabotage eq-default-bands consumer perturb fdelay-sabotage doppler-sabotage onepole-sabotage note-map-sabotage threads threads-sabotage test-fx test-analysis test-engine-kernels test-mix flavours fastmath fastmath-diff fastmath-sabotage fastmath-plain fastmath-partial rt-gate rt-gate-sabotage
+test-parallel: lib checks gen-once suite negative magnitude-sabotage eq-sabotage curve-sabotage meter-view-sabotage rta-bands-sabotage geq-true-sabotage delay-taps-sabotage align-fdelay-sabotage pitch-rates-sabotage instance-rates-sabotage bandwidth-q-table bandwidth-q-sabotage eq-default-bands consumer perturb fdelay-sabotage doppler-sabotage onepole-sabotage note-map-sabotage threads threads-sabotage test-fx test-analysis test-engine-kernels test-mix flavours flavour-probe-sabotage fastmath fastmath-diff fastmath-sabotage fastmath-plain fastmath-partial rt-gate rt-gate-sabotage
+
+# ---- omx-rta-read (tools/omx-rta-read): the spectrum of a JACK signal, read and never fed; built where jack.pc is found
+#   make rta-read           the program
+#   make rta-read-test      the null test on a private dummy JACK server (test/rta-read/null-test.sh)
+#   make rta-read-sabotage  the null test fails a reader that feeds the mix and one whose taps are not one instant
+#   make rta-read-gate      its process callback judged whole by omx-rt-gate --abi jack, and three sabotages caught
+RTA_READ_DIR     = $(BUILD)/rta-read
+RTA_READ         = $(RTA_READ_DIR)/omx-rta-read
+RTA_READ_FIXTURE = $(RTA_READ_DIR)/rta-read-fixture
+RTA_READ_CFLAGS  = $(CFLAGS_PLAIN) $(FPFLAGS) $(INC)
+
+$(RTA_READ): tools/omx-rta-read/omx-rta-read.c $(HEADERS) $(ANALYSIS_HEADERS) $(MIX_HEADERS) | $(BUILD)
+	@mkdir -p $(@D)
+	$(CC) $(RTA_READ_CFLAGS) $$(pkg-config --cflags jack) -o $@ $< -lm $$(pkg-config --libs jack)
+
+$(RTA_READ_FIXTURE): test/rta-read/fixture.c | $(BUILD)
+	@mkdir -p $(@D)
+	$(CC) $(CFLAGS_PLAIN) $$(pkg-config --cflags jack) -o $@ $< -lm $$(pkg-config --libs jack)
+
+.PHONY: rta-read rta-read-test rta-read-sabotage rta-read-gate install-rta-read
+rta-read: $(RTA_READ)
+
+# Only the omx-rta-read package needs JACK: without jack.pc the program is not built, and install says so.
+install-rta-read:
+	@if pkg-config --exists jack; then \
+	  $(MAKE) --no-print-directory $(RTA_READ) && \
+	  install -d $(DESTDIR)$(BINDIR) $(DESTDIR)$(MANDIR)/man1 && \
+	  install -m 0755 $(RTA_READ) $(DESTDIR)$(BINDIR)/omx-rta-read && \
+	  install -m 0644 tools/omx-rta-read/omx-rta-read.1 $(DESTDIR)$(MANDIR)/man1/; \
+	else echo "install: omx-rta-read not built: no jack.pc"; fi
+
+rta-read-test: $(RTA_READ) $(RTA_READ_FIXTURE) test/rta-read/null-test.sh
+	TMPDIR="$(abspath $(BUILD))" bash test/rta-read/null-test.sh $(abspath $(RTA_READ)) $(abspath $(RTA_READ_FIXTURE))
+
+rta-read-sabotage: $(RTA_READ_FIXTURE) test/rta-read/sabotage.sh test/rta-read/null-test.sh tools/omx-rta-read/omx-rta-read.c
+	CC="$(CC)" TMPDIR="$(abspath $(BUILD))" bash test/rta-read/sabotage.sh $(abspath $(RTA_READ_FIXTURE)) $(RTA_READ_CFLAGS)
+
+rta-read-gate: $(RT_GATE) $(RT_GATE_TAGS) $(RT_GATE_DIR)/graphs-release.stamp test/rta-read/gate.sh tools/omx-rta-read/omx-rta-read.c
+	CC="$(CC)" TMPDIR="$(abspath $(BUILD))" bash test/rta-read/gate.sh $(abspath $(RT_GATE)) $(abspath $(RT_GATE_TABLES)) \
+	  $(abspath $(RT_GATE_GRAPHS)) $(abspath $(RT_GATE_TAGS)) "-I$(abspath include) -isystem $(CONTRACT_INC) $(FPFLAGS)"
 
 # ---- install ------------------------------------------------------------------------------------
 
@@ -975,7 +1064,7 @@ $(BUILD)/omxdsp-tsan.pc: omxdsp.pc.in include/omxdsp/omxdsp.h Makefile packaging
 	sed $(PC_SED) -e 's|@NAME@|omxdsp-tsan|' -e 's|@FLAVOUR@|contracts compiled in, under ThreadSanitizer|' \
 	    -e 's|@CFLAGS@| $(TSAN_CFLAGS) $(MVEC_CFLAGS)|' -e 's|@LIBS@| $(TSAN_LIBS) $(MVEC_LIBS)|' $< | sed 's/ *$$//' > $@
 
-install: $(LIBS_ALL) $(PC_ALL) $(EXPORTS) install-rt-gate
+install: $(LIBS_ALL) $(PC_ALL) $(EXPORTS) install-rt-gate install-rta-read
 	install -d $(DESTDIR)$(INCLUDEDIR)/omxdsp/fx $(DESTDIR)$(INCLUDEDIR)/omxdsp/analysis $(DESTDIR)$(INCLUDEDIR)/omxdsp/mix $(DESTDIR)$(LIBDIR)/pkgconfig \
 	  $(DESTDIR)$(BINDIR) $(DESTDIR)$(DATADIR)/omxdsp $(DESTDIR)$(MANDIR)/man1
 	install -m 0644 include/omxdsp/*.h $(DESTDIR)$(INCLUDEDIR)/omxdsp/
@@ -990,6 +1079,8 @@ install: $(LIBS_ALL) $(PC_ALL) $(EXPORTS) install-rt-gate
 	install -m 0644 $(EXPORTS) $(DESTDIR)$(DATADIR)/omxdsp/
 	install -m 0644 test/analysis/hrp_peaking_corpus.h $(DESTDIR)$(DATADIR)/omxdsp/
 	install -m 0644 vectors/meter-view.json $(DESTDIR)$(DATADIR)/omxdsp/meter-view-vectors.json
+	install -m 0644 vectors/rta-bands.json $(DESTDIR)$(DATADIR)/omxdsp/rta-bands-vectors.json
+	install -m 0644 vectors/rta-delta.json $(DESTDIR)$(DATADIR)/omxdsp/rta-delta-vectors.json
 	install -m 0755 tools/omx-dsp-copy-check.sh $(DESTDIR)$(BINDIR)/omx-dsp-copy-check
 	install -m 0644 omx-dsp-copy-check.1 $(DESTDIR)$(MANDIR)/man1/
 
@@ -1044,6 +1135,12 @@ bench-flanger: tools/flanger-cost.c $(LIB) $(HEADERS) $(FX_HEADERS) | $(BUILD)
 #   make fuzz                   build every harness
 #   make fuzz-run FUZZ_TIME=60  run each for the budget from its seed corpus; red on any crash, the
 #                               crashing input left in fuzz/findings/
+#   make fuzz-sabotage          each patch of fuzz/sabotage/ must make its harness abort on a seed, at the
+#                               check its header names
+#   make fuzz-records           each check's mutant: and input: record, alone, must make that check abort on
+#                               that seed; red on a check with no record and no not-a-property line
+#   make fuzz-coverage          line coverage of the library each harness reaches over its seed corpus, red
+#                               below fuzz/coverage-floor.txt or on a property check no seed reaches
 #   make fuzz-corpus            regenerate fuzz/corpus/ from the library's own tables (fuzz/gen-corpus.c)
 FUZZ_CC        ?= clang
 FUZZ_TIME      ?= 60
@@ -1069,6 +1166,43 @@ fuzz: $(FUZZ_BINS)
 
 fuzz-run: fuzz
 	FUZZ_BUILD=$(FUZZ_BUILD) FUZZ_TIME=$(FUZZ_TIME) fuzz/run.sh $(FUZZ_HARNESSES)
+
+fuzz-sabotage:
+	FUZZ_BUILD=$(FUZZ_BUILD) MAKE="$(MAKE)" fuzz/sabotage.sh
+
+# Each record built plain and native with fuzz/standalone.c for its driver, no sanitizer, with the
+# contracts, as the OSS Verify coverage build is.
+fuzz-records:
+	FUZZ_BUILD=$(FUZZ_BUILD) FUZZ_CC=$(FUZZ_CC) FPFLAGS="$(FPFLAGS)" fuzz/records.sh $(FUZZ_HARNESSES)
+
+# The coverage witness: the same harnesses without sanitizers, instrumented for llvm-cov, each run once over
+# its seed corpus (-runs=0 executes the corpus and nothing else); the llvm-cov and llvm-profdata of
+# FUZZ_CC's own LLVM.
+FUZZ_COV_BUILD := $(FUZZ_BUILD)/cov
+FUZZ_COV_FLAGS := -O0 -g -std=gnu11 -DOMX_CONTRACTS $(FPFLAGS) -fprofile-instr-generate -fcoverage-mapping
+FUZZ_COV_OBJS  := $(patsubst src/%.c,$(FUZZ_COV_BUILD)/obj/%.o,$(SRC))
+LLVM_COV       ?= llvm-cov
+LLVM_PROFDATA  ?= llvm-profdata
+
+$(FUZZ_COV_BUILD)/obj/%.o: src/%.c $(HEADERS) $(ANALYSIS_HEADERS)
+	@mkdir -p $(@D)
+	$(FUZZ_CC) $(FUZZ_COV_FLAGS) $(INC) -c -o $@ $<
+
+$(FUZZ_COV_BUILD)/libomxdsp.a: $(FUZZ_COV_OBJS)
+	$(AR) rcs $@ $(FUZZ_COV_OBJS)
+
+$(FUZZ_COV_BUILD)/fuzz_%: fuzz/fuzz_%.c $(FUZZ_DEPS) $(FUZZ_COV_BUILD)/libomxdsp.a
+	$(FUZZ_CC) $(FUZZ_COV_FLAGS) -fsanitize=fuzzer $(INC) -Ifuzz $< $(FUZZ_COV_BUILD)/libomxdsp.a -lm -o $@
+
+fuzz-coverage: $(FUZZ_HARNESSES:%=$(FUZZ_COV_BUILD)/fuzz_%)
+	@set -e; for h in $(FUZZ_HARNESSES); do \
+	  rm -f $(FUZZ_COV_BUILD)/$$h.profraw; \
+	  LLVM_PROFILE_FILE=$(FUZZ_COV_BUILD)/$$h.profraw $(FUZZ_COV_BUILD)/fuzz_$$h -runs=0 \
+	      fuzz/corpus/$$h/ >$(FUZZ_COV_BUILD)/$$h.log 2>&1 || \
+	    { cat $(FUZZ_COV_BUILD)/$$h.log; echo "fuzz-coverage: fuzz_$$h failed on its own corpus"; exit 1; }; \
+	  $(LLVM_PROFDATA) merge -sparse $(FUZZ_COV_BUILD)/$$h.profraw -o $(FUZZ_COV_BUILD)/$$h.profdata; \
+	done
+	@LLVM_COV=$(LLVM_COV) fuzz/coverage.sh $(FUZZ_COV_BUILD) $(FUZZ_HARNESSES)
 
 $(FUZZ_BUILD)/fuzz-gen-corpus: fuzz/gen-corpus.c fuzz/fuzz_fx.c $(FUZZ_DEPS) $(LIB_CONTRACTS)
 	@mkdir -p $(@D)

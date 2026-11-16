@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2026 Pau Aliagas <linuxnow@gmail.com>
 Name: omx-dsp
-Version: 0.32.0
+Version: 0.32.4
 Release: 1%{?dist}
 License: GPL-3.0-or-later
 Summary: The audio toolbox of the OpenMixer console, as a real-time-safe C library
@@ -15,8 +15,14 @@ BuildRequires: binutils
 BuildRequires: gawk
 BuildRequires: diffutils
 BuildRequires: pkgconfig
-BuildRequires: omx-contract-devel >= 3.9.0
+BuildRequires: omx-contract-devel >= 3.18.0
 BuildRequires: omx-contract-devel < 4
+# The JACK headers by pkgconfig(jack), so a host with PipeWire's JACK (the build image preinstalls its devel package)
+# builds this; and jack2's RUNTIME by name, jackd and its libjack, which check-package's omx-rt-gate host-buffer arm
+# starts and loads, failing by name on PipeWire's. It installs beside PipeWire's JACK libraries. A build requirement
+# only: no package of this spec requires jack2 (omx-rta-read needs libjack.so.0, which either provides).
+BuildRequires: pkgconfig(jack)
+BuildRequires: jack-audio-connection-kit
 
 # Headers and a static archive only: nothing of this package is loaded at run time.
 %global debug_package %{nil}
@@ -36,7 +42,7 @@ Its documentation is on openmixer.org.
 %package devel
 Summary: Headers and static library to build on the OpenMixer audio toolbox
 Provides: %{name}-static = %{version}-%{release}
-Requires: omx-contract-devel >= 3.9.0
+Requires: omx-contract-devel >= 3.18.0
 Requires: omx-contract-devel < 4
 Requires: %{name}-contract = %{version}-%{release}
 
@@ -49,19 +55,31 @@ Requires: gcc
 omx-rt-gate proves that the real-time code of a plugin or an audio engine
 never allocates, locks, sleeps, does I/O or logs. It compiles each real-time
 source with the project's own flags, reads the compiler's call graph, finds the
-functions a host calls from its audio thread in the plugin's LV2, CLAP or
-PipeWire tables, and follows every call from there, through libomxdsp's own
-code too. Each finding names the call, its place and the path from the entry
-point. The tables it judges against ship with it: one forbidden list, one
+functions a host calls from its audio thread in the plugin's LV2, CLAP,
+PipeWire or JACK tables, and follows every call from there, through libomxdsp's
+own code too. Each finding names the call, its place and the path from the
+entry point. The tables it judges against ship with it: one forbidden list, one
 class table and the thread roles of each ABI, with libomxdsp's thread tags and
 call graphs.
+Its documentation is on openmixer.org.
+
+%package -n omx-rta-read
+Summary: The spectrum of a JACK signal, read and never fed
+
+%description -n omx-rta-read
+omx-rta-read reads the spectrum of a processor's signal in a JACK graph, what
+it is given and what it gives, and writes it as log-spaced bands, one JSON line
+ten times a second, for a panel to draw. It is a JACK client with input ports
+only, connected only from the ports it watches, so it never feeds the mix. It
+runs only while something reads it. The window, the bands and their gates are
+the OpenMixer console's, from libomxdsp.
 Its documentation is on openmixer.org.
 
 %package contract
 Summary: omx-dsp's kernel and instance declarations, for programs that read them at run time
 BuildArch: noarch
 # the declarations live in omx-contract's contract directory and are read against its schema; a floor only
-Requires: omx-contract-data >= 3.9.0
+Requires: omx-contract-data >= 3.18.0
 Requires: omx-contract-data < 4
 
 %description contract
@@ -86,7 +104,7 @@ Its documentation is on openmixer.org.
 
 %build
 %set_build_flags
-%make_build lib rt-gate-ship
+%make_build lib rt-gate-ship rta-read
 
 %install
 %make_install PREFIX=%{_prefix} LIBDIR=%{_libdir} INCLUDEDIR=%{_includedir}
@@ -110,6 +128,8 @@ Its documentation is on openmixer.org.
 %exclude %{_bindir}/omx-rt-gate
 %exclude %{_mandir}/man1/omx-rt-gate.1*
 %exclude %{_datadir}/omxdsp/rt-gate/
+%exclude %{_bindir}/omx-rta-read
+%exclude %{_mandir}/man1/omx-rta-read.1*
 
 %files -n omx-rt-gate
 %license LICENSE
@@ -117,12 +137,76 @@ Its documentation is on openmixer.org.
 %{_mandir}/man1/omx-rt-gate.1*
 %{_datadir}/omxdsp/rt-gate/
 
+%files -n omx-rta-read
+%license LICENSE
+%{_bindir}/omx-rta-read
+%{_mandir}/man1/omx-rta-read.1*
+
 %files contract
 %license LICENSE
 %doc README.md
 %{_datadir}/omx-contract/contract.d/3/omx-dsp/
 
 %changelog
+* Sun Nov 15 2026 Pau Aliagas <linuxnow@gmail.com> - 0.32.4-1
+- curve: the drive family, a drive's transfer curve sample in to sample out
+  through the drive kernel's own control mapping and biased shaper; roles
+  drive, tone, model, mix and output, the unit pc, the sample extents. The
+  TypeScript twin draws it too. Added names only; the three moved curve
+  counts are proven in tools/patch-count-proofs.txt.
+- patch-names-check: a count or size macro whose value moves in a patch
+  needs its proof line.
+
+* Sun Nov 15 2026 Pau Aliagas <linuxnow@gmail.com> - 0.32.3-1
+- packaging: the JACK headers by pkgconfig(jack) again, so the build image's
+  PipeWire JACK devel package satisfies them, and jack2's runtime
+  (jack-audio-connection-kit: jackd, libjack) by name for check-package's
+  omx-rt-gate host-buffer arm. 0.32.2's by-name jack2 devel requirement
+  conflicted with the preinstalled PipeWire one, and its RPMs were not built.
+  No built package requires jack2.
+- flavour-check: the TSan consumer runs under setarch -R; where that is not
+  allowed, TSan's "unexpected memory mapping" (address randomisation) is NOT
+  RUN by name instead of failing the package build at random.
+- Nothing in the library, its headers or the TypeScript twins changes.
+
+* Sun Nov 15 2026 Pau Aliagas <linuxnow@gmail.com> - 0.32.2-1
+- rta: omx_rta_bands, the spectrum analyser's band reduction (log-spaced bands
+  from 20 Hz to the lower of 20 kHz and Nyquist, each band's RMS level and
+  peak, the low-zoom tier under 300 Hz, the quiet gate at -60 dB), and its
+  TypeScript twin aggregateSpectrumBands, held by one vector file (#24, #31).
+- rta: omx_rta_band_delta, the difference of two taps (POST - PRE per band,
+  the wedges past a 0.4 dB deadband), and its twin bandDelta, held by one
+  vector file (#24, #31).
+- rta: the analyser's numbers declared in rta.json: band limits, tier
+  crossover, quiet gates, refresh rate, low-zoom advance, level window and
+  grid, graticule frequencies, the difference's deadband (#24, #31).
+- rt-gate: the host-buffer class, closed to jack_port_get_buffer, measured by
+  the externals arm on jack2; jack.abi judges a JACK process callback whole
+  (#24, #31).
+- omx-rta-read: new package, the spectrum of a JACK signal read and never
+  fed, before and after a processor, with their difference; null-tested on a
+  private JACK server (#24, #31).
+- fbs: the placement's calls for the operator's edits, the shared EQ cap and
+  a restored band (set_others, remove, edit, seat); FBS_RING_MEMORY_SLOTS
+  (#27).
+- hrp: the placement and stepping in C (omx_hrp_place.h) and its TypeScript
+  twin, held by one vector file; the console's clamp shared by both
+  placements (#30).
+- lint: the patch-release policy written down (BUILDING.md) and enforced:
+  patch-names-check reads every header and every declaration, allows a
+  patch to add and refuses one that removes or changes (#33).
+- fuzz: the bell, converter and take checks carry their records (#14, #17).
+- Additive: no existing function, signature, constant, behaviour or package
+  changes.
+
+* Fri Nov 13 2026 Pau Aliagas <linuxnow@gmail.com> - 0.32.1-1
+- Built against omx-contract >= 3.18.0 and below 4 (was 3.9.0), the newest the
+  channel serves, with its ceiling (D30).
+- The organisation's name: FreeMixer becomes Open-Mixer and OpenMixer; the
+  package metadata names the Open-Mixer repository.
+- release: the DEBs built beside the RPMs; a staged run publishes to the
+  staging channel (#1).
+
 * Fri Nov 06 2026 Pau Aliagas <linuxnow@gmail.com> - 0.32.0-1
 - rt-gate: omx-rt-gate, the one static real-time gate, in its own package
   omx-rt-gate: the consumer's units compiled at -O0 -fno-inline

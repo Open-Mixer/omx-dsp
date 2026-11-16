@@ -26,6 +26,137 @@
       "value": 32768,
       "doc": "The largest RTA FFT the native ring holds — generated into `omx_contract_limits.h` as `OMX_RTA_FFT_SIZE_MAX`.",
       "unit": ""
+    },
+    {
+      "name": "RTA_BAND_F_MIN",
+      "source": {
+        "path": "spectrum-bands.ts",
+        "export": "BAND_F_MIN"
+      },
+      "value": 20,
+      "doc": "The lowest frequency any spectrum band covers; below it is infrasonic and not drawn.",
+      "unit": "Hz"
+    },
+    {
+      "name": "RTA_BAND_F_MAX_CAP",
+      "source": {
+        "path": "spectrum-bands.ts",
+        "export": "BAND_F_MAX_CAP"
+      },
+      "value": 20000,
+      "doc": "The highest frequency any spectrum band covers, before the Nyquist clamp (omx_rta_band_f_max).",
+      "unit": "Hz"
+    },
+    {
+      "name": "RTA_TIER_CROSSOVER_HZ",
+      "source": {
+        "path": "spectrum-bands.ts",
+        "export": "TIER_CROSSOVER_HZ"
+      },
+      "value": 300,
+      "doc": "A band centred below this samples the LOW (decimated) tier when the reading carries one; at or above it, the HIGH tier. Where the high tier's ~5.86 Hz bins still give ~51 bins per octave, above the finest panel's density.",
+      "unit": "Hz"
+    },
+    {
+      "name": "RTA_BAND_GATE_DB",
+      "source": {
+        "path": "spectrum-bands.ts",
+        "export": "BAND_GATE_DB"
+      },
+      "value": -60,
+      "doc": "Quiet gate of the band reduction: when no band rises above this, every band reads as silence, so a rig's idle floor never draws as a flat block. Keyed on the loudest band, not per band.",
+      "unit": "dB"
+    },
+    {
+      "name": "RTA_LEVEL_DB_MIN",
+      "source": {
+        "path": "spectrum.ts",
+        "export": "DB_MIN"
+      },
+      "value": -72,
+      "doc": "The floor of a spectrum display's level window: the bottom of the frame, every surface.",
+      "unit": "dB"
+    },
+    {
+      "name": "RTA_LEVEL_DB_MAX",
+      "source": {
+        "path": "spectrum.ts",
+        "export": "DB_MAX"
+      },
+      "value": 0,
+      "doc": "The ceiling of a spectrum display's level window: the top of the frame, where a band's peak reaching it draws a clip tick.",
+      "unit": "dB"
+    },
+    {
+      "name": "RTA_LEVEL_GRID_DB",
+      "source": {
+        "path": "spectrum.ts",
+        "export": "DB_GRID_STEP"
+      },
+      "value": 12,
+      "doc": "The spacing of a spectrum display's one dB graticule, from the ceiling down to the floor.",
+      "unit": "dB"
+    },
+    {
+      "name": "RTA_HZ",
+      "source": {
+        "path": "rta.ts",
+        "export": "RTA_HZ"
+      },
+      "value": 10,
+      "doc": "How often a watched spectrum is read and published: an operator-cadence poll, never the audio thread.",
+      "unit": "Hz"
+    },
+    {
+      "name": "RTA_LOW_ADVANCE",
+      "source": {
+        "path": "rta.ts",
+        "export": "LOW_TIER_REFRESH_FRACTION"
+      },
+      "value": 0.25,
+      "doc": "How far the low zoom's window must have advanced, as a fraction of that window, before it is recomputed; between recomputes the last zoom rides the fresh main spectrum unchanged.",
+      "unit": ""
+    },
+    {
+      "name": "RTA_TAP_GATE_DB",
+      "source": {
+        "path": "spectrum-bands.ts",
+        "export": "RTA_TAP_GATE_DB"
+      },
+      "value": -60,
+      "doc": "Quiet gate of a tap's raw spectrum, before any banding: when no bin rises above this the whole tap reads as the floor. The console's overlay frame applies it; a banded reading is gated by RTA_BAND_GATE_DB instead.",
+      "unit": "dB"
+    },
+    {
+      "name": "RTA_GRID_FREQS",
+      "source": {
+        "path": "spectrum.ts",
+        "export": "GRID_FREQS"
+      },
+      "value": [
+        20,
+        50,
+        100,
+        200,
+        500,
+        1000,
+        2000,
+        5000,
+        10000,
+        20000
+      ],
+      "doc": "The frequencies of a spectrum display's labelled vertical graticule lines, Hz, on the log frequency axis: the decades and their 2 and 5 steps from 20 Hz to 20 kHz, every surface.",
+      "unit": "Hz"
+    },
+    {
+      "name": "RTA_DELTA_DEADBAND_DB",
+      "source": {
+        "path": "eqCurveGeom.ts",
+        "export": "DELTA_DEADBAND"
+      },
+      "value": 0.4,
+      "doc": "The smallest difference between two taps of a spectrum, POST - PRE in dB, that draws a wedge: a pair of neighbouring bands is a wedge when either band's difference reaches it. The console's overlay held it as 0.004 of its 100 dB span.",
+      "unit": "dB"
     }
   ]
 }
