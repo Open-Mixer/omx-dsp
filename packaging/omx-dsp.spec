@@ -15,8 +15,8 @@ BuildRequires: binutils
 BuildRequires: gawk
 BuildRequires: diffutils
 BuildRequires: pkgconfig
+# The omx-contract floors are GENERATED from packaging/deps.txt by Open-Mixer/.github deps-render (render.sh --write).
 BuildRequires: omx-contract-devel >= 3.18.0
-BuildRequires: omx-contract-devel < 4
 # The JACK headers by pkgconfig(jack), so a host with PipeWire's JACK (the build image preinstalls its devel package)
 # builds this; and jack2's RUNTIME by name, jackd and its libjack, which check-package's omx-rt-gate host-buffer arm
 # starts and loads, failing by name on PipeWire's. It installs beside PipeWire's JACK libraries. A build requirement
@@ -43,7 +43,6 @@ Its documentation is on openmixer.org.
 Summary: Headers and static library to build on the OpenMixer audio toolbox
 Provides: %{name}-static = %{version}-%{release}
 Requires: omx-contract-devel >= 3.18.0
-Requires: omx-contract-devel < 4
 Requires: %{name}-contract = %{version}-%{release}
 
 %package -n omx-rt-gate
@@ -80,7 +79,6 @@ Summary: omx-dsp's kernel and instance declarations, for programs that read them
 BuildArch: noarch
 # the declarations live in omx-contract's contract directory and are read against its schema; a floor only
 Requires: omx-contract-data >= 3.18.0
-Requires: omx-contract-data < 4
 
 %description contract
 omx-dsp's package of omx-contract's contract directory: the declarations of

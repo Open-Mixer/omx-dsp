@@ -305,8 +305,8 @@ it.
 The facts no single package implements (the declared sample rates, the parameter scales) stay in
 Open-Mixer/omx-contract, read through `<omxcontract/omx_contract_limits.h>`, which the definitions
 header includes. That dependency is declared once, in the packaging: `packaging/omx-dsp.spec`
-(`BuildRequires`, `Requires`) and `debian/control` (`Build-Depends`, `Depends`) carry the same floor
-and the same ceiling, the next major (`>= 3.18.0` and `< 4`), and `omxdsp.pc` requires the same range. Install
+(`BuildRequires`, `Requires`) and `debian/control` (`Build-Depends`, `Depends`) carry the same floor,
+generated from `packaging/deps.txt` (floors only, no ceiling), and `omxdsp.pc` requires the same floor. Install
 it from the OpenMixer channel with the rest of the build dependencies:
 
     dnf builddep packaging/omx-dsp.spec     # Fedora, with the OpenMixer repository added
@@ -316,8 +316,8 @@ it from the OpenMixer channel with the rest of the build dependencies:
 floor the spec declares, it prints the package's include directory; otherwise the build stops, naming
 the package, the floor and the version installed. The script reads the floor; the ceiling is held by the package managers and pkg-config.
 Nothing is downloaded and no version is pinned anywhere else. `tools/contract-include-selftest.sh`
-(`make checks`) holds the script to that floor, and the spec, `debian/control` and `omxdsp.pc.in` to the same
-floor and the ceiling `< 4`; a ceiling missing from any of them is red.
+(`make checks`) holds the script to that floor, and the spec, `debian/control` and `omxdsp.pc.in` to the floor
+`packaging/deps.txt` declares; a ceiling written in any of them is red.
 
 `OMX_CONTRACT_INC=<dir>` names another include directory (one that holds `omxcontract/`) and skips the
 version check. The perturbation arms use it, and so can you: render a contract with one value moved
