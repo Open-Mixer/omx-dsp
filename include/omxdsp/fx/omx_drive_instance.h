@@ -122,7 +122,7 @@ typedef struct {
  * each clamped into its declared travel, a non-finite word reading as the declared default. The one mapping:
  * {@link omx_drive_instance_resolve} applies it to the atom it runs, and omx_curve_points() draws the drive's
  * transfer curve through it, so the curve is what the kernel runs at those words. Pure.
- * @thread any
+ * @thread audio
  */
 static inline void omx_drive_instance_controls(struct omx_drive *o, float amount, float character, float mix,
                                                float trim, int curve) {

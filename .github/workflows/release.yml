@@ -72,7 +72,7 @@ jobs:
     with:
       staged: ${{ inputs.staged == true }}
       package-name: omx-dsp
-      binary-names: libomxdsp-dev omx-rt-gate
+      binary-names: libomxdsp-dev omx-rt-gate omx-dsp-contract
       publish: ${{ github.event_name == 'push' || inputs.publish == true }}
       dependencies: ''
       runner: ${{ inputs.runner || 'ubuntu-latest' }}
