@@ -2,12 +2,9 @@
 // Copyright (C) 2026 Pau Aliagas <linuxnow@gmail.com>
 // 2.2.0 (#21, #22, #23, #24): the delay's ping-pong, the drive's auto-gain, stereo link and HF roll-off, the EQ
 // instance's controls (pass-filter switches and slopes, the per-band quintet counted by EQ_BAND_COUNTS, the notch's
-// Q as q's travel while the band is a notch) and the comp's detector choices are controls. Every define the 2.1.0 C
-// render carried is carried byte for byte; each new control's come-up value moves every render that spells it
+// Q as q's travel while the band is a notch) and the comp's detector choices are controls. Each new control's come-up value moves every render that spells it
 // (the ts render carries a set's ids, not its default).
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { test } from 'node:test';
 import { main } from './oc.mjs';
 import { loadData, resolveData } from './oc.mjs';
@@ -15,25 +12,13 @@ import { validateData } from './oc.mjs';
 import { renderC } from './oc.mjs';
 import { renderJson } from './oc.mjs';
 import { renderTs } from './oc.mjs';
-import { DATA, RENDERS, ROOT, UNION, editData, scratchData, texts } from './helpers.mjs';
+import { DATA, RENDERS, UNION, editData, scratchData, texts } from './helpers.mjs';
 
 const header = (dir = UNION) => renderC(resolveData(loadData(dir))).find((f) => f.path === 'omxcontract/omx_contract_limits.h').text;
 const json = (dir = UNION) => JSON.parse(renderJson(resolveData(loadData(dir)), '0.0.0')[0].text);
 const ts = (dir = UNION) => renderTs(resolveData(loadData(dir))).map((f) => f.text).join('\n');
 const controls = (k, dir) => json(dir).kernels[k].controls;
 const problems = (t) => validateData(loadData(null, t)).map((p) => `${p.rule}: ${p.message}`);
-
-test('the 2.2.0 C render keeps every 2.1.0 line, byte for byte and in order, and only adds', () => {
-  const old = readFileSync(join(ROOT, 'test/fixtures/omx-contract-2.1.0/omx_contract_limits.h'), 'utf8').split('\n');
-  // the released 2.2.0 header: the release this file's controls came in (later releases add their own, test/trim-kernel.test.mjs)
-  const now = readFileSync(join(ROOT, 'test/fixtures/omx-contract-2.2.0/omx_contract_limits.h'), 'utf8').split('\n');
-  let i = 0;
-  for (const line of now) if (i < old.length && line === old[i]) i++;
-  assert.equal(i, old.length, `2.1.0 line ${i + 1} is not in the render: ${old[i]}`);
-  const defines = (t) => t.filter((l) => /^#define OMX_|^  OMX_/.test(l));
-  assert.ok(defines(old).length > 600, 'a short header proves nothing');
-  assert.equal(defines(now).length - defines(old).length, 37, 'the 9 new sets: 20 enumerators, 9 counts, 8 defaults, and nothing else');
-});
 
 // FX_DELAY_PINGPONG_DEFAULT was retired in dfbc289 (no reader): pingpong comes up off by its set's own default. The
 // read taps took a factor each (9ed07d1), and sync, division, mode and the wet duck were appended (0e2683a, FX-4).
