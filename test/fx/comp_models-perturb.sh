@@ -5,9 +5,9 @@
 # comp_models-perturb.sh — test/fx/comp_models.test.c sees each defect of the detector cascade the compressor models stand on.
 # Each sabotage is applied to a COPY of the include directory placed ahead of the real one, and the oracle built against it must go red
 # in the named arm:
-#   stages  — the cascade cut from four one-poles to three: arms A, B, C;
-#   release — the release poles made from the attack pole (the release law swapped for the attack's): arms A, B;
-#   attack  — the attack poles made from the release pole: arms A, C.
+#   stages  — the per-stage poles not taken to the 1/N power (each stage runs at the whole time constant): arms A, B, C;
+#   release — the release poles made from the attack pole (the release law swapped for the attack's): arm B;
+#   attack  — the attack poles made from the release pole: arm C.
 # The tree is never edited; a sed that matches nothing is a failure, not a skip.
 # Usage: CC=... CFLAGS=... comp_models-perturb.sh <scratch-dir>
 set -euo pipefail
@@ -41,11 +41,11 @@ sabotage() { # <name> <header under include/omxdsp> <sed expression> <arm>...
   done
 }
 
-sabotage stages omx_envelope.h 's|^#define OMX_DYN_ENV_STAGES 4$|#define OMX_DYN_ENV_STAGES 3|' A B C &
+sabotage stages omx_envelope.h 's|for (int s = 1; s < OMX_DYN_ENV_STAGES; s++) { a \*= e->attack_pole;|for (int s = 1; s < 1; s++) { a *= e->attack_pole;|' A B C &
 pids+=($!)
-sabotage release omx_envelope.h 's|r_ \*= e->release_pole;|r_ *= e->attack_pole;|; s|\*rc = powf(e->release_pole, x);|*rc = powf(e->attack_pole, x);|' A B &
+sabotage release omx_envelope.h 's|r_ \*= e->release_pole;|r_ *= e->attack_pole;|; s|\*rc = powf(e->release_pole, x);|*rc = powf(e->attack_pole, x);|' B &
 pids+=($!)
-sabotage attack omx_envelope.h 's|a \*= e->attack_pole;|a *= e->release_pole;|; s|\*ac = powf(e->attack_pole, x);|*ac = powf(e->release_pole, x);|' A C &
+sabotage attack omx_envelope.h 's|a \*= e->attack_pole;|a *= e->release_pole;|; s|\*ac = powf(e->attack_pole, x);|*ac = powf(e->release_pole, x);|' C &
 pids+=($!)
 failed=0
 for p in "${pids[@]}"; do wait "$p" || failed=1; done
