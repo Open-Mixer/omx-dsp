@@ -515,6 +515,21 @@ static void test_layout_refuses_a_rate_above_the_ceiling_with_a_fitting_pool(voi
   free(st); free(pool);
 }
 
+/* Review of #71, gap 2: omx_pool_take called directly, where next_free + len wraps the unsigned
+ * range. The summed form accepts the request and hands out a pointer past the pool. */
+static void test_pool_take_refuses_a_length_that_wraps(void) {
+  static float pool[100];
+  struct omx_reverb_state st;
+  memset(&st, 0, sizeof st);
+  st._pool = pool; st.pool_len = 100; st.next_free = 50;
+  float *p = omx_pool_take(&st, 0xFFFFFFF0u); /* 50 + len wraps to 34, which is below pool_len */
+  check(p == NULL && st._exhausted == 1 && st.next_free == 50, "a length whose sum wraps is refused, the cursor unmoved");
+  memset(&st, 0, sizeof st);
+  st._pool = pool; st.pool_len = 100; st.next_free = 50;
+  check(omx_pool_take(&st, 50) == pool + 50 && st.next_free == 100 && !st._exhausted, "presence: an exact fit is taken");
+  check(omx_pool_take(&st, 1) == NULL && st._exhausted == 1, "one float past the end is refused");
+}
+
 
 /* A pool too small to lay out must leave the reverb INERT — `_pool` NULL, so omx_reverb_process
  * returns immediately — rather than storing NULLs in the sub-buffers for the RT thread to
@@ -650,6 +665,7 @@ int main(void) {
     test_exhausted_pool_is_inert_not_a_crash();
     test_layout_refuses_what_does_not_fit();
     test_layout_refuses_a_rate_above_the_ceiling_with_a_fitting_pool();
+    test_pool_take_refuses_a_length_that_wraps();
   }
   printf("fx/reverb: %d checks, %d failures (%d rates)\n", g_checks, g_fail, (int)OMX_FX_ORACLE_RATE_COUNT);
   return g_fail == 0 ? 0 : 1;
