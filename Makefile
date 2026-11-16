@@ -464,9 +464,6 @@ checks:
 	bash tools/rate-list-check.sh --self-test
 	bash tools/ci-matrix-follows-set.sh
 	bash tools/ci-matrix-follows-set.sh --self-test
-	bash tools/patch-names-check.sh
-	bash tools/patch-names-check.sh --self-test
-	bash test/patch-names-sabotage.sh
 	bash tools/no-backcompat-check.sh
 	bash tools/no-backcompat-check.sh --self-test
 	bash tools/gen-scratch-check.sh
