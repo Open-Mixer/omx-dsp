@@ -92,6 +92,14 @@ typedef struct {
   uint32_t octave_hold_frames;
 } OmxHrpTrackConfig;
 
+/** 1 when `cfg` is a config omx_hrp_track_update accepts: non-NULL, `match_cents` and `steady_cents`
+ * finite and above 0. A caller that cannot report a refused update mid-stream checks this once up front.
+ * @thread any */
+static inline int omx_hrp_track_config_valid(const OmxHrpTrackConfig *cfg) {
+  return cfg && isfinite(cfg->match_cents) && cfg->match_cents > 0.0f && isfinite(cfg->steady_cents) &&
+         cfg->steady_cents > 0.0f;
+}
+
 /** @thread worker */
 static inline OmxHrpTrackConfig omx_hrp_track_config_default(void) {
   OmxHrpTrackConfig c;
@@ -145,10 +153,7 @@ static inline float omx_hrp_cents_between(float a_hz, float b_hz) {
  */
 static inline int omx_hrp_track_update(OmxHrpTracker *tracker, const OmxHrpVoiceSet *frame,
                                        const OmxHrpTrackConfig *cfg) {
-  if (!tracker || !frame || !cfg) return 0;
-  if (!isfinite(cfg->match_cents) || !(cfg->match_cents > 0.0f) || !isfinite(cfg->steady_cents) ||
-      !(cfg->steady_cents > 0.0f))
-    return 0;
+  if (!tracker || !frame || !omx_hrp_track_config_valid(cfg)) return 0;
   int claimed[OMX_HRP_MAX_TRACKS];
   int matched[OMX_HRP_MAX_VOICES];
   memset(claimed, 0, sizeof(claimed));
