@@ -464,6 +464,25 @@ static void test_reenable_clears_stale_tail(void) {
 }
 
 
+/* P0 door: a layout that does not fit is REFUSED, not published. A refused layout leaves the
+ * state inert and unpublished (`sr` 0, `_pool` NULL, the rate the process path never meets), so
+ * the insert is dry on purpose and the caller can tell. Today's silent result: the rate is
+ * stored on a state whose pool ran out. */
+static void test_layout_refuses_what_does_not_fit(void) {
+  static const float bad_rates[] = {384000.0f, 1.0e9f, 0.0f, -48000.0f};
+  for (unsigned i = 0; i < sizeof bad_rates / sizeof bad_rates[0]; i++) {
+    float *pool = calloc(OMX_REVERB_POOL_FLOATS, sizeof(float));
+    struct omx_reverb_state *st = calloc(1, sizeof(*st));
+    omx_reverb_state_layout(st, pool, OMX_REVERB_POOL_FLOATS, bad_rates[i]);
+    char b[160];
+    snprintf(b, sizeof b, "layout at %g Hz is refused: state unpublished (sr %g, pool %s)",
+             (double)bad_rates[i], (double)st->sr, st->_pool ? "bound" : "NULL");
+    check(st->sr == 0.0f && st->_pool == NULL, b);
+    free(st); free(pool);
+  }
+}
+
+
 /* A pool too small to lay out must leave the reverb INERT — `_pool` NULL, so omx_reverb_process
  * returns immediately — rather than storing NULLs in the sub-buffers for the RT thread to
  * dereference. REACHABLE: mix_reverb.h's per-rate table shows x3.71 headroom at 96 kHz and the
@@ -596,6 +615,7 @@ int main(void) {
     test_lowcut_attenuates_low_leaves_mid();
     test_reenable_clears_stale_tail();
     test_exhausted_pool_is_inert_not_a_crash();
+    test_layout_refuses_what_does_not_fit();
   }
   printf("fx/reverb: %d checks, %d failures (%d rates)\n", g_checks, g_fail, (int)OMX_FX_ORACLE_RATE_COUNT);
   return g_fail == 0 ? 0 : 1;
