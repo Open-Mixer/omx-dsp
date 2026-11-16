@@ -159,8 +159,13 @@ jobs:
           npm ci
           npm test 2>&1 | tee /tmp/ts-test.log
           grep -q 'linked against the tree' /tmp/ts-test.log
+      # the parallel jobs from the job's CPU quota and the runner's declared CPUs, never the host's nproc
+      - name: The parallel jobs this runner may run
+        uses: Open-Mixer/.github/.github/actions/jobs@openmixer-v1
+        with:
+          max: ${{ vars.OMX_RUNNER_CPUS || '3' }}
       - name: The EQ Q range moves the kernel and the twin together (omx-dsp#5)
-        run: make -j"$(nproc)" eq-q-range-sabotage
+        run: make -j"$OMX_JOBS" eq-q-range-sabotage
 
   contract-floor:
     name: below the omx-contract floor the build refuses (${{ matrix.image }})
