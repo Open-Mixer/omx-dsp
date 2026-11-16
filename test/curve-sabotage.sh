@@ -23,6 +23,8 @@
 #   drive-exciter  the exciter drawn as a crossfade, not added in parallel;
 #   drive-tone     a drive with no tone drawn at tone 0, not -1;
 #   drive-extents  a drive's default grid from -80 dB, not driveLevelMinDb.
+#   time-feedback an echo's level read as feedback^n, not feedback^(n-1) (the first echo at mix x feedback);
+#   time-predelay the reverb's onset gap dropped: the envelope starts at 0 ms whatever the predelay.
 # The tree is never edited; a sed that matches nothing is a failure, not a skip. The real suite, run by
 # `make suite`, is the control.
 # Usage: CC=… CFLAGS=… CONTRACT_INC=… curve-sabotage.sh <scratch-dir> <libomxdsp-contracts.a>
@@ -53,11 +55,11 @@ run() { # $1 = name, $2 = sed expression
     echo "curve-sabotage: FAIL — the suite passed with the $1 sabotage"
     exit 1
   fi
-  if ! grep -qE '^FAIL \[curve(-drive)?\]' "$log"; then
+  if ! grep -qE '^FAIL \[curve(-drive|-time)?\]' "$log"; then
     echo "curve-sabotage: FAIL — the $1 sabotage was not caught by the curve arm"
     exit 1
   fi
-  echo "curve-sabotage: $1 — $(grep -cE '^FAIL \[curve(-drive)?\]' "$log") curve checks fail, as they must"
+  echo "curve-sabotage: $1 — $(grep -cE '^FAIL \[curve(-drive|-time)?\]' "$log") curve checks fail, as they must"
 }
 
 run khz 's|  case OMX_CURVE_UNITS_KHZ: return t->value \* 1000.0;|  case OMX_CURVE_UNITS_KHZ: return t->value * 1024.0;|'
@@ -78,4 +80,6 @@ run drive-trim 's|  return (dry + o->mix \* delta) \* o->trim_lin;|  return dry 
 run drive-exciter 's|  const float delta = o->curve == OMX_DRIVE_EXCITER ? wet : wet - dry;|  const float delta = wet - dry;|'
 run drive-tone 's|tone ? (float)omx_curve_term_value(tone) : -1.0f,|tone ? (float)omx_curve_term_value(tone) : 0.0f,|'
 run drive-extents 's|    lo = OMX_CURVE_EXTENTS_DRIVE_LEVEL_MIN_DB;|    lo = -80.0;|'
-echo "curve-sabotage: all eighteen sabotages are caught"
+run time-feedback 's|      const double lin = wet > 0.0 \&\& f >= 0.0 ? wet \* pow(f, (double)(k - 1u)) : 0.0;|      const double lin = wet > 0.0 \&\& f >= 0.0 ? wet * pow(f, (double)k) : 0.0;|'
+run time-predelay 's|    double lv = t < pre_ms \|\| t >= end_ms ? floor_db : top_db + slope_db_per_ms \* (t - pre_ms);|    double lv = t >= end_ms ? floor_db : top_db + slope_db_per_ms * (t - pre_ms);|'
+echo "curve-sabotage: all twenty sabotages are caught"

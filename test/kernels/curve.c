@@ -53,9 +53,16 @@ static void arm_curve(void) {
   for (uint32_t k = 0; k < CURVE_GOLDEN_COUNT; k++) {
     double yu[OMX_CURVE_POINTS_MAX];
     struct omx_curve_mark mk[8];
-    struct omx_curve_extra ex = {yu, mk, 8u, 0u};
+    struct omx_curve_stem sm[OMX_CURVE_TAPS_MAX];
+    struct omx_curve_extra ex = {yu, mk, 8u, 0u, sm, OMX_CURVE_TAPS_MAX, 0u};
     code = -1;
     const uint32_t n = omx_curve_points_marked(CURVE_GOLDEN_REQUESTS[k].rq, x, y, OMX_CURVE_POINTS_MAX, &ex, &code);
+    /* a delay's vector is its stem train: time, level, shade and leg, each bit for bit (double arithmetic) */
+    ok(ex.nstems == CURVE_GOLDEN[k].nstems, "a golden request answers its stems", ex.nstems, CURVE_GOLDEN[k].nstems);
+    for (uint32_t m = 0; m < ex.nstems && m < CURVE_GOLDEN[k].nstems; m++)
+      ok(sm[m].t_ms == CURVE_GOLDEN[k].stems[m].t_ms && sm[m].level_db == CURVE_GOLDEN[k].stems[m].level_db &&
+             sm[m].shade == CURVE_GOLDEN[k].stems[m].shade && sm[m].leg == CURVE_GOLDEN[k].stems[m].leg,
+         "a golden stem: time, level, shade and leg bit for bit", sm[m].level_db, CURVE_GOLDEN[k].stems[m].level_db);
     ok(ex.nmarks == CURVE_GOLDEN[k].nmarks, "a golden request answers its marks", ex.nmarks, CURVE_GOLDEN[k].nmarks);
     for (uint32_t m = 0; m < ex.nmarks && m < CURVE_GOLDEN[k].nmarks; m++)
       ok(mk[m].freq_hz == CURVE_GOLDEN[k].marks[m].freq_hz && mk[m].q == CURVE_GOLDEN[k].marks[m].q &&
@@ -67,6 +74,14 @@ static void arm_curve(void) {
       ok(fabs(yu[i] - CURVE_GOLDEN[k].y_user[i]) <= CURVE_GOLDEN_EQ_TOL, "a golden user-only y within its bound", yu[i],
          CURVE_GOLDEN[k].y_user[i]);
     ok(code == OMX_CURVE_OK && n == CURVE_GOLDEN[k].n, "a golden request answers its point count", n, CURVE_GOLDEN[k].n);
+    if (CURVE_GOLDEN_REQUESTS[k].rq->kind == OMX_CURVE_DISPLAYS_TIME_RESPONSE) {
+      /* a time axis is double arithmetic (a log10 and a pow): bit for bit, as the transfer curves */
+      uint32_t same = 0;
+      for (uint32_t i = 0; i < n && i < CURVE_GOLDEN[k].n; i++) same += x[i] == CURVE_GOLDEN[k].x[i] && y[i] == CURVE_GOLDEN[k].y[i];
+      ok(same == n, "a golden time response, bit for bit", same, n);
+      printf("curve: golden %s, %u points, %u stems\n", CURVE_GOLDEN_REQUESTS[k].name, n, ex.nstems);
+      continue;
+    }
     const double tol = CURVE_GOLDEN_REQUESTS[k].rq->kind == OMX_CURVE_DISPLAYS_EQ_RESPONSE ? CURVE_GOLDEN_EQ_TOL : 0.0;
     double worst = 0.0;
     for (uint32_t i = 0; i < n && i < CURVE_GOLDEN[k].n; i++) {
@@ -108,7 +123,7 @@ static void arm_curve(void) {
   {
     double yu[OMX_CURVE_POINTS_MAX], all[OMX_CURVE_POINTS_MAX], sum[OMX_CURVE_POINTS_MAX];
     struct omx_curve_mark mk[4];
-    struct omx_curve_extra ex = {yu, mk, 4u, 0u}; /* three marks: the two FBS pools and the HRP */
+    struct omx_curve_extra ex = {yu, mk, 4u, 0u, NULL, 0u, 0u}; /* three marks: the two FBS pools and the HRP */
     const uint32_t n = omx_curve_points_marked(&CURVE_GOLDEN_FBS, x, y, OMX_CURVE_POINTS_MAX, &ex, &code);
     const struct omx_eq_band user[2] = {{OMX_EQ_PEAKING, 120.0, 3.0, 0.8, 1}, {OMX_EQ_HIGHSHELF, 4000.0, 2.0, 0.7071, 1}};
     const struct omx_eq_band every[5] = {user[0], user[1], {OMX_EQ_NOTCH, 2500.0, 0.0, 30.0, 1},
@@ -135,10 +150,10 @@ static void arm_curve(void) {
     ex.nmarks = 9u;
     omx_curve_points_marked(&CURVE_GOLDEN_EQ, x, y, OMX_CURVE_POINTS_MAX, &ex, &code);
     ok(code == OMX_CURVE_OK && ex.nmarks == 0u, "a request with no origin draws no mark", ex.nmarks, 0.0);
-    struct omx_curve_extra small = {yu, mk, 2u, 0u};
+    struct omx_curve_extra small = {yu, mk, 2u, 0u, NULL, 0u, 0u};
     ok(omx_curve_points_marked(&CURVE_GOLDEN_FBS, x, y, OMX_CURVE_POINTS_MAX, &small, &code) == 0u && code == OMX_CURVE_ROOM,
        "three marks for room of two: room", code, 0);
-    struct omx_curve_extra nouser = {NULL, mk, 4u, 0u};
+    struct omx_curve_extra nouser = {NULL, mk, 4u, 0u, NULL, 0u, 0u};
     ok(omx_curve_points_marked(&CURVE_GOLDEN_FBS, x, y, OMX_CURVE_POINTS_MAX, &nouser, &code) == 0u && code == OMX_CURVE_ROOM,
        "user_only with no buffer for it: room", code, 0);
     ok(omx_curve_points(&CURVE_GOLDEN_FBS, x, all, OMX_CURVE_POINTS_MAX, &code) == n && memcmp(all, sum, n * sizeof(double)) == 0,

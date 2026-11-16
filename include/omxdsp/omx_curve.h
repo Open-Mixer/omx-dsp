@@ -21,7 +21,12 @@
  * - a `transfer_curve` of the `drive` family: input dB to output dB like every transfer_curve, a steady level
  *   through the drive kernel's static path, its own control mapping (omx_drive_instance_controls()) and its own
  *   biased shaper (omx_drive_sample()), faded by the mix and scaled by the trim as omx_drive_process() does on
- *   the full band (omx_curve_drive(), the sample itself omx_curve_drive_sample()).
+ *   the full band (omx_curve_drive(), the sample itself omx_curve_drive_sample());
+ * - a `time_response` of the `delay` or `reverb` family (omx_curve_time()): x time in ms from 0, y level in dB
+ *   relative to a unit impulse, the picture's floor CURVE_EXTENTS `timeFloorDb`. A delay answers STEMS, one per
+ *   tap of the train omx_fx_delay_process() produces (struct omx_curve_stem, through struct omx_curve_extra), and
+ *   no point; a reverb answers the points of its decay envelope, the closed form of its longest loop
+ *   (REVERB_DECAY_LOOPS), and no stem. The answer says which it carries; a surface draws each array present.
  *
  * A missing term is a code, never a default (CURVE_CODES): no curve is drawn from a guess. The defaults that
  * are not guesses are the switches (a band or head filter with no `on` term runs) and the corner of a gain
@@ -37,8 +42,10 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "fx/omx_delay.h"
 #include "fx/omx_drive_instance.h"
 #include "fx/omx_eq_instance.h"
+#include "fx/omx_reverb.h"
 #include "omx_eq_design.h"
 #include "omx_gaincomp.h"
 #include "omx_gate.h"
@@ -60,6 +67,14 @@ enum omx_curve_code {
 /** @brief The most bands an `eq_response` request can index: each drawn band adds three anchors to at least two
  *         grid points, and the whole is at most CURVE_POINTS_MAX. */
 #define OMX_CURVE_BANDS_MAX ((OMX_CURVE_POINTS_MAX - 2u) / 3u)
+
+/** @brief One tap of a delay's `time_response`: where it lands, how loud, how bright, on which leg. */
+struct omx_curve_stem {
+  double t_ms;             /**< The tap's time, ms from the impulse. */
+  double level_db;         /**< Its level, dB relative to the impulse. */
+  double shade;            /**< Its brightness, 0..1: the tone low-pass's gain at Nyquist, raised to its passes. */
+  enum omx_curve_legs leg; /**< The leg it lands on (CURVE_LEGS). */
+};
 
 /** @brief A term's shape when the request gives none: every term but a band's `band_type` or `band_freq`. */
 #define OMX_CURVE_NO_SHAPE (-1)
@@ -92,6 +107,9 @@ struct omx_curve_request {
   uint32_t nterms;                   /**< Terms in `terms`. */
   int user_only;                     /**< Non-zero: omx_curve_points_marked() also answers the curve over the `user`
                                       *   bands alone, at the same x. */
+  double tempo_bpm;                  /**< The host's tempo, BPM, for a synced delay; 0 (an initializer that names none)
+                                      *   when the host hands none, and a synced delay is then OMX_CURVE_TERM_MISSING:
+                                      *   a tempo is never guessed. */
 };
 
 /** @brief A band of an `eq_response` whose origin is not `user`: where a surface marks what the corrector plants. */
@@ -113,22 +131,31 @@ struct omx_curve_extra {
   struct omx_curve_mark *marks; /**< One per drawn band whose origin is not `user`, in band order. */
   uint32_t mark_room;           /**< Room in `marks`. */
   uint32_t nmarks;              /**< Set to the marks written. */
+  struct omx_curve_stem *stems; /**< A delay's taps, in time order: the dry tap, then each echo; NULL when not asked. */
+  uint32_t stem_room;           /**< Room in `stems`: CURVE_TAPS_MAX always suffices. */
+  uint32_t nstems;              /**< Set to the stems written. */
 };
 
 /** @brief The wire words of CURVE_DISPLAYS, by value: the description's display words. */
-static const char *const OMX_CURVE_DISPLAY_WORDS[OMX_CURVE_DISPLAYS_COUNT] = {"eq_response", "transfer_curve"};
+static const char *const OMX_CURVE_DISPLAY_WORDS[OMX_CURVE_DISPLAYS_COUNT] = {"eq_response", "transfer_curve",
+                                                                            "time_response"};
 /** @brief The wire words of CURVE_FAMILIES, by value: the description's family words. */
 static const char *const OMX_CURVE_FAMILY_WORDS[OMX_CURVE_FAMILIES_COUNT] = {"eq",   "dynamics", "limiter",
-                                                                           "gate", "deesser",  "drive"};
+                                                                           "gate", "deesser",  "drive",
+                                                                           "delay", "reverb"};
 /** @brief The wire words of CURVE_ROLES, by value: the description's role words. */
 static const char *const OMX_CURVE_ROLE_WORDS[OMX_CURVE_ROLES_COUNT] = {
     "band_type", "band_freq", "band_gain", "band_q",  "band_on", "hpf_freq",   "hpf_slope",  "hpf_on",   "lpf_freq",
     "lpf_slope", "lpf_on",    "threshold", "ratio",   "knee",    "makeup",     "range",      "knee_start", "knee_end",
-    "drive",     "tone",      "model",     "mix",     "output"};
+    "drive",     "tone",      "model",     "mix",     "output",     "time",       "feedback",   "pingpong",
+    "sync",      "division",  "size",      "decay",   "algorithm", "predelay",  "damping",    "width",      "low_cut",
+    "high_cut"};
 /** @brief The wire words of CURVE_UNITS, by value: the param-contract extension's unit tokens. */
 static const char *const OMX_CURVE_UNIT_WORDS[OMX_CURVE_UNITS_COUNT] = {"hz",   "khz", "db",   "dbfs", "dbu",
                                                                         "lufs", "coef", "oct", "none", "ratio",
-                                                                        "pc"};
+                                                                        "pc", "ms", "s"};
+/** @brief The wire words of CURVE_LEGS, by value: the leg a delay's tap lands on. */
+static const char *const OMX_CURVE_LEG_WORDS[OMX_CURVE_LEGS_COUNT] = {"both", "left", "right"};
 /** @brief The wire words of CURVE_SHAPES, by value; `unshaped` is spelt `-`. */
 static const char *const OMX_CURVE_SHAPE_WORDS[OMX_CURVE_SHAPES_COUNT] = {
     "off", "bell", "lowshelf", "highshelf", "highpass", "lowpass", "notch", "-", "allpass1", "allpass2"};
@@ -197,7 +224,24 @@ static inline int omx_curve_unit_accepted(enum omx_curve_roles role, enum omx_cu
   case OMX_CURVE_ROLES_MODEL:
     return unit == OMX_CURVE_UNITS_NONE;
   case OMX_CURVE_ROLES_MIX:
-    return unit == OMX_CURVE_UNITS_PC;
+  case OMX_CURVE_ROLES_FEEDBACK:
+  case OMX_CURVE_ROLES_SIZE:
+  case OMX_CURVE_ROLES_DAMPING:
+  case OMX_CURVE_ROLES_WIDTH:
+    /* a share: the drive serves its mix in percent, the delay and the reverb theirs as a plain 0..1 */
+    return unit == OMX_CURVE_UNITS_PC || unit == OMX_CURVE_UNITS_NONE || unit == OMX_CURVE_UNITS_COEF;
+  case OMX_CURVE_ROLES_TIME:
+  case OMX_CURVE_ROLES_DECAY:
+  case OMX_CURVE_ROLES_PREDELAY:
+    return unit == OMX_CURVE_UNITS_MS || unit == OMX_CURVE_UNITS_S;
+  case OMX_CURVE_ROLES_PINGPONG:
+  case OMX_CURVE_ROLES_SYNC:
+  case OMX_CURVE_ROLES_DIVISION:
+  case OMX_CURVE_ROLES_ALGORITHM:
+    return unit == OMX_CURVE_UNITS_NONE;
+  case OMX_CURVE_ROLES_LOW_CUT:
+  case OMX_CURVE_ROLES_HIGH_CUT:
+    return unit == OMX_CURVE_UNITS_HZ || unit == OMX_CURVE_UNITS_KHZ;
   }
   return 0;
 }
@@ -216,8 +260,21 @@ static inline double omx_curve_term_value(const struct omx_curve_term *t) {
   case OMX_CURVE_UNITS_COEF:
     return t->role == OMX_CURVE_ROLES_BAND_GAIN ? (double)omx_lin_to_db((float)t->value) : t->value;
   case OMX_CURVE_UNITS_OCT: return omx_eq_octaves_q(t->value);
+  case OMX_CURVE_UNITS_S: return t->value * 1000.0; /* a time is read in ms */
   default: return t->value;
   }
+}
+
+/**
+ * @brief A share term (a mix, a feedback, a size, a damping, a width) as the kernel's 0..1: percent read down by 100,
+ *        a plain value or a coefficient as it is.
+ * @param t The term; its unit accepted by its role.
+ * @return The share.
+ * @note Thread-safe: pure.
+ * @thread control
+ */
+static inline double omx_curve_share_value(const struct omx_curve_term *t) {
+  return t->unit == OMX_CURVE_UNITS_PC ? t->value / 100.0 : t->value;
 }
 
 /**
@@ -517,6 +574,174 @@ static inline uint32_t omx_curve_drive(const struct omx_curve_request *rq, doubl
   return n;
 }
 
+/** @brief The beats of each delay division (DELAY_DIVISION_BEATS), the one table a synced delay's time comes from. */
+static const float OMX_CURVE_DIVISION_BEATS[OMX_DELAY_DIVISION_BEATS_COUNT] = OMX_DELAY_DIVISION_BEATS_INIT;
+
+/**
+ * @brief The decay envelope's loop for a reverb configuration: its gain at this size and its length in ms
+ *        (REVERB_DECAY_LOOPS). The lines scale with the live rate, so the loop's ms do not depend on it.
+ * @param algorithm The reverb kernel's algorithm value (OMX_REVERB_ROOM, OMX_REVERB_PLATE, OMX_REVERB_HALL).
+ * @param size The size, 0..1.
+ * @param gain Set to the loop gain.
+ * @param loop_ms Set to the loop's length, ms.
+ * @return 1, or 0 for an algorithm with no loop here (reverse, gated: their pictures need their own words).
+ * @note Thread-safe: pure.
+ * @thread control
+ */
+static inline int omx_curve_reverb_loop(int algorithm, double size, double *gain, double *loop_ms) {
+  double floor_g, span_g, samples, rate;
+  switch (algorithm) {
+  case OMX_REVERB_ROOM:
+    floor_g = OMX_REVERB_DECAY_LOOPS_ROOM_GAIN_FLOOR_DOUBLE, span_g = OMX_REVERB_DECAY_LOOPS_ROOM_GAIN_SPAN_DOUBLE;
+    samples = OMX_REVERB_DECAY_LOOPS_ROOM_LOOP_SAMPLES, rate = OMX_REVERB_DECAY_LOOPS_ROOM_TUNING_RATE;
+    break;
+  case OMX_REVERB_HALL:
+    floor_g = OMX_REVERB_DECAY_LOOPS_HALL_GAIN_FLOOR_DOUBLE, span_g = OMX_REVERB_DECAY_LOOPS_HALL_GAIN_SPAN_DOUBLE;
+    samples = OMX_REVERB_DECAY_LOOPS_HALL_LOOP_SAMPLES, rate = OMX_REVERB_DECAY_LOOPS_HALL_TUNING_RATE;
+    break;
+  case OMX_REVERB_PLATE:
+    floor_g = OMX_REVERB_DECAY_LOOPS_PLATE_GAIN_FLOOR_DOUBLE, span_g = OMX_REVERB_DECAY_LOOPS_PLATE_GAIN_SPAN_DOUBLE;
+    samples = OMX_REVERB_DECAY_LOOPS_PLATE_LOOP_SAMPLES, rate = OMX_REVERB_DECAY_LOOPS_PLATE_TUNING_RATE;
+    break;
+  default: return 0;
+  }
+  const double sz = size < 0.0 ? 0.0 : size > 1.0 ? 1.0 : size;
+  *gain = floor_g + span_g * sz;
+  *loop_ms = samples / rate * 1000.0;
+  return 1;
+}
+
+/**
+ * @brief A `time_response`: the delay's tap train as stems, the reverb's decay envelope as points, on one time axis.
+ *
+ * The DELAY is the train omx_fx_delay_process() produces on an impulse: the dry tap at 0 ms at `1 - mix`, echo n at
+ * `n x time` at `mix x feedback^(n-1)` (the output is `dry x in + mix x tap`, and each pass through the ring
+ * multiplies by the feedback), every level in dB; the train stops at the first tap at or under the floor
+ * (CURVE_EXTENTS `timeFloorDb`) or at CURVE_TAPS_MAX. The time is the `time` term, or under `sync` the
+ * `division`'s beats at the request's tempo (omx_bpm_division_ms()); `feedback` is required, `mix` draws 1 where
+ * absent, `tone` 0. The tone is each echo's SHADE, not its height: the feedback-path one-pole darkens each pass
+ * and moves no tap's broadband level, so echo n carries the pole's gain at Nyquist `(1 - p) / (1 + p)` raised to
+ * `n - 1`, the pole the kernel's own at this rate (omx_fxdelay_tone_pole()). Under `pingpong` the echoes alternate
+ * left and right from the first; otherwise, and the dry tap always, both. A delay answers no point: its picture is
+ * the stems alone, so with no room for them (`ex` NULL, or `stems` NULL, or a `stem_room` short of the train) it is
+ * OMX_CURVE_ROOM. The extents, if given, bound nothing here: a tap is where it falls.
+ *
+ * The REVERB is the closed form of its longest loop (omx_curve_reverb_loop(), REVERB_DECAY_LOOPS): the level is 0
+ * before the `predelay` (the onset the operator dialled, a gap), then `mix x gain^((t - predelay) / loop)`, in dB,
+ * down to the floor at `predelay + RT60` where `RT60 = loop x ln(0.001) / ln(gain)`; a `decay` term is the RT60 said
+ * outright, in ms, and then no size or algorithm is read. `mix` is required and `size` with `algorithm` (absent: the
+ * kernel's room) or `decay`; the grid is the request's points from 0 (or the extents) to the envelope's end, the
+ * onset's two anchors on top when it falls inside, and a mix of 0 answers no point at all (the kernel's own
+ * bit-identical dry). A reverse or gated reverb has no loop here: OMX_CURVE_KIND_UNKNOWN, a named absence.
+ * @param rq The request, kind and family checked, values finite, units accepted.
+ * @param has_extents Non-zero when `lo` and `hi` bound the grid.
+ * @param lo The low edge of the grid, ms, at least 0.
+ * @param hi The high edge, ms, above `lo`.
+ * @param x The time of each point, ms, ascending.
+ * @param y The level of each point, dB.
+ * @param room Room in `x` and in `y`.
+ * @param ex The stems' room and count; NULL asks for none.
+ * @param code The answer's code.
+ * @return The points written: a reverb's envelope; 0 for a delay (its stems are in `ex`), for a reverb at mix 0, and
+ *         with a code other than OMX_CURVE_OK.
+ * @note Thread-safe on distinct output, reentrant.
+ * @thread control
+ */
+static inline uint32_t omx_curve_time(const struct omx_curve_request *rq, int has_extents, double lo, double hi,
+                                      double *x, double *y, uint32_t room, struct omx_curve_extra *ex, int *code) {
+  const double floor_db = OMX_CURVE_EXTENTS_TIME_FLOOR_DB;
+  const struct omx_curve_term *mix = omx_curve_find(rq, OMX_CURVE_ROLES_MIX, 0);
+  if (ex) ex->nstems = 0;
+  if (rq->family == OMX_CURVE_FAMILIES_DELAY) {
+    const struct omx_curve_term *time = omx_curve_find(rq, OMX_CURVE_ROLES_TIME, 0),
+                                *fb = omx_curve_find(rq, OMX_CURVE_ROLES_FEEDBACK, 0),
+                                *tone = omx_curve_find(rq, OMX_CURVE_ROLES_TONE, 0),
+                                *pp = omx_curve_find(rq, OMX_CURVE_ROLES_PINGPONG, 0),
+                                *sync = omx_curve_find(rq, OMX_CURVE_ROLES_SYNC, 0),
+                                *division = omx_curve_find(rq, OMX_CURVE_ROLES_DIVISION, 0);
+    double t_ms;
+    if (sync && omx_curve_term_value(sync) != 0.0) {
+      /* a synced time is the division's beats at the host's tempo, never a guess at either */
+      if (!division || !(rq->tempo_bpm > 0.0)) return (*code = OMX_CURVE_TERM_MISSING), 0u;
+      const double d = omx_curve_term_value(division);
+      if (!(d >= 0.0) || d >= OMX_DELAY_DIVISION_BEATS_COUNT || d != (double)(int)d) return (*code = OMX_CURVE_KIND_UNKNOWN), 0u;
+      t_ms = omx_bpm_division_ms((float)rq->tempo_bpm, OMX_CURVE_DIVISION_BEATS[(int)d]);
+    } else {
+      if (!time) return (*code = OMX_CURVE_TERM_MISSING), 0u;
+      t_ms = omx_curve_term_value(time);
+    }
+    if (!fb) return (*code = OMX_CURVE_TERM_MISSING), 0u;
+    if (!(t_ms >= 0.0)) return (*code = OMX_CURVE_POINTS_RANGE), 0u;
+    const double wet = mix ? omx_curve_share_value(mix) : 1.0, dry = 1.0 - wet, f = omx_curve_share_value(fb);
+    const int pingpong = pp ? omx_curve_term_value(pp) != 0.0 : 0;
+    /* the kernel's own pole at this rate, and the one-pole's gain at Nyquist: what each pass takes off the top */
+    const double p = (double)omx_fxdelay_tone_pole((float)(tone ? omx_curve_term_value(tone) : 0.0), (float)rq->sample_rate);
+    const double bright = (1.0 - p) / (1.0 + p);
+    struct omx_curve_stem train[OMX_CURVE_TAPS_MAX];
+    uint32_t n = 0;
+    const double dry_db = dry > 0.0 ? 20.0 * log10(dry) : -INFINITY;
+    if (dry_db > floor_db) train[n++] = (struct omx_curve_stem){0.0, dry_db, 1.0, OMX_CURVE_LEGS_BOTH};
+    for (uint32_t k = 1; n < OMX_CURVE_TAPS_MAX; k++) {
+      const double lin = wet > 0.0 && f >= 0.0 ? wet * pow(f, (double)(k - 1u)) : 0.0;
+      const double db = lin > 0.0 ? 20.0 * log10(lin) : -INFINITY;
+      if (!(db > floor_db)) break; /* at or under the floor: the train ends, the eye reads nothing there */
+      train[n++] = (struct omx_curve_stem){t_ms * (double)k, db, pow(bright, (double)(k - 1u)),
+                                           !pingpong ? OMX_CURVE_LEGS_BOTH : (k & 1u) ? OMX_CURVE_LEGS_LEFT : OMX_CURVE_LEGS_RIGHT};
+    }
+    if (!ex || !ex->stems || ex->stem_room < n) return (*code = OMX_CURVE_ROOM), 0u;
+    for (uint32_t i = 0; i < n; i++) ex->stems[i] = train[i];
+    ex->nstems = n;
+    (void)has_extents, (void)lo, (void)hi, (void)x, (void)y, (void)room;
+    *code = OMX_CURVE_OK;
+    return 0u;
+  }
+  /* the reverb */
+  const struct omx_curve_term *size = omx_curve_find(rq, OMX_CURVE_ROLES_SIZE, 0),
+                              *decay = omx_curve_find(rq, OMX_CURVE_ROLES_DECAY, 0),
+                              *algo = omx_curve_find(rq, OMX_CURVE_ROLES_ALGORITHM, 0),
+                              *pre = omx_curve_find(rq, OMX_CURVE_ROLES_PREDELAY, 0);
+  if (!mix || (!size && !decay)) return (*code = OMX_CURVE_TERM_MISSING), 0u;
+  const double wet = omx_curve_share_value(mix), pre_ms = pre ? omx_curve_term_value(pre) : 0.0;
+  double slope_db_per_ms, rt60_ms;
+  if (decay) {
+    rt60_ms = omx_curve_term_value(decay);
+    if (!(rt60_ms > 0.0)) return (*code = OMX_CURVE_POINTS_RANGE), 0u;
+    slope_db_per_ms = (floor_db - 0.0) / rt60_ms;
+  } else {
+    double gain, loop_ms;
+    const double a = algo ? omx_curve_term_value(algo) : (double)OMX_REVERB_ROOM;
+    if (a != (double)(int)a || !omx_curve_reverb_loop((int)a, omx_curve_share_value(size), &gain, &loop_ms))
+      return (*code = OMX_CURVE_KIND_UNKNOWN), 0u;
+    slope_db_per_ms = 20.0 * log10(gain) / loop_ms;
+    rt60_ms = floor_db / slope_db_per_ms;
+  }
+  if (!(pre_ms >= 0.0)) return (*code = OMX_CURVE_POINTS_RANGE), 0u;
+  if (!has_extents) lo = 0.0, hi = pre_ms + rt60_ms;
+  if (!(hi > lo)) return (*code = OMX_CURVE_POINTS_RANGE), 0u;
+  const int onset = pre_ms > lo && pre_ms < hi;
+  const double end_ms = pre_ms + rt60_ms; /* the envelope ends on the floor there, whatever the arithmetic's last ulp */
+  const uint32_t n = rq->points, total = n + (onset ? 2u : 0u);
+  if (total > OMX_CURVE_POINTS_MAX) return (*code = OMX_CURVE_POINTS_RANGE), 0u;
+  if (room < total) return (*code = OMX_CURVE_ROOM), 0u;
+  if (!(wet > 0.0)) return (*code = OMX_CURVE_OK), 0u; /* the kernel's bit-identical dry: nothing to draw */
+  const double top_db = 20.0 * log10(wet);
+  uint32_t out = 0;
+  int anchored = 0;
+  for (uint32_t i = 0; i < n; i++) {
+    const double t = i + 1u == n ? hi : lo + (hi - lo) * (double)i / (double)(n - 1u);
+    if (onset && !anchored && t >= pre_ms) {
+      x[out] = pre_ms, y[out] = floor_db, out++;
+      x[out] = pre_ms, y[out] = top_db > floor_db ? top_db : floor_db, out++;
+      anchored = 1;
+      if (t == pre_ms) continue; /* the grid point on the onset is the anchors' */
+    }
+    double lv = t < pre_ms || t >= end_ms ? floor_db : top_db + slope_db_per_ms * (t - pre_ms);
+    x[out] = t, y[out] = lv > floor_db ? lv : floor_db, out++;
+  }
+  *code = OMX_CURVE_OK;
+  return out;
+}
+
 #define OMX_CONTRACT_STAGE "curve/points"
 /**
  * @brief The points of one display of a panel description, and the marks of the bands a feedback corrector planted:
@@ -548,10 +773,12 @@ static inline uint32_t omx_curve_drive(const struct omx_curve_request *rq, doubl
  */
 static inline uint32_t omx_curve_points_marked(const struct omx_curve_request *rq, double *x, double *y,
                                                uint32_t room, struct omx_curve_extra *ex, int *code) {
-  const int eq = rq->kind == OMX_CURVE_DISPLAYS_EQ_RESPONSE;
-  if (!(eq ? rq->family == OMX_CURVE_FAMILIES_EQ
-           : rq->kind == OMX_CURVE_DISPLAYS_TRANSFER_CURVE && rq->family != OMX_CURVE_FAMILIES_EQ &&
-                 (unsigned)rq->family < OMX_CURVE_FAMILIES_COUNT))
+  const int eq = rq->kind == OMX_CURVE_DISPLAYS_EQ_RESPONSE, timed = rq->kind == OMX_CURVE_DISPLAYS_TIME_RESPONSE;
+  const int time_family = rq->family == OMX_CURVE_FAMILIES_DELAY || rq->family == OMX_CURVE_FAMILIES_REVERB;
+  if (!(eq      ? rq->family == OMX_CURVE_FAMILIES_EQ
+        : timed ? time_family
+                : rq->kind == OMX_CURVE_DISPLAYS_TRANSFER_CURVE && rq->family != OMX_CURVE_FAMILIES_EQ && !time_family &&
+                      (unsigned)rq->family < OMX_CURVE_FAMILIES_COUNT))
     return (*code = OMX_CURVE_KIND_UNKNOWN), 0u;
   if (rq->points < 2u || rq->points > OMX_CURVE_POINTS_MAX) return (*code = OMX_CURVE_POINTS_RANGE), 0u;
   if (!isfinite(rq->sample_rate) || !(rq->sample_rate > 0.0) ||
@@ -574,13 +801,17 @@ static inline uint32_t omx_curve_points_marked(const struct omx_curve_request *r
   } else if (rq->family == OMX_CURVE_FAMILIES_DRIVE) {
     lo = OMX_CURVE_EXTENTS_DRIVE_LEVEL_MIN_DB;
     hi = OMX_CURVE_EXTENTS_DRIVE_LEVEL_MAX_DB;
+  } else if (timed) {
+    lo = hi = 0.0; /* a time axis is as long as its content: derived in omx_curve_time() */
   } else {
     lo = OMX_CURVE_EXTENTS_LEVEL_MIN_DB;
     hi = OMX_CURVE_EXTENTS_LEVEL_MAX_DB;
   }
-  if (!(hi > lo) || (eq && !(lo > 0.0))) return (*code = OMX_CURVE_POINTS_RANGE), 0u;
+  if ((!(hi > lo) && !(timed && !rq->has_extents)) || (eq && !(lo > 0.0)) || (timed && !(lo >= 0.0)))
+    return (*code = OMX_CURVE_POINTS_RANGE), 0u;
   if (ex && rq->user_only && !ex->y_user) return (*code = OMX_CURVE_ROOM), 0u;
   const uint32_t n = eq                                     ? omx_curve_eq(rq, lo, hi, x, y, room, ex, code)
+                     : timed                                  ? omx_curve_time(rq, rq->has_extents, lo, hi, x, y, room, ex, code)
                      : rq->family == OMX_CURVE_FAMILIES_DRIVE ? omx_curve_drive(rq, lo, hi, x, y, room, code)
                                                               : omx_curve_transfer(rq, lo, hi, x, y, room, code);
   if (ex && !eq && n) {

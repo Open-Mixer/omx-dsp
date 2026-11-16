@@ -34,7 +34,7 @@ static uint32_t cd_draw(int model, double amount, double tone, double mix, doubl
   if (with_mix) t[n++] = (struct omx_curve_term){OMX_CURVE_ROLES_MIX, 0, mix, OMX_CURVE_UNITS_PC, OMX_CURVE_NO_SHAPE, OMX_CURVE_ORIGINS_USER};
   if (with_output) t[n++] = (struct omx_curve_term){OMX_CURVE_ROLES_OUTPUT, 0, output, OMX_CURVE_UNITS_DB, OMX_CURVE_NO_SHAPE, OMX_CURVE_ORIGINS_USER};
   const struct omx_curve_request rq = {OMX_CURVE_DISPLAYS_TRANSFER_CURVE, OMX_CURVE_FAMILIES_DRIVE, 48000.0, CD_POINTS, 0, 0.0, 0.0,
-                                       t, n, 0};
+                                       t, n, 0, 0.0};
   *code = -1;
   return omx_curve_points(&rq, x, y, OMX_CURVE_POINTS_MAX, code);
 }
@@ -160,7 +160,7 @@ static void arm_curve_drive(void) {
     const struct omx_curve_term mix_in_db[] = {{OMX_CURVE_ROLES_DRIVE, 0, 12.0, OMX_CURVE_UNITS_DB, OMX_CURVE_NO_SHAPE, OMX_CURVE_ORIGINS_USER},
                                                {OMX_CURVE_ROLES_MODEL, 0, 1.0, OMX_CURVE_UNITS_NONE, OMX_CURVE_NO_SHAPE, OMX_CURVE_ORIGINS_USER},
                                                {OMX_CURVE_ROLES_MIX, 0, 50.0, OMX_CURVE_UNITS_DB, OMX_CURVE_NO_SHAPE, OMX_CURVE_ORIGINS_USER}};
-    struct omx_curve_request rq = {OMX_CURVE_DISPLAYS_TRANSFER_CURVE, OMX_CURVE_FAMILIES_DRIVE, 48000.0, 33u, 0, 0.0, 0.0, only_drive, 1u, 0};
+    struct omx_curve_request rq = {OMX_CURVE_DISPLAYS_TRANSFER_CURVE, OMX_CURVE_FAMILIES_DRIVE, 48000.0, 33u, 0, 0.0, 0.0, only_drive, 1u, 0, 0.0};
     ok(omx_curve_points(&rq, x, y, OMX_CURVE_POINTS_MAX, &code) == 0u && code == OMX_CURVE_TERM_MISSING, "no model: term missing", code, 0);
     rq.terms = only_model;
     ok(omx_curve_points(&rq, x, y, OMX_CURVE_POINTS_MAX, &code) == 0u && code == OMX_CURVE_TERM_MISSING, "no drive: term missing", code, 0);
