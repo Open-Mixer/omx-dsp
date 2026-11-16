@@ -452,6 +452,8 @@ checks:
 	sh tools/ci-install-options.sh
 	bash tools/check-package-check.sh
 	bash tools/check-package-check.sh --self-test
+	bash tools/release-binaries-check.sh
+	bash tools/release-binaries-check.sh --self-test
 	CC="$(CC)" TMPDIR="$(abspath $(BUILD))" bash tools/clone-check.sh
 	CC="$(CC)" TMPDIR="$(abspath $(BUILD))" bash tools/clone-check.sh --self-test
 	bash tools/umbrella-check.sh
