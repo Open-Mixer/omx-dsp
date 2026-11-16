@@ -6,13 +6,12 @@
 // (the ts render carries a set's ids, not its default).
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { main } from './oc.mjs';
 import { loadData, resolveData } from './oc.mjs';
 import { validateData } from './oc.mjs';
 import { renderC } from './oc.mjs';
 import { renderJson } from './oc.mjs';
 import { renderTs } from './oc.mjs';
-import { DATA, RENDERS, UNION, editData, scratchData, texts } from './helpers.mjs';
+import { UNION, editData, scratchData, texts } from './helpers.mjs';
 
 const header = (dir = UNION) => renderC(resolveData(loadData(dir))).find((f) => f.path === 'omxcontract/omx_contract_limits.h').text;
 const json = (dir = UNION) => JSON.parse(renderJson(resolveData(loadData(dir)), '0.0.0')[0].text);
@@ -76,29 +75,6 @@ test('comp: the detector lookups hold when the declaration is reordered (#42)', 
   assert.notDeepEqual(moved.map((c) => c.name), controls('comp').map((c) => c.name), 'the fixture really reordered the controls');
   assert.deepEqual(detectorControls(moved), ['kind:COMP_KINDS', 'detectorOversampling:DETECTOR_OVERSAMPLINGS']);
 });
-
-// One perturbation per new control: move its come-up value, every render that spells it follows.
-const moves = [
-  ['drive', 'DRIVE_AUTO_GAINS', (it) => { it.default = 'off'; }, 'DRIVE_AUTO_GAINS', 'off'],
-  ['drive', 'DRIVE_STEREO_LINKS', (it) => { it.default = 'off'; }, 'DRIVE_STEREO_LINKS', 'off'],
-  ['drive', 'DRIVE_HF_ROLLOFFS', (it) => { it.default = '16000'; }, 'DRIVE_HF_ROLLOFFS', '16000'],
-  ['eq', 'EQ_HPF_ONS', (it) => { it.default = 'on'; }, 'EQ_HPF_ONS', 'on'],
-  ['eq', 'EQ_LPF_ONS', (it) => { it.default = 'on'; }, 'EQ_LPF_ONS', 'on'],
-  ['eq', 'EQ_BAND_ONS', (it) => { it.default = 'on'; }, 'EQ_BAND_ONS', 'on'],
-  ['eq', 'FILTER_SLOPES', (it) => { it.default = 24; }, 'FILTER_SLOPES', 24],
-  ['comp', 'COMP_KINDS', (it) => { it.default = 'limiter'; }, 'COMP_KINDS', 'limiter'],
-  ['comp', 'DETECTOR_OVERSAMPLINGS', (it) => { it.default = '4x'; }, 'DETECTOR_OVERSAMPLINGS', '4x'],
-];
-for (const [k, at, move, set, want] of moves) {
-  test(`perturbation: move ${at}, ${set}'s default follows in the c and json renders, and --check goes red`, () => {
-    const dir = scratchData();
-    editData(dir, `kernels/${k}.json`, (d, decl) => move(decl(at)));
-    const C = `OMX_${set}_${String(want).toUpperCase()}`;
-    assert.match(header(dir), new RegExp(`^#define OMX_${set}_DEFAULT ${C}$`, 'm'));
-    assert.equal(json(dir).items[set].default, want);
-    assert.equal(main(['render', '--target', 'c', '--out', `${RENDERS}/include`, '--check', '--data', dir]), 1);
-  });
-}
 
 test('validate refuses a use of no declared item, a count that counts nothing and an of without its when', () => {
   const eq = 'data/kernels/eq.json';

@@ -2,7 +2,8 @@
 # Copyright (C) 2026 Pau Aliagas <linuxnow@gmail.com>
 name: ci
 
-# By workflow_dispatch (on a pull request's head before it is merged: gh workflow run ci.yml --ref <branch>): the whole suite on Fedora, both Debian releases and Ubuntu 24.04,
+# By workflow_dispatch (on a pull request's head before it is merged: gh workflow run ci.yml --ref <branch>): the whole suite (make test) on Fedora, and the package check (make check-package: every oracle and golden digest,
+# not the sabotage and perturbation arms, which run once) on both Debian releases and Ubuntu 24.04,
 # on both architectures; on workflow_dispatch the packages built, their file lists checked and a consumer outside the tree built
 # against each; omx-contract installed from the OpenMixer channel at the floor the packaging
 # declares, and refused below its floor. The packages and the release workflow as a dry run only on workflow_dispatch
@@ -111,9 +112,18 @@ jobs:
         uses: Open-Mixer/.github/.github/actions/jobs@openmixer-v1
         with:
           max: ${{ vars.OMX_RUNNER_CPUS || '3' }}
+      # The sabotage and perturbation arms prove the tests and the source checks read text: neither depends on
+      # the distro, so they run once, in the Fedora cell. The other cells run what the package builds run
+      # (make check-package): every oracle and golden digest at every declared rate on their own toolchain.
       - name: make test
         id: handback-test
+        if: startsWith(matrix.image, 'fedora')
         run: make -j"$OMX_JOBS" test
+
+      - name: make check-package
+        id: handback-check-package
+        if: ${{ !startsWith(matrix.image, 'fedora') }}
+        run: make -j"$OMX_JOBS" check-package
 
   # The sabotage of the range: omx-contract 2.6.0, which the channel still serves and which is below
   # the floor the spec declares, must stop the build at once with a message that names the
@@ -234,9 +244,6 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-        with:
-          # two declaration tests read this library's own history (atCommit in test/contract/helpers.mjs)
-          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:

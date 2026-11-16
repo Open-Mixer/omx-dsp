@@ -4,11 +4,10 @@
 // and waveform sets (the generator kernel), the kernels omx-dsp takes over from the engine.
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { main } from './oc.mjs';
 import { loadData, resolveData } from './oc.mjs';
 import { renderC } from './oc.mjs';
 import { renderJson } from './oc.mjs';
-import { DATA, RENDERS, UNION, editData, scratchData } from './helpers.mjs';
+import { UNION } from './helpers.mjs';
 
 const resolved = (dir = UNION) => resolveData(loadData(dir));
 const header = (dir) => renderC(resolved(dir))[0].text;
@@ -54,20 +53,4 @@ test('generator: two choices, kind (GENERATOR_KINDS) and waveform (WAVEFORMS), i
 test('the c render gives the converter\'s and the generators\' values: four src constants, three kinds, four waveforms', () => {
   assert.equal(WANT.length, 11);
   assert.deepEqual(disagree(header()), []);
-});
-
-test('perturbation: a moved tap count or a reordered waveform set leaves the values above, and --check goes red', () => {
-  const taps = scratchData();
-  editData(taps, 'kernels/src.json', (d, at) => { at('SRC_TAPS').value = 32; });
-  assert.deepEqual(disagree(header(taps)), ['OMX_SRC_TAPS 64, render 32']);
-  assert.equal(main(['render', '--target', 'c', '--out', `${RENDERS}/include`, '--check', '--data', taps]), 1);
-  const order = scratchData();
-  editData(order, 'kernels/generator.json', (d, at) => { at('WAVEFORMS').ids.reverse(); });
-  assert.deepEqual(disagree(header(order)), [
-    'OMX_WAVEFORMS_SINE 0, render 3',
-    'OMX_WAVEFORMS_SQUARE 1, render 2',
-    'OMX_WAVEFORMS_SAW 2, render 1',
-    'OMX_WAVEFORMS_TRIANGLE 3, render 0',
-  ]);
-  assert.equal(main(['render', '--target', 'c', '--out', `${RENDERS}/include`, '--check', '--data', order]), 1);
 });

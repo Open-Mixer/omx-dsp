@@ -450,8 +450,8 @@ checks:
 	sh tools/no-host-nproc.sh
 	sh tools/ci-install-options.sh --self-test
 	sh tools/ci-install-options.sh
-	bash tools/check-package-check.sh
-	bash tools/check-package-check.sh --self-test
+	bash tools/check-package-derived.sh
+	bash tools/check-package-derived.sh --self-test
 	bash tools/release-binaries-check.sh
 	bash tools/release-binaries-check.sh --self-test
 	CC="$(CC)" TMPDIR="$(abspath $(BUILD))" bash tools/clone-check.sh
@@ -1000,16 +1000,20 @@ rt-gate-sabotage: $(RT_GATE) $(RT_GATE_ARM) $(RT_GATE_FIXTURES)
 # digest, the flavours and the libmvec oracles). The sabotage and perturbation arms, which prove the
 # tests rather than the library, and the source checks run in CI's make test on every pull request:
 # under make -j4 test the package build went past its 60-minute job on a 4-core runner.
-# tools/check-package-check.sh holds this list to make test's (part of make checks).
-CHECK_PACKAGE = lib suite negative consumer threads bandwidth-q-table eq-default-bands fx-oracles \
-                analysis-oracles engine-kernels-golden mix-golden flavours fastmath fastmath-diff fastmath-partial rt-gate
+# The one list is TEST_TARGETS (make test's); CHECK_PACKAGE is derived from it: everything but PROVE_TESTS, with a
+# target that holds an oracle together with its sabotage (test-fx, test-analysis, ...) replaced by its oracle half.
+# tools/check-package-derived.sh (part of make checks) holds it to this shape.
+PROVE_TESTS = checks gen-once fastmath-plain perturb $(filter %-sabotage,$(TEST_TARGETS))
+ORACLE_HALVES = test-fx=fx-oracles test-analysis=analysis-oracles test-engine-kernels=engine-kernels-golden test-mix=mix-golden
+CHECK_PACKAGE = $(foreach t,$(filter-out $(PROVE_TESTS),$(TEST_TARGETS)),$(or $(patsubst $(t)=%,%,$(filter $(t)=%,$(ORACLE_HALVES))),$(t)))
 
 .PHONY: check-package fx-oracles analysis-oracles engine-kernels-golden mix-golden
 check-package: $(CHECK_PACKAGE)
 	@echo "omxdsp: make check-package green"
 
+TEST_TARGETS = lib checks gen-once suite negative magnitude-sabotage eq-sabotage curve-sabotage meter-view-sabotage rta-bands-sabotage geq-true-sabotage delay-taps-sabotage align-fdelay-sabotage pitch-rates-sabotage instance-rates-sabotage bandwidth-q-table bandwidth-q-sabotage eq-default-bands consumer perturb fdelay-sabotage doppler-sabotage onepole-sabotage note-map-sabotage threads threads-sabotage test-fx test-analysis test-engine-kernels test-mix flavours flavour-probe-sabotage fastmath fastmath-diff fastmath-sabotage fastmath-plain fastmath-partial rt-gate rt-gate-sabotage
 .PHONY: test-parallel
-test-parallel: lib checks gen-once suite negative magnitude-sabotage eq-sabotage curve-sabotage meter-view-sabotage rta-bands-sabotage geq-true-sabotage delay-taps-sabotage align-fdelay-sabotage pitch-rates-sabotage instance-rates-sabotage bandwidth-q-table bandwidth-q-sabotage eq-default-bands consumer perturb fdelay-sabotage doppler-sabotage onepole-sabotage note-map-sabotage threads threads-sabotage test-fx test-analysis test-engine-kernels test-mix flavours flavour-probe-sabotage fastmath fastmath-diff fastmath-sabotage fastmath-plain fastmath-partial rt-gate rt-gate-sabotage
+test-parallel: $(TEST_TARGETS)
 
 # ---- omx-rta-read (tools/omx-rta-read): the spectrum of a JACK signal, read and never fed; built where jack.pc is found
 #   make rta-read           the program
