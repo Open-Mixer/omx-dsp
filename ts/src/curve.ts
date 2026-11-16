@@ -13,6 +13,11 @@ import {
   CURVE_DISPLAYS,
   CURVE_EXTENTS,
   CURVE_FAMILIES,
+  CURVE_LEGS,
+  CURVE_TAPS_MAX,
+  DELAY_DIVISION_BEATS,
+  DSP_KNOB_REFERENCE_RATE,
+  REVERB_DECAY_LOOPS,
   CURVE_ORIGINS,
   CURVE_POINTS_MAX,
   CURVE_ROLES,
@@ -42,6 +47,7 @@ export const CURVE_WORDS = {
   roles: CURVE_ROLES.map(wordOf),
   units: CURVE_UNITS.map(wordOf),
   shapes: CURVE_SHAPES.map(wordOf),
+  legs: CURVE_LEGS.map(wordOf),
   /** fbs-fixed and fbs-live: the origins are spelt with a hyphen */
   origins: CURVE_ORIGINS.map((id) => id.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`)),
 } as const;
@@ -81,6 +87,16 @@ export interface CurveRequest {
   readonly terms: readonly CurveTerm[];
   /** Also answer the curve over the `user` bands alone, at the same x. */
   readonly userOnly?: boolean;
+  /** The host's tempo, BPM, for a synced delay; absent when the host hands none (a synced delay is then termMissing). */
+  readonly tempoBpm?: number;
+}
+
+/** One tap of a delay's time_response: its time (ms), its level (dB), its brightness (0..1) and the leg it lands on. */
+export interface CurveStem {
+  readonly x: number;
+  readonly y: number;
+  readonly shade: number;
+  readonly leg: string;
 }
 
 /** A band whose origin is not `user`: its centre (Hz), its own magnitude there (dB), its Q and its origin. */
@@ -105,6 +121,8 @@ export type CurveAnswer =
       readonly marks: readonly CurveMark[];
       /** With `userOnly`: the curve over the user bands (and the head filters) alone, at the same x. */
       readonly userPoints?: readonly CurvePoint[];
+      /** A delay's tap train (a time_response); absent for every other display. */
+      readonly stems?: readonly CurveStem[];
     }
   | { readonly code: CurveCode };
 
@@ -118,8 +136,16 @@ const ACCEPTS: Readonly<Record<string, readonly string[]>> = {
   threshold: ['db', 'dbfs', 'dbu', 'lufs'],
   ratio: ['ratio', 'coef'],
   knee: ['db'], makeup: ['db'], range: ['db'], knee_start: ['db'], knee_end: ['db'],
-  drive: ['db'], output: ['db'], tone: ['none', 'coef'], model: ['none'], mix: ['pc'],
+  drive: ['db'], output: ['db'], tone: ['none', 'coef'], model: ['none'],
+  // a share: the drive serves its mix in percent, the delay and the reverb theirs as a plain 0..1
+  mix: ['pc', 'none', 'coef'], feedback: ['pc', 'none', 'coef'], size: ['pc', 'none', 'coef'], damping: ['pc', 'none', 'coef'], width: ['pc', 'none', 'coef'],
+  time: ['ms', 's'], decay: ['ms', 's'], predelay: ['ms', 's'],
+  pingpong: ['none'], sync: ['none'], division: ['none'], algorithm: ['none'],
+  low_cut: ['hz', 'khz'], high_cut: ['hz', 'khz'],
 };
+
+/** A share term as the kernel's 0..1 (omx_curve_share_value): percent read down by 100, the rest as it is. */
+const shareOf = (t: CurveTerm): number => (t.unit === 'pc' ? t.value / 100 : t.value);
 
 /** omx_lin_to_db: a linear factor to dB, floored at LIN_TO_DB_FLOOR. */
 const linToDb = (lin: number): number => {
@@ -133,6 +159,7 @@ const valueOf = (t: CurveTerm): number => {
     case 'khz': return t.value * 1000;
     case 'coef': return t.role === 'band_gain' ? linToDb(t.value) : t.value;
     case 'oct': return octavesToQ(t.value);
+    case 's': return t.value * 1000; // a time is read in ms
     default: return t.value;
   }
 };
@@ -173,8 +200,9 @@ function curveFreqs(bands: readonly BiquadBand[], fMin: number, fMax: number, po
  * @param rq The request.
  */
 export function curvePoints(rq: CurveRequest): CurveAnswer {
-  const eq = rq.kind === 'eq_response';
-  if (!(eq ? rq.family === 'eq' : rq.kind === 'transfer_curve' && rq.family !== 'eq' && CURVE_WORDS.families.includes(rq.family)))
+  const eq = rq.kind === 'eq_response', timed = rq.kind === 'time_response';
+  const timeFamily = rq.family === 'delay' || rq.family === 'reverb';
+  if (!(eq ? rq.family === 'eq' : timed ? timeFamily : rq.kind === 'transfer_curve' && rq.family !== 'eq' && !timeFamily && CURVE_WORDS.families.includes(rq.family)))
     return { code: 'kindUnknown' };
   if (!Number.isInteger(rq.points) || rq.points < 2 || rq.points > CURVE_POINTS_MAX) return { code: 'pointsRange' };
   if (!Number.isFinite(rq.sampleRate) || !(rq.sampleRate > 0) || (rq.extents && !(Number.isFinite(rq.extents.min) && Number.isFinite(rq.extents.max))))
@@ -186,14 +214,116 @@ export function curvePoints(rq: CurveRequest): CurveAnswer {
   if (rq.extents) [lo, hi] = [rq.extents.min, rq.extents.max];
   else if (eq) [lo, hi] = [CURVE_EXTENTS.freqMinHz, Math.min(CURVE_EXTENTS.freqMaxHz, (CURVE_EXTENTS.nyquistFraction * rq.sampleRate) / 2)];
   else if (rq.family === 'drive') [lo, hi] = [CURVE_EXTENTS.driveLevelMinDb, CURVE_EXTENTS.driveLevelMaxDb];
+  else if (timed) [lo, hi] = [0, 0]; // a time axis is as long as its content: derived in timePoints
   else [lo, hi] = [CURVE_EXTENTS.levelMinDb, CURVE_EXTENTS.levelMaxDb];
-  if (!(hi > lo) || (eq && !(lo > 0))) return { code: 'pointsRange' };
+  if ((!(hi > lo) && !(timed && !rq.extents)) || (eq && !(lo > 0)) || (timed && !(lo >= 0))) return { code: 'pointsRange' };
   const find = (role: string, index = 0): CurveTerm | undefined => {
     let found: CurveTerm | undefined;
     for (const t of rq.terms) if (t.role === role && (t.index ?? 0) === index) found = t;
     return found;
   };
-  return eq ? eqPoints(rq, find, lo, hi) : rq.family === 'drive' ? drivePoints(rq, find, lo, hi) : transferPoints(rq, find, lo, hi);
+  return eq ? eqPoints(rq, find, lo, hi) : timed ? timePoints(rq, find, lo, hi) : rq.family === 'drive' ? drivePoints(rq, find, lo, hi) : transferPoints(rq, find, lo, hi);
+}
+
+/** omx_pole_rescale: a unit-range pole quoted at `ref` as the pole at `sr`, the kernel's float powf. */
+const poleRescale = (p: number, ref: number, sr: number): number =>
+  p <= 0 || p >= 1 || !(ref > 0) || !(sr > 0) || sr === ref ? p : Math.fround(Math.pow(Math.fround(p), Math.fround(Math.fround(ref) / Math.fround(sr))));
+
+/** The decay envelope's loop for a reverb configuration (omx_curve_reverb_loop, REVERB_DECAY_LOOPS): its gain at this
+ * size and its length in ms, or undefined for an algorithm with no loop here (reverse, gated). */
+export function reverbDecayLoop(algorithm: number, size: number): { gain: number; loopMs: number } | undefined {
+  const L = REVERB_DECAY_LOOPS;
+  const row = algorithm === 0 ? [L.roomGainFloor, L.roomGainSpan, L.roomLoopSamples, L.roomTuningRate]
+    : algorithm === 2 ? [L.hallGainFloor, L.hallGainSpan, L.hallLoopSamples, L.hallTuningRate]
+    : algorithm === 1 ? [L.plateGainFloor, L.plateGainSpan, L.plateLoopSamples, L.plateTuningRate] : undefined;
+  if (!row) return undefined;
+  const sz = size < 0 ? 0 : size > 1 ? 1 : size;
+  return { gain: row[0] + row[1] * sz, loopMs: (row[2] / row[3]) * 1000 };
+}
+
+const dbOf = (lin: number): number => (lin > 0 ? 20 * Math.log10(lin) : -Infinity);
+
+/**
+ * The time_response (omx_curve_time): a delay's tap train as stems, a reverb's decay envelope as points, the same
+ * arithmetic in double. The delay: the dry tap at `1 - mix`, echo n at `n x time` at `mix x feedback^(n-1)`, its shade the
+ * tone one-pole's Nyquist gain `(1 - p) / (1 + p)` raised to `n - 1` with p the kernel's pole at this rate
+ * (omx_fxdelay_tone_pole), left/right alternating under ping-pong, the train ending at or under the floor or at
+ * CURVE_TAPS_MAX. The reverb: 0 before the predelay, then `mix x gain^((t - predelay) / loop)` down to the floor at
+ * `predelay + RT60`, a `decay` term the RT60 said outright; the onset's two anchors on the grid; mix 0 draws nothing.
+ */
+function timePoints(rq: CurveRequest, find: Find, lo: number, hi: number): CurveAnswer {
+  const floorDb = CURVE_EXTENTS.timeFloorDb;
+  const mix = find('mix');
+  if (rq.family === 'delay') {
+    const time = find('time'), fb = find('feedback'), tone = find('tone'), pp = find('pingpong'), sync = find('sync'), division = find('division');
+    let tMs: number;
+    if (sync && valueOf(sync) !== 0) {
+      // a synced time is the division's beats at the host's tempo, never a guess at either
+      if (!division || !((rq.tempoBpm ?? 0) > 0)) return { code: 'termMissing' };
+      const d = valueOf(division);
+      if (!(d >= 0) || d >= DELAY_DIVISION_BEATS.length || !Number.isInteger(d)) return { code: 'kindUnknown' };
+      // omx_bpm_division_ms: float arithmetic in the kernel
+      tMs = Math.fround(Math.fround(Math.fround(DELAY_DIVISION_BEATS[d]!) * 60000) / Math.fround(rq.tempoBpm!));
+    } else {
+      if (!time) return { code: 'termMissing' };
+      tMs = valueOf(time);
+    }
+    if (!fb) return { code: 'termMissing' };
+    if (!(tMs >= 0)) return { code: 'pointsRange' };
+    const wet = mix ? shareOf(mix) : 1, dry = 1 - wet, f = shareOf(fb);
+    const pingpong = pp ? valueOf(pp) !== 0 : false;
+    const toneV = tone ? valueOf(tone) : 0;
+    const p = poleRescale(Math.fround(toneV < 0 || !Number.isFinite(toneV) ? 0 : toneV > 1 ? 1 : toneV), DSP_KNOB_REFERENCE_RATE, Math.fround(rq.sampleRate));
+    const bright = (1 - p) / (1 + p);
+    const stems: CurveStem[] = [];
+    const dryDb = dbOf(dry);
+    if (dryDb > floorDb) stems.push({ x: 0, y: dryDb, shade: 1, leg: 'both' });
+    for (let k = 1; stems.length < CURVE_TAPS_MAX; k++) {
+      const lin = wet > 0 && f >= 0 ? wet * Math.pow(f, k - 1) : 0;
+      const db = dbOf(lin);
+      if (!(db > floorDb)) break; // at or under the floor: the train ends
+      stems.push({ x: tMs * k, y: db, shade: Math.pow(bright, k - 1), leg: !pingpong ? 'both' : k & 1 ? 'left' : 'right' });
+    }
+    return { points: [], marks: [], stems };
+  }
+  // the reverb
+  const size = find('size'), decay = find('decay'), algo = find('algorithm'), pre = find('predelay');
+  if (!mix || (!size && !decay)) return { code: 'termMissing' };
+  const wet = shareOf(mix), preMs = pre ? valueOf(pre) : 0;
+  let slope: number, rt60: number;
+  if (decay) {
+    rt60 = valueOf(decay);
+    if (!(rt60 > 0)) return { code: 'pointsRange' };
+    slope = (floorDb - 0) / rt60;
+  } else {
+    const a = algo ? valueOf(algo) : 0;
+    const loop = Number.isInteger(a) ? reverbDecayLoop(a, shareOf(size!)) : undefined;
+    if (!loop) return { code: 'kindUnknown' };
+    slope = (20 * Math.log10(loop.gain)) / loop.loopMs;
+    rt60 = floorDb / slope;
+  }
+  if (!(preMs >= 0)) return { code: 'pointsRange' };
+  if (!rq.extents) [lo, hi] = [0, preMs + rt60];
+  if (!(hi > lo)) return { code: 'pointsRange' };
+  const onset = preMs > lo && preMs < hi;
+  const endMs = preMs + rt60; // the envelope ends on the floor there, whatever the arithmetic's last ulp
+  const n = rq.points;
+  if (n + (onset ? 2 : 0) > CURVE_POINTS_MAX) return { code: 'pointsRange' };
+  if (!(wet > 0)) return { points: [], marks: [] }; // the kernel's bit-identical dry: nothing to draw
+  const topDb = 20 * Math.log10(wet);
+  const points: CurvePoint[] = [];
+  let anchored = false;
+  for (let i = 0; i < n; i++) {
+    const t = i + 1 === n ? hi : lo + ((hi - lo) * i) / (n - 1);
+    if (onset && !anchored && t >= preMs) {
+      points.push({ x: preMs, y: floorDb }, { x: preMs, y: topDb > floorDb ? topDb : floorDb });
+      anchored = true;
+      if (t === preMs) continue;
+    }
+    const lv = t < preMs || t >= endMs ? floorDb : topDb + slope * (t - preMs);
+    points.push({ x: t, y: lv > floorDb ? lv : floorDb });
+  }
+  return rq.userOnly ? { points, marks: [], userPoints: points } : { points, marks: [] };
 }
 
 type Find = (role: string, index?: number) => CurveTerm | undefined;

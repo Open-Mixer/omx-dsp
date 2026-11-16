@@ -79,10 +79,12 @@ export {
   CURVE_WORDS,
   butterworthQs,
   curvePoints,
+  reverbDecayLoop,
   type CurveAnswer,
   type CurveCode,
   type CurveMark,
   type CurvePoint,
+  type CurveStem,
   type CurveRequest,
   type CurveTerm,
 } from './curve.js';
