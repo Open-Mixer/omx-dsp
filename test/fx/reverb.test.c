@@ -500,6 +500,22 @@ static void test_layout_refuses_what_does_not_fit(void) {
 }
 
 
+/* Review of #71, gap 1: the rate ceiling is its own refusal. The exhausted-pool path already
+ * refuses 384 kHz, so a rate arm with a pool that does not fit cannot tell whether the ceiling
+ * clause exists. One Hz above the ceiling, with a pool that FITS the layout, can. */
+static void test_layout_refuses_a_rate_above_the_ceiling_with_a_fitting_pool(void) {
+  float *pool = calloc(OMX_REVERB_POOL_FLOATS, sizeof(float));
+  struct omx_reverb_state *st = calloc(1, sizeof(*st));
+  float above = (float)OMX_REVERB_MAX_RATE + 1.0f;
+  check(omx_reverb_state_layout(st, pool, OMX_REVERB_POOL_FLOATS, (float)OMX_REVERB_MAX_RATE) == 1,
+        "presence: the pool fits the layout at the ceiling");
+  check(omx_reverb_state_layout(st, pool, OMX_REVERB_POOL_FLOATS, above) == 0,
+        "one Hz above the ceiling is refused although the pool fits");
+  check(st->sr == 0.0f && st->_pool == NULL, "the refused rate leaves the state unpublished");
+  free(st); free(pool);
+}
+
+
 /* A pool too small to lay out must leave the reverb INERT — `_pool` NULL, so omx_reverb_process
  * returns immediately — rather than storing NULLs in the sub-buffers for the RT thread to
  * dereference. REACHABLE: mix_reverb.h's per-rate table shows x3.71 headroom at 96 kHz and the
@@ -633,6 +649,7 @@ int main(void) {
     test_reenable_clears_stale_tail();
     test_exhausted_pool_is_inert_not_a_crash();
     test_layout_refuses_what_does_not_fit();
+    test_layout_refuses_a_rate_above_the_ceiling_with_a_fitting_pool();
   }
   printf("fx/reverb: %d checks, %d failures (%d rates)\n", g_checks, g_fail, (int)OMX_FX_ORACLE_RATE_COUNT);
   return g_fail == 0 ? 0 : 1;
