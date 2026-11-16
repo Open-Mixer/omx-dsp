@@ -473,13 +473,30 @@ static void test_layout_refuses_what_does_not_fit(void) {
   for (unsigned i = 0; i < sizeof bad_rates / sizeof bad_rates[0]; i++) {
     float *pool = calloc(OMX_REVERB_POOL_FLOATS, sizeof(float));
     struct omx_reverb_state *st = calloc(1, sizeof(*st));
-    omx_reverb_state_layout(st, pool, OMX_REVERB_POOL_FLOATS, bad_rates[i]);
+    int rc = omx_reverb_state_layout(st, pool, OMX_REVERB_POOL_FLOATS, bad_rates[i]);
+    check(rc == 0, "a refused layout returns 0");
     char b[160];
     snprintf(b, sizeof b, "layout at %g Hz is refused: state unpublished (sr %g, pool %s)",
              (double)bad_rates[i], (double)st->sr, st->_pool ? "bound" : "NULL");
     check(st->sr == 0.0f && st->_pool == NULL, b);
     free(st); free(pool);
   }
+  /* NaN rate, NULL pool, a pool too small, a good layout: the return says which. */
+  static float tiny[64];
+  struct omx_reverb_state st;
+  float *pool = calloc(OMX_REVERB_POOL_FLOATS, sizeof(float));
+  memset(&st, 0, sizeof st);
+  check(omx_reverb_state_layout(&st, pool, OMX_REVERB_POOL_FLOATS, NAN) == 0 && st.sr == 0.0f && st._pool == NULL,
+        "a NaN rate is refused");
+  check(omx_reverb_state_layout(&st, NULL, OMX_REVERB_POOL_FLOATS, 48000.0f) == 0 && st._pool == NULL,
+        "a NULL pool is refused");
+  check(omx_reverb_state_layout(NULL, pool, OMX_REVERB_POOL_FLOATS, 48000.0f) == 0, "a NULL state is refused");
+  check(omx_reverb_state_layout(&st, tiny, 64, 48000.0f) == 0 && st.sr == 0.0f,
+        "a pool too small is refused and the rate not published");
+  check(omx_reverb_state_layout(&st, pool, OMX_REVERB_POOL_FLOATS, (float)OMX_REVERB_MAX_RATE) == 1 &&
+            st.sr == (float)OMX_REVERB_MAX_RATE && st._pool == pool,
+        "the ceiling rate fits and is published");
+  free(pool);
 }
 
 

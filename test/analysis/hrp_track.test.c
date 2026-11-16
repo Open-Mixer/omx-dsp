@@ -493,6 +493,14 @@ static void test_update_refuses_what_it_cannot_follow(void) {
   check(child_survives(2), "a NULL config is refused, not dereferenced");
 
   float a[] = {A4};
+  {
+    OmxHrpTracker g; OmxHrpTrackConfig gc = omx_hrp_track_config_default();
+    omx_hrp_tracker_init(&g);
+    OmxHrpVoiceSet gf = frame_of(a, 1);
+    check(omx_hrp_track_update(&g, &gf, &gc) == 1 && omx_hrp_track_count(&g) == 1, "a valid update returns 1 and is applied");
+    gc.steady_cents = INFINITY;
+    check(omx_hrp_track_update(&g, &gf, &gc) == 0, "an infinite threshold returns 0");
+  }
   for (int field = 0; field < 2; field++) {
     OmxHrpTracker t;
     OmxHrpTrackConfig c = omx_hrp_track_config_default();
