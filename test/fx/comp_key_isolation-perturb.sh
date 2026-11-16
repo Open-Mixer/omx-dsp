@@ -6,7 +6,7 @@
 # isolation. Each sabotage is applied to a COPY of the include directory placed ahead of the real one,
 # and the oracle built against it must go red in the named arm:
 #   leak   — omx_key_build writes the key into the audio leg: arm K;
-#   shared — omx_key_build carries a process-wide call counter into the key: arm T.
+#   shared — omx_key_build carries a process-wide carry from the last block into the next key: arm T.
 # The tree is never edited; a sed that matches nothing is a failure, not a skip.
 # Usage: CC=… CFLAGS=… comp_key_isolation-perturb.sh <scratch-dir>
 set -euo pipefail
@@ -41,7 +41,7 @@ sabotage() { # <name> <header under include/omxdsp> <sed expression> <arm>...
 
 sabotage leak mix/omx_key.h 's|^    memcpy(kb, k->src, n \* sizeof(float));$|    memcpy(kb, k->src, n * sizeof(float)); memcpy((float *)l, kb, n * sizeof(float));|' K &
 pids+=($!)
-sabotage shared mix/omx_key.h 's|^  k->built = 1;$|  { static unsigned calls; if (++calls == 5u) kb[0] += 0.5f; } k->built = 1;|' T &
+sabotage shared mix/omx_key.h 's|^  k->built = 1;$|  { static float carry; kb[0] += carry; carry = 0.5f * kb[n - 1u]; } k->built = 1;|' T &
 pids+=($!)
 failed=0
 for p in "${pids[@]}"; do wait "$p" || failed=1; done
