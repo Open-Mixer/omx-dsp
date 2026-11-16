@@ -89,7 +89,7 @@ for 60 s (`.github/workflows/ci.yml`, job `fuzz`).
 ### Gaps
 
 - The analysis code is not fuzzed: `src/omx_room.c`, `src/omx_sweep.c`, `src/omx_align_fit.c`,
-  `src/omx_fbs_detect.c`, `src/omx_fbs_place.c`, and the headers under `include/omxdsp/analysis/`
+  `src/omx_fbs_detect.c`, `src/omx_fbs_place.c`, `src/omx_hrp_place.c`, and the headers under `include/omxdsp/analysis/`
   (HRP, FBS and RTA shells, `omx_live_shell.h`). These take audio from the graph.
 - `src/omx_oversampler.c` and most of `include/omxdsp/mix/` (bus stage and sum, meter, route gain,
   mix coefficients, pan law, key) have no harness of their own; some are reached only through the

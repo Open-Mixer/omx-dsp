@@ -3,7 +3,7 @@
 
 # The checks of the fuzz targets
 
-Every property the harnesses of `fuzz/` hold the library to, read one by one: 105 checks, each an
+Every property the harnesses of `fuzz/` hold the library to, read one by one: 106 checks, each an
 `if (...) abort();` with its comment above it, and the stops that are not properties. This is the reading OSS Verify's
 enrollment review asks for (items F5 and F8 of its `review.md`): does each check prove what its comment says, in both
 directions, and does its expected value come from the harness rather than from the library under test.
@@ -19,14 +19,14 @@ How to read a row:
   after) and the seed of `fuzz/corpus/<harness>/` that makes this check abort with the change made. Each record is
   run alone: the library is changed, the harness rebuilt, and the seed must stop at this `abort()`; without the
   change every seed passes. A record is read only from the comment lines directly above the `if`, with no code
-  between: the two slew checks of `fuzz_laws.c` (lines 351 and 362) had code between the comment and the `if`, so
+  between: the two slew checks of `fuzz_laws.c` (lines 363 and 374) had code between the comment and the `if`, so
   their records were not read, and those comments now sit directly above their `if`.
 - **Verdict**: OK when the check tests what the comment states, its expected value is right and independent, and its
   breakage makes it fail. WEAK would mean a wrong library can pass it; WRONG, that the comment or the value is wrong.
 
 ## Verdicts
 
-All 105 checks are OK. Five were WEAK before this reading, and are fixed in the harnesses as they stand now:
+All 106 checks are OK. Six were WEAK before this reading, and are fixed in the harnesses as they stand now:
 
 - `fuzz_fx`: a refused init was held to run() as the identity, but which rates an init refuses was the library's own
   answer. A face bound to the grid that took every rate, or a dynamics face that took only the grid, passed every
@@ -38,9 +38,14 @@ All 105 checks are OK. Five were WEAK before this reading, and are fixed in the 
   `omx_src_out_capacity()`, the library's own counts. The harness now works both out from the reduced ratio.
 - `fuzz_note_map`: the held table was compared with the harness's account by its count of keys only. It is now
   compared key by key.
+- `fuzz_laws`: the samples of a ramp were held only to the span of its two ends, and its end check reads what
+  `omx_ramp_end()` stores, the target whatever the step. A step of half the change (`/ (float)(2u * n)`) went only
+  half way and left the next block to jump the rest, and passed every check. A new check holds each sample to the
+  rule of `omx_ramp.h`, `start + (end - start) * i / n`, worked out by the harness in double. It runs after the
+  span check has read the whole block, so a sample past the span still stops at the span check.
 
 Each of these has a record of a breakage that the old checks let through and the new one stops: the ones in the rows
-of `fuzz_fx.c` (the init check), `fuzz_eq.c` (the bell and the shelf) and `fuzz_note_map.c` (the table, `key ^ 1`).
+of `fuzz_fx.c` (the init check), `fuzz_eq.c` (the bell and the shelf), `fuzz_note_map.c` (the table, `key ^ 1`) and `fuzz_laws.c` (the ramp's rule).
 
 ## Shared by every harness: `fuzz/fuzz.h`
 
@@ -79,16 +84,17 @@ of `fuzz_fx.c` (the init check), `fuzz_eq.c` (the bell and the shelf) and `fuzz_
 | `fuzz_laws.c:212` | A muted strip or DCA has a coefficient of 0. | 0 when muted, the documented law | `omx_fader_law.h:85` `p->mute ? 0.0f : 1.0f` → `p->mute ? 1.0f : 1.0f`, on `pan-fader` | OK |
 | `fuzz_laws.c:234` | A ramp starts at the applied value, 0 for one that is not finite. | the start the harness passed (0 for a non-finite one) | `omx_ramp.h:58` `r.cur + r.step` → `r.tgt + r.step`, on `ramp` | OK |
 | `fuzz_laws.c:243` | No sample of a ramp leaves the span of its two ends. | the span of the two ends the harness passed | `omx_ramp.h:58` `r.step * (float)i` → `2.0f * r.step * (float)i`, on `ramp` | OK |
-| `fuzz_laws.c:252` | A ramp ends on its target. | the target the harness passed (0 for a non-finite one) | `omx_ramp.h:68` `*cur = r.tgt` → `*cur = r.cur`, on `ramp` | OK |
-| `fuzz_laws.c:268` | A wet/dry mix of finite samples lies between the dry one and the wet one. | the two samples the harness passed | `omx_wetdry.h:36` `dry * xl` → `2.0f * dry * xl`, on `wetdry` | OK |
-| `fuzz_laws.c:283` | Each sample of a cross-fade lies between the two bodies. | the two bodies the harness passed | `omx_wetdry.h:82` `(step * (float)i)` → `(2.0f * step * (float)i)`, on `wetdry` | OK |
-| `fuzz_laws.c:296` | A time constant gives a pole in [0, 1), however long the time. | the constant interval [0, 1) | `omx_onepole.h:123` `fminf(expf(-1.0f / (ms * 0.001f * sr)), OMX_POLE_MAX)` → `expf(-1.0f / (ms * 0.001f * sr))`, on `onepole` | OK |
-| `fuzz_laws.c:303` | A corner gives a pole in [0, 1), however low the corner. | the constant interval [0, 1) | `omx_onepole.h:143` `fminf(expf(-2.0f * (float)M_PI * hz / sr), OMX_POLE_MAX)` → `expf(-2.0f * (float)M_PI * hz / sr)`, on `onepole` | OK |
-| `fuzz_laws.c:312` | A rescaled pole stays in [0, 1]. | the constant interval [0, 1] | `omx_onepole.h:169` `powf(p, ref / sr)` → `2.0f`, on `onepole` | OK |
-| `fuzz_laws.c:322` | One step of the filter lies between the input and the state, and the state is what it returns. | the input and state the harness passed | `omx_onepole.h:52` `x * (1.0f - pole)` → `2.0f * x * (1.0f - pole)`, on `onepole` | OK |
-| `fuzz_laws.c:334` | A step is one sample's travel at most, and never none. | the constant interval (0, 1] | `mix/omx_slew.h:49` `s < 1.0f ? (s > FLT_MIN ? s : FLT_MIN) : 1.0f` → `s`, on `slew` | OK |
-| `fuzz_laws.c:351` | The cursor stays between where it was and its target, and is exactly the target once the walk fits the block. | the start and target the harness passed | `mix/omx_slew.h:67` `up < tgt ? up : tgt` → `up`, on `slew` (the comment directly above the `if`, so the record is read) | OK |
-| `fuzz_laws.c:362` | The hold's way back to open waits for a carried sample: over silence the position stays. | the position the harness passed | `mix/omx_slew.h:127` `h < t \|\| xl != 0.0f \|\| xr != 0.0f` → `1`, on `slew` (the comment directly above the `if`, so the record is read) | OK |
+| `fuzz_laws.c:255` | Each sample of a ramp is the rule of omx_ramp.h, start + (end - start) * i / n, to rounding. | the harness's own evaluation of the rule, in double, from the start, target and length it passed; the slack is the rounding of `cur + step * i` | `omx_ramp.h:43` `/ (float)n` → `/ (float)(2u * n)`, on `ramp` (the ramp goes half way, then the next block jumps to the target; the span and the end checks both still hold) | OK |
+| `fuzz_laws.c:264` | A ramp ends on its target. | the target the harness passed (0 for a non-finite one) | `omx_ramp.h:68` `*cur = r.tgt` → `*cur = r.cur`, on `ramp` | OK |
+| `fuzz_laws.c:280` | A wet/dry mix of finite samples lies between the dry one and the wet one. | the two samples the harness passed | `omx_wetdry.h:36` `dry * xl` → `2.0f * dry * xl`, on `wetdry` | OK |
+| `fuzz_laws.c:295` | Each sample of a cross-fade lies between the two bodies. | the two bodies the harness passed | `omx_wetdry.h:82` `(step * (float)i)` → `(2.0f * step * (float)i)`, on `wetdry` | OK |
+| `fuzz_laws.c:308` | A time constant gives a pole in [0, 1), however long the time. | the constant interval [0, 1) | `omx_onepole.h:123` `fminf(expf(-1.0f / (ms * 0.001f * sr)), OMX_POLE_MAX)` → `expf(-1.0f / (ms * 0.001f * sr))`, on `onepole` | OK |
+| `fuzz_laws.c:315` | A corner gives a pole in [0, 1), however low the corner. | the constant interval [0, 1) | `omx_onepole.h:143` `fminf(expf(-2.0f * (float)M_PI * hz / sr), OMX_POLE_MAX)` → `expf(-2.0f * (float)M_PI * hz / sr)`, on `onepole` | OK |
+| `fuzz_laws.c:324` | A rescaled pole stays in [0, 1]. | the constant interval [0, 1] | `omx_onepole.h:169` `powf(p, ref / sr)` → `2.0f`, on `onepole` | OK |
+| `fuzz_laws.c:334` | One step of the filter lies between the input and the state, and the state is what it returns. | the input and state the harness passed | `omx_onepole.h:52` `x * (1.0f - pole)` → `2.0f * x * (1.0f - pole)`, on `onepole` | OK |
+| `fuzz_laws.c:346` | A step is one sample's travel at most, and never none. | the constant interval (0, 1] | `mix/omx_slew.h:49` `s < 1.0f ? (s > FLT_MIN ? s : FLT_MIN) : 1.0f` → `s`, on `slew` | OK |
+| `fuzz_laws.c:363` | The cursor stays between where it was and its target, and is exactly the target once the walk fits the block. | the start and target the harness passed | `mix/omx_slew.h:67` `up < tgt ? up : tgt` → `up`, on `slew` (the comment directly above the `if`, so the record is read) | OK |
+| `fuzz_laws.c:374` | The hold's way back to open waits for a carried sample: over silence the position stays. | the position the harness passed | `mix/omx_slew.h:127` `h < t \|\| xl != 0.0f \|\| xr != 0.0f` → `1`, on `slew` (the comment directly above the `if`, so the record is read) | OK |
 
 ## `fuzz_eq`: the EQ design and run path
 

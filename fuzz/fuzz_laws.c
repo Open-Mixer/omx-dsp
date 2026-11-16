@@ -22,9 +22,9 @@
  *     is muted;
  *   - a slew's step is at most one sample's travel, its cursor stays between its ends and lands on the
  *     target, and a hold's way back to open waits for a carried sample;
- *   - a ramp over n samples starts at the applied value (0 for a non-finite one), reaches no
- *     sample outside the span of its start and target, and ends on the target; nothing in it is
- *     non-finite whatever the caller held;
+ *   - a ramp over n samples starts at the applied value (0 for a non-finite one), gives at sample
+ *     i start + (end - start) * i / n to rounding, so no sample leaves the span of its two ends,
+ *     and ends on the target; nothing in it is non-finite whatever the caller held;
  *   - the wet/dry mix of finite samples lies between the dry and the wet one, and the
  *     cross-fade's every sample lies between the outgoing and the incoming body's;
  *   - the one-pole constructors give a pole in [0, 1) for any finite time or corner (the
@@ -240,6 +240,18 @@ static void call_ramp(struct fuzz_in *in) {
      * input: ramp */
     if (!(is_fin(x) && x >= lo - slack && x <= hi + slack)) {
       FUZZ_SAY("ramp %g -> %g over %u: sample %u is %g", (double)cur, (double)tgt, (unsigned)n, (unsigned)i, (double)x);
+      abort();
+    }
+  }
+  /* then each sample against the rule, once the whole block is known to stay in its span */
+  for (uint32_t i = 0; i < n; i++) {
+    const float x = omx_ramp_at(r, i);
+    const double want = (double)start + ((double)end - (double)start) * (double)i / (double)n; /* the rule, in double */
+    /* Each sample of a ramp is the rule of omx_ramp.h, start + (end - start) * i / n, to rounding.
+     * mutant: include/omxdsp/omx_ramp.h:43 `/ (float)n` -> `/ (float)(2u * n)`
+     * input: ramp */
+    if (!(fabs((double)x - want) <= (double)slack)) {
+      FUZZ_SAY("ramp %g -> %g over %u: sample %u is %g, not the rule's %g", (double)cur, (double)tgt, (unsigned)n, (unsigned)i, (double)x, want);
       abort();
     }
   }
