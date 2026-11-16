@@ -148,7 +148,7 @@ Its documentation is on openmixer.org.
 %{_datadir}/omx-contract/contract.d/3/omx-dsp/
 
 %changelog
-* Sun Nov 15 2026 Pau Aliagas <linuxnow@gmail.com> - 0.32.4-1
+* Mon Nov 16 2026 Pau Aliagas <linuxnow@gmail.com> - 0.32.4-1
 - curve: the drive family, a drive's transfer curve sample in to sample out
   through the drive kernel's own control mapping and biased shaper; roles
   drive, tone, model, mix and output, the unit pc, the sample extents. The
@@ -156,6 +156,21 @@ Its documentation is on openmixer.org.
   counts are proven in tools/patch-count-proofs.txt.
 - patch-names-check: a count or size macro whose value moves in a patch
   needs its proof line.
+- curve: the drive's transfer curve reads dB in to dB out on the one level
+  axis (default grid -60..0 dB), and the drive's controls helper is tagged
+  audio for the rt-gate.
+- curve: time_response, the delay's taps (stems: time, level, shade, leg) and
+  the reverb's decay envelope, against the kernels; the reverb's decay loops
+  are declared once as data; the TypeScript twin draws both. Added names
+  only; the moved curve counts are proven in tools/patch-count-proofs.txt.
+- The EQ Q range moves the kernel and its TypeScript twin together
+  (eq-q-range-sabotage); a stale twin goes red.
+- fuzz_laws: each sample of a ramp is held to its rule.
+- test: the compressor detector oracles O5, O8 and O9 at the nine oracle
+  rates, with their perturbations.
+- flavour-check: the TSan probe says why it cannot read TSan.
+- release: the deb job publishes omx-dsp-contract with libomxdsp-dev, and a
+  check refuses a release that omits a binary a sibling depends on.
 
 * Sun Nov 15 2026 Pau Aliagas <linuxnow@gmail.com> - 0.32.3-1
 - packaging: the JACK headers by pkgconfig(jack) again, so the build image's
