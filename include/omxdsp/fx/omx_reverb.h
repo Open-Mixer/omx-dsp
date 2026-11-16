@@ -418,17 +418,18 @@ static inline int omx_reverb_state_layout(struct omx_reverb_state *s, float *poo
    *     44 100 Hz   187 469 floats   fits, x4.89 headroom
    *     96 000 Hz   408 006 floats   fits, x2.25     <- THE RIG'S RATE (decision 2026-09-14)
    *    192 000 Hz   815 976 floats   fits, x1.12     <- OMX_REVERB_MAX_RATE, the declared ceiling
-   *    384 000 Hz 1 631 922 floats   EXHAUSTS by 714 418
+   *    384 000 Hz 1 631 922 floats   would exhaust by 714 418 (refused above the ceiling, never laid out)
    *
-   * THE GUARD BELOW IS THEREFORE REACHABLE, not theoretical: the operator stated on 2026-08-07
-   * that the desk runs "at most 192 or 384 kHz, usually 96", and at 384 kHz this layout does not
-   * fit. What happens then is a SILENT REVERB on that insert — not a NULL dereference on the RT
+   * A rate above OMX_REVERB_MAX_RATE is REFUSED at the top of this function, before any layout
+   * runs, so 384 kHz never reaches the pool: it returns 0 and the state stays unpublished. The
+   * exhaustion guard below is still reachable, for a pool too small for the rate it is given
+   * (a caller sizing its own pool, or a test), and what it does then is a refused layout: `sr`
+   * stays 0, `_pool` is NULL, the insert is a passthrough, never a NULL dereference on the RT
    * thread, which is what it was before the guard.
    *
-   * A rate above OMX_REVERB_MAX_RATE is out of contract for this file and belongs refused ABOVE
-   * it, where the operator can be told, rather than absorbed here as a missing tail. Sizing the
-   * pool for 384 kHz instead would cost (1 631 922 - 917 504) x 4 B = 2.7 MB more per reverb
-   * state and is a deliberate decision, not a default.
+   * Taking 384 kHz instead would need a pool of 1 631 922 floats, (1 631 922 - 917 504) x 4 B =
+   * 2.7 MB more per reverb state: a deliberate decision, not a default. The operator stated on
+   * 2026-08-07 that the desk runs "at most 192 or 384 kHz, usually 96"; the ceiling is 192 kHz today.
    *
    * failure mode is exactly the one already designed for: the insert is a no-op. */
   if (s->_exhausted) { s->_pool = NULL; return 0; } /* sr stays 0: the rate is not published */
