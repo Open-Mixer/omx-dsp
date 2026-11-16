@@ -7,7 +7,7 @@
     "kind": "sheet",
     "since": "3.0.0",
     "source": {
-      "impl": "include/omxdsp/fx/omx_reverb.h#omx_reverb_process"
+      "impl": "include/omxdsp/omx_curve.h#omx_curve_reverb_loop"
     },
     "doc": "The one loop each reverb configuration's late decay follows, the numbers the kernel runs (since 0.32.5): a Schroeder-Moorer network decays at its LONGEST loop's gain and length, so the loop gain is `gainFloor + gainSpan x size` (room's comb feedback, hall's, the plate tank's decay) and the loop is `loopSamples` at `tuningRate` (room's and hall's longest comb, the plate's longer tank half), scaled to the live rate as the lines are. The RT60 is `loopMs x ln(0.001) / ln(gain)`. The curve twin draws the decay envelope from these; the kernel reads its gains from the same place, so the picture and the tail cannot drift apart.",
     "value": {
