@@ -44,6 +44,12 @@ export const TOLERANCES = {
   // side. Measured over the 225 requests (4 shapers and a model past them, clamped and absent terms, -60..0 and
   // -90..+6 dB grids, 9 rates): largest gap 3.05e-5 dB. Bound 4e-5 dB; the sabotages below each move a curve by more.
   curvePointsDrive: { abs: 4e-5 },
+  // A time response is double arithmetic on both sides (a log10, a pow, a division), in the same order: bit for bit
+  // but for libm's pow and log10 against V8's, a few ulp of a value under 2000 ms or 60 dB; the delay's shade carries
+  // the kernel's float powf (the tone's pole) through a double pow, V8's Math.pow rounded to float against powf: a float
+  // step at most, raised to at most 31 passes.
+  curvePointsTime: { abs: 1e-9 },
+  curveStemsTime: { abs: 1e-5 },
   // An EQ curve is magnitudeSumDb over up to ten sections at x from Math.pow against libm pow (a few ulp of x):
   // the worst gap measured is 2.7e-10 dB; 1e-8 dB is the sum tolerance above, and a Q moved by less than the
   // engine's float narrowing (2^-25 relative) moves the curve by more.

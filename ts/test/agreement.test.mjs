@@ -10,6 +10,7 @@ import assert from 'node:assert/strict';
 import { against, ask, oracle, oracleKernels, oracleRates } from '../oracle/ts-twin-oracle.mjs';
 import {
   CURVE_CODES,
+  CURVE_EXTENTS,
   CURVE_POINTS_MAX,
   CURVE_WORDS,
   EQ_NOTCH_Q_RANGE,
@@ -36,7 +37,7 @@ const red = (asked, twin, tol) => against(asked, twin, tol).failures.length > 0;
 describe('the oracle is here', () => {
   it('answers every kernel these twins need', () => {
     const k = oracleKernels();
-    for (const n of ['lin_to_db', 'lin_to_db_d', 'db_to_lin', 'eq_octaves_q', 'rta_fft_size_for', 'eq_design', 'eq_lv2_clamp_q', 'eq_band_magnitude_db', 'eq_magnitude_sum_db', 'curve_points', 'curve_points_marked', 'gaincomp_db', 'gaincomp_db_shifted', 'gate_knee']) assert.ok(k.includes(n), n);
+    for (const n of ['lin_to_db', 'lin_to_db_d', 'db_to_lin', 'eq_octaves_q', 'rta_fft_size_for', 'eq_design', 'eq_lv2_clamp_q', 'eq_band_magnitude_db', 'eq_magnitude_sum_db', 'curve_points', 'curve_points_marked', 'curve_time', 'gaincomp_db', 'gaincomp_db_shifted', 'gate_knee']) assert.ok(k.includes(n), n);
   });
 });
 
@@ -387,6 +388,88 @@ describe('curvePoints agrees with omx_curve_points at every oracle rate', () => 
     assert.ok(curveAgainst(driveAsked, near('mix', (v) => (v === 100 ? 99 : v + 1)), T.curvePointsDrive).failures.length > 10);
     const plusOne = (rq) => curvePoints(rq.terms.some((t) => t.role === 'output') ? rq : { ...rq, terms: [...rq.terms, { role: 'output', value: 1, unit: 'db' }] });
     assert.ok(curveAgainst(driveAsked, plusOne, T.curvePointsDrive).failures.length > 10);
+  });
+
+  /** A time request as the oracle's row: kind family rate points has_extents x_min x_max tempo_bpm nterms { role index value unit shape }. */
+  const timeRowOf = (rq) => [
+    idx(CURVE_WORDS.displays, rq.kind), idx(CURVE_WORDS.families, rq.family), rq.sampleRate, rq.points, rq.extents ? 1 : 0,
+    rq.extents?.min ?? 0, rq.extents?.max ?? 0, rq.tempoBpm ?? 0, rq.terms.length,
+    ...rq.terms.flatMap((t) => [idx(CURVE_WORDS.roles, t.role), t.index ?? 0, t.value, idx(CURVE_WORDS.units, t.unit), -1]),
+  ];
+  /** The twin's time answer as the oracle spells it: code count { x y } nstems { t level shade leg }. */
+  const timeAnswerOf = (a) => ('code' in a ? [CURVE_CODES.indexOf(a.code), 0, 0]
+    : [0, a.points.length, ...a.points.flatMap((p) => [p.x, p.y]), (a.stems ?? []).length, ...(a.stems ?? []).flatMap((s) => [s.x, s.y, s.shade, CURVE_WORDS.legs.indexOf(s.leg)])]);
+  const timeAgainst = (asked, twin, tolPoints, tolStems) => {
+    const failures = [];
+    let worst = 0;
+    asked.reqs.forEach((rq, i) => {
+      const t = timeAnswerOf(twin(rq)), k = asked.answers[i];
+      if (t[0] !== k[0] || t[1] !== k[1] || t.length !== k.length) { failures.push(`request ${i}: twin code ${t[0]} count ${t[1]} length ${t.length}, kernel code ${k[0]} count ${k[1]} length ${k.length}`); return; }
+      const np = 2 + 2 * t[1];
+      for (let j = 2; j < t.length; j++) {
+        if (j === np) continue; // the stem count, already equal by length
+        const inStems = j > np;
+        const allowed = inStems ? tolStems.abs : Math.max(tolPoints.abs, 1e-15 * Math.abs(k[j]));
+        const d = Math.abs(t[j] - k[j]);
+        if (!(d <= allowed)) { failures.push(`request ${i} value[${j}]: twin ${t[j]}, kernel ${k[j]}`); break; }
+        worst = Math.max(worst, d);
+      }
+    });
+    return { failures, worst };
+  };
+  const timeReqs = () => {
+    const out = [];
+    for (const sr of RATES) for (let seed = 0; seed < 10; seed++) {
+      const units = seed % 2 ? { share: 'pc', k: 100 } : { share: 'none', k: 1 };
+      out.push({ kind: 'time_response', family: 'delay', sampleRate: sr, points: 8, terms: [
+        { role: 'time', value: seed % 3 ? 40 + 110 * seed : (40 + 110 * seed) / 1000, unit: seed % 3 ? 'ms' : 's' },
+        { role: 'feedback', value: (0.1 + 0.09 * seed) * units.k, unit: units.share },
+        { role: 'mix', value: (seed === 4 ? 0 : seed === 5 ? 1 : 0.2 + 0.07 * seed) * units.k, unit: units.share },
+        { role: 'tone', value: 0.1 * seed, unit: 'none' },
+        { role: 'pingpong', value: seed % 4 === 0 ? 1 : 0, unit: 'none' },
+      ] });
+      out.push({ kind: 'time_response', family: 'delay', sampleRate: sr, points: 8, tempoBpm: 90 + 10 * seed, terms: [
+        { role: 'time', value: 500, unit: 'ms' }, { role: 'feedback', value: 0.4, unit: 'coef' }, { role: 'mix', value: 0.5, unit: 'coef' },
+        { role: 'sync', value: 1, unit: 'none' }, { role: 'division', value: seed % 18, unit: 'none' },
+      ] });
+      const algo = seed % 3 === 0 ? 0 : seed % 3 === 1 ? 2 : 1;
+      out.push({ kind: 'time_response', family: 'reverb', sampleRate: sr, points: 12 + seed, terms: [
+        { role: 'size', value: (0.1 * seed) * units.k, unit: units.share }, { role: 'algorithm', value: algo, unit: 'none' },
+        { role: 'predelay', value: seed % 2 ? 5 * seed : 0, unit: 'ms' }, { role: 'mix', value: (seed === 3 ? 0 : 0.3 + 0.07 * seed) * units.k, unit: units.share },
+        { role: 'damping', value: 0.5, unit: 'none' }, { role: 'width', value: 1, unit: 'none' },
+      ] });
+      out.push({ kind: 'time_response', family: 'reverb', sampleRate: sr, points: 6, extents: seed % 2 ? { min: 0, max: 400 } : undefined, terms: [
+        { role: 'decay', value: seed % 2 ? 1.5 + 0.2 * seed : 800 + 100 * seed, unit: seed % 2 ? 's' : 'ms' }, { role: 'mix', value: 0.6, unit: 'none' },
+      ] });
+    }
+    // the absences: a synced delay with no tempo, a reverse reverb, a reverb with no mix, a delay with no feedback, a delay in dB
+    out.push({ kind: 'time_response', family: 'delay', sampleRate: 48000, points: 8, terms: [{ role: 'sync', value: 1, unit: 'none' }, { role: 'division', value: 6, unit: 'none' }, { role: 'feedback', value: 0.5, unit: 'none' }] });
+    out.push({ kind: 'time_response', family: 'reverb', sampleRate: 48000, points: 8, terms: [{ role: 'size', value: 0.5, unit: 'none' }, { role: 'algorithm', value: 3, unit: 'none' }, { role: 'mix', value: 1, unit: 'none' }] });
+    out.push({ kind: 'time_response', family: 'reverb', sampleRate: 48000, points: 8, terms: [{ role: 'size', value: 0.5, unit: 'none' }] });
+    out.push({ kind: 'time_response', family: 'delay', sampleRate: 48000, points: 8, terms: [{ role: 'time', value: 100, unit: 'ms' }] });
+    out.push({ kind: 'time_response', family: 'delay', sampleRate: 48000, points: 8, terms: [{ role: 'time', value: 100, unit: 'ms' }, { role: 'feedback', value: 0.5, unit: 'db' }] });
+    out.push({ kind: 'transfer_curve', family: 'delay', sampleRate: 48000, points: 8, terms: [{ role: 'time', value: 100, unit: 'ms' }, { role: 'feedback', value: 0.5, unit: 'none' }] });
+    return out;
+  };
+  const timeAsked = { ...ask('curve_time', timeReqs().map(timeRowOf)), reqs: timeReqs() };
+  it('time_response: the delay\'s stems and the reverb\'s envelope are omx_curve_time\'s at every rate, the absences by code', () => {
+    const r = timeAgainst(timeAsked, curvePoints, T.curvePointsTime, T.curveStemsTime);
+    assert.deepEqual(r.failures.slice(0, 5), []);
+    const codes = timeAsked.answers.slice(-6).map((a) => CURVE_CODES[a[0]]);
+    assert.deepEqual(codes, ['termMissing', 'kindUnknown', 'termMissing', 'termMissing', 'unitRefused', 'kindUnknown']);
+    process.stderr.write(`curvePoints time_response: largest gap ${r.worst}\n`);
+  });
+  it('SABOTAGE time: the feedback one power off, the shade not raised, the predelay gap dropped, the floor at -66: each red', () => {
+    // feedback^n for feedback^(n-1): every echo one pass darker in level
+    const fbUp = (rq) => { const a = curvePoints(rq); return 'code' in a || !a.stems ? a : { ...a, stems: a.stems.map((s) => (s.x > 0 ? { ...s, y: s.y + 20 * Math.log10(valueFb(rq)) } : s)) }; };
+    const valueFb = (rq) => { const t = rq.terms.find((q) => q.role === 'feedback'); return t.unit === 'pc' ? t.value / 100 : t.value; };
+    assert.ok(timeAgainst(timeAsked, fbUp, T.curvePointsTime, T.curveStemsTime).failures.length > 10, 'SABOTAGE one power of feedback on every echo stayed green');
+    const flatShade = (rq) => { const a = curvePoints(rq); return 'code' in a || !a.stems ? a : { ...a, stems: a.stems.map((s) => ({ ...s, shade: 1 })) }; };
+    assert.ok(timeAgainst(timeAsked, flatShade, T.curvePointsTime, T.curveStemsTime).failures.length > 10, 'SABOTAGE the tone\'s shade flattened stayed green');
+    const noGap = (rq) => curvePoints({ ...rq, terms: rq.terms.filter((t) => t.role !== 'predelay') });
+    assert.ok(timeAgainst(timeAsked, noGap, T.curvePointsTime, T.curveStemsTime).failures.length > 5, 'SABOTAGE the predelay dropped stayed green');
+    const lowFloor = (rq) => { const a = curvePoints(rq); return 'code' in a || !a.points.length ? a : { ...a, points: a.points.map((p) => (p.y === CURVE_EXTENTS.timeFloorDb ? { ...p, y: -66 } : p)) }; };
+    assert.ok(timeAgainst(timeAsked, lowFloor, T.curvePointsTime, T.curveStemsTime).failures.length > 5, 'SABOTAGE the floor at -66 dB stayed green');
   });
 
   it('the ruled defaults agree: a band with no Q, the allpasses, a `-` band, a limiter with no ratio', () => {

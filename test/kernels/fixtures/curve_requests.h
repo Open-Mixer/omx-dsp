@@ -41,7 +41,7 @@ static const struct omx_curve_term CURVE_GOLDEN_EQ_TERMS[] = {
 };
 static const struct omx_curve_request CURVE_GOLDEN_EQ = {
     OMX_CURVE_DISPLAYS_EQ_RESPONSE, OMX_CURVE_FAMILIES_EQ, 48000.0, 32u, 0, 0.0, 0.0,
-    CURVE_GOLDEN_EQ_TERMS, (uint32_t)(sizeof CURVE_GOLDEN_EQ_TERMS / sizeof CURVE_GOLDEN_EQ_TERMS[0]), 0};
+    CURVE_GOLDEN_EQ_TERMS, (uint32_t)(sizeof CURVE_GOLDEN_EQ_TERMS / sizeof CURVE_GOLDEN_EQ_TERMS[0]), 0, 0.0};
 
 /* A compressor at 96 kHz: -20 dBFS, 4:1, a 6 dB knee, 3 dB of make-up. */
 static const struct omx_curve_term CURVE_GOLDEN_COMP_TERMS[] = {
@@ -52,7 +52,7 @@ static const struct omx_curve_term CURVE_GOLDEN_COMP_TERMS[] = {
 };
 static const struct omx_curve_request CURVE_GOLDEN_COMP = {
     OMX_CURVE_DISPLAYS_TRANSFER_CURVE, OMX_CURVE_FAMILIES_DYNAMICS, 96000.0, 41u, 0, 0.0, 0.0,
-    CURVE_GOLDEN_COMP_TERMS, (uint32_t)(sizeof CURVE_GOLDEN_COMP_TERMS / sizeof CURVE_GOLDEN_COMP_TERMS[0]), 0};
+    CURVE_GOLDEN_COMP_TERMS, (uint32_t)(sizeof CURVE_GOLDEN_COMP_TERMS / sizeof CURVE_GOLDEN_COMP_TERMS[0]), 0, 0.0};
 
 /* A gate at 44.1 kHz: -40 dB, a -60 dB range, 4:1 below, the knee range -46 to -38 dB, off the threshold. */
 static const struct omx_curve_term CURVE_GOLDEN_GATE_TERMS[] = {
@@ -64,7 +64,7 @@ static const struct omx_curve_term CURVE_GOLDEN_GATE_TERMS[] = {
 };
 static const struct omx_curve_request CURVE_GOLDEN_GATE = {
     OMX_CURVE_DISPLAYS_TRANSFER_CURVE, OMX_CURVE_FAMILIES_GATE, 44100.0, 41u, 0, 0.0, 0.0,
-    CURVE_GOLDEN_GATE_TERMS, (uint32_t)(sizeof CURVE_GOLDEN_GATE_TERMS / sizeof CURVE_GOLDEN_GATE_TERMS[0]), 0};
+    CURVE_GOLDEN_GATE_TERMS, (uint32_t)(sizeof CURVE_GOLDEN_GATE_TERMS / sizeof CURVE_GOLDEN_GATE_TERMS[0]), 0, 0.0};
 
 /* The strip EQ the feedback corrector planted two notches in, at 48 kHz: two user bells, a ring-out notch at 2.5 kHz
  * (a notch band), a show notch at 630 Hz (a -9 dB bell at Q 16), an HRP cut at 1.8 kHz (-4.5 dB, Q 24), and a
@@ -90,14 +90,39 @@ static const struct omx_curve_term CURVE_GOLDEN_FBS_TERMS[] = {
 };
 static const struct omx_curve_request CURVE_GOLDEN_FBS = {
     OMX_CURVE_DISPLAYS_EQ_RESPONSE, OMX_CURVE_FAMILIES_EQ, 48000.0, 48u, 0, 0.0, 0.0,
-    CURVE_GOLDEN_FBS_TERMS, (uint32_t)(sizeof CURVE_GOLDEN_FBS_TERMS / sizeof CURVE_GOLDEN_FBS_TERMS[0]), 1};
+    CURVE_GOLDEN_FBS_TERMS, (uint32_t)(sizeof CURVE_GOLDEN_FBS_TERMS / sizeof CURVE_GOLDEN_FBS_TERMS[0]), 1, 0.0};
 
 /* The golden requests by name, in the order tools/curve-golden.c writes them. */
+/* A delay at 48 kHz as omx-delay serves it: 375 ms, feedback 0.45, tone 0.3, mix 0.4, ping-pong on: a stem train, no point. */
+static const struct omx_curve_term CURVE_GOLDEN_DELAY_TERMS[] = {
+    CT(TIME, 0, 375.0, MS, CT_NS),
+    CT(FEEDBACK, 0, 0.45, NONE, CT_NS),
+    CT(TONE, 0, 0.3, NONE, CT_NS),
+    CT(MIX, 0, 0.4, NONE, CT_NS),
+    CT(PINGPONG, 0, 1.0, NONE, CT_NS),
+};
+static const struct omx_curve_request CURVE_GOLDEN_DELAY = {
+    OMX_CURVE_DISPLAYS_TIME_RESPONSE, OMX_CURVE_FAMILIES_DELAY, 48000.0, 16u, 0, 0.0, 0.0,
+    CURVE_GOLDEN_DELAY_TERMS, (uint32_t)(sizeof CURVE_GOLDEN_DELAY_TERMS / sizeof CURVE_GOLDEN_DELAY_TERMS[0]), 0, 0.0};
+
+/* A hall reverb at 44.1 kHz as omx-reverb serves it: size 0.6, a 20 ms predelay, mix 0.35: the decay envelope. */
+static const struct omx_curve_term CURVE_GOLDEN_REVERB_TERMS[] = {
+    CT(SIZE, 0, 0.6, NONE, CT_NS),
+    CT(ALGORITHM, 0, 2.0, NONE, CT_NS),
+    CT(PREDELAY, 0, 20.0, MS, CT_NS),
+    CT(DAMPING, 0, 0.5, NONE, CT_NS),
+    CT(WIDTH, 0, 1.0, NONE, CT_NS),
+    CT(MIX, 0, 0.35, NONE, CT_NS),
+};
+static const struct omx_curve_request CURVE_GOLDEN_REVERB = {
+    OMX_CURVE_DISPLAYS_TIME_RESPONSE, OMX_CURVE_FAMILIES_REVERB, 44100.0, 24u, 0, 0.0, 0.0,
+    CURVE_GOLDEN_REVERB_TERMS, (uint32_t)(sizeof CURVE_GOLDEN_REVERB_TERMS / sizeof CURVE_GOLDEN_REVERB_TERMS[0]), 0, 0.0};
+
 static const struct {
   const char *name;
   const struct omx_curve_request *rq;
 } CURVE_GOLDEN_REQUESTS[] = {{"eq", &CURVE_GOLDEN_EQ}, {"comp", &CURVE_GOLDEN_COMP}, {"gate", &CURVE_GOLDEN_GATE},
-                           {"fbs", &CURVE_GOLDEN_FBS}};
-#define CURVE_GOLDEN_COUNT 4u
+                           {"fbs", &CURVE_GOLDEN_FBS}, {"delay", &CURVE_GOLDEN_DELAY}, {"reverb", &CURVE_GOLDEN_REVERB}};
+#define CURVE_GOLDEN_COUNT 6u
 
 #endif /* OMXDSP_TEST_CURVE_REQUESTS_H */
