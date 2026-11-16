@@ -1091,8 +1091,18 @@ install: $(LIBS_ALL) $(PC_ALL) $(EXPORTS) install-rt-gate install-rta-read
 	install -m 0644 vectors/meter-view.json $(DESTDIR)$(DATADIR)/omxdsp/meter-view-vectors.json
 	install -m 0644 vectors/rta-bands.json $(DESTDIR)$(DATADIR)/omxdsp/rta-bands-vectors.json
 	install -m 0644 vectors/rta-delta.json $(DESTDIR)$(DATADIR)/omxdsp/rta-delta-vectors.json
+	install -d $(DESTDIR)$(DATADIR)/omxdsp/test-support
+	install -m 0644 test/support/*.h $(DESTDIR)$(DATADIR)/omxdsp/test-support/
+	install -m 0755 tools/tsan-gate.sh $(DESTDIR)$(DATADIR)/omxdsp/tsan-gate.sh
 	install -m 0755 tools/omx-dsp-copy-check.sh $(DESTDIR)$(BINDIR)/omx-dsp-copy-check
 	install -m 0644 omx-dsp-copy-check.1 $(DESTDIR)$(MANDIR)/man1/
+
+# the test support the devel package ships (omxdsp.pc testsupportdir, tsangate), read back from a scratch install
+test-support-install:
+	rm -rf $(BUILD)/support-install
+	$(MAKE) --no-print-directory install PREFIX=$(abspath $(BUILD))/support-install CONTRACTDIR=$(abspath $(BUILD))/support-install/share/omx-contract/contract.d
+	sh tools/support-install-check.sh $(abspath $(BUILD))/support-install
+.PHONY: test-support-install
 
 # §4.3 (e): UNJUDGED (exit 0, never a pass) where the toolchain has no TSan; where it has, the
 # thread arm must be report-free and its shared-state sabotage must race. The gate's own report
