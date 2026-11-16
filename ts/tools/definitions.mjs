@@ -34,6 +34,7 @@ const CONSTANTS = {
     'FBS_RING_MEMORY_SLOTS'],
   'hrp.json': ['HRP_GAIN_STEP_DB'],
   'drive.json': ['DRIVE_BIAS_MAX'],
+  'delay.json': ['DELAY_DIVISION_BEATS'],
 };
 /** data file -> control name -> the exported name of its { min, max } travel */
 const TRAVELS = {
@@ -45,7 +46,9 @@ const TRAVELS = {
 };
 /** data/primitives file -> the items of it a twin reads */
 const PRIMITIVES = {
-  'curve.json': ['CURVE_DISPLAYS', 'CURVE_FAMILIES', 'CURVE_ROLES', 'CURVE_UNITS', 'CURVE_SHAPES', 'CURVE_ORIGINS', 'CURVE_CODES', 'CURVE_POINTS_MAX', 'CURVE_EXTENTS'],
+  'curve.json': ['CURVE_DISPLAYS', 'CURVE_FAMILIES', 'CURVE_ROLES', 'CURVE_UNITS', 'CURVE_SHAPES', 'CURVE_ORIGINS', 'CURVE_CODES', 'CURVE_POINTS_MAX', 'CURVE_EXTENTS', 'CURVE_TAPS_MAX', 'CURVE_LEGS'],
+  'dsp-knob-reference-rate.json': ['DSP_KNOB_REFERENCE_RATE'],
+  'reverb-decay.json': ['REVERB_DECAY_LOOPS'],
   'lin-to-db-floor.json': ['LIN_TO_DB_FLOOR'],
   'meter.json': ['METER_VIEW', 'METER_KINDS', 'METER_MEASUREMENTS', 'METER_UNITS', 'METER_DECIMATION'],
 };

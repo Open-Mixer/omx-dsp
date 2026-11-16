@@ -81,8 +81,13 @@ enum omx_reverb_algo {
  * 0.99 at size 1, the same 0.99 ceiling the other configurations keep under unity), and the tank
  * lines are Dattorro's lengths at OMX_REVERB_PLATE_TUNING_RATE, scaled to the live rate at layout.
  * A test that waits out a plate's tail reads its decay from these, never from a copy. */
-#define OMX_REVERB_PLATE_DECAY_FLOOR 0.5f
-#define OMX_REVERB_PLATE_DECAY_SPAN 0.49f
+#define OMX_REVERB_PLATE_DECAY_FLOOR OMX_REVERB_DECAY_LOOPS_PLATE_GAIN_FLOOR
+#define OMX_REVERB_PLATE_DECAY_SPAN OMX_REVERB_DECAY_LOOPS_PLATE_GAIN_SPAN
+/* THE LOOP EACH CONFIGURATION'S LATE DECAY FOLLOWS is declared once (REVERB_DECAY_LOOPS, data/primitives/reverb-decay.json): the
+ * gains below and the comb tunings' longest line are read from it, and the curve twin draws the decay envelope from the same
+ * numbers, so the picture and the tail cannot drift apart (omx_curve_time). */
+#define OMX_REVERB_ROOM_COMB_TUNINGS 1116, 1188, 1277, 1356, 1422, 1491, 1557, OMX_REVERB_DECAY_LOOPS_ROOM_LOOP_SAMPLES
+#define OMX_REVERB_HALL_COMB_TUNINGS 2455, 2614, 2809, 2983, 3128, 3280, 3425, OMX_REVERB_DECAY_LOOPS_HALL_LOOP_SAMPLES
 #define OMX_REVERB_PLATE_TANK_TUNINGS 672, 1800, 908, 2656, 1996, 3163
 /* THE DEPTH IS A FIELD, `plate_mod_depth`, in percent of the paper's excursion above
  * the paper's: 100 is the plate as it always ran, so the
@@ -307,7 +312,7 @@ static inline void omx_reverb_state_layout(struct omx_reverb_state *s, float *po
   s->_pool = pool; s->pool_len = pool_len; s->next_free = 0; s->_exhausted = 0;
   const float scale = sr / 44100.0f;
   /* Freeverb comb tunings (Jezar's canonical set) and allpass tunings, in samples @ 44.1k. */
-  static const uint32_t COMB[OMX_FV_NCOMB] = {1116,1188,1277,1356,1422,1491,1557,1617};
+  static const uint32_t COMB[OMX_FV_NCOMB] = {OMX_REVERB_ROOM_COMB_TUNINGS};
   static const uint32_t AP[OMX_FV_NALLPASS] = {556,441,341,225};
   static const uint32_t STEREO_SPREAD = 23; /* R channel offset for a wider image */
   for (int i = 0; i < OMX_FV_NCOMB; i++) {
@@ -333,7 +338,7 @@ static inline void omx_reverb_state_layout(struct omx_reverb_state *s, float *po
    * shorter than ROOM's (467/353/251/167 vs. 556/441/341/225): denser post-diffusion pulses layered
    * onto those wider comb echoes, which is what keeps a long hall tail from sounding sparse. The
    * wider stereo spread (37 vs. ROOM's 23 samples) widens the L/R image to match. */
-  static const uint32_t HALL_COMB[OMX_FV_NCOMB] = {2455,2614,2809,2983,3128,3280,3425,3557};
+  static const uint32_t HALL_COMB[OMX_FV_NCOMB] = {OMX_REVERB_HALL_COMB_TUNINGS};
   static const uint32_t HALL_AP[OMX_FV_NALLPASS] = {467,353,251,167};
   static const uint32_t HALL_STEREO_SPREAD = 37;
   for (int i = 0; i < OMX_FV_NCOMB; i++) {
@@ -657,7 +662,7 @@ static inline void omx_reverb_process_return(float *l, float *r, uint32_t n, con
   if (mix == 0.0f) return; /* bit-identical dry */
   float dry = 1.0f - mix;
   float size01 = omx_unit(p->size);
-  float feedback = 0.28f + 0.7f * size01; /* room comb feedback */
+  float feedback = OMX_REVERB_DECAY_LOOPS_ROOM_GAIN_FLOOR + OMX_REVERB_DECAY_LOOPS_ROOM_GAIN_SPAN * size01; /* room comb feedback */
   /* HALL comb feedback: a much higher floor (0.90) than room's (0.28), and a narrower span up to
    * the same 0.99 ceiling plate uses. A real hall never reads as small — even `size`=0 should decay
    * far longer than a small room, and stay close to that character across the knob's range, unlike
@@ -668,7 +673,7 @@ static inline void omx_reverb_process_return(float *l, float *r, uint32_t n, con
    * Dattorro's much longer single tank loop needed a feedback floor this high, found by measurement
    * (see the PR that added HALL for the search — a straight `feedback = a + b*size` guess undershot
    * badly, twice). */
-  float hall_feedback = 0.90f + 0.09f * size01;
+  float hall_feedback = OMX_REVERB_DECAY_LOOPS_HALL_GAIN_FLOOR + OMX_REVERB_DECAY_LOOPS_HALL_GAIN_SPAN * size01;
   float damping = omx_unit(p->damping);
   /* The two damping poles, derived once per block at the live rate (see
    * omx_reverb_damp_pole): the knob is quoted at the 96 kHz reference and the filter it names is

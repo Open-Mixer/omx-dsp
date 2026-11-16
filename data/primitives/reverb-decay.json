@@ -1,0 +1,42 @@
+{
+  "$schema": "../../schema/omx-contract.schema.json",
+  "requires": {
+    "omx-contract-schema": ">= 3.0.0"
+  },
+  "REVERB_DECAY_LOOPS": {
+    "kind": "sheet",
+    "since": "3.0.0",
+    "source": {
+      "impl": "include/omxdsp/fx/omx_reverb.h#omx_reverb_process"
+    },
+    "doc": "The one loop each reverb configuration's late decay follows, the numbers the kernel runs (since 0.32.5): a Schroeder-Moorer network decays at its LONGEST loop's gain and length, so the loop gain is `gainFloor + gainSpan x size` (room's comb feedback, hall's, the plate tank's decay) and the loop is `loopSamples` at `tuningRate` (room's and hall's longest comb, the plate's longer tank half), scaled to the live rate as the lines are. The RT60 is `loopMs x ln(0.001) / ln(gain)`. The curve twin draws the decay envelope from these; the kernel reads its gains from the same place, so the picture and the tail cannot drift apart.",
+    "value": {
+      "roomGainFloor": 0.28,
+      "roomGainSpan": 0.7,
+      "roomLoopSamples": 1617,
+      "roomTuningRate": 44100,
+      "hallGainFloor": 0.9,
+      "hallGainSpan": 0.09,
+      "hallLoopSamples": 3557,
+      "hallTuningRate": 44100,
+      "plateGainFloor": 0.5,
+      "plateGainSpan": 0.49,
+      "plateLoopSamples": 3564,
+      "plateTuningRate": 29761
+    },
+    "docs": {
+      "roomGainFloor": "The room comb feedback at size 0.",
+      "roomGainSpan": "What size 1 adds to the room comb feedback.",
+      "roomLoopSamples": "The room's longest comb, samples at roomTuningRate.",
+      "roomTuningRate": "The rate the room's lines are tuned at, Hz.",
+      "hallGainFloor": "The hall comb feedback at size 0.",
+      "hallGainSpan": "What size 1 adds to the hall comb feedback.",
+      "hallLoopSamples": "The hall's longest comb, samples at hallTuningRate.",
+      "hallTuningRate": "The rate the hall's lines are tuned at, Hz.",
+      "plateGainFloor": "The plate tank's decay at size 0.",
+      "plateGainSpan": "What size 1 adds to the plate tank's decay.",
+      "plateLoopSamples": "The plate's longer tank half, the two lines a pass through it crosses, samples at plateTuningRate.",
+      "plateTuningRate": "The rate the plate's lines are tuned at, Hz."
+    }
+  }
+}
