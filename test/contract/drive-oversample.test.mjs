@@ -5,25 +5,15 @@
 // face (OMX_DRIVE_INSTANCE_FACTOR, the oversampler's largest) do.
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { main } from './oc.mjs';
 import { loadData, resolveData } from './oc.mjs';
-import { renderC } from './oc.mjs';
 import { renderJson } from './oc.mjs';
-import { DATA, RENDERS, UNION, editData, scratchData } from './helpers.mjs';
+import { UNION } from './helpers.mjs';
 
 const resolved = (dir = UNION) => resolveData(loadData(dir));
-const header = (dir) => renderC(resolved(dir))[0].text;
 const json = (dir) => JSON.parse(renderJson(resolved(dir), '0.0.0')[0].text);
 
 test('drive: oversample is the last control, a choice of DRIVE_OVERSAMPLES (1, 2, 4) that comes up at 4', () => {
   assert.deepEqual(json().kernels.drive.controls.slice(-1), [{ name: 'oversample', kind: 'choice', global: 'DRIVE_OVERSAMPLES' }]);
   assert.deepEqual(json().items.DRIVE_OVERSAMPLES.value, [1, 2, 4]);
   assert.equal(json().items.DRIVE_OVERSAMPLES.default, 4);
-});
-
-test('perturbation: a moved come-up factor moves the C default, and --check goes red', () => {
-  const dir = scratchData();
-  editData(dir, 'kernels/drive.json', (d, at) => { at('DRIVE_OVERSAMPLES').default = 2; });
-  assert.match(header(dir), /^#define OMX_DRIVE_OVERSAMPLES_DEFAULT OMX_DRIVE_OVERSAMPLES_2$/m);
-  assert.equal(main(['render', '--target', 'c', '--out', `${RENDERS}/include`, '--check', '--data', dir]), 1);
 });

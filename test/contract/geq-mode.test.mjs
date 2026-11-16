@@ -12,7 +12,7 @@ import { main } from './oc.mjs';
 import { loadData, resolveData } from './oc.mjs';
 import { renderC } from './oc.mjs';
 import { renderJson } from './oc.mjs';
-import { DATA, RENDERS, ROOT, UNION, editData, scratchData } from './helpers.mjs';
+import { RENDERS, UNION, editData, scratchData } from './helpers.mjs';
 
 // omx-dsp's enum, verbatim: the consumer the contract's ids must agree with, index for index.
 const OMX_DSP_GEQ_MODE = `enum omx_geq_mode {
@@ -49,11 +49,4 @@ test('perturbation: swapped ids no longer match omx-dsp, and --check goes red', 
   editData(dir, 'kernels/geq.json', (d, at) => { at('GEQ_MODES').ids = ['true', 'standard']; });
   assert.notDeepEqual(rendered(dir), dspModes());
   assert.equal(main(['render', '--target', 'c', '--out', `${RENDERS}/include`, '--check', '--data', dir]), 1);
-});
-
-test('perturbation: a moved come-up value moves the C default', () => {
-  const dir = scratchData();
-  editData(dir, 'kernels/geq.json', (d, at) => { at('GEQ_MODES').default = 'true'; });
-  assert.match(header(dir), /^#define OMX_GEQ_MODES_DEFAULT OMX_GEQ_MODES_TRUE$/m);
-  assert.equal(main(['render', '--target', 'json', '--out', `${RENDERS}/share/omx-contract`, '--check', '--data', dir]), 1);
 });

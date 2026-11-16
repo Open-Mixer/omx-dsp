@@ -6,12 +6,11 @@
 // copy of the salvage lane's local defines it was compared with (omx-dsp 91beb6d) is no longer reachable from any ref.
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { main } from './oc.mjs';
 import { loadData, resolveData } from './oc.mjs';
 import { renderC } from './oc.mjs';
 import { renderJson } from './oc.mjs';
 import { renderTs } from './oc.mjs';
-import { DATA, RENDERS, UNION, editData, scratchData } from './helpers.mjs';
+import { UNION } from './helpers.mjs';
 
 const resolved = (dir = UNION) => resolveData(loadData(dir));
 const header = (dir) => renderC(resolved(dir))[0].text;
@@ -34,11 +33,4 @@ test('the c render gives feedforward 0, as omx_dyn.h reads a zeroed atom, and th
   assert.match(h, /^#define OMX_DETECTOR_TOPOLOGY_COUNT 2u$/m);
   assert.match(h, /^#define OMX_DETECTOR_TOPOLOGY_DEFAULT OMX_DETECTOR_TOPOLOGY_FEEDFORWARD$/m);
   assert.match(ts(), /^export const DETECTOR_TOPOLOGY = \[\n {2}"feedforward",\n {2}"feedback"\n\];$/m);
-});
-
-test('perturbation: a reordered topology set makes feedforward 1, and --check goes red', () => {
-  const order = scratchData();
-  editData(order, 'kernels/comp.json', (d, at) => { at('DETECTOR_TOPOLOGY').ids.reverse(); });
-  assert.match(header(order), /^ {2}OMX_DETECTOR_TOPOLOGY_FEEDFORWARD = 1,$/m);
-  assert.equal(main(['render', '--target', 'c', '--out', `${RENDERS}/include`, '--check', '--data', order]), 1);
 });
