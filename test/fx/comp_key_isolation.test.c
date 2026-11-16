@@ -146,9 +146,10 @@ int main(void) {
     g_sr_now = OMX_FX_ORACLE_RATES[ri];
     arm_key_never_in_the_audio(g_sr_now);
     arm_n_thread_identity(g_sr_now);
+    /* an undeclared rate (32, 64, 128 kHz) explains its rate-is-declared records; any other is a failure */
+    g_arm = "L";
+    check(omx_fx_drain_ledger(g_sr_now) == 0u, "no unexplained contract violation recorded");
   }
-  g_arm = "L";
-  check(omx_contract_log.count == 0u, "no contract violation recorded");
   printf("comp_key_isolation: %d/%d checks passed\n", g_checks - g_fail, g_checks);
   return g_fail ? 1 : 0;
 }
