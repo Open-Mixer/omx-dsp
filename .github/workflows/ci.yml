@@ -352,6 +352,9 @@ jobs:
       - name: make contract-dir
         run: make contract-dir OMX_CONTRACT=/tmp/omx-contract
 
+      - name: The devel package ships the test support the consumers read
+        run: make test-support-install
+
       - name: make eq-defaults-table
         run: make eq-defaults-table
 
