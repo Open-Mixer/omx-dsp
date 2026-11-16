@@ -3,10 +3,9 @@
 # recipes/answers
 
 One file per kernel of `data/kernels/`: where each value of its definitions came from. They are provenance, kept in
-the tree and not installed. `make contract-proof OMX_CONTRACT=<omx-contract checkout>` reads them twice: the
-completeness check holds every item of a kernel file to its answer (the same value, unit, default and labels, and no
-answer for an item the file does not declare), and the round-trip against the v0.1.3 header reads each item's
-`since` to tell an item of the first release from a later one.
+the tree and not installed. `make contract-proof OMX_CONTRACT=<omx-contract checkout>` reads them: the completeness check holds every item of a
+kernel file to its answer (the same value, unit, default and labels, and no answer for an item the file does not
+declare).
 
 ## An answer
 
@@ -26,4 +25,3 @@ answer for an item the file does not declare), and the round-trip against the v0
   contract schema its definitions install under. The exact omx-dsp release and commit are in its `origin`.
 
 The precise release never goes in `since`: omx-dsp's releases (0.x) would read as earlier than the first release.
-`make contract-proof` is red on a `since` outside that line, in an answer or in `data/`.

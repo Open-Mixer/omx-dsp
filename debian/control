@@ -66,8 +66,6 @@ Package: omx-dsp-contract
 Architecture: all
 Multi-Arch: foreign
 Depends: omx-contract-data (>= 3.18.0~), omx-contract-data (<< 4~), ${misc:Depends}
-Breaks: libomxdsp-dev (<< ${source:Version})
-Replaces: libomxdsp-dev (<< ${source:Version})
 Description: omx-dsp's kernel and instance declarations, read at run time
  omx-dsp's package of omx-contract's contract directory: the declarations of
  its kernels and instance faces (their controls, units and readouts) under

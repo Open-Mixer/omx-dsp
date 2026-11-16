@@ -32,8 +32,8 @@
 #   make definitions OMX_CONTRACT=<checkout>  include/omxdsp/omxdsp_definitions.h rendered from data/ by the
 #               checkout's `render --package omx-dsp`; make definitions-check holds the committed header equal
 #               to that render (tools/definitions-render.sh)
-#   make contract-proof OMX_CONTRACT=<checkout>  the round-trip against this library's v0.1.3 header and the kernel
-#               completeness over data/ and recipes/answers/, after the proof's own self-test (tools/contract-proof.mjs)
+#   make contract-proof OMX_CONTRACT=<checkout>  the kernel completeness over data/ and recipes/answers/
+#               (tools/contract-proof.mjs)
 #   make contract-tests OMX_CONTRACT=<checkout>  the declaration tests (test/contract/): each fact of data/ they hold,
 #               over this live data/ with omx-contract's reader and renderer
 #   make magnitude-sabotage  the magnitude arms fail against a sabotaged evaluator
@@ -464,9 +464,8 @@ checks:
 	bash tools/rate-list-check.sh --self-test
 	bash tools/ci-matrix-follows-set.sh
 	bash tools/ci-matrix-follows-set.sh --self-test
-	bash tools/patch-names-check.sh
-	bash tools/patch-names-check.sh --self-test
-	bash test/patch-names-sabotage.sh
+	bash tools/no-backcompat-check.sh
+	bash tools/no-backcompat-check.sh --self-test
 	bash tools/gen-scratch-check.sh
 	bash tools/gen-scratch-check.sh --self-test
 	bash tools/fuzz-targets-check.sh
@@ -485,8 +484,6 @@ definitions definitions-check:
 
 contract-proof:
 	@test -n "$(OMX_CONTRACT)" || { echo "$@: name an omx-contract checkout: make $@ OMX_CONTRACT=<dir>" >&2; exit 2; }
-	@git rev-parse -q --verify 'v0.1.3^{commit}' >/dev/null || git fetch -q --depth 1 origin tag v0.1.3
-	node tools/contract-proof.mjs $(OMX_CONTRACT) --self-test
 	node tools/contract-proof.mjs $(OMX_CONTRACT)
 
 contract-tests:

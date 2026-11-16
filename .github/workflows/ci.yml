@@ -226,7 +226,7 @@ jobs:
           echo "refused as it must be: $(grep -m1 'contract-include:' out.txt)"
 
   # data/ read back through omx-contract's reader (make contract-dir) and the committed definitions header held
-  # equal to its render (make definitions-check), and the round-trip and completeness proofs over data/ and recipes/answers/
+  # equal to its render (make definitions-check), and the completeness proof over data/ and recipes/answers/
   # (make contract-proof). They need node and an omx-contract checkout, which no other job has.
   contract:
     name: data/ read back through omx-contract's reader, the committed header its render
@@ -235,7 +235,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          # the proofs read this library's own history: v0.1.3's header, 4108494's reads, e2a13a0's removed aliases
+          # two declaration tests read this library's own history (atCommit in test/contract/helpers.mjs)
           fetch-depth: 0
 
       - uses: actions/setup-node@v4

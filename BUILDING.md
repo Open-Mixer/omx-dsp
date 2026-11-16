@@ -332,28 +332,3 @@ in the code.
 tag releases both through the OpenMixer release workflows; the version is
 `OMXDSP_VERSION_*` in `include/omxdsp/omxdsp.h`, the spec's `Version:` and the top of
 `debian/changelog`, and CI refuses them disagreeing.
-
-### What a patch release may change
-
-omx-dsp ships a static archive and its headers together, in one package, so a program is always built against the
-headers of the archive it links. Within that:
-
-- A **patch** (`x.y.z` to `x.y.z+1`) may add public names (a function, a macro, a type, an enumerator, a header) and
-  append fields to a struct its init function zeroes. Nothing built against an earlier patch can tell.
-- A **minor** (`x.y` to `x.y+1`) is needed for anything an earlier build could tell: a changed signature, a removed or
-  reordered field or enumerator, a removed name, or changed behaviour (a kernel's golden vectors move:
-  `make golden-write` is a minor's).
-
-`tools/patch-names-check.sh` (part of `make lint`) enforces the header side. When `omxdsp.h` says patch > 0, it reads
-every header under `include/omxdsp/`, at every earlier tag of the same minor and in the tree, and refuses a macro,
-function, static inline, typedef or extern that is gone or whose declaration changed, and a struct, union or enum
-whose earlier members are not, unchanged and in order, its first members now. An added name is allowed and counted.
-
-A count or size is the one macro whose **value** a patch may not move unread: a macro named as one (`_COUNT`, `_SIZE`,
-`_SLOTS`, `_CAP`, `_LEN`, `_LENGTH`, `_CAPACITY`), one that an array bound in a public header reads, and every macro the
-value of one of those reads. Moving it can resize a struct or array a program built against the earlier patch shares
-with this one. The check refuses it (`moved: NAME`) unless `tools/patch-count-proofs.txt` lists its proof for this
-version and this value: `<version> <NAME> <new value, no spaces> <the proof>`, the proof being that no struct or array
-shared across the ABI is sized by it (grep the public headers) and no consumer stores it (grep every consumer
-repository; one that reads it at run time is fine). The PR states the proof too. Without one it is a minor.
-`test/patch-names-sabotage.sh` breaks each of those rules in a copy of the check and requires its self-test to fail.
