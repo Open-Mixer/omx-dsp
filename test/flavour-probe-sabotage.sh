@@ -12,6 +12,9 @@
 #   noaslr     setarch -R allowed: the probe and the consumer run under it, and the probe, which acts out the mapping
 #              fatal unless it runs under setarch -R, passes; the consumer runs
 #   phang      only the TSan probe's compile hangs -> RED, "the TSan probe: the compile timed out after 3 s"
+#   badbound   FLAVOUR_COMPILE_TIMEOUT 0, abc, -1, 1.5 -> RED at once, "FLAVOUR_COMPILE_TIMEOUT=<v>: must be a whole number
+#              of seconds above 0", before any compile (0 would be no bound at all)
+#   pdeaf      the TSan probe's compile ignores SIGTERM and is killed by timeout -k -> RED as a timeout, never NOT RUN
 #   masq       the real compiler is a ccache-style masquerade wrapper (a cc that runs the next cc on PATH after its own
 #              directory): the whole script run again with one first on PATH must pass, not loop through the stand-in
 #   hang       the compiler never returns          -> RED by flavour-check's own bound, naming the compile and the bound
@@ -63,7 +66,8 @@ for a in "\$@"; do
   [ "\$prev" = -o ] && out="\$a"; prev="\$a"
 done
 if [ "\$tsan" = 1 ] && [ "\$probe" = 1 ]; then
-  [ "\$FAKE_PROBE" = hang ] && exec sleep 600
+  [ "\$FAKE_PROBE" = hang ] && exec sleep 25
+  [ "\$FAKE_PROBE" = deaf ] && { trap '' TERM; exec sleep 25; }
   [ "\$FAKE_PROBE" = link ] && { echo "ld: cannot find -ltsan" >&2; exit 1; }
   PATH="\$REAL_PATH" exec "$REAL_CC" -DSTUB_MODE="\"\$FAKE_PROBE\"" -o "\$out" "$S/stub.c"
 fi
@@ -87,7 +91,7 @@ case_() {
 # is the failure this case exists to catch.
 cat > "$S/hang-cc" <<'SH'
 #!/bin/bash
-exec sleep 600
+exec sleep 25
 SH
 chmod +x "$S/hang-cc"
 hang_() {
@@ -99,6 +103,19 @@ hang_() {
     echo "flavour-probe-sabotage: FAIL hang: exit $rc, wanted 1 with a timed-out line"; printf '%s\n' "$out" | tail -3; fail=1; return
   fi
   echo "flavour-probe-sabotage: ok   hang: $(grep -E 'timed out' <<< "$out" | head -1)"
+}
+# badbound: a bound that is not a whole number above 0 is refused by name before any compile; the hanging compiler
+# and the outer bound show that nothing was bounded when it is not refused (timeout 0 never fires).
+badbound_() {
+  local v out rc
+  for v in 0 abc -1 1.5; do
+    out="$(FLAVOUR_COMPILE_TIMEOUT="$v" CC="$S/hang-cc" NM="${NM:-nm}" \
+      timeout 15 bash tools/flavour-check.sh "$S/out-bad" "$FLAGS" "$PLAIN" "$CONTRACTS" "$TSAN" 2>&1)"; rc=$?
+    if [ "$rc" != 1 ] || ! grep -qxE "flavour-check: FAIL — FLAVOUR_COMPILE_TIMEOUT=$v: must be a whole number of seconds above 0" <<< "$out"; then
+      echo "flavour-probe-sabotage: FAIL badbound $v: exit $rc, wanted 1 with the named refusal"; printf '%s\n' "$out" | tail -2; fail=1; continue
+    fi
+    echo "flavour-probe-sabotage: ok   badbound $v: refused by name"
+  done
 }
 # masq: the stand-in must reach the real compiler through the wrapper without the wrapper finding the stand-in again.
 # The script runs itself with such a wrapper first on PATH (FLAVOUR_PROBE_MASQ marks the inner run, which skips this arm
@@ -117,10 +134,13 @@ SH
   if [ "$rc" != 0 ]; then echo "flavour-probe-sabotage: FAIL masq: with a masquerade wrapper as the compiler the arms exit $rc, wanted 0"; printf '%s\n' "$out" | grep -E 'FAIL|timed out' | head -3; fail=1; return; fi
   echo "flavour-probe-sabotage: ok   masq: the arms pass through a masquerade wrapper ($(grep -c ' ok ' <<< "$out") ok)"
 }
-if [ -z "${FLAVOUR_PROBE_MASQ:-}" ]; then hang_; masq_; fi
+if [ -z "${FLAVOUR_PROBE_MASQ:-}" ]; then hang_; badbound_; masq_; fi
 case_ link    link    allow  0 '^flavour-check: NOT RUN — the TSan probe does not link'                  'TSan consumer reads'
 case_ mapping mapping refuse 0 '^flavour-check: NOT RUN — the TSan probe: FATAL: ThreadSanitizer: unexpected memory mapping.*setarch -R is not allowed' 'TSan consumer reads'
 case_ other   other   allow  0 '^flavour-check: NOT RUN — the TSan probe does not run: stand-in: the probe broke its own way \(exit 3\)' 'TSan consumer reads'
 case_ phang   hang    allow  1 '^flavour-check: FAIL — the TSan probe: the compile timed out after 3 s \(FLAVOUR_COMPILE_TIMEOUT\)' 'TSan consumer reads'
+if [ -z "${FLAVOUR_PROBE_MASQ:-}" ]; then
+case_ pdeaf   deaf    allow  1 '^flavour-check: FAIL — the TSan probe: the compile timed out after 3 s \(FLAVOUR_COMPILE_TIMEOUT\)' 'NOT RUN'
+fi
 case_ noaslr  noaslr  allow  0 '^flavour-check: the TSan consumer reads the contracts \(under setarch [^ ]+ -R\)' 'NOT RUN'
 exit "$fail"
