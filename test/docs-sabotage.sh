@@ -31,7 +31,9 @@
 #   base-form   — DOCS_BASE without a remote: red, naming the form;
 #   base-noref  — the remote has no such branch (a depth-1 single-branch clone's case): red, the fetch failed;
 #   base-stale  — the remote moved away while a remote-tracking ref remains: red, the fetch failed, the stale ref no base;
-#   base-nofile — the base commit has no baseline: red, nothing to shrink from.
+#   base-nofile — the base commit has no baseline: red, nothing to shrink from;
+#   base-self   — DOCS_BASE=./HEAD, this clone as the remote: red, head-vs-head is no base;
+#   base-head   — the copy reset to its base's commit, so base/main is HEAD: red, head-vs-head is no base.
 # The base arms carry the documented probe, so the base is the one thing wrong with them.
 # The tree is never edited. Usage: docs-sabotage.sh <scratch-dir>
 set -euo pipefail
@@ -52,11 +54,13 @@ copy() { # name [probe-doc-block] [probe-tail] — the copy committed on main, a
   base_of "$d"
 }
 track() { git -C "$1" -c init.defaultBranch=main init -q && git -C "$1" add -A && git -C "$1" -c user.name=sabotage -c user.email=sabotage@localhost commit -q -m copy; }
-base_of() { # dir — a bare clone of the copy as it is committed now, the copy's remote `base` (an absolute path)
+base_of() { # dir — a bare clone of the copy as it is committed now, the copy's remote `base` (an absolute
+  # path); the copy then moves one empty commit past it, as a branch sits past its base
   local a; a=$(cd "$1" && pwd -P)
   rm -rf "$a.base.git"; git clone -q --bare "$a" "$a.base.git"
   git -C "$a" remote remove base 2>/dev/null || :
   git -C "$a" remote add base "$a.base.git"
+  git -C "$a" -c user.name=sabotage -c user.email=sabotage@localhost commit -q --allow-empty -m head
 }
 check() { # name expected(red|green) [target] [make args] ; the gate's output in $OUT/<name>.log
   local name=$1 want=$2 target=${3:-docs-check} rc=0; shift 2; [ $# -gt 0 ] && shift
@@ -188,6 +192,15 @@ git -C "$OUT/base-stale" remote set-url base "$(cd "$OUT/base-stale" && pwd -P).
 check base-stale red
 names base-stale 'git fetch base main failed'
 
+copy base-self '/** @brief A probe.\n * @param x A word.\n * @return 0.\n * @thread audio */\n'
+check base-self red docs-check DOCS_BASE=./HEAD
+names base-self 'names this clone or a path as the remote'
+
+copy base-head '/** @brief A probe.\n * @param x A word.\n * @return 0.\n * @thread audio */\n'
+git -C "$OUT/base-head" reset -q --hard "$(git -C "$OUT/base-head.base.git" rev-parse HEAD)"
+check base-head red
+names base-head 'resolves to HEAD'
+
 mkdir -p "$OUT/base-nofile/docs"
 cp -r "$PKG/Makefile" "$PKG/Doxyfile" "$PKG/include" "$PKG/tools" "$PKG/packaging" "$OUT/base-nofile/"
 printf '\n%sint %s(float x);\n' '/** @brief A probe.\n * @param x A word.\n * @return 0.\n * @thread audio */\n' "$PROBE" >> "$OUT/base-nofile/$HEADER"
@@ -201,4 +214,4 @@ check update red docs-baseline
 names update 'only lowers' "$PROBE"
 cmp -s "$OUT/update/docs/doxygen-baseline.txt" "$PKG/docs/doxygen-baseline.txt" || { echo "docs-sabotage.sh: FAIL — docs-baseline rewrote the baseline it refused"; exit 1; }
 
-echo "docs-sabotage.sh: ok — docs-check sees a new undocumented declaration, a swapped, stale or duplicated row, a grown baseline, a missing Doxyfile, baseline or log, an exclusion, a @cond, a header without @file, an untracked header, a tree without git, and a base unset, empty, malformed, unreachable, without the branch or without a baseline; passes a documented or listed one and a set without its last newline; docs-baseline only lowers"
+echo "docs-sabotage.sh: ok — docs-check sees a new undocumented declaration, a swapped, stale or duplicated row, a grown baseline, a missing Doxyfile, baseline or log, an exclusion, a @cond, a header without @file, an untracked header, a tree without git, and a base unset, empty, malformed, this clone, resolving to HEAD, unreachable, without the branch or without a baseline; passes a documented or listed one and a set without its last newline; docs-baseline only lowers"
