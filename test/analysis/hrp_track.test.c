@@ -22,10 +22,10 @@
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
-#include <sys/wait.h>
-#include <unistd.h>
 
 #include <omxdsp/analysis/omx_hrp_track.h>
+
+#include "child_run.h"
 
 static int g_fail = 0;
 static int g_checks = 0;
@@ -467,25 +467,20 @@ static void test_projection_answers_nothing_when_there_is_nothing(void) {
 /* P0 door: omx_hrp_track_update refuses what it cannot follow. A NULL pointer is a crash in the
  * worker today; a NaN threshold makes every match fail silently, so every frame opens a new
  * track. A refused update leaves the tracker exactly as it was. Each NULL call runs in its own
- * child so a crash reads as a failed arm, not a dead test. */
-static int child_survives(int which) {
-  fflush(NULL);
-  pid_t pid = fork();
-  if (pid == 0) {
-    OmxHrpTracker t;
-    OmxHrpTrackConfig c = omx_hrp_track_config_default();
-    omx_hrp_tracker_init(&t);
-    float a[] = {A4};
-    OmxHrpVoiceSet f = frame_of(a, 1);
-    if (which == 0) omx_hrp_track_update(NULL, &f, &c);
-    if (which == 1) omx_hrp_track_update(&t, NULL, &c);
-    if (which == 2) omx_hrp_track_update(&t, &f, NULL);
-    _exit(0);
-  }
-  int st = 0;
-  waitpid(pid, &st, 0);
-  return WIFEXITED(st) && WEXITSTATUS(st) == 0;
+ * child (child_run.h) so a crash reads as a failed arm, not a dead test. */
+static int null_call_body(int which) {
+  OmxHrpTracker t;
+  OmxHrpTrackConfig c = omx_hrp_track_config_default();
+  omx_hrp_tracker_init(&t);
+  float a[] = {A4};
+  OmxHrpVoiceSet f = frame_of(a, 1);
+  if (which == 0) omx_hrp_track_update(NULL, &f, &c);
+  if (which == 1) omx_hrp_track_update(&t, NULL, &c);
+  if (which == 2) omx_hrp_track_update(&t, &f, NULL);
+  return 0;
 }
+
+static int child_survives(int which) { return omx_test_child_ok(null_call_body, which, "hrp_track NULL door"); }
 
 static void test_update_refuses_what_it_cannot_follow(void) {
   check(child_survives(0), "a NULL tracker is refused, not dereferenced");
