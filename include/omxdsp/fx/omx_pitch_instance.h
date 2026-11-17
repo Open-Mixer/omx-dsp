@@ -10,10 +10,10 @@
  *      the window at the highest rate it accepts (OMX_PITCH_INSTANCE_RING_FLOATS per leg), and
  *      arms the kernel over the first omx_pitch_cap_for(sr) floats of each. Nothing is allocated,
  *      at init or after. It accepts the contract's nine full-oracle rates, 32 to 192 kHz
- *      ({@link omx_pitch_instance_rate_ok}): the console's six declared rates and 32, 64 and
+ *      (omx_pitch_instance_rate_ok()): the console's six declared rates and 32, 64 and
  *      128 kHz, where a host may run it although the console never does. Any other rate, and one
  *      the inline rings cannot serve, is refused at init.
- *   2. RESOLVE. {@link omx_pitch_instance_resolve} takes the kernel's contract controls in their
+ *   2. RESOLVE. omx_pitch_instance_resolve() takes the kernel's contract controls in their
  *      declared order and user units (semitones, cents, percent), clamps each into its declared
  *      travel (OMX_PITCH_*, omxdsp_definitions.h; a non-finite word reads as the declared
  *      default) and hands them to the kernel's own omx_pitch_resolve(). That resolve is `exp2f`
@@ -24,7 +24,7 @@
  * Re-engaging from bypass CLEARS the rings and restarts the ramp, so a re-enabled shifter does not
  * replay audio buffered before the bypass.
  *
- * LATENCY IS PUBLISHED: {@link omx_pitch_instance_latency} answers d_min + W/2 frames (the centre
+ * LATENCY IS PUBLISHED: omx_pitch_instance_latency() answers d_min + W/2 frames (the centre
  * of the window's taps, W = OMX_PITCH_WINDOW_MS at the instance rate) while engaged at 100 % mix,
  * where the output is the pre-filtered input delayed by that much; and 0 below 100 % (the dry path
  * is frame-aligned with the input, the window's delay is the effect), while bypassed and when not
@@ -80,7 +80,7 @@ static inline uint32_t omx_pitch_instance_cap_for(float sr) { return omx_pitch_c
 /**
  * @brief Whether the instance runs at `sr`: one of omx-contract's nine full-oracle rates, 32 to
  *        192 kHz (they hold every declared rate), so 32, 64 and 128 kHz too. The rule
- *        {@link omx_pitch_instance_init} applies.
+ *        omx_pitch_instance_init() applies.
  * @param sr The sample rate, Hz.
  * @return 1 when accepted, 0 when not.
  * @note Thread-safe: a read of a constant table.
@@ -92,7 +92,7 @@ static inline int omx_pitch_instance_rate_ok(float sr) {
 
 /**
  * Bind an instance to its rate, over its own rings. Returns 1 when usable, 0 when not (a refused
- * init leaves `ready` clear and run() is the identity). A rate {@link omx_pitch_instance_rate_ok}
+ * init leaves `ready` clear and run() is the identity). A rate omx_pitch_instance_rate_ok()
  * refuses, or whose window the inline rings cannot hold, is refused. Allocates nothing.
  * @thread control
  */

@@ -12,7 +12,7 @@
  *   1. STATE. `struct omx_transient_state` is three envelope cascades and a gain word, plain
  *      inline floats, so the instance holds it whole; there is nothing to hand in.
  *   2. RESOLVE. A host publishes control ports as floats in the operator's units (dB, ms).
- *      {@link omx_transient_instance_resolve} clamps every word into the declared travel
+ *      omx_transient_instance_resolve() clamps every word into the declared travel
  *      (omxdsp_definitions.h's OMX_TRANSIENT_*) BEFORE the kernel's own resolve sees it, because
  *      a foreign host's port is not the console's codec and nothing upstream has clamped it: the
  *      three gains read any non-finite word as their declared default, 0 dB (omx_clamp_or — a
@@ -27,7 +27,7 @@
  * designer does not apply a contrast measured before the bypass.
  *
  * THE READOUTS. attackGainDb and sustainGainDb are the two shares of the gain the last sample took
- * ({@link omx_transient_instance_attack_gain_db}, {@link omx_transient_instance_sustain_gain_db}); with
+ * (omx_transient_instance_attack_gain_db(), omx_transient_instance_sustain_gain_db()); with
  * outputDb they sum to it.
  *
  * LATENCY IS ZERO, AND PUBLISHED: the gain is computed from the sample it multiplies
@@ -70,7 +70,7 @@ typedef struct {
 /**
  * Bind an instance to its rate. Returns 1 when usable, 0 when not: the rate must be one of the
  * oracle set (32 to 192 kHz), so any other rate is refused, `ready` stays clear and
- * {@link omx_transient_instance_run} is then the identity: absence is a wire, not a crash.
+ * omx_transient_instance_run() is then the identity: absence is a wire, not a crash.
  * @thread control
  */
 static inline int omx_transient_instance_init(OmxTransientInstance *s, float sr) {

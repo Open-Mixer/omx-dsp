@@ -8,7 +8,7 @@
  * pitch shifter), the drift is omx_lfo on the head's mean delay, the place is the console's balance
  * law (omx_balance_law) and the blend is omx_wetdry_mix.
  *
- *   1. RESOLVE. {@link omx_doubler_instance_resolve} takes the doubler kernel's contract controls in
+ *   1. RESOLVE. omx_doubler_instance_resolve() takes the doubler kernel's contract controls in
  *      their declared order (data/kernels/doubler.json), each clamped into its travel, a non-finite
  *      word reading as its default. Voice n sits at `delayMs x DOUBLER_VOICE_DELAYS[n]`, is tuned by
  *      `detuneCents x DOUBLER_VOICE_DETUNES[n]`, drifts `modDepthMs` either side at `modRateHz` a

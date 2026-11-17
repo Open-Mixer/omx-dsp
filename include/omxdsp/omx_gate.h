@@ -35,12 +35,12 @@
  *
  * `omx_gate_resolve` leaves HOLD, HYSTERESIS and the KNEE at their neutral values (0, 0, a hard
  * knee); the kernel runs all three (`omx_dyn.hold_frames`, `hyst_db`, and `gc.knee_db` with
- * `knee_shift_db` set by {@link omx_gate_knee}), and fx/omx_gate_instance.h is the face that sets
+ * `knee_shift_db` set by omx_gate_knee()), and fx/omx_gate_instance.h is the face that sets
  * them from the contract's controls (omx-contract#21).
  *
  * ## The key's tilt and the key listen
  *
- * After the key filter the key may tilt ({@link omx_gate_key_tilt}, omx_tilt.h about KEY_TILT_PIVOT_HZ,
+ * After the key filter the key may tilt (omx_gate_key_tilt(), omx_tilt.h about KEY_TILT_PIVOT_HZ,
  * a slope in dB per octave), the compressor's own key tilt, run in double like the filter. A tilt of 0
  * is flat and the key path is as it was. While the key listen is on, the outputs carry what the
  * detector reads, sample for sample, and the gate runs underneath on the legs as before. A keyed
@@ -250,9 +250,9 @@ static inline void omx_gate_key_run(struct omx_gate_key *k, float *buf, uint32_t
 /**
  * @brief The console's gateStateToNativeDyn, restated as control reads — the ONE resolution a gate
  *        slot gets. The `threshold` control is the declared gate threshold travel; the knee is
- *        hard here, and {@link omx_gate_knee} sets the contract's knee range on the result. The
+ *        hard here, and omx_gate_knee() sets the contract's knee range on the result. The
  *        key filter's edges, read inside GATE_KEY_LIMITS (unconnected or NaN is out, no come-up
- *        value being declared), are designed into the instance by {@link omx_gate_key_design}.
+ *        value being declared), are designed into the instance by omx_gate_key_design().
  * @param g The instance (its rate read, its key filter written).
  * @param c The controls.
  * @param p The atom, written whole.

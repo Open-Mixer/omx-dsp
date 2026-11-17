@@ -6,11 +6,11 @@
  * dynamics kernel (omx_dynamics), a downward compressor and an upward one (omx_dyn's UPWARD law), both
  * on an RMS detector with LEVELER_KNEE_DB of knee, stereo-linked.
  *
- *   1. RESOLVE. {@link omx_leveler_instance_resolve} takes the leveler kernel's contract controls in
+ *   1. RESOLVE. omx_leveler_instance_resolve() takes the leveler kernel's contract controls in
  *      their declared order (data/kernels/leveler.json). The amount reads the declared table: at each
  *      point of LEVELER_AMOUNT_POINTS a row of the downward slot's threshold, ratio and make-up
  *      (LEVELER_DOWN_*) and of the upward slot's threshold, ratio and largest boost (LEVELER_UP_*),
- *      linear between two points ({@link omx_leveler_table}). The speed picks an attack and a release
+ *      linear between two points (omx_leveler_table()). The speed picks an attack and a release
  *      from LEVELER_SPEED_ATTACK_MS and LEVELER_SPEED_RELEASE_MS. The direction runs the downward
  *      slot, the upward one, or both in series, downward first.
  *   2. RUN. Each engaged slot over both legs in place. An amount of 0 is the input, bit for bit, and

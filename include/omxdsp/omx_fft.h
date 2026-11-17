@@ -70,7 +70,7 @@ static inline void omx_hann_window(float *buf, uint32_t n) {
  *
  * Each butterfly's product `b·W^k` is formed in double and rounded to float once; the samples stay
  * float, in place, so the scratch is the caller's two arrays and nothing else. For a real input the
- * caller zeroes `im` first, or uses {@link omx_fft_real_half}.
+ * caller zeroes `im` first, or uses omx_fft_real_half().
  * @param re The real parts, `n` long, transformed in place.
  * @param im The imaginary parts, `n` long, transformed in place.
  * @param n The length, a power of two.
@@ -171,7 +171,7 @@ static inline void omx_fft_real_half(float *work_re, float *work_im, uint32_t n)
 /**
  * @brief In-place iterative radix-2 FFT, complex f64, forward or inverse.
  *
- * The decimation-in-time butterflies of {@link omx_fft_radix2} on double samples. Each twiddle is
+ * The decimation-in-time butterflies of omx_fft_radix2() on double samples. Each twiddle is
  * `cos`/`sin` of its own angle `−2π·j/n`, `j = k·n/len`, not a recurrence: a double recurrence
  * drifts to relRMS ~3e-12 at 2^19 and breaks the transform's symmetry (an identical pair's
  * correlation then peaks a hair off lag 0). The stage runs twiddle-outer, so each of the n − 1

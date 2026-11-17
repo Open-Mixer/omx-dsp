@@ -68,7 +68,7 @@ typedef struct {
   double above_median_db; /**< dB above the band's median */
 } OmxRoomModePeak;
 
-/** One position's candidate peaks, as {@link omx_room_mode_peaks} left them. */
+/** One position's candidate peaks, as omx_room_mode_peaks() left them. */
 typedef struct {
   uint32_t code;          /**< OMX_ANALYSIS_OK or the position's refusal */
   double sample_rate;     /**< Hz */
@@ -136,7 +136,7 @@ enum omx_analysis_refusal omx_room_transfer_from_ir(const double *ir, uint32_t n
                                                     OmxRoomAccum *out);
 
 /**
- * @brief The transform length {@link omx_room_transfer_from_ir} pads an `n`-sample response to.
+ * @brief The transform length omx_room_transfer_from_ir() pads an `n`-sample response to.
  * @param n The response's length.
  * @return The smallest power of two ≥ n, at least 2; 0 for n over 2³¹, which none holds.
  * @pre `length-fits-a-power-of-two`.
@@ -170,7 +170,7 @@ void omx_room_curve(const OmxRoomAccum *acc, double floor_db, double *hz, double
                     double *coherence);
 
 /**
- * @brief The most reflections {@link omx_room_impulse} can name for an estimate: one per
+ * @brief The most reflections omx_room_impulse() can name for an estimate: one per
  *        taper-widened lobe across the horizon.
  * @param acc The estimate.
  * @param window_ms The early-reflection horizon, ms.
@@ -191,7 +191,7 @@ uint32_t omx_room_impulse_capacity(const OmxRoomAccum *acc, double window_ms);
  * @param scratch_im `fft_size` doubles of scratch.
  * @param direct Receives the direct arrival's sample in the window.
  * @param out The reflections, in arrival order.
- * @param cap Its capacity, at least {@link omx_room_impulse_capacity}.
+ * @param cap Its capacity, at least omx_room_impulse_capacity().
  * @param n_out Receives how many.
  * @return `OMX_ANALYSIS_OK` or no-shared-energy.
  * @pre `capacity-covers-the-horizon`.

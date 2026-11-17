@@ -6,7 +6,7 @@
  * mints no DSP: the tilt is omx_tilt, one first-order complementary shelf pair, and the filter is the
  * EQ's own low-pass or high-pass section (omx_eq_design), both run in double (omx_biquad_d).
  *
- *   1. RESOLVE. {@link omx_tone_instance_resolve} takes the tone kernel's contract controls in their
+ *   1. RESOLVE. omx_tone_instance_resolve() takes the tone kernel's contract controls in their
  *      declared order (data/kernels/tone.json), each clamped into its travel, a non-finite word
  *      reading as its default.
  *      - `tiltDb` is the tilt's SPAN (the decision R3b of omx-dsp#188): `a = 10^(tiltDb/40)`
@@ -14,7 +14,7 @@
  *        `pivotHz`. +6 dB is a +-3 dB pair, about 2 dB per octave at the pivot. One section, never two.
  *      - `filter` below 0 is a low-pass whose corner falls from TONE_FILTER_HIGH_HZ at -0 to
  *        TONE_FILTER_LOW_HZ at -100; above 0 a high-pass whose corner rises from TONE_FILTER_LOW_HZ
- *        to TONE_FILTER_HIGH_HZ; on a log map, {@link omx_tone_filter_hz}. 0 is open. `resonance`
+ *        to TONE_FILTER_HIGH_HZ; on a log map, omx_tone_filter_hz(). 0 is open. `resonance`
  *        is the section's Q: the magnitude at the corner, as the EQ's sections are designed.
  *        A corner past 0.999 of Nyquist is held there by omx_eq_design.
  *   2. RUN. Per leg, the tilt then the filter. A section at its rest value (a span of 0, a filter

@@ -574,7 +574,7 @@ static inline float omx_drive_auto_gain(struct omx_drive_ag *ag, const struct om
    * length — otherwise the declared 50 ms window would actually be 50 ms x CHUNK (3.2 s at
    * 96 kHz), which is a control that does nothing you can hear it do. */
   float a = powf(p->ag_coeff, (float)n);
-  /* {@link omx_onepole_toward} — the INCREMENT kernel, not the convex {@link omx_onepole}. Same
+  /* omx_onepole_toward() — the INCREMENT kernel, not the convex omx_onepole(). Same
    * convention (the parameter is the POLE), declared difference: with identical input and output
    * energies the two detectors track the SAME float sequence exactly, the ratio is exactly 1.0f,
    * and the gain stays exactly 1.0f — which is what keeps mix 0 bit-identical through the

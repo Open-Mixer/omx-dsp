@@ -5,7 +5,7 @@
  * format in it. The core is fx/omx_mbcomp.h's `omx_mbcomp_process`, the LR4 tree with one RMS
  * compressor per band, and this file adds no DSP to it. It adds what a host's port model needs:
  *
- *   1. RESOLVE. {@link omx_mbcomp_instance_resolve} takes the mbcomp kernel's contract controls in
+ *   1. RESOLVE. omx_mbcomp_instance_resolve() takes the mbcomp kernel's contract controls in
  *      their declared order (data/kernels/mbcomp.json): the band count, the corners, per band the
  *      threshold, ratio, attack, release, make-up, solo and bypass, then the mix and the output gain.
  *      Every travel is clamped into its declared range, a non-finite word reading as its default (a
@@ -20,7 +20,7 @@
  *   3. IN -> OUT. The kernel works in place; run() copies in to out where they differ (they may alias),
  *      runs the kernel on out, and applies the output gain when it is not 0 dB.
  *
- * READOUTS. {@link omx_mbcomp_instance_band_gr_db} is band<n>GainReductionDb: omx_mbcomp_band_gr_db().
+ * READOUTS. omx_mbcomp_instance_band_gr_db() is band<n>GainReductionDb: omx_mbcomp_band_gr_db().
  *
  * LATENCY IS PUBLISHED: OMX_OVS_LATENCY_4X while the stage runs at 4x (omx_mbcomp_factor()), else 0.
  * Bypass is the identity and keeps every state word; a change of the stage's factor re-arms the band

@@ -10,7 +10,7 @@
  *      the deepest sweep at the highest rate the kernel admits (OMX_FLANGER_CAP per leg), and arms
  *      the kernel over the first omx_flanger_instance_cap_for(sr) floats of each. Nothing is
  *      allocated, at init or after; a rate the console does not declare is refused at init.
- *   2. RESOLVE. {@link omx_flanger_instance_resolve} takes the kernel's contract controls in their
+ *   2. RESOLVE. omx_flanger_instance_resolve() takes the kernel's contract controls in their
  *      declared order and user units (Hz, ms, a signed feedback, percent) and turns them into the
  *      atom, the same conversions resolve_fx_flanger (mixer_rt.c)
  *      makes, with every knob clamped through omx_param into the declared travel

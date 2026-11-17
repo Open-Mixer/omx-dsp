@@ -45,7 +45,7 @@ uint32_t omx_sweep_length(double sample_rate, double duration_s);
  * @param fade_out_s Hann fade-out, seconds.
  * @param stimulus Receives the sweep, `n` samples.
  * @param inverse Receives the inverse filter, `n` samples.
- * @param n The length, {@link omx_sweep_length} of the rate and duration, ≥ 2.
+ * @param n The length, omx_sweep_length() of the rate and duration, ≥ 2.
  * @param sweep_rate_s Receives `L`, seconds.
  * @return 1; 0 when the sweep cannot exist (core's `RangeError`), touching nothing.
  * @note Allocation-free, O(n). Thread-safe on distinct buffers.

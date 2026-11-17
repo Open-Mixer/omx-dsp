@@ -64,7 +64,7 @@ typedef struct {
   int stable;
   int active;
   /** Consecutive frames the detector reported this note ONE OCTAVE away (see the fold in
-   *  {@link omx_hrp_track_update}), and which side (+1 above / −1 below). Crossing
+   *  omx_hrp_track_update()), and which side (+1 above / −1 below). Crossing
    *  {@link OmxHrpTrackConfig.octave_hold_frames} migrates the track — a real leap. */
   uint32_t octave_frames;
   int octave_dir;

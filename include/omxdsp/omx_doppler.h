@@ -19,13 +19,13 @@
  * exactly `f·2^(c/1200)`. A head at 0 cents does not move: it sits at the window's centre and the
  * output is the line read at `D`, bit for bit.
  *
- * A head whose design or mean delay changes (a new window, direction or mean) does not jump: {@link
- * omx_doppler_hand_over} holds the last read where it was, at its delays and its fade weight, starts
+ * A head whose design or mean delay changes (a new window, direction or mean) does not jump: omx_doppler_hand_over()
+ * holds the last read where it was, at its delays and its fade weight, starts
  * the new head at its window's centre, and crossfades the output linearly from the held read to the
  * new head over a length the caller names (the weights `h` and `1 − h`, `h` falling by `1/length` per
  * sample, sum to 1). The held delays were legal when they were read and a fixed delay stays legal, so
  * the held read never leaves the line. A hand-over runs to its end before the next can start
- * ({@link omx_doppler_handing_over}); a caller with a newer design keeps it until then.
+ * (omx_doppler_handing_over()); a caller with a newer design keeps it until then.
  *
  * Contract: no allocation, no lock, no libm call per sample; the design's `pow` runs on the control
  * thread. The state is the position, the last read and the hand-over.

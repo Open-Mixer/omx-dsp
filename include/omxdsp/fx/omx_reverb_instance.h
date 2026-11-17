@@ -8,9 +8,9 @@
  *
  *   1. POOL. `struct omx_reverb_state` binds a pool; the instance OWNS it, inline
  *      ({@link OMX_REVERB_POOL_FLOATS}, which fits every declared rate), and
- *      {@link omx_reverb_instance_init} lays the five configurations out over it at the instance
+ *      omx_reverb_instance_init() lays the five configurations out over it at the instance
  *      rate, REFUSING a rate the console does not declare. Nothing is allocated, at init or after.
- *   2. RESOLVE. {@link omx_reverb_instance_resolve} takes the kernel's thirteen contract controls
+ *   2. RESOLVE. omx_reverb_instance_resolve() takes the kernel's thirteen contract controls
  *      in their declared order and the row's own units (resolve_fx_reverb, mixer_rt.c, loads them
  *      unconverted) into the atom, every travel clamped through omx_param into its declared range
  *      (REVERB_*_RANGE, omxdsp_definitions.h) and a non-finite word reading as the declared

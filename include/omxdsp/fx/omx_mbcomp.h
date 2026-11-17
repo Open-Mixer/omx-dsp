@@ -5,8 +5,8 @@
  * @brief The multiband compressor: a Linkwitz-Riley 4 crossover tree splitting each leg into
  *        2 to OMX_MBC_MAX_BANDS in-phase bands, one compressor per band, the bands summed.
  *
- * Composed from existing words only: {@link omx_xover_process} splits, {@link omx_xover_allpass}
- * puts every band below a later corner in phase, {@link omx_dynamics_keyed} is each band's
+ * Composed from existing words only: omx_xover_process() splits, omx_xover_allpass()
+ * puts every band below a later corner in phase, omx_dynamics_keyed() is each band's
  * compressor with its OWN atom and state. Band k's path is
  * `HP(f1)…HP(f(k−1))·LP(fk)·AP(f(k+1))…AP(f(N−1))`, so the band magnitudes partition unity and share
  * one phase:
@@ -18,7 +18,7 @@
  *   - each LR4 split is −6.0206 dB on both sides at its corner, at every rate (the bilinear design
  *     is prewarped at the corner).
  *
- * One oversampling factor for the whole stage ({@link omx_mbcomp_factor}): every band's audio takes
+ * One oversampling factor for the whole stage (omx_mbcomp_factor()): every band's audio takes
  * the same tap, or the bands would sum into a comb. A band that is off runs a unity atom, so it
  * takes that tap too and its gain is exactly 1. Every band is a feed-forward RMS compressor.
  *
@@ -28,7 +28,7 @@
  *
  * Contract: NO allocation, NO lock, NO syscall in omx_mbcomp_process(). The atom
  * {@link omx_mbcomp} is a per-block snapshot whose crossovers are designed on the control thread
- * ({@link omx_mbcomp_design}); the state {@link omx_mbcomp_state} is inline and sized by
+ * (omx_mbcomp_design()); the state {@link omx_mbcomp_state} is inline and sized by
  * OMX_MBC_MAX_BANDS.
  */
 #ifndef OMX_MBCOMP_H

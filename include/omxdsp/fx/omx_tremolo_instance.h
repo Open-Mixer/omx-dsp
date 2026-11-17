@@ -7,7 +7,7 @@
  * and this file adds no DSP to it. It adds what a host's port model needs and the atom does not
  * carry:
  *
- *   1. RESOLVE. {@link omx_tremolo_instance_resolve} turns the operator's units (a mode index, Hz,
+ *   1. RESOLVE. omx_tremolo_instance_resolve() turns the operator's units (a mode index, Hz,
  *      percent) into the atom: `lfo_inc = omx_lfo_inc(rate_hz, sr)`, depth and mix over 100, every
  *      knob clamped through omx_param into the declared travel (TREMOLO_*_RANGE,
  *      omxdsp_definitions.h): a foreign host's port is not the console's codec, and a non-finite

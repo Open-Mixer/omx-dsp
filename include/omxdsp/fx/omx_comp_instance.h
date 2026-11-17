@@ -10,11 +10,11 @@
  * — and this file adds no DSP to it. What it adds is what a host's port model needs and the
  * kernel's atom does not carry:
  *
- *   1. READY. {@link omx_comp_instance_init} binds the instance to its rate and refuses a rate
+ *   1. READY. omx_comp_instance_init() binds the instance to its rate and refuses a rate
  *      that is not positive. A refused instance is the identity in
- *      {@link omx_comp_instance_run} and reports no latency: absence is a wire, not a crash.
+ *      omx_comp_instance_run() and reports no latency: absence is a wire, not a crash.
  *   2. RESOLVE. A host publishes control ports as floats in the operator's units (dB, ratio, ms,
- *      toggles). {@link omx_comp_instance_resolve} is the console's `resolve_dyn` (mixer_rt.c)
+ *      toggles). omx_comp_instance_resolve() is the console's `resolve_dyn` (mixer_rt.c)
  *      for a comp slot — ACT-ABOVE, make-up dB -> linear by omx_db_to_lin, the attack and release
  *      poles by omx_pole_from_time_ms at the instance rate, the attack's ms carried beside its pole
  *      for `auto` — with every value clamped into the declared OMX_COMP_* travel (NaN floored)
@@ -31,11 +31,11 @@
  * omx_dyn_dry_share; 100 % is the processed output bit for bit, 0 % the compensated input.
  *
  * STATE ACROSS BYPASS: the kernel's disabled path leaves the slot's state as it was, and the
- * shell adds no re-arm the console's slot does not have. {@link omx_comp_instance_init} (a
+ * shell adds no re-arm the console's slot does not have. omx_comp_instance_init() (a
  * host's instantiate/activate) is the one place the state is cleared.
  *
  * THE KEY. The detector hears the strip's own legs, or the key handed to
- * {@link omx_comp_instance_run_keyed} (keySource), through the gate's key filter (keyHpHz, keyLpHz:
+ * omx_comp_instance_run_keyed() (keySource), through the gate's key filter (keyHpHz, keyLpHz:
  * omx_gate.h's one Butterworth section per edge, in double) and the tilt (keyTiltDb, omx_tilt.h, about
  * KEY_TILT_PIVOT_HZ), on each leg, folded into one level by detectLink: linked the louder leg, mid
  * `(L + R)/2`, side `(L - R)/2`, max the louder of the mid and the side. keyListen puts what the
@@ -47,9 +47,9 @@
  * shipped bit for bit. `opto` and `auto` run the kernel's program release (omx_env_program_release,
  * PROGRAM_RELEASE_PROFILES.opto and .auto) on the gain computer's reduction, with the detector
  * releasing at its attack pole: releaseMs is inert there, kept for when fixed returns. The
- * effectiveAttackMs readout is {@link omx_comp_instance_effective_attack_ms}.
+ * effectiveAttackMs readout is omx_comp_instance_effective_attack_ms().
  *
- * API CHANGE (FX-12, omx-dsp#188). {@link omx_comp_instance_resolve} gains a trailing `release_mode`
+ * API CHANGE (FX-12, omx-dsp#188). omx_comp_instance_resolve() gains a trailing `release_mode`
  * argument, positional like the rest (the 10-25 decision), so every caller built against the earlier
  * signature stops compiling until it passes one; `OMX_COMP_RELEASE_MODES_FIXED` is the compressor
  * that shipped. The callers: omx-plugins' plugins/omx-comp/omx_comp_core.h and

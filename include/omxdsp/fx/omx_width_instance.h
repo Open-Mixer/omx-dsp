@@ -4,7 +4,7 @@
  * omx_width_instance.h — stereo width and pseudo-stereo as a plugin instance (FX-11): a mono keyboard
  * or playback made wide on the PA, a monitor mix narrowed. It adds no DSP to the omx_width word.
  *
- *   RESOLVE. {@link omx_width_instance_resolve} takes the width kernel's contract controls in their
+ *   RESOLVE. omx_width_instance_resolve() takes the width kernel's contract controls in their
  *   declared order (data/kernels/width.json), a travel clamped into its range and a non-finite word
  *   reading as its default, a choice outside its set reading as its default. widthPct/100 scales the
  *   side; pseudoMs becomes the delay in samples (omx_width_delay); bassMonoHz is the LR4 corner.

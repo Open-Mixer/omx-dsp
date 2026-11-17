@@ -5,9 +5,9 @@
  * @brief The precision limiter: a look-ahead, true-peak, stereo-linked brickwall.
  *
  * Composed from the library words only:
- * {@link omx_truepeak_block} is the detector, {@link omx_gaincomp_db} the request (ABOVE, knee 0, at
- * the ratio travel's ceiling, scaled by `R/(R−1)`), {@link omx_lookahead_min_push} the hold,
- * {@link omx_env_step} the release on the gain depth, {@link omx_lookahead_tick} the attack box and the
+ * omx_truepeak_block() is the detector, omx_gaincomp_db() the request (ABOVE, knee 0, at
+ * the ratio travel's ceiling, scaled by `R/(R−1)`), omx_lookahead_min_push() the hold,
+ * omx_env_step() the release on the gain depth, omx_lookahead_tick() the attack box and the
  * delayed audio. `y[n] = clamp(s[n]·x[n − T], ±c)`, `T = U + D`.
  *
  * Contract: NO PipeWire, NO napi, NO allocation, NO lock, NO libc beyond <math.h>/<string.h>. The

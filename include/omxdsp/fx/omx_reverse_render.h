@@ -72,7 +72,7 @@
  *
  * `pool` + `st` are one ordinary reverb state, re-laid out per block; `tmp_*` hold one window of
  * audio on its way through the network (so they must be at least `W` frames, which
- * {@link omx_reverse_render_window} answers for a given `reverse_ms` and rate); `wet_*` hold the
+ * omx_reverse_render_window() answers for a given `reverse_ms` and rate); `wet_*` hold the
  * accumulated wet for the whole region, in the REVERSED domain, and are mirrored on the way out.
  */
 struct omx_reverse_render_scratch {

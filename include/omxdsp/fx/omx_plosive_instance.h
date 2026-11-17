@@ -19,12 +19,12 @@
  * detector reads the voice without the pop's spill. Both legs share each detector, so the image never
  * shifts.
  *
- *   RESOLVE. {@link omx_plosive_instance_resolve} takes the plosive kernel's contract controls in their
+ *   RESOLVE. omx_plosive_instance_resolve() takes the plosive kernel's contract controls in their
  *   declared order (data/kernels/plosive.json), each clamped into its travel, a non-finite word reading
  *   as its default. The band's edges are bandHz / 2^(w/2) and bandHz 2^(w/2), the top one held under
  *   PLOSIVE_BAND_EDGE_FRACTION of the rate, and the section is designed from the held edges.
  *   RUN. Per sample as above; the deepest cut of each half in the block is its readout
- *   ({@link omx_plosive_instance_consonant_reduction_db}, {@link omx_plosive_instance_pop_reduction_db}).
+ *   (omx_plosive_instance_consonant_reduction_db(), omx_plosive_instance_pop_reduction_db()).
  *
  * LATENCY IS ZERO (L1). Nothing is allocated; every word of state is in {@link OmxPlosiveInstance}.
  */

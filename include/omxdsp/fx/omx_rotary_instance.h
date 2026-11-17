@@ -6,7 +6,7 @@
  * `omx_rotary.h`'s `omx_rotary_process`, THE SAME INLINE the console's rotary stage runs, and this
  * file adds no DSP to it. It adds what a host's port model needs and the atom does not carry:
  *
- *   1. RESOLVE. {@link omx_rotary_instance_resolve} takes the kernel's contract controls in their
+ *   1. RESOLVE. omx_rotary_instance_resolve() takes the kernel's contract controls in their
  *      declared order and user units (four rotor rates in Hz, an accel scale, a balance and a mix
  *      in percent, the speed as its ROTARY_SPEEDS index), clamps each into its declared travel
  *      (ROTARY_*_RANGE, omxdsp_definitions.h; a non-finite word reads as the declared default),

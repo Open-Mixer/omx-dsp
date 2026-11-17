@@ -6,7 +6,7 @@
  * (fx/omx_eq_instance.h: its design, its clamps, its parking, its bank and its state), and every
  * band's dynamics are the band-dynamics word (omx_band_dyn.h), the word the de-esser runs.
  *
- *   1. RESOLVE. {@link omx_dyneq_instance_resolve} takes the dyneq kernel's contract controls in
+ *   1. RESOLVE. omx_dyneq_instance_resolve() takes the dyneq kernel's contract controls in
  *      their declared order (data/kernels/dyneq.json), one array per band control and the mix. The
  *      static half (switch, type, centre, gain, Q) goes to an EQ face whose first six bands are these
  *      and whose other bands and pass filters are off, so its bank is exactly the six bands that are
@@ -27,7 +27,7 @@
  *   4. MIX. Below 100 % the output is the convex blend of the input and the processed signal
  *      (omx_wetdry_mix()); at 100 % it is the processed signal itself.
  *
- * READOUTS. {@link omx_dyneq_instance_band_gain_db} is the dyneq kernel's band<n>GainDb: the band's
+ * READOUTS. omx_dyneq_instance_band_gain_db() is the dyneq kernel's band<n>GainDb: the band's
  * gain computer re-run on the level its detector holds after the last block, signed.
  *
  * Bypass is the identity and keeps every state word. LATENCY IS ZERO. Nothing is allocated; the

@@ -54,7 +54,7 @@
 #define OMX_ALIGN_FRACTION_MIN_RATE 88200.0f
 
 /** @brief One strip's alignment lines + RT state. Rings are CONTROL-thread owned and NULL until the
- * first non-zero delay ({@link omx_align_arm}); a NULL ring is a passthrough, so the RT needs no
+ * first non-zero delay (omx_align_arm()); a NULL ring is a passthrough, so the RT needs no
  * other gate. */
 struct omx_align_state {
   float *ring_l;                    /**< The left ring, OMX_ALIGN_CAP floats; NULL: a passthrough. */
@@ -198,7 +198,7 @@ static inline void omx_align_rw(struct omx_align_state *a, float *l, float *r, u
 
 #define OMX_CONTRACT_STAGE "align"
 /**
- * @brief Delay a strip's legs in place toward `tgt` samples ({@link omx_align_target}).
+ * @brief Delay a strip's legs in place toward `tgt` samples (omx_align_target()).
  *
  * Steady (`cur == tgt`): one kernel for the block. Moving: the applied delay steps toward `tgt`
  * by OMX_ALIGN_SLEW per sample and lands exactly on it; the kernel follows it per sample. An

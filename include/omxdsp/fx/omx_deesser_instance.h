@@ -7,7 +7,7 @@
  * band-dynamics word, omx_band_dyn.h, with the detector on the band), and this file adds no DSP to
  * it. It adds what a host's port model needs and the atom does not carry:
  *
- *   1. RESOLVE. {@link omx_deesser_instance_resolve} takes the kernel's contract controls in their
+ *   1. RESOLVE. omx_deesser_instance_resolve() takes the kernel's contract controls in their
  *      declared order and user units (Hz, octaves, dB, a ratio, dB, ms, ms, the DEESS_MODES
  *      index), clamps each into its declared travel (DEESS_*_RANGE, omxdsp_definitions.h; a
  *      non-finite word reads as the declared default) and fills the atom as the console's

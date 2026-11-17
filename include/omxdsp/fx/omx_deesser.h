@@ -6,10 +6,10 @@
  *
  * THIS FILE MINTS NO DSP MECHANISM, and that is its whole design. Its detect/gain/split step is
  * the band-dynamics word, mix_band_dyn.h. The detector is
- * {@link omx_env_step} — the envelope cascade the gate and the comp already run. The gain computer
- * is {@link omx_gaincomp_db} in OMX_DYN_ABOVE mode — the same soft-knee characteristic the comp
+ * omx_env_step() — the envelope cascade the gate and the comp already run. The gain computer
+ * is omx_gaincomp_db() in OMX_DYN_ABOVE mode — the same soft-knee characteristic the comp
  * slot runs, with ONE extra clamp (§4c: the reduction is floored at `range_db`). The band is ONE
- * {@link omx_biquad} section designed in TypeScript (`deEsserBandSection`, the cookbook bandpass),
+ * omx_biquad() section designed in TypeScript (`deEsserBandSection`, the cookbook bandpass),
  * like every other coefficient this node runs. What is new here is the WIRING: the detector
  * listens to the band and the gain is applied either to the whole strip or to the band alone.
  *
@@ -143,7 +143,7 @@ static inline int omx_deess_latency(const struct omx_deess *p) {
 
 /*
  * The GAIN (dB, <= 0) this stage applies at detector level `level` (linear, the cascade's last
- * stage in the detector's own domain — {@link omx_env_level}).
+ * stage in the detector's own domain — omx_env_level()).
  *
  * The shared ABOVE characteristic, FLOORED at `range_db` and capped at 0 dB. Pulled out so the RT
  * loop and the GR readout (`publish_lane_gr`, mixer_rt.c) cannot compute it differently: the

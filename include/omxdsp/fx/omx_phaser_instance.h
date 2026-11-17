@@ -6,7 +6,7 @@
  * `omx_phaser.h`'s `omx_phaser_process`, THE SAME INLINE the console's phaser stage runs, and this
  * file adds no DSP to it. It adds what a host's port model needs and the atom does not carry:
  *
- *   1. RESOLVE. {@link omx_phaser_instance_resolve} takes the kernel's contract controls in their
+ *   1. RESOLVE. omx_phaser_instance_resolve() takes the kernel's contract controls in their
  *      declared order and user units (Hz, Hz, octaves, a section count, a signed resonance,
  *      percent) and turns them into the atom: `lfo_inc = omx_lfo_inc(rate_hz, sr)`, the section
  *      count rounded to the nearest even member, mix over 100. Every knob is clamped through
