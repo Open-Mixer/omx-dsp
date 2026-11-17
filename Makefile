@@ -1103,7 +1103,8 @@ install: $(LIBS_ALL) $(PC_ALL) $(EXPORTS) install-rt-gate install-rta-read
 # system, which a test writing beside it would disturb; make test only, not check-package): two installs in a throwaway container, the file system compared
 # before and after, a planted system contract directory still there (tools/install-confined.sh).
 .PHONY: install-confined
-install-confined: tools/install-confined.sh
+install-confined: tools/install-confined.sh tools/install-confined-selftest.sh
+	@if command -v podman >/dev/null 2>&1; then bash tools/install-confined-selftest.sh; else echo "install-confined: the marker arm needs podman: not run here"; fi
 	bash tools/install-confined.sh
 
 # §4.3 (e): UNJUDGED (exit 0, never a pass) where the toolchain has no TSan; where it has, the
