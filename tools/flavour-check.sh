@@ -22,19 +22,30 @@ mkdir -p "$OUT"
 fail() { echo "flavour-check: FAIL — $*"; exit 1; }
 
 # The bound on every compile this script starts, declared once: a compiler that never returns ends the check RED,
-# naming the compile, not a pass and not an hour-long wait. A normal compile here is under a second; 60 s is the floor
-# the bound is never set under.
+# naming the compile, not a pass and not an hour-long wait. A normal compile here is under a second; 60 s is the
+# default, and the bound is a whole number of seconds from 1 to 3600.
 BOUND="${FLAVOUR_COMPILE_TIMEOUT:-60}"
-# timeout 0 never fires, so a bound that is not a whole number of seconds above 0 is refused before any compile.
-[[ "$BOUND" =~ ^[1-9][0-9]*$ ]] || fail "FLAVOUR_COMPILE_TIMEOUT=$BOUND: must be a whole number of seconds above 0"
-# timeout -k 5 ends a compiler that ignores SIGTERM with 137: both 124 and 137 are the bound.
-is_timeout() { [ "$1" -eq 124 ] || [ "$1" -eq 137 ]; }
-timed_out() { fail "$1: the compile timed out after $BOUND s (FLAVOUR_COMPILE_TIMEOUT)"; }
-# bounded <what> <command...>: the command's own status, or a red end naming <what> when the bound killed it.
+# timeout 0 never fires and a 23-digit bound is none either (it may overflow timeout), so anything but a whole number
+# from 1 to 3600 is refused before any compile.
+[[ "$BOUND" =~ ^[1-9][0-9]{0,3}$ ]] && [ "$BOUND" -le 3600 ] || fail "FLAVOUR_COMPILE_TIMEOUT=$BOUND: must be a whole number of seconds from 1 to 3600"
+# What ended a compile that came back red, told apart: timeout exits 124 when its TERM ended the compiler, and sends
+# KILL (exit 137) only 5 s after the bound (-k 5). A 137 is therefore the bound only when that much time passed; the
+# same 137 sooner is a KILL from elsewhere (the OOM killer), which is a failure of its own and not a timeout.
+# $SECONDS counts whole seconds, so the elapsed figure can read one short: BOUND+4 stands for BOUND+5.
+# ended <what> <rc> <seconds at start>: returns when the compile was not ended by the bound or a kill.
+ended() {
+  local what="$1" rc="$2" t0="$3"
+  if [ "$rc" -eq 124 ] || { [ "$rc" -eq 137 ] && [ $((SECONDS - t0)) -ge $((BOUND + 4)) ]; }; then
+    fail "$what: the compile timed out after $BOUND s (FLAVOUR_COMPILE_TIMEOUT)"
+  fi
+  [ "$rc" -eq 137 ] && fail "$what: the compile was killed (signal 9)"
+  return 0
+}
+# bounded <what> <command...>: the command's own status, or a red end naming <what> when the bound or a kill ended it.
 bounded() {
-  local what="$1" rc; shift
+  local what="$1" rc t0=$SECONDS; shift
   timeout -k 5 "$BOUND" "$@"; rc=$?
-  is_timeout "$rc" && timed_out "$what"
+  ended "$what" "$rc" "$t0"
   return "$rc"
 }
 
@@ -70,8 +81,9 @@ NOASLR=()
 if command -v setarch > /dev/null && setarch "$(uname -m)" -R true 2> /dev/null; then NOASLR=(setarch "$(uname -m)" -R); fi
 printf 'int main(void) { return 0; }\n' > "$OUT/probe.c"
 probe_ok=0
+t0=$SECONDS
 plink="$(timeout -k 5 "$BOUND" $CC -fsanitize=thread -o "$OUT/probe" "$OUT/probe.c" 2>&1)"; plrc=$?
-is_timeout "$plrc" && timed_out "the TSan probe"
+ended "the TSan probe" "$plrc" "$t0"
 if [ "$plrc" -ne 0 ]; then
   echo "flavour-check: NOT RUN — the TSan probe does not link: $(grep -m1 . <<< "$plink")"
 else
