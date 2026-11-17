@@ -108,6 +108,12 @@ static inline void omx_width_instance_resolve(OmxWidthInstance *s, int bypass, f
 /**
  * THE AUDIO CALLBACK'S WHOLE SHARE: the word over both legs, in to out. `in_*` and `out_*` may alias.
  * Not ready, bypassed or at the come-up values is the identity and moves no state.
+ * @param s The instance; null, not ready or bypassed leaves `out_*` holding `in_*`.
+ * @param in_l The left input, `n` frames.
+ * @param in_r The right input, `n` frames.
+ * @param out_l The left output, `n` frames, may be `in_l`.
+ * @param out_r The right output, `n` frames, may be `in_r`.
+ * @param n The block length, frames; a null port or 0 touches nothing.
  * @thread audio
  */
 static inline void omx_width_instance_run(OmxWidthInstance *s, const float *in_l, const float *in_r, float *out_l,

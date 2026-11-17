@@ -151,12 +151,18 @@ static inline double omx_tone_instance_magnitude(const OmxToneInstance *s, doubl
   return m;
 }
 
+#define OMX_CONTRACT_STAGE "tone/instance-run"
 /**
  * THE AUDIO CALLBACK'S WHOLE SHARE: each leg through the tilt then the filter, in to out. `in_*` and
  * `out_*` may alias. Not ready, bypassed, or flat and open is the identity and moves no state.
+ * @param s The instance; null, not ready or bypassed leaves `out_*` holding `in_*`.
+ * @param in_l The left input, `n` frames.
+ * @param in_r The right input, `n` frames.
+ * @param out_l The left output, `n` frames, may be `in_l`.
+ * @param out_r The right output, `n` frames, may be `in_r`.
+ * @param n The block length, frames; a null port or 0 touches nothing.
  * @thread audio
  */
-#define OMX_CONTRACT_STAGE "tone/instance-run"
 static inline void omx_tone_instance_run(OmxToneInstance *s, const float *in_l, const float *in_r, float *out_l,
                                          float *out_r, uint32_t n) {
   if (!omx_instance_copy_through(in_l, in_r, out_l, out_r, n)) return;

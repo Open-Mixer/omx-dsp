@@ -92,19 +92,17 @@ typedef struct {
   float ring[OMX_DOUBLER_INSTANCE_CAP];
 } OmxDoublerInstance;
 
-/**
- * Bind an instance to its rate, over its own ring. Returns 1 when usable, 0 when not: the rate must be
- * one of the oracle set. The doubler comes up at its declared defaults. Allocates nothing.
- */
 static inline void omx_doubler_instance_resolve(OmxDoublerInstance *s, int bypass, float voices, float delay_ms,
                                                 float detune_cents, float mod_rate_hz, float mod_depth_ms,
                                                 float spread_pct, float mix_pct);
-
 /**
+ * Bind an instance to its rate, over its own ring. Returns 1 when usable, 0 when not: the rate must be
+ * one of the oracle set. The doubler comes up at its declared defaults. Allocates nothing.
  * @param s The instance; every word of it is written.
  * @param sr The sample rate, Hz, one of the oracle set.
  * @return 1 when usable, 0 when not: a rate the console does not declare (the oracle set, 32 to 192 kHz) is refused, `ready` stays clear and run() is the identity; a ring the delay line cannot be armed over is refused the same way.
- @thread control */
+ * @thread control
+ */
 static inline int omx_doubler_instance_init(OmxDoublerInstance *s, float sr) {
   if (!omx_instance_bind(s, sizeof(*s), sr)) return 0;
   if (omx_fdelay_init(&s->line, s->ring, OMX_DOUBLER_INSTANCE_CAP, OMX_DOUBLER_INSTANCE_ORDER) != OMX_FDELAY_OK) return 0;
@@ -141,14 +139,25 @@ static inline void omx_doubler_instance_settle(OmxDoublerInstance *s, uint32_t k
   s->pending[k] = 0;
 }
 
+#define OMX_CONTRACT_STAGE "doubler/instance-resolve"
 /**
  * Resolve the host's control values for one cycle. `bypass` non-zero makes run() the identity. The
  * arguments are the doubler kernel's contract controls in their declared order: the voice count,
  * the mean delay (ms), the detune (cents), the drift's rate (Hz) and depth (ms), the spread and the
- * mix (percent).
+ * mix (percent). Each travel is clamped into its declared range, a non-finite word reading as the
+ * declared default. A null or not-ready instance is refused and nothing changes.
+ * @param s The instance.
+ * @param bypass Non-zero disables the doubler: run() is then the identity.
+ * @param voices The voice count, rounded, 1 to OMX_DOUBLER_INSTANCE_VOICES (DOUBLER_VOICES_RANGE).
+ * @param delay_ms The mean delay, ms, inside DOUBLER_DELAY_MS_RANGE; each voice's share of it is DOUBLER_INSTANCE_DELAYS'.
+ * @param detune_cents The detune, cents, inside DOUBLER_DETUNE_CENTS_RANGE; each voice's share DOUBLER_INSTANCE_DETUNES'.
+ * @param mod_rate_hz The drift's rate, Hz, inside DOUBLER_MOD_RATE_HZ_RANGE.
+ * @param mod_depth_ms The drift's depth, ms, inside DOUBLER_MOD_DEPTH_MS_RANGE.
+ * @param spread_pct The stereo spread, percent, inside DOUBLER_SPREAD_PCT_RANGE, through the balance law per voice.
+ * @param mix_pct The wet share, percent, inside DOUBLER_MIX_PCT_RANGE.
+ * @post `voices-and-mix-declared`: the voice count inside the ensemble and the mix inside [0, 1].
  * @thread audio
  */
-#define OMX_CONTRACT_STAGE "doubler/instance-resolve"
 static inline void omx_doubler_instance_resolve(OmxDoublerInstance *s, int bypass, float voices, float delay_ms,
                                                 float detune_cents, float mod_rate_hz, float mod_depth_ms,
                                                 float spread_pct, float mix_pct) {
@@ -194,12 +203,18 @@ static inline void omx_doubler_instance_resolve(OmxDoublerInstance *s, int bypas
 }
 #undef OMX_CONTRACT_STAGE
 
+#define OMX_CONTRACT_STAGE "doubler/instance-run"
 /**
  * THE AUDIO CALLBACK'S WHOLE SHARE: the dry legs blended with the voices, in to out. `in_*` and
  * `out_*` may alias. Not ready, bypassed or a mix of 0 is the identity and moves no state.
+ * @param s The instance; null, not ready or bypassed leaves `out_*` holding `in_*`.
+ * @param in_l The left input, `n` frames.
+ * @param in_r The right input, `n` frames.
+ * @param out_l The left output, `n` frames, may be `in_l`.
+ * @param out_r The right output, `n` frames, may be `in_r`.
+ * @param n The block length, frames; a null port or 0 touches nothing.
  * @thread audio
  */
-#define OMX_CONTRACT_STAGE "doubler/instance-run"
 static inline void omx_doubler_instance_run(OmxDoublerInstance *s, const float *in_l, const float *in_r, float *out_l,
                                             float *out_r, uint32_t n) {
   if (!omx_instance_through_engaged(in_l, in_r, out_l, out_r, n, s && s->ready && s->enabled && s->mix > 0.0f))

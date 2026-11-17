@@ -159,12 +159,18 @@ static inline void omx_balancer_tick(OmxBalancerInstance *s) {
   }
 }
 
+#define OMX_CONTRACT_STAGE "balancer/instance-run"
 /**
  * THE AUDIO CALLBACK'S WHOLE SHARE: the detector over the mono sum, the sections over both legs, in to
  * out. `in_*` and `out_*` may alias. Not ready, bypassed or an amount of 0 is the identity and moves no state.
+ * @param s The instance; null, not ready or bypassed leaves `out_*` holding `in_*`.
+ * @param in_l The left input, `n` frames.
+ * @param in_r The right input, `n` frames.
+ * @param out_l The left output, `n` frames, may be `in_l`.
+ * @param out_r The right output, `n` frames, may be `in_r`.
+ * @param n The block length, frames; a null port or 0 touches nothing.
  * @thread audio
  */
-#define OMX_CONTRACT_STAGE "balancer/instance-run"
 static inline void omx_balancer_instance_run(OmxBalancerInstance *s, const float *in_l, const float *in_r, float *out_l,
                                              float *out_r, uint32_t n) {
   uint32_t o = 0u;
