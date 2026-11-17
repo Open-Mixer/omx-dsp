@@ -299,9 +299,10 @@ code reads them through `<omxdsp/omxdsp_definitions.h>`, rendered from `data/` b
 (`make definitions OMX_CONTRACT=<checkout>`, which runs `omx-contract render --target c --package
 omx-dsp`) and committed, so a build needs no node. Never edit the header: change the definition and
 render again; `make definitions-check` fails while the two differ, and `tools/contract-single-source.sh`
-fails on a second definition of any of its names. `make install` installs `data/` into omx-contract's
-contract directory as the package `omx-dsp`, with a `MANIFEST.json`, where the other packages read
-it.
+fails on a second definition of any of its names. `make install` installs `data/` into the contract directory
+under its own prefix (`$(DATADIR)/omx-contract/contract.d`, the installed omx-contract's directory at `PREFIX=/usr`)
+as the package `omx-dsp`, with a `MANIFEST.json`, where the other packages read it. Nothing is written or
+removed outside `$(DESTDIR)$(PREFIX)` (`make install-confined`, in a throwaway container).
 
 The facts no single package implements (the declared sample rates, the parameter scales) stay in
 Open-Mixer/omx-contract, read through `<omxcontract/omx_contract_limits.h>`, which the definitions

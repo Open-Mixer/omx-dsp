@@ -10,10 +10,16 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <errno.h>
+#include <signal.h>
 #include <string.h>
+#include <sys/time.h>
+#include <sys/wait.h>
+#include <unistd.h>
 
 #include <omxdsp/fx/omx_reverb.h>
 
+#include "child_run.h"
 #include "fx_rates.h"
 
 static int g_fail = 0, g_checks = 0;
@@ -516,14 +522,49 @@ static void test_layout_refuses_a_rate_above_the_ceiling_with_a_fitting_pool(voi
 }
 
 /* Review of #71, gap 2: omx_pool_take called directly, where next_free + len wraps the unsigned
- * range. The summed form accepts the request and hands out a pointer past the pool. */
-static void test_pool_take_refuses_a_length_that_wraps(void) {
+ * range. The summed form accepts the request and hands out a pointer past the pool, then zeroes
+ * len floats from it. The take runs in its own child (child_run.h), so a revert is a counted failure of this arm,
+ * not a crash of the oracle, and the length goes through a volatile, so no compiler folds it into a
+ * build-time warning instead (test/fx/reverb-perturb.sh holds both). The body returns 0 when the
+ * take is refused with the cursor unmoved, 1 when it is not. */
+static int wrapping_take_body(int unused) {
+  (void)unused;
   static float pool[100];
   struct omx_reverb_state st;
   memset(&st, 0, sizeof st);
   st._pool = pool; st.pool_len = 100; st.next_free = 50;
-  float *p = omx_pool_take(&st, 0xFFFFFFF0u); /* 50 + len wraps to 34, which is below pool_len */
-  check(p == NULL && st._exhausted == 1 && st.next_free == 50, "a length whose sum wraps is refused, the cursor unmoved");
+  volatile uint32_t len = 0xFFFFFFF0u; /* 50 + len wraps to 34, which is below pool_len */
+  float *p = omx_pool_take(&st, len);
+  return p == NULL && st._exhausted == 1 && st.next_free == 50 ? 0 : 1;
+}
+
+/* child_run.h's own claim: a signal to the parent while it waits (SIGALRM, installed without
+ * SA_RESTART, so waitpid returns EINTR) neither fails a held arm nor leaves the child unreaped. */
+static void on_alarm(int sig) { (void)sig; }
+static int slow_held_body(int unused) {
+  (void)unused;
+  usleep(200000);
+  return 0;
+}
+static void test_child_run_survives_an_interrupted_wait(void) {
+  struct sigaction sa, old;
+  memset(&sa, 0, sizeof sa);
+  sa.sa_handler = on_alarm; /* no SA_RESTART */
+  sigemptyset(&sa.sa_mask);
+  sigaction(SIGALRM, &sa, &old);
+  struct itimerval tv = {{0, 0}, {0, 50000}}, off = {{0, 0}, {0, 0}};
+  setitimer(ITIMER_REAL, &tv, NULL);
+  const int held = omx_test_child_ok(slow_held_body, 0, "interrupted wait");
+  setitimer(ITIMER_REAL, &off, NULL);
+  sigaction(SIGALRM, &old, NULL);
+  check(held, "a wait interrupted by a signal is retried: the held child counts as held");
+  check(waitpid(-1, NULL, WNOHANG) < 0 && errno == ECHILD, "no child is left unreaped");
+}
+
+static void test_pool_take_refuses_a_length_that_wraps(void) {
+  static float pool[100];
+  struct omx_reverb_state st;
+  check(omx_test_child_ok(wrapping_take_body, 0, "pool-take wrap arm"), "a length whose sum wraps is refused, the cursor unmoved");
   memset(&st, 0, sizeof st);
   st._pool = pool; st.pool_len = 100; st.next_free = 50;
   check(omx_pool_take(&st, 50) == pool + 50 && st.next_free == 100 && !st._exhausted, "presence: an exact fit is taken");
@@ -667,6 +708,7 @@ int main(void) {
     test_layout_refuses_a_rate_above_the_ceiling_with_a_fitting_pool();
     test_pool_take_refuses_a_length_that_wraps();
   }
+  test_child_run_survives_an_interrupted_wait(); /* the helper's own claim: rate-free, run once */
   printf("fx/reverb: %d checks, %d failures (%d rates)\n", g_checks, g_fail, (int)OMX_FX_ORACLE_RATE_COUNT);
   return g_fail == 0 ? 0 : 1;
 }
