@@ -5,7 +5,7 @@
 # install-confined.sh — make install writes and removes nothing outside $(DESTDIR)$(PREFIX) (#75).
 #
 #   tools/install-confined.sh            the check, in a throwaway podman container (OMX_INSTALL_CONFINED_IMAGE, default
-#                                        registry.fedoraproject.org/fedora:44, by tag), so a red run never touches the host
+#                                        tools/install-confined.image: fedora:44 pinned by digest), so a red run never touches the host
 #   OMX_INSTALL_CONFINED_INNER=1 tools/install-confined.sh
 #                                        the check itself, on THIS file system. Only an explicit opt-in, set by the CI job
 #                                        whose container is thrown away and by the podman call above: a container marker
@@ -32,7 +32,7 @@ set -euo pipefail
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
 
 if [ "${OMX_INSTALL_CONFINED_INNER:-}" != 1 ]; then
-  image=${OMX_INSTALL_CONFINED_IMAGE:-registry.fedoraproject.org/fedora:44}
+  image=${OMX_INSTALL_CONFINED_IMAGE:-$(cat "$HERE/tools/install-confined.image")}
   command -v podman >/dev/null 2>&1 || { echo "install-confined: UNJUDGED: no podman, and OMX_INSTALL_CONFINED_INNER=1 is not set: the check runs only in a throwaway container" >&2; exit 2; }
   exec podman run --rm --security-opt label=disable -e OMX_INSTALL_CONFINED_INNER=1 -v "$HERE:/src:ro" "$image" bash /src/tools/install-confined.sh
 fi
@@ -64,16 +64,16 @@ confined() { # <label> <make args...>
   local d
   d=$( { diff "$scratch/before.txt" "$scratch/after.txt" || true; } | sed -n 's/^[<>] \([^\t]*\)\t.*$/\1/p' | sort -u)
   if [ -n "$d" ]; then
-    echo "install-confined: $label: written or removed outside DESTDIR+PREFIX:"; echo "$d" | sed 's/^/  /'; fail=1
+    echo "install-confined: $label: written or removed outside DESTDIR+PREFIX:"; while IFS= read -r l; do printf '  %s\n' "$l"; done <<<"$d"; fail=1
   fi
   [ -e "$sentinel" ] || { echo "install-confined: $label: $sentinel is gone (a system contract directory was removed)"; fail=1; }
 }
 
 P=$scratch/p D=$scratch/d
-confined "PREFIX=$P" install PREFIX=$P
-[ -f $P/share/omx-contract/contract.d/3/omx-dsp/MANIFEST.json ] || { echo "install-confined: PREFIX=$P: the contract directory is not under the prefix"; fail=1; }
-[ -f $P/include/omxdsp/omx_dsp.h ] || ls $P/include/omxdsp >/dev/null 2>&1 || { echo "install-confined: PREFIX=$P: no headers under the prefix"; fail=1; }
-confined "DESTDIR=$D PREFIX=/usr" install DESTDIR=$D PREFIX=/usr
-[ -f $D/usr/share/omx-contract/contract.d/3/omx-dsp/MANIFEST.json ] || { echo "install-confined: DESTDIR=$D PREFIX=/usr: the contract directory is not under the destdir"; fail=1; }
+confined "PREFIX=$P" install PREFIX="$P"
+[ -f "$P"/share/omx-contract/contract.d/3/omx-dsp/MANIFEST.json ] || { echo "install-confined: PREFIX=$P: the contract directory is not under the prefix"; fail=1; }
+[ -f "$P"/include/omxdsp/omx_dsp.h ] || ls "$P"/include/omxdsp >/dev/null 2>&1 || { echo "install-confined: PREFIX=$P: no headers under the prefix"; fail=1; }
+confined "DESTDIR=$D PREFIX=/usr" install DESTDIR="$D" PREFIX=/usr
+[ -f "$D"/usr/share/omx-contract/contract.d/3/omx-dsp/MANIFEST.json ] || { echo "install-confined: DESTDIR=$D PREFIX=/usr: the contract directory is not under the destdir"; fail=1; }
 [ "$fail" = 0 ] || { echo "install-confined: FAIL"; exit 1; }
 echo "install-confined: both installs stayed inside DESTDIR+PREFIX and the planted system directory is intact"
