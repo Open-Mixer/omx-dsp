@@ -60,6 +60,9 @@ typedef struct {
  * Bind an instance to its rate. Returns 1 when usable, 0 when not (a refused init leaves `ready`
  * clear and run() is the identity). The rate must be positive, finite and high enough that the
  * declared top rate stays under the oscillator's half-turn bound.
+ * @param s The instance; every word of it is written.
+ * @param sr The sample rate, Hz, positive and finite, above twice OMX_TREMOLO_RATE_RANGE_MAX.
+ * @return 1 when usable, 0 when not: a null instance or a rate that is not positive and finite, or not above twice the declared top rate, leaves `ready` clear and run() the identity.
  * @thread control
  */
 static inline int omx_tremolo_instance_init(OmxTremoloInstance *s, float sr) {
@@ -124,6 +127,8 @@ static inline void omx_tremolo_instance_run(OmxTremoloInstance *s, const float *
 
 /** The frames of latency the instance introduces: none, at every rate (the gain is applied to the
  * frame it is computed for).
+ * @param s The instance.
+ * @return 0.
  * @thread audio */
 static inline uint32_t omx_tremolo_instance_latency(const OmxTremoloInstance *s) {
   (void)s;

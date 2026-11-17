@@ -65,6 +65,9 @@ static inline void omx_loudlevel_instance_restart(OmxLoudlevelInstance *s) {
 
 /** Bind an instance to its rate. Returns 1 when usable, 0 when not: the rate must be one of the oracle
  * set. It comes up at its declared defaults, a range of 0. Allocates nothing.
+ * @param s The instance; every word of it is written.
+ * @param sr The sample rate, Hz, one of the oracle set.
+ * @return 1 when usable, 0 when not: a rate the console does not declare (the oracle set, 32 to 192 kHz) is refused, `ready` stays clear and run() is the identity.
  * @thread control */
 static inline int omx_loudlevel_instance_init(OmxLoudlevelInstance *s, float sr) {
   if (!omx_instance_bind(s, sizeof(*s), sr)) return 0;
@@ -169,6 +172,8 @@ static inline float omx_loudlevel_instance_loudness_lufs(const OmxLoudlevelInsta
 static inline float omx_loudlevel_instance_gain_db(const OmxLoudlevelInstance *s) { return s ? s->gain_db : 0.0f; }
 
 /** The frames of latency the instance introduces: none.
+ * @param s The instance.
+ * @return 0.
  * @thread audio */
 static inline uint32_t omx_loudlevel_instance_latency(const OmxLoudlevelInstance *s) {
   (void)s;

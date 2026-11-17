@@ -61,6 +61,9 @@ typedef struct {
  * Bind an instance to its rate. Returns 1 when usable, 0 when not (a refused init leaves `ready`
  * clear and run() is the identity). The rate must be finite and high enough that the sweep's
  * declared top (OMX_PHASER_F_TOP_HZ) stays below Nyquist, the kernel's own precondition.
+ * @param s The instance; every word of it is written.
+ * @param sr The sample rate, Hz, positive and finite, above twice OMX_PHASER_F_TOP_HZ.
+ * @return 1 when usable, 0 when not: a null instance or a rate that is not positive and finite, or whose Nyquist does not clear the sweep's top, leaves `ready` clear and run() the identity.
  * @thread control
  */
 static inline int omx_phaser_instance_init(OmxPhaserInstance *s, float sr) {
@@ -130,6 +133,8 @@ static inline void omx_phaser_instance_run(OmxPhaserInstance *s, const float *in
 #undef OMX_CONTRACT_STAGE
 
 /** The frames of latency the instance introduces: none, at every rate.
+ * @param s The instance.
+ * @return 0.
  * @thread audio */
 static inline uint32_t omx_phaser_instance_latency(const OmxPhaserInstance *s) {
   (void)s;

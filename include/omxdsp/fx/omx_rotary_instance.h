@@ -64,6 +64,9 @@ typedef struct {
  * Bind an instance to its rate. Returns 1 when usable, 0 when not (a refused init leaves `ready`
  * clear and run() is the identity). The kernel's inline rings are sized for the declared rates, so
  * any other rate is refused.
+ * @param s The instance; every word of it is written.
+ * @param sr The sample rate, Hz, one of the oracle set.
+ * @return 1 when usable, 0 when not: a rate the console does not declare (the oracle set, 32 to 192 kHz) is refused, `ready` stays clear and run() is the identity, as is a kernel ring that cannot be armed.
  * @thread control
  */
 static inline int omx_rotary_instance_init(OmxRotaryInstance *s, float sr) {
@@ -129,6 +132,8 @@ static inline void omx_rotary_instance_run(OmxRotaryInstance *s, const float *in
 #undef OMX_CONTRACT_STAGE
 
 /** The frames of latency the instance introduces: the kernel's, zero at every rate.
+ * @param s The instance.
+ * @return omx_rotary_latency(): the kernel's, 0 at every rate.
  * @thread audio */
 static inline uint32_t omx_rotary_instance_latency(const OmxRotaryInstance *s) {
   (void)s;

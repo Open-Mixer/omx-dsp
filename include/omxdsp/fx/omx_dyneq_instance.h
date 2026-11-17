@@ -107,6 +107,9 @@ static inline enum omx_eq_kind omx_dyneq_instance_kind(int type) {
  * Bind an instance to its rate. Returns 1 when usable, 0 when not (a refused init leaves `ready`
  * clear and run() is the identity): the rate must be one of the oracle set. Every band comes up off,
  * so a fresh instance is a wire. Allocates nothing.
+ * @param s The instance; every word of it is written.
+ * @param sr The sample rate, Hz, one of the full oracle set.
+ * @return 1 when usable, 0 when not: a null instance, a rate outside the oracle set or one the EQ core refuses leaves `ready` clear and run() the identity.
  * @thread control
  */
 static inline int omx_dyneq_instance_init(OmxDyneqInstance *s, float sr) {
@@ -315,6 +318,8 @@ static inline float omx_dyneq_instance_band_gain_db(const OmxDyneqInstance *s, u
 }
 
 /** The frames of latency the instance introduces: none.
+ * @param s The instance.
+ * @return 0.
  * @thread audio */
 static inline uint32_t omx_dyneq_instance_latency(const OmxDyneqInstance *s) {
   (void)s;

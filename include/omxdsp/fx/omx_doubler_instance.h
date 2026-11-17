@@ -100,7 +100,11 @@ static inline void omx_doubler_instance_resolve(OmxDoublerInstance *s, int bypas
                                                 float detune_cents, float mod_rate_hz, float mod_depth_ms,
                                                 float spread_pct, float mix_pct);
 
-/** @thread control */
+/**
+ * @param s The instance; every word of it is written.
+ * @param sr The sample rate, Hz, one of the oracle set.
+ * @return 1 when usable, 0 when not: a rate the console does not declare (the oracle set, 32 to 192 kHz) is refused, `ready` stays clear and run() is the identity; a ring the delay line cannot be armed over is refused the same way.
+ @thread control */
 static inline int omx_doubler_instance_init(OmxDoublerInstance *s, float sr) {
   if (!omx_instance_bind(s, sizeof(*s), sr)) return 0;
   if (omx_fdelay_init(&s->line, s->ring, OMX_DOUBLER_INSTANCE_CAP, OMX_DOUBLER_INSTANCE_ORDER) != OMX_FDELAY_OK) return 0;
@@ -222,6 +226,8 @@ static inline void omx_doubler_instance_run(OmxDoublerInstance *s, const float *
 #undef OMX_CONTRACT_STAGE
 
 /** The frames of latency the instance introduces: none.
+ * @param s The instance.
+ * @return 0.
  * @thread audio */
 static inline uint32_t omx_doubler_instance_latency(const OmxDoublerInstance *s) {
   (void)s;

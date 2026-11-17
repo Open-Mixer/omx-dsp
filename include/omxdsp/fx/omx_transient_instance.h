@@ -71,6 +71,9 @@ typedef struct {
  * Bind an instance to its rate. Returns 1 when usable, 0 when not: the rate must be one of the
  * oracle set (32 to 192 kHz), so any other rate is refused, `ready` stays clear and
  * omx_transient_instance_run() is then the identity: absence is a wire, not a crash.
+ * @param s The instance; every word of it is written.
+ * @param sr The sample rate, Hz, one of the oracle set.
+ * @return 1 when usable, 0 when not: a rate the console does not declare (the oracle set, 32 to 192 kHz) is refused, `ready` stays clear and run() is the identity.
  * @thread control
  */
 static inline int omx_transient_instance_init(OmxTransientInstance *s, float sr) {

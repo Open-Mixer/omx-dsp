@@ -65,6 +65,9 @@ typedef struct {
 /** Bind an instance to its rate: unity gain, engaged. Returns 1 when usable, 0 when the rate is
  * not positive and finite (run() is then the identity). The gain does not depend on the rate; the
  * rate is checked so a host's refused instance behaves as every other face's. Allocates nothing.
+ * @param s The instance; every word of it is written.
+ * @param sr The sample rate, Hz, positive and finite; the gain does not depend on it.
+ * @return 1 when usable, 0 when not: a null instance or a rate that is not positive and finite is refused, `ready` stays clear and run() is the identity.
  * @thread control */
 static inline int omx_trim_instance_init(OmxTrimInstance *s, float sr) {
   if (!s) return 0;
@@ -107,6 +110,8 @@ static inline void omx_trim_instance_run(OmxTrimInstance *s, const float *in_l, 
 }
 
 /** The frames of latency the instance introduces: none (a gain has no delay line).
+ * @param s The instance.
+ * @return 0.
  * @thread audio */
 static inline uint32_t omx_trim_instance_latency(const OmxTrimInstance *s) {
   (void)s;

@@ -74,6 +74,9 @@ static inline uint32_t omx_flanger_instance_cap_for(float sr) {
  * Bind an instance to its rate, over its own rings. Returns 1 when usable, 0 when not (a refused
  * init leaves `ready` clear and run() is the identity). A rate that is not declared, or whose
  * sweep the inline rings cannot hold, is refused. Allocates nothing.
+ * @param s The instance; every word of it is written.
+ * @param sr The sample rate, Hz, one of the oracle set.
+ * @return 1 when usable, 0 when not: a rate the console does not declare (the oracle set, 32 to 192 kHz) is refused, `ready` stays clear and run() is the identity, as is a rate whose sweep the inline rings cannot hold or a line that cannot be armed.
  * @thread control
  */
 static inline int omx_flanger_instance_init(OmxFlangerInstance *s, float sr) {

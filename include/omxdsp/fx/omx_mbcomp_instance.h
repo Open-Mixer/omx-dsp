@@ -69,7 +69,11 @@ static inline void omx_mbcomp_instance_resolve(OmxMbcompInstance *s, int bypass,
                                                const float makeup_db[OMX_MBC_MAX_BANDS], const int solo[OMX_MBC_MAX_BANDS],
                                                const int band_bypass[OMX_MBC_MAX_BANDS], float mix_pct, float output_db);
 
-/** @thread control */
+/**
+ * @param s The instance; every word of it is written.
+ * @param sr The sample rate, Hz, one of the oracle set.
+ * @return 1 when usable, 0 when not: a rate the console does not declare (the oracle set, 32 to 192 kHz) is refused, `ready` stays clear and run() is the identity.
+ @thread control */
 static inline int omx_mbcomp_instance_init(OmxMbcompInstance *s, float sr) {
   if (!omx_instance_bind(s, sizeof(*s), sr)) return 0;
   s->sr = sr;
@@ -206,6 +210,8 @@ static inline float omx_mbcomp_instance_band_gr_db(const OmxMbcompInstance *s, u
 }
 
 /** The frames of latency the instance reports: OMX_OVS_LATENCY_4X while the stage runs at 4x, else 0.
+ * @param s The instance.
+ * @return OMX_OVS_LATENCY_4X while the stage runs at 4x, else 0; 0 for a null or not-ready instance.
  * @thread audio */
 static inline uint32_t omx_mbcomp_instance_latency(const OmxMbcompInstance *s) {
   return s && s->ready && omx_mbcomp_factor(&s->atom) == 4u ? (uint32_t)OMX_OVS_LATENCY_4X : 0u;

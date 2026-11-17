@@ -84,6 +84,9 @@ static inline void omx_tone_instance_resolve(OmxToneInstance *s, int bypass, flo
 
 /** Bind an instance to its rate. Returns 1 when usable, 0 when not: the rate must be one of the oracle
  * set. The face comes up at its declared defaults, flat and open. Allocates nothing.
+ * @param s The instance; every word of it is written.
+ * @param sr The sample rate, Hz, one of the oracle set.
+ * @return 1 when usable, 0 when not: a rate the console does not declare (the oracle set, 32 to 192 kHz) is refused, `ready` stays clear and run() is the identity.
  * @thread control */
 static inline int omx_tone_instance_init(OmxToneInstance *s, float sr) {
   if (!omx_instance_bind(s, sizeof(*s), sr)) return 0;
@@ -172,6 +175,8 @@ static inline void omx_tone_instance_run(OmxToneInstance *s, const float *in_l, 
 #undef OMX_CONTRACT_STAGE
 
 /** The frames of latency the instance introduces: none.
+ * @param s The instance.
+ * @return 0.
  * @thread audio */
 static inline uint32_t omx_tone_instance_latency(const OmxToneInstance *s) {
   (void)s;

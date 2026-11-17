@@ -72,6 +72,9 @@ typedef struct {
 /**
  * Bind an instance to its rate. Returns 1 when usable, 0 when not (a refused init leaves `ready`
  * clear and run() is the identity): the rate must be a declared one. Allocates nothing.
+ * @param s The instance; every word of it is written.
+ * @param sr The sample rate, Hz, a declared one.
+ * @return 1 when usable, 0 when not: a rate the console does not declare (the oracle set, 32 to 192 kHz) is refused, `ready` stays clear and run() is the identity.
  * @thread control
  */
 static inline int omx_deesser_instance_init(OmxDeesserInstance *s, float sr) {
@@ -158,6 +161,8 @@ static inline void omx_deesser_instance_run(OmxDeesserInstance *s, const float *
 #undef OMX_CONTRACT_STAGE
 
 /** The frames of latency the instance introduces: the kernel's, zero at every rate.
+ * @param s The instance.
+ * @return omx_deess_latency() of the atom, 0 at every rate; 0 for a null instance.
  * @thread audio */
 static inline uint32_t omx_deesser_instance_latency(const OmxDeesserInstance *s) {
   return s ? (uint32_t)omx_deess_latency(&s->atom) : 0u;

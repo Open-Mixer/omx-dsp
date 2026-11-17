@@ -99,6 +99,9 @@ static inline void omx_leveler_instance_resolve(OmxLevelerInstance *s, int bypas
 
 /** Bind an instance to its rate. Returns 1 when usable, 0 when not: the rate must be one of the oracle
  * set. The leveler comes up at its declared defaults, an amount of 0. Allocates nothing.
+ * @param s The instance; every word of it is written.
+ * @param sr The sample rate, Hz, one of the oracle set.
+ * @return 1 when usable, 0 when not: a rate the console does not declare (the oracle set, 32 to 192 kHz) is refused, `ready` stays clear and run() is the identity.
  * @thread control */
 static inline int omx_leveler_instance_init(OmxLevelerInstance *s, float sr) {
   if (!omx_instance_bind(s, sizeof(*s), sr)) return 0;
@@ -174,6 +177,8 @@ static inline void omx_leveler_instance_run(OmxLevelerInstance *s, const float *
 }
 
 /** The frames of latency the instance introduces: none.
+ * @param s The instance.
+ * @return 0.
  * @thread audio */
 static inline uint32_t omx_leveler_instance_latency(const OmxLevelerInstance *s) {
   (void)s;

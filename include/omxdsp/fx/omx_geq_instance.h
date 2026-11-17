@@ -121,6 +121,9 @@ typedef struct {
  * Bind an instance to its rate. Returns 1 when usable, 0 when not (a rate that is not positive and
  * finite, or one whose Nyquist does not clear the top centre); a refused init leaves `ready` clear
  * and omx_geq_instance_run() is then the identity: absence is a wire, not a crash.
+ * @param s The instance; every word of it is written.
+ * @param sr The sample rate, Hz, positive and finite, its Nyquist clearing the top centre.
+ * @return 1 when usable, 0 when not: a null instance or a rate omx_geq_instance_rate_ok() refuses leaves `ready` clear and run() the identity.
  * @thread control
  */
 static inline int omx_geq_instance_init(OmxGeqInstance *s, double sr) {

@@ -106,6 +106,9 @@ static inline void omx_plosive_instance_resolve(OmxPlosiveInstance *s, int bypas
 
 /** Bind an instance to its rate. Returns 1 when usable, 0 when not: the rate must be one of the oracle
  * set. The tamer comes up at its declared defaults. Allocates nothing.
+ * @param s The instance; every word of it is written.
+ * @param sr The sample rate, Hz, one of the oracle set.
+ * @return 1 when usable, 0 when not: a rate the console does not declare (the oracle set, 32 to 192 kHz) is refused, `ready` stays clear and run() is the identity.
  * @thread control */
 static inline int omx_plosive_instance_init(OmxPlosiveInstance *s, float sr) {
   if (!omx_instance_bind(s, sizeof(*s), sr)) return 0;
@@ -226,6 +229,8 @@ static inline float omx_plosive_instance_pop_reduction_db(const OmxPlosiveInstan
 }
 
 /** The frames of latency the instance introduces: none.
+ * @param s The instance.
+ * @return 0.
  * @thread audio */
 static inline uint32_t omx_plosive_instance_latency(const OmxPlosiveInstance *s) {
   (void)s;

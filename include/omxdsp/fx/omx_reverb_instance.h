@@ -91,6 +91,9 @@ typedef struct {
  * Bind an instance to its rate and lay its own pool out. Returns 1 when usable, 0 when not (a
  * refused init leaves `ready` clear and run() is the identity): the rate must be a declared one.
  * Allocates nothing.
+ * @param s The instance; every word of it is written.
+ * @param sr The sample rate, Hz, a declared one, at most OMX_REVERB_MAX_RATE.
+ * @return 1 when usable, 0 when not: a rate the console does not declare (the oracle set, 32 to 192 kHz) is refused, `ready` stays clear and run() is the identity, as is a pool the layout does not fit or an early line that cannot be armed.
  * @thread control
  */
 static inline int omx_reverb_instance_init(OmxReverbInstance *s, float sr) {
