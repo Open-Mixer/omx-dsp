@@ -13,6 +13,9 @@
 #   term-limit    the term limit cut at, not refused, when one more arrives;
 #   cap           the room check one byte too loose (an answer written with no room for its NUL);
 #   user-comma    the user-only curve joined with no comma;
+#   locale-lit    the decimal point swapped in every piece written, structural commas too (the reviewed bug);
+#   dup-key       a request key given twice (terms) accepted;
+#   dup-value     a term's value given twice accepted;
 #   fraction      a grid-point count with a fraction read as its floor.
 # The tree is never edited; a sed that matches nothing is a failure, not a skip. The real suite, run by `make suite`,
 # is the control.
@@ -57,7 +60,10 @@ run unknown-key 's|rq->tempo_bpm)) return 0;\n      } else {|rq->tempo_bpm)) ret
 run required 's|have_points \&\& have_terms ? 1|have_points \&\& (have_terms \| 1) ? 1|'
 run shape-word 's|  if (code == OMX_CURVE_OK \&\& bad_shape) code = OMX_CURVE_KIND_UNKNOWN;|  (void)bad_shape;|'
 run term-limit 's|            if (rq->nterms >= OMX_CURVE_JSON_TERMS_MAX) return (c->bad = 1), 0;|            if (rq->nterms >= OMX_CURVE_JSON_TERMS_MAX) { rq->nterms = OMX_CURVE_JSON_TERMS_MAX; return 1; }|'
-run cap 's|  if (w < 0 \|\| (size_t)w >= o->cap - o->n) {|  if (w < 0 \|\| (size_t)w > o->cap - o->n) {|'
-run user-comma 's|      omx_curve_json_put(&o, ",");|      omx_curve_json_put(\&o, "%s", "");|'
+run cap 's|len >= o->cap - o->n|len > o->cap - o->n|'
+run user-comma 's|      omx_curve_json_lit(&o, ",");|      omx_curve_json_lit(\&o, "");|'
 run fraction 's|  if (!(v >= 0.0 \&\& v <= max \&\& v == floor(v))) return (c->bad = 1), 0;|  if (!(v >= 0.0 \&\& v <= max)) return (c->bad = 1), 0;|'
-echo "curve-json-sabotage: all nine sabotages are caught"
+run locale-lit 's|  memcpy(o->buf + o->n, s, len);|  memcpy(o->buf + o->n, s, len);\n  for (size_t i = 0; i < len; i++)\n    if (o->buf[o->n + i] == o->point) o->buf[o->n + i] = \x27.\x27;|'
+run dup-key 's|        if (have_terms) return (c->bad = 1), 0;|        (void)0;|'
+run dup-value 's|        if (have_value) return (c->bad = 1), 0;|        (void)0;|'
+echo "curve-json-sabotage: all twelve sabotages are caught"

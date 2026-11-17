@@ -7,12 +7,12 @@
  *
  * The request is the document of `curve-io.schema.json` (`CurveRequest`): the JSON form of struct
  * omx_curve_request, its words the OMX_CURVE_*_WORDS tables' and its keys the TypeScript twin's, so a request
- * the twin took is a request this takes. The answer is the same schema's `CurveAnswer`: the points, marks and, when
+ * the twin took is a request this takes. The answer is the same schema's `CurveReply` (or, when the curve is refused, `CurveRefusal`): the points, marks and, when
  * the request asks, the user-only curve and a delay's stems, or the code of what was refused. Both are plain text:
  * numbers are written `%.17g` (read back exactly) and a locale's decimal comma never reaches the wire.
  *
  * A request is parsed whole before it is answered, and a document that is no `CurveRequest` (a key the shape does
- * not name, a missing required key, a value of the wrong kind, trailing text, more terms than
+ * not name, a key given twice, a missing required key, a value of the wrong kind, trailing text, more terms than
  * OMX_CURVE_JSON_TERMS_MAX) is refused with OMX_CURVE_JSON_MALFORMED, never read as far as it goes. A word of a
  * term's role, unit or origin that no table holds is answered as the struct call answers a value out of range
  * (`unitRefused`); a kind or family word of none, or a shape word of none, as `kindUnknown`.
@@ -51,6 +51,7 @@ struct omx_curve_json_cursor {
   const char *p;   /**< The next byte. */
   const char *end; /**< One past the last. */
   int bad;         /**< Non-zero once the text is not a `CurveRequest`; every later read then answers nothing. */
+  char point;      /**< The locale's decimal point, swapped for `.` when a number is read. */
 };
 
 /**
@@ -140,7 +141,7 @@ static inline int omx_curve_json_number(struct omx_curve_json_cursor *c, double 
   const char *s = c->p;
   char tmp[64];
   size_t n = 0;
-  const char point = omx_curve_json_point();
+  const char point = c->point;
   if (c->p < c->end && *c->p == '-') c->p++;
   if (c->p >= c->end || *c->p < '0' || *c->p > '9') return (c->bad = 1), 0;
   if (*c->p == '0') {
@@ -242,7 +243,7 @@ static inline int omx_curve_json_word(struct omx_curve_json_cursor *c, const cha
  */
 static inline int omx_curve_json_term(struct omx_curve_json_cursor *c, struct omx_curve_term *t, int *bad_shape) {
   char key[16];
-  int have_role = 0, have_value = 0, have_unit = 0;
+  int have_role = 0, have_value = 0, have_unit = 0, have_index = 0, have_shape = 0, have_origin = 0;
   memset(t, 0, sizeof *t);
   t->shape = OMX_CURVE_NO_SHAPE;
   t->origin = OMX_CURVE_ORIGINS_USER;
@@ -251,20 +252,26 @@ static inline int omx_curve_json_term(struct omx_curve_json_cursor *c, struct om
     do {
       if (!omx_curve_json_key(c, key, sizeof key)) return 0;
       if (!strcmp(key, "role")) {
+        if (have_role) return (c->bad = 1), 0;
         t->role = (enum omx_curve_roles)omx_curve_json_word(c, OMX_CURVE_ROLE_WORDS, OMX_CURVE_ROLES_COUNT);
         have_role = 1;
       } else if (!strcmp(key, "index")) {
+        if (have_index++) return (c->bad = 1), 0;
         if (!omx_curve_json_uint(c, 4294967295.0, &t->index)) return 0;
       } else if (!strcmp(key, "value")) {
+        if (have_value) return (c->bad = 1), 0;
         if (!omx_curve_json_number(c, &t->value)) return 0;
         have_value = 1;
       } else if (!strcmp(key, "unit")) {
+        if (have_unit) return (c->bad = 1), 0;
         t->unit = (enum omx_curve_units)omx_curve_json_word(c, OMX_CURVE_UNIT_WORDS, OMX_CURVE_UNITS_COUNT);
         have_unit = 1;
       } else if (!strcmp(key, "shape")) {
+        if (have_shape++) return (c->bad = 1), 0;
         t->shape = omx_curve_json_word(c, OMX_CURVE_SHAPE_WORDS, OMX_CURVE_SHAPES_COUNT);
         if (t->shape == OMX_CURVE_JSON_NO_WORD) *bad_shape = 1;
       } else if (!strcmp(key, "origin")) {
+        if (have_origin++) return (c->bad = 1), 0;
         t->origin = (enum omx_curve_origins)omx_curve_json_word(c, OMX_CURVE_ORIGIN_WORDS, OMX_CURVE_ORIGINS_COUNT);
       } else {
         return (c->bad = 1), 0;
@@ -289,7 +296,8 @@ static inline int omx_curve_json_term(struct omx_curve_json_cursor *c, struct om
 static inline int omx_curve_json_request(struct omx_curve_json_cursor *c, struct omx_curve_request *rq,
                                          struct omx_curve_term *terms, int *bad_shape) {
   char key[16];
-  int have_kind = 0, have_family = 0, have_rate = 0, have_points = 0, have_terms = 0;
+  int have_kind = 0, have_family = 0, have_rate = 0, have_points = 0, have_terms = 0, have_extents = 0, have_user = 0,
+      have_tempo = 0;
   memset(rq, 0, sizeof *rq);
   rq->terms = terms;
   if (!omx_curve_json_eat(c, '{')) return 0;
@@ -297,30 +305,36 @@ static inline int omx_curve_json_request(struct omx_curve_json_cursor *c, struct
     do {
       if (!omx_curve_json_key(c, key, sizeof key)) return 0;
       if (!strcmp(key, "kind")) {
+        if (have_kind) return (c->bad = 1), 0;
         rq->kind = (enum omx_curve_displays)omx_curve_json_word(c, OMX_CURVE_DISPLAY_WORDS, OMX_CURVE_DISPLAYS_COUNT);
         have_kind = 1;
       } else if (!strcmp(key, "family")) {
+        if (have_family) return (c->bad = 1), 0;
         rq->family = (enum omx_curve_families)omx_curve_json_word(c, OMX_CURVE_FAMILY_WORDS, OMX_CURVE_FAMILIES_COUNT);
         have_family = 1;
       } else if (!strcmp(key, "sampleRate")) {
+        if (have_rate) return (c->bad = 1), 0;
         if (!omx_curve_json_number(c, &rq->sample_rate)) return 0;
         have_rate = 1;
       } else if (!strcmp(key, "points")) {
+        if (have_points) return (c->bad = 1), 0;
         if (!omx_curve_json_uint(c, 4294967295.0, &rq->points)) return 0;
         have_points = 1;
       } else if (!strcmp(key, "extents")) {
         char k2[8];
         int have_min = 0, have_max = 0;
+        if (have_extents++) return (c->bad = 1), 0;
         if (!omx_curve_json_eat(c, '{')) return 0;
         do {
           if (!omx_curve_json_key(c, k2, sizeof k2)) return 0;
-          if (!strcmp(k2, "min") && omx_curve_json_number(c, &rq->x_min)) have_min = 1;
-          else if (!strcmp(k2, "max") && omx_curve_json_number(c, &rq->x_max)) have_max = 1;
+          if (!strcmp(k2, "min") && !have_min && omx_curve_json_number(c, &rq->x_min)) have_min = 1;
+          else if (!strcmp(k2, "max") && !have_max && omx_curve_json_number(c, &rq->x_max)) have_max = 1;
           else return (c->bad = 1), 0;
         } while (omx_curve_json_maybe(c, ','));
         if (!omx_curve_json_eat(c, '}') || !have_min || !have_max) return (c->bad = 1), 0;
         rq->has_extents = 1;
       } else if (!strcmp(key, "terms")) {
+        if (have_terms) return (c->bad = 1), 0;
         if (!omx_curve_json_eat(c, '[')) return 0;
         if (!omx_curve_json_maybe(c, ']')) {
           do {
@@ -332,8 +346,10 @@ static inline int omx_curve_json_request(struct omx_curve_json_cursor *c, struct
         }
         have_terms = 1;
       } else if (!strcmp(key, "userOnly")) {
+        if (have_user++) return (c->bad = 1), 0;
         if (!omx_curve_json_bool(c, &rq->user_only)) return 0;
       } else if (!strcmp(key, "tempoBpm")) {
+        if (have_tempo++) return (c->bad = 1), 0;
         if (!omx_curve_json_number(c, &rq->tempo_bpm)) return 0;
       } else {
         return (c->bad = 1), 0;
@@ -347,41 +363,56 @@ static inline int omx_curve_json_request(struct omx_curve_json_cursor *c, struct
   return have_kind && have_family && have_rate && have_points && have_terms ? 1 : ((c->bad = 1), 0);
 }
 
-/** @brief The answer writer's place: the buffer, how much of it is used, and whether it ran out. Internal. */
+/** @brief The answer writer's place: the buffer, how much of it is used, whether it ran out, and the locale's decimal
+ *         point its numbers are formatted with. Internal to this header. */
 struct omx_curve_json_out {
-  char *buf;     /**< The caller's buffer. */
-  size_t cap;    /**< Room in it. */
-  size_t n;      /**< Bytes written, never more than `cap` - 1. */
-  int full;      /**< Non-zero once a write did not fit. */
+  char *buf;  /**< The caller's buffer. */
+  size_t cap; /**< Room in it. */
+  size_t n;   /**< Bytes written, never more than `cap` - 1. */
+  int full;   /**< Non-zero once a write did not fit. */
+  char point; /**< The byte the locale's formatting puts between a number's digits, put back to `.` on the wire. */
 };
 
 /**
- * @brief Append a printf-formatted piece, `%g` and `%.17g` numbers having their locale's decimal point put back to `.`.
+ * @brief Append a literal piece of the document: a key, a word, a bracket or a comma, never a number.
  * @param o The writer.
- * @param fmt The format; its only conversions are `%s`, `%u` and `%.17g`.
- * @return Nothing; `o->full` is set when the piece does not fit.
- * @note Thread-safe on distinct writers.
+ * @param s The text, NUL-terminated; copied byte for byte, whatever the locale holds.
+ * @note Thread-safe on distinct writers; `o->full` is set when the piece does not fit.
  * @thread control
  */
-static inline void omx_curve_json_put(struct omx_curve_json_out *o, const char *fmt, ...) __attribute__((format(printf, 2, 3)));
-static inline void omx_curve_json_put(struct omx_curve_json_out *o, const char *fmt, ...) {
-  __builtin_va_list ap;
-  __builtin_va_start(ap, fmt);
-  const int w = o->full ? -1 : vsnprintf(o->buf + o->n, o->cap - o->n, fmt, ap);
-  __builtin_va_end(ap);
-  if (w < 0 || (size_t)w >= o->cap - o->n) {
+static inline void omx_curve_json_lit(struct omx_curve_json_out *o, const char *s) {
+  const size_t len = strlen(s);
+  if (o->full || len >= o->cap - o->n) {
     o->full = 1;
     return;
   }
-  const char point = omx_curve_json_point();
-  if (point != '.')
-    for (int i = 0; i < w; i++)
-      if (o->buf[o->n + (size_t)i] == point) o->buf[o->n + (size_t)i] = '.';
-  o->n += (size_t)w;
+  memcpy(o->buf + o->n, s, len);
+  o->n += len;
+  o->buf[o->n] = '\0';
 }
 
 /**
- * @brief The `{"x":..,"y":..}` list of two parallel arrays, or a refused answer's none.
+ * @brief Append one number, `%.17g` (read back exactly), its decimal point `.` whatever the locale holds: the only
+ *        bytes this swaps are the ones of the number itself, so a comma-decimal locale cannot reach a separator.
+ * @param o The writer.
+ * @param v The value; a value that is not finite is written `null` (a curve never holds one).
+ * @note Thread-safe on distinct writers; `o->full` is set when the piece does not fit.
+ * @thread control
+ */
+static inline void omx_curve_json_num(struct omx_curve_json_out *o, double v) {
+  char tmp[40];
+  if (!isfinite(v)) {
+    omx_curve_json_lit(o, "null");
+    return;
+  }
+  const int w = snprintf(tmp, sizeof tmp, "%.17g", v);
+  for (int i = 0; i < w; i++)
+    if (tmp[i] == o->point) tmp[i] = '.';
+  omx_curve_json_lit(o, tmp);
+}
+
+/**
+ * @brief The `"key":[{"x":..,"y":..},..]` member of two parallel arrays.
  * @param o The writer.
  * @param key The member name.
  * @param x The x of each point.
@@ -392,33 +423,35 @@ static inline void omx_curve_json_put(struct omx_curve_json_out *o, const char *
  */
 static inline void omx_curve_json_points(struct omx_curve_json_out *o, const char *key, const double *x, const double *y,
                                          uint32_t n) {
-  omx_curve_json_put(o, "\"%s\":[", key);
-  for (uint32_t i = 0; i < n; i++)
-    omx_curve_json_put(o, "%s{\"x\":%.17g,\"y\":%.17g}", i ? "," : "", x[i], y[i]);
-  omx_curve_json_put(o, "]");
+  omx_curve_json_lit(o, "\"");
+  omx_curve_json_lit(o, key);
+  omx_curve_json_lit(o, "\":[");
+  for (uint32_t i = 0; i < n; i++) {
+    omx_curve_json_lit(o, i ? ",{\"x\":" : "{\"x\":");
+    omx_curve_json_num(o, x[i]);
+    omx_curve_json_lit(o, ",\"y\":");
+    omx_curve_json_num(o, y[i]);
+    omx_curve_json_lit(o, "}");
+  }
+  omx_curve_json_lit(o, "]");
 }
 
 /**
- * @brief Answer a `CurveRequest` document with a `CurveAnswer` document, one call, no struct across.
- *
- * The request is read whole (see the file's comment), then answered by omx_curve_points_marked(): the points and the
- * marks always, `userPoints` when the request set `userOnly`, `stems` when a delay's time response carries them; or,
- * when the curve is refused, `{"code":"<id>"}` with the id of CURVE_CODES (a refusal is an answer: the return is its
- * length). Every omx_curve_points_marked() precondition is its own refusal here.
+ * @brief omx_curve_points_json() with the locale's decimal point named: the one body, so a test can name `,` and
+ *        prove no separator of the document is touched by it.
  * @param request The request document, NUL-terminated.
  * @param out The answer, NUL-terminated; an empty string when the return is negative.
- * @param cap Room in `out`; OMX_CURVE_JSON_OUT_MAX always suffices.
- * @return The answer's length without the NUL; OMX_CURVE_JSON_MALFORMED for a document that is no `CurveRequest`;
- *         OMX_CURVE_JSON_CAP when `out` is too small.
- * @note Thread-safe on distinct output, reentrant; the stack holds the terms and the points (about 40 kB).
- * @twin curvePoints
+ * @param cap Room in `out`.
+ * @param point The decimal point the locale's number formatting and parsing use.
+ * @return As omx_curve_points_json().
+ * @note Thread-safe on distinct output, reentrant.
  * @thread control
  */
-static inline int omx_curve_points_json(const char *request, char *out, size_t cap) {
+static inline int omx_curve_points_json_point(const char *request, char *out, size_t cap, char point) {
   if (!out || cap == 0u) return OMX_CURVE_JSON_CAP;
   out[0] = '\0';
   if (!request) return OMX_CURVE_JSON_MALFORMED;
-  struct omx_curve_json_cursor cur = {request, request + strlen(request), 0};
+  struct omx_curve_json_cursor cur = {request, request + strlen(request), 0, point};
   struct omx_curve_request rq;
   struct omx_curve_term terms[OMX_CURVE_JSON_TERMS_MAX];
   int bad_shape = 0;
@@ -430,32 +463,72 @@ static inline int omx_curve_points_json(const char *request, char *out, size_t c
   int code = OMX_CURVE_OK;
   const uint32_t n = omx_curve_points_marked(&rq, x, y, OMX_CURVE_POINTS_MAX, &ex, &code);
   if (code == OMX_CURVE_OK && bad_shape) code = OMX_CURVE_KIND_UNKNOWN;
-  struct omx_curve_json_out o = {out, cap, 0u, 0};
+  struct omx_curve_json_out o = {out, cap, 0u, 0, point};
   if (code != OMX_CURVE_OK) {
-    omx_curve_json_put(&o, "{\"code\":\"%s\"}", OMX_CURVE_CODE_WORDS[(unsigned)code < OMX_CURVE_CODES_COUNT ? code : 0]);
+    omx_curve_json_lit(&o, "{\"code\":\"");
+    omx_curve_json_lit(&o, OMX_CURVE_CODE_WORDS[(unsigned)code < OMX_CURVE_CODES_COUNT ? code : 0]);
+    omx_curve_json_lit(&o, "\"}");
   } else {
-    omx_curve_json_put(&o, "{");
+    omx_curve_json_lit(&o, "{");
     omx_curve_json_points(&o, "points", x, y, n);
-    omx_curve_json_put(&o, ",\"marks\":[");
-    for (uint32_t i = 0; i < ex.nmarks; i++)
-      omx_curve_json_put(&o, "%s{\"freq\":%.17g,\"depthDb\":%.17g,\"q\":%.17g,\"origin\":\"%s\"}", i ? "," : "",
-                         marks[i].freq_hz, marks[i].depth_db, marks[i].q, OMX_CURVE_ORIGIN_WORDS[marks[i].origin]);
-    omx_curve_json_put(&o, "]");
+    omx_curve_json_lit(&o, ",\"marks\":[");
+    for (uint32_t i = 0; i < ex.nmarks; i++) {
+      omx_curve_json_lit(&o, i ? ",{\"freq\":" : "{\"freq\":");
+      omx_curve_json_num(&o, marks[i].freq_hz);
+      omx_curve_json_lit(&o, ",\"depthDb\":");
+      omx_curve_json_num(&o, marks[i].depth_db);
+      omx_curve_json_lit(&o, ",\"q\":");
+      omx_curve_json_num(&o, marks[i].q);
+      omx_curve_json_lit(&o, ",\"origin\":\"");
+      omx_curve_json_lit(&o, OMX_CURVE_ORIGIN_WORDS[marks[i].origin]);
+      omx_curve_json_lit(&o, "\"}");
+    }
+    omx_curve_json_lit(&o, "]");
     if (rq.user_only) {
-      omx_curve_json_put(&o, ",");
+      omx_curve_json_lit(&o, ",");
       omx_curve_json_points(&o, "userPoints", x, yu, n);
     }
     if (ex.nstems) {
-      omx_curve_json_put(&o, ",\"stems\":[");
-      for (uint32_t i = 0; i < ex.nstems; i++)
-        omx_curve_json_put(&o, "%s{\"x\":%.17g,\"y\":%.17g,\"shade\":%.17g,\"leg\":\"%s\"}", i ? "," : "", stems[i].t_ms,
-                           stems[i].level_db, stems[i].shade, OMX_CURVE_LEG_WORDS[stems[i].leg]);
-      omx_curve_json_put(&o, "]");
+      omx_curve_json_lit(&o, ",\"stems\":[");
+      for (uint32_t i = 0; i < ex.nstems; i++) {
+        omx_curve_json_lit(&o, i ? ",{\"x\":" : "{\"x\":");
+        omx_curve_json_num(&o, stems[i].t_ms);
+        omx_curve_json_lit(&o, ",\"y\":");
+        omx_curve_json_num(&o, stems[i].level_db);
+        omx_curve_json_lit(&o, ",\"shade\":");
+        omx_curve_json_num(&o, stems[i].shade);
+        omx_curve_json_lit(&o, ",\"leg\":\"");
+        omx_curve_json_lit(&o, OMX_CURVE_LEG_WORDS[stems[i].leg]);
+        omx_curve_json_lit(&o, "\"}");
+      }
+      omx_curve_json_lit(&o, "]");
     }
-    omx_curve_json_put(&o, "}");
+    omx_curve_json_lit(&o, "}");
   }
   if (o.full) return (out[0] = '\0'), OMX_CURVE_JSON_CAP;
   return (int)o.n;
+}
+
+/**
+ * @brief Answer a `CurveRequest` document with a `CurveReply` or a `CurveRefusal` document (curve-io.schema.json), one
+ *        call, no struct across.
+ *
+ * The request is read whole (see the file's comment), then answered by omx_curve_points_marked(): the points and the
+ * marks always, `userPoints` when the request set `userOnly`, `stems` when a delay's time response carries them; or,
+ * when the curve is refused, `{"code":"<id>"}` with the id of CURVE_CODES (a refusal is an answer: the return is its
+ * length). Every omx_curve_points_marked() precondition is its own refusal here.
+ * @param request The request document, NUL-terminated.
+ * @param out The answer, NUL-terminated; an empty string when the return is negative.
+ * @param cap Room in `out`; OMX_CURVE_JSON_OUT_MAX always suffices.
+ * @return The answer's length without the NUL; OMX_CURVE_JSON_MALFORMED for a document that is no `CurveRequest`;
+ *         OMX_CURVE_JSON_CAP when `out` is too small.
+ * @note Thread-safe on distinct output, reentrant, as long as no thread changes the locale during the call; the stack
+ *       holds the terms and the points (about 40 kB).
+ * @twin curvePoints
+ * @thread control
+ */
+static inline int omx_curve_points_json(const char *request, char *out, size_t cap) {
+  return omx_curve_points_json_point(request, out, cap, omx_curve_json_point());
 }
 
 #endif /* OMX_CURVE_JSON_H */

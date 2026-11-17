@@ -58,6 +58,6 @@ run gate-range omx_gaincomp.h 's|  gb = OMX_GC_SEL(lanes, gb < p->range_db, p->r
 run head-slope omx_curve.h 's|  out->slope_24 = slope == 24.0;|  out->slope_24 = 0;|'
 run time-feedback omx_curve.h 's|      const double lin = wet > 0.0 \&\& f >= 0.0 ? wet \* pow(f, (double)(k - 1u)) : 0.0;|      const double lin = wet > 0.0 \&\& f >= 0.0 ? wet * pow(f, (double)k) : 0.0;|'
 run pingpong-leg omx_curve.h 's|!pingpong ? OMX_CURVE_LEGS_BOTH : (k \& 1u) ? OMX_CURVE_LEGS_LEFT : OMX_CURVE_LEGS_RIGHT|!pingpong ? OMX_CURVE_LEGS_BOTH : (k \& 1u) ? OMX_CURVE_LEGS_RIGHT : OMX_CURVE_LEGS_LEFT|'
-run precision omx_curve_json.h 's|"%s{\\"x\\":%.17g,\\"y\\":%.17g}"|"%s{\\"x\\":%.6g,\\"y\\":%.6g}"|'
+run precision omx_curve_json.h 's|snprintf(tmp, sizeof tmp, "%.17g", v)|snprintf(tmp, sizeof tmp, "%.6g", v)|'
 run code-word omx_curve_json.h 's|"ok",          "kindUnknown",   "termMissing",|"ok",          "kindUnknown",   "kindUnknown",|'
 echo "curve-vectors-sabotage: all nine sabotages are caught"

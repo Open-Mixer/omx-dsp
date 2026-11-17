@@ -15,9 +15,11 @@ The laws, each exact in the design's own terms:
                   section at Q = 1/sqrt(2), a 24 dB/oct filter two at the Butterworth Qs 1/(2 cos(pi/8)), 1/(2 cos(3 pi/8));
   bell / notch    the gain at the centre: a bell's is its gain within 5e-5 dB, a notch's is the floor of the drawing (-120 dB);
   delay stems     echo k at k x time, mix x feedback^(k-1) in dB, the dry tap at 1 - mix, a leg per ping-pong turn.
-Each row carries the tolerance its arithmetic earns: the kernel's gain computer is float (2^-24 relative per
-operation), a head filter is a double cascade evaluated by a different formula (the cookbook's against the
-section's coefficients), a Butterworth Q is the kernel's seven digits.
+Each row carries the tolerance MEASURED against the library (test/curve-vectors.mjs --report) and rounded up: the
+transfer curves and the notch floor are exact (0), the delay's levels differ by 4e-15 dB (a log10 and a pow), a 12 dB/oct
+head filter by 4e-10 dB (the cookbook's formula against the section's coefficients), a 24 dB/oct one by 4e-8 dB (the
+kernel's seven-digit Butterworth Qs), a bell's centre by 8e-6 dB (the matched pair meets the analogue gain to a part in a
+million). A tolerance is never widened to absorb a second implementation's miss: that is a finding.
 
 Usage: curve-vectors-oracle.py [--check] <out.json>   (--check compares the file to a fresh render and exits 1 on a difference)
 """
@@ -76,7 +78,7 @@ def gain_below(x, thr, ratio, rng):
     return max(g, D(rng))
 
 
-def transfer_row(name, family, terms, x0, x1, n, tol):
+def transfer_row(name, family, terms, x0, x1, n):
     thr = next(t["value"] for t in terms if t["role"] == "threshold")
     ratio = next((t["value"] for t in terms if t["role"] == "ratio"), None)
     knee = next((t["value"] for t in terms if t["role"] == "knee"), 0)
@@ -91,7 +93,7 @@ def transfer_row(name, family, terms, x0, x1, n, tol):
         "name": name,
         "request": {"kind": "transfer_curve", "family": family, "sampleRate": 48000, "points": n,
                     "extents": {"min": x0, "max": x1}, "terms": terms},
-        "tolerance": {"x": 0, "y": tol},
+        "tolerance": {"x": 0, "y": 0},
         "expect": {"points": pts, "exact": True},
     }
 
@@ -118,7 +120,7 @@ def hp_section_db(f, f0, q, fs):
     return 10 * (num / den).log10()
 
 
-def eq_head_row(name, slope24, f0, fs, n, tol):
+def eq_head_row(name, slope24, f0, fs, n):
     f_lo, f_hi = D(20), min(D(20000), D("0.999") * D(fs) / 2)
     if slope24:
         qs = [D(1) / (2 * dsin_cos(PI / 8)[1]), D(1) / (2 * dsin_cos(3 * PI / 8)[1])]
@@ -132,7 +134,7 @@ def eq_head_row(name, slope24, f0, fs, n, tol):
         "name": name,
         "request": {"kind": "eq_response", "family": "eq", "sampleRate": fs, "points": n,
                     "terms": [t("hpf_freq", f0, "hz"), t("hpf_slope", 24 if slope24 else 12, "db")]},
-        "tolerance": {"x": 1e-12, "y": 1e-5},
+        "tolerance": {"x": 1e-15, "y": 1e-7 if slope24 else 1e-9},
         "expect": {"points": pts},
     }
 
@@ -147,13 +149,13 @@ def eq_centre_row(name, shape, gain, f0, q, fs, floor_db=None):
     return {
         "name": name,
         "request": {"kind": "eq_response", "family": "eq", "sampleRate": fs, "points": 32, "terms": terms},
-        "tolerance": {"x": 1e-12, "y": 5e-5 if floor_db is None else 1e-9},
+        "tolerance": {"x": 0, "y": 5e-5 if floor_db is None else 0},
         "expect": {"points": [{"x": float(f0), "y": y}]},
     }
 
 
 # ---- delay stems ---------------------------------------------------------------------------------------
-def delay_row(name, time_ms, mix, fb, pingpong, tol):
+def delay_row(name, time_ms, mix, fb, pingpong):
     stems = []
     dry = D(1) - D(mix)
     if dry > 0 and db(dry) > -60:
@@ -171,7 +173,7 @@ def delay_row(name, time_ms, mix, fb, pingpong, tol):
         "request": {"kind": "time_response", "family": "delay", "sampleRate": 48000, "points": 8,
                     "terms": [t("time", time_ms, "ms"), t("feedback", fb, "none"), t("mix", mix, "none"),
                               t("pingpong", 1 if pingpong else 0, "none")]},
-        "tolerance": {"x": 1e-9, "y": 1e-9},
+        "tolerance": {"x": 0, "y": 1e-13},
         "expect": {"stems": stems, "exact": True},
     }
 
@@ -190,20 +192,20 @@ def base(kind="transfer_curve", family="dynamics", **kw):
 def rows():
     dyn = [t("threshold", -20, "db"), t("ratio", 4, "ratio")]
     out = [
-        transfer_row("dynamics hard knee", "dynamics", dyn, -60, 0, 13, 2e-5),
+        transfer_row("dynamics hard knee", "dynamics", dyn, -60, 0, 13),
         transfer_row("dynamics soft knee with make-up", "dynamics",
-                     dyn + [t("knee", 8, "db"), t("makeup", 3, "db")], -60, 0, 25, 2e-5),
-        transfer_row("de-esser", "deesser", [t("threshold", -30, "db"), t("ratio", 2.5, "ratio")], -60, 0, 7, 2e-5),
-        transfer_row("limiter", "limiter", [t("threshold", -6, "db")], -40, 0, 9, 2e-5),
+                     dyn + [t("knee", 8, "db"), t("makeup", 3, "db")], -60, 0, 25),
+        transfer_row("de-esser", "deesser", [t("threshold", -30, "db"), t("ratio", 2.5, "ratio")], -60, 0, 7),
+        transfer_row("limiter", "limiter", [t("threshold", -6, "db")], -40, 0, 9),
         transfer_row("gate hard knee", "gate",
-                     [t("threshold", -40, "db"), t("ratio", 3, "ratio"), t("range", -30, "db")], -80, -20, 13, 2e-5),
-        eq_head_row("high-pass 12 dB/oct at 100 Hz, 48 kHz", False, 100, 48000, 24, 1e-5),
-        eq_head_row("high-pass 24 dB/oct at 250 Hz, 96 kHz", True, 250, 96000, 24, 1e-5),
+                     [t("threshold", -40, "db"), t("ratio", 3, "ratio"), t("range", -30, "db")], -80, -20, 13),
+        eq_head_row("high-pass 12 dB/oct at 100 Hz, 48 kHz", False, 100, 48000, 24),
+        eq_head_row("high-pass 24 dB/oct at 250 Hz, 96 kHz", True, 250, 96000, 24),
         eq_centre_row("bell +6 dB at its centre", "bell", 6, 1000, 1, 48000),
         eq_centre_row("bell -9 dB at its centre, 192 kHz", "bell", -9, 4000, 2, 192000),
         eq_centre_row("notch at its centre is the drawing's floor", "notch", None, 3000, 8, 48000, floor_db=-120),
-        delay_row("delay, half mix, half feedback", 250, 0.5, 0.5, False, 1e-9),
-        delay_row("delay, ping-pong, light feedback", 120, 0.4, 0.3, True, 1e-9),
+        delay_row("delay, half mix, half feedback", 250, 0.5, 0.5, False),
+        delay_row("delay, ping-pong, light feedback", 120, 0.4, 0.3, True),
         refusal("a transfer curve with no threshold", base(terms=[t("ratio", 4, "ratio")]), "termMissing"),
         refusal("a transfer curve with no ratio", base(terms=[t("threshold", -20, "db")]), "termMissing"),
         refusal("a threshold in kHz", base(terms=[t("threshold", -20, "khz"), t("ratio", 4, "ratio")]), "unitRefused"),

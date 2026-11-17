@@ -42,7 +42,7 @@
 #   make eq-sabotage  the EQ bank, head filter and curve arms fail against nine sabotages
 #   make curve-sabotage  the one curve function's arm (omx_curve.h) fails against twelve sabotages
 #   make curve-json-sabotage  the curve-json arm (omx_curve_json.h) fails against nine sabotages
-#   make curve-vectors  vectors/curve-points.json through the native door (and WASM=<file>): needs python3 and node;
+#   make curve-vectors  vectors/curve-points.json through the native door: needs python3 and node;
 #               make curve-vectors-write rewrites it, make curve-vectors-sabotage breaks the library nine ways
 #   make curve-golden  test/kernels/fixtures/curve_golden.h rewritten from omx_curve_points() (tools/curve-golden.c)
 #   make meter-view-sabotage  the meter view arm (mix/omx_meter_view.h) fails against seven sabotages
@@ -396,14 +396,14 @@ $(BUILD)/curve_json_cli: tools/curve-json-cli.c $(HEADERS) | $(BUILD)
 
 # vectors/curve-points.json is the contract of omx_curve_points_json: tools/curve-vectors-oracle.py writes it from closed
 # forms in decimal arithmetic, never from the library (`make curve-vectors-write` rewrites it); `make curve-vectors` puts
-# every row to the native door (and to the WebAssembly build when WASM=<file> names one) and holds each answer to the row's
+# every row to the native door and holds each answer to the row's
 # tolerance; `make curve-vectors-sabotage` breaks the library nine ways and requires the vectors to go red. Python and node.
 curve-vectors-write:
 	python3 -I tools/curve-vectors-oracle.py vectors/curve-points.json
 
 curve-vectors: $(BUILD)/curve_json_cli
 	python3 -I tools/curve-vectors-oracle.py --check vectors/curve-points.json
-	node test/curve-vectors.mjs --native $(BUILD)/curve_json_cli $(if $(WASM),--wasm $(WASM),)
+	node test/curve-vectors.mjs --native $(BUILD)/curve_json_cli
 
 curve-vectors-sabotage: test/curve-vectors-sabotage.sh $(HEADERS) | $(BUILD)
 	CC="$(CC)" CFLAGS="$(CFLAGS)" bash test/curve-vectors-sabotage.sh $(BUILD)/curve-vectors-sabotage

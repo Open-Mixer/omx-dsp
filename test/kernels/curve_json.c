@@ -74,7 +74,15 @@ static void arm_curve_json(void) {
       "{\"kind\":\"transfer_curve\",\"family\":\"dynamics\",\"sampleRate\":48000,\"points\":3,\"terms\":["
       "{\"role\":\"threshold\",\"unit\":\"db\"}]}",                                                   /* a term with no value */
       "{\"kind\":\"transfer_curve\",\"family\":\"dynamics\",\"sampleRate\":48000,\"points\":3,\"terms\":[,]}",
-      "{\"kind\":\"transfer_curve\",\"family\":\"dynamics\",\"sampleRate\":48000,\"points\":3,\"extents\":{\"min\":0},\"terms\":[]}"};
+      "{\"kind\":\"transfer_curve\",\"family\":\"dynamics\",\"sampleRate\":48000,\"points\":3,\"extents\":{\"min\":0},\"terms\":[]}",
+      /* a key given twice is refused, never the last or the first of them */
+      "{\"kind\":\"transfer_curve\",\"kind\":\"eq_response\",\"family\":\"dynamics\",\"sampleRate\":48000,\"points\":3,\"terms\":[]}",
+      "{\"kind\":\"transfer_curve\",\"family\":\"dynamics\",\"sampleRate\":48000,\"points\":3,\"terms\":[],\"terms\":[]}",
+      "{\"kind\":\"transfer_curve\",\"family\":\"dynamics\",\"sampleRate\":48000,\"points\":3,\"terms\":["
+      "{\"role\":\"threshold\",\"value\":-20,\"value\":-30,\"unit\":\"db\"}]}",
+      "{\"kind\":\"transfer_curve\",\"family\":\"dynamics\",\"sampleRate\":48000,\"points\":3,"
+      "\"extents\":{\"min\":-40,\"min\":-50,\"max\":0},\"terms\":[]}",
+      "{\"kind\":\"transfer_curve\",\"family\":\"dynamics\",\"sampleRate\":48000,\"sampleRate\":44100,\"points\":3,\"terms\":[]}"};
   for (uint32_t i = 0; i < sizeof bad / sizeof bad[0]; i++) {
     out[0] = 'x';
     ok(cj_call(bad[i], out, sizeof out) == OMX_CURVE_JSON_MALFORMED && out[0] == '\0', "a document that is no request: malformed", i, 0);
@@ -94,6 +102,41 @@ static void arm_curve_json(void) {
       ok(count == OMX_CURVE_JSON_TERMS_MAX ? w > 0 : w == OMX_CURVE_JSON_MALFORMED,
          "the limit's own terms are read, one term more is malformed", count, w);
     }
+  }
+
+  /* A comma-decimal locale reaches no separator of the document. The writer is run with `,` named as the locale's
+   * point (the one body omx_curve_points_json() calls): a number's own bytes are the only ones it may swap, and every
+   * comma of the document stays a comma. */
+  {
+    static const char rq[] =
+        "{\"kind\":\"transfer_curve\",\"family\":\"dynamics\",\"sampleRate\":48000,\"points\":5,"
+        "\"extents\":{\"min\":-60,\"max\":0},\"userOnly\":true,\"terms\":[{\"role\":\"threshold\",\"value\":-20,\"unit\":\"db\"},"
+        "{\"role\":\"ratio\",\"value\":4,\"unit\":\"ratio\"}]}";
+    static char dot[OMX_CURVE_JSON_OUT_MAX], comma[OMX_CURVE_JSON_OUT_MAX];
+    const int a = omx_curve_points_json_point(rq, dot, sizeof dot, '.'), b = omx_curve_points_json_point(rq, comma, sizeof comma, ',');
+    ok(a > 0 && a == b && strcmp(dot, comma) == 0 && strstr(comma, "{\"x\":-60,\"y\":-60},{\"x\":-45,") != NULL &&
+           strstr(comma, "\"y\":-18.75}") != NULL,
+       "with a comma named as the locale's point every comma of the document is still a comma", a, b);
+    /* and the real thing, where the host has a comma-decimal locale installed */
+    const char *const names[] = {"de_DE.UTF-8", "de_DE.utf8", "de_DE", "fr_FR.UTF-8", "fr_FR.utf8", "es_ES.UTF-8", "ca_ES.UTF-8"};
+    const char *had = setlocale(LC_NUMERIC, NULL);
+    char saved[64];
+    snprintf(saved, sizeof saved, "%s", had ? had : "C");
+    int tried = 0;
+    for (uint32_t i = 0; i < sizeof names / sizeof names[0] && !tried; i++) {
+      if (!setlocale(LC_NUMERIC, names[i]) || omx_curve_json_point() != ',') continue;
+      tried = 1;
+      const int r = omx_curve_points_json(rq, comma, sizeof comma);
+      ok(r == a && strcmp(dot, comma) == 0, "under a comma-decimal locale the answer is the C locale's, byte for byte", r, a);
+      char dec[OMX_CURVE_JSON_OUT_MAX];
+      snprintf(dec, sizeof dec, "%s", "{\"kind\":\"transfer_curve\",\"family\":\"dynamics\",\"sampleRate\":48000,\"points\":3,"
+               "\"extents\":{\"min\":-60.5,\"max\":0},\"terms\":[{\"role\":\"threshold\",\"value\":-20.25,\"unit\":\"db\"},"
+               "{\"role\":\"ratio\",\"value\":4,\"unit\":\"ratio\"}]}");
+      ok(omx_curve_points_json(dec, comma, sizeof comma) > 0 && strstr(comma, "\"x\":-60.5,") != NULL,
+         "under a comma-decimal locale a decimal number of the request is read as written", 0, 0);
+    }
+    setlocale(LC_NUMERIC, saved);
+    if (!tried) printf("curve-json: no comma-decimal locale is installed here; the real-locale arm was not exercised\n");
   }
 
   /* The room: exactly the answer and its NUL draws, one byte less is cap with an empty answer. */
