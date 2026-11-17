@@ -25,12 +25,16 @@ fail() { echo "flavour-check: FAIL — $*"; exit 1; }
 # naming the compile, not a pass and not an hour-long wait. A normal compile here is under a second; 60 s is the floor
 # the bound is never set under.
 BOUND="${FLAVOUR_COMPILE_TIMEOUT:-60}"
+# timeout 0 never fires, so a bound that is not a whole number of seconds above 0 is refused before any compile.
+[[ "$BOUND" =~ ^[1-9][0-9]*$ ]] || fail "FLAVOUR_COMPILE_TIMEOUT=$BOUND: must be a whole number of seconds above 0"
+# timeout -k 5 ends a compiler that ignores SIGTERM with 137: both 124 and 137 are the bound.
+is_timeout() { [ "$1" -eq 124 ] || [ "$1" -eq 137 ]; }
 timed_out() { fail "$1: the compile timed out after $BOUND s (FLAVOUR_COMPILE_TIMEOUT)"; }
 # bounded <what> <command...>: the command's own status, or a red end naming <what> when the bound killed it.
 bounded() {
   local what="$1" rc; shift
   timeout -k 5 "$BOUND" "$@"; rc=$?
-  [ "$rc" -ne 124 ] || timed_out "$what"
+  is_timeout "$rc" && timed_out "$what"
   return "$rc"
 }
 
@@ -67,7 +71,7 @@ if command -v setarch > /dev/null && setarch "$(uname -m)" -R true 2> /dev/null;
 printf 'int main(void) { return 0; }\n' > "$OUT/probe.c"
 probe_ok=0
 plink="$(timeout -k 5 "$BOUND" $CC -fsanitize=thread -o "$OUT/probe" "$OUT/probe.c" 2>&1)"; plrc=$?
-[ "$plrc" -ne 124 ] || timed_out "the TSan probe"
+is_timeout "$plrc" && timed_out "the TSan probe"
 if [ "$plrc" -ne 0 ]; then
   echo "flavour-check: NOT RUN — the TSan probe does not link: $(grep -m1 . <<< "$plink")"
 else
