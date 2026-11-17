@@ -10,7 +10,7 @@
 #               writable-data check, the doc check and the effect kernels' oracles and golden
 #               digests — pure C + -lm (+ -pthread), no node
 #   make install   headers, the three archives and their .pc files under PREFIX/LIBDIR/INCLUDEDIR,
-#               and data/ as the package omx-dsp of omx-contract's contract directory, into DESTDIR
+#               and data/ as the package omx-dsp of PREFIX's own contract directory (DATADIR/omx-contract/contract.d), into DESTDIR
 #   make flavours  each archive carries its flavour, and a contracts consumer sees the compiled
 #               unit's contracts only through the contracts archive
 #   make test-fx   the effect kernels' oracles and golden digests alone
@@ -126,7 +126,7 @@ endif
 # at or above the floor packaging/omx-dsp.spec declares, found by pkg-config in tools/contract-include.sh
 # (nothing is downloaded); this tree commits no copy of them. Every sub-script that compiles gets the
 # directory as CONTRACT_INC.
-ifeq ($(filter version clean docs public-sources private-refs exports copy-check deps deps-check,$(MAKECMDGOALS)),)
+ifeq ($(filter install-confined version clean docs public-sources private-refs exports copy-check deps deps-check,$(MAKECMDGOALS)),)
 CONTRACT_INC := $(shell sh tools/contract-include.sh)
 ifeq ($(CONTRACT_INC),)
 $(error tools/contract-include.sh found no omx-contract: see its message above)
@@ -179,7 +179,10 @@ DESTDIR    ?=
 # The definitions this library implements (data/) install as the package omx-dsp of the installed
 # omx-contract's contract directory, <contractdir>/<schema major>/omx-dsp/, with the installer that
 # omx-contract ships beside its schema: plain shell, no node. Read when `make install` runs, only.
-CONTRACTDIR        ?= $(shell pkg-config --variable=contractdir omx-contract 2>/dev/null)
+# The contract directory is PREFIX's own (<DATADIR>/omx-contract/contract.d, where omx-contract.pc puts it at
+# PREFIX=/usr): install writes nowhere outside DESTDIR+PREFIX, so the installed omx-contract's directory is never
+# the target of another prefix (#75). Only the installer and the schema major are read from omx-contract.
+CONTRACTDIR        ?= $(DATADIR)/omx-contract/contract.d
 CONTRACT_DATADIR    = $(shell pkg-config --variable=datadir omx-contract 2>/dev/null)
 CONTRACT_INSTALLER ?= $(CONTRACT_DATADIR)/install-contract-dir.sh
 CONTRACT_MAJOR      = $(shell sed -n 's/^  "x-omx-schema-version": "\([0-9]*\)\..*",$$/\1/p' $(CONTRACT_DATADIR)/omx-contract.schema.json 2>/dev/null)
@@ -813,6 +816,7 @@ flavour-probe-sabotage: $(LIBS_ALL) test/omxdsp_flavour.c tools/flavour-check.sh
 # real one. The rest runs in parallel from a second make, which shares the parent's job slots.
 test:
 	$(MAKE) --no-print-directory copy-check
+	$(MAKE) --no-print-directory install-confined
 	$(MAKE) --no-print-directory test-parallel
 	@echo "omxdsp: make test green"
 
@@ -1094,6 +1098,14 @@ install: $(LIBS_ALL) $(PC_ALL) $(EXPORTS) install-rt-gate install-rta-read
 	install -m 0644 vectors/rta-delta.json $(DESTDIR)$(DATADIR)/omxdsp/rta-delta-vectors.json
 	install -m 0755 tools/omx-dsp-copy-check.sh $(DESTDIR)$(BINDIR)/omx-dsp-copy-check
 	install -m 0644 omx-dsp-copy-check.1 $(DESTDIR)$(MANDIR)/man1/
+
+# make install stays inside DESTDIR+PREFIX (#75), alone before the parallel tests (it lists the whole container file
+# system, which a test writing beside it would disturb; make test only, not check-package): two installs in a throwaway container, the file system compared
+# before and after, a planted system contract directory still there (tools/install-confined.sh).
+.PHONY: install-confined
+install-confined: tools/install-confined.sh tools/install-confined-selftest.sh
+	@if command -v podman >/dev/null 2>&1; then bash tools/install-confined-selftest.sh; else echo "install-confined: the marker arm needs podman: not run here"; fi
+	bash tools/install-confined.sh
 
 # §4.3 (e): UNJUDGED (exit 0, never a pass) where the toolchain has no TSan; where it has, the
 # thread arm must be report-free and its shared-state sabotage must race. The gate's own report
