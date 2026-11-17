@@ -10,6 +10,9 @@
 #                                        the check itself, on THIS file system. Only an explicit opt-in, set by the CI job
 #                                        whose container is thrown away and by the podman call above: a container marker
 #                                        (/run/.containerenv, /.dockerenv) is NEVER taken for one, a developer's toolbox has it
+#                                        Never set it by hand on a host: it runs make install on the real file system.
+#   The checkout is mounted read-only with SELinux labelling disabled for the throwaway container
+#   (--security-opt label=disable), so an Enforcing host can read it without relabelling the tree.
 #
 # Inner check, what it WRITES and REMOVES (all of it in a container that is thrown away):
 #   /w                a copy of the tree (removed first); the install runs there
@@ -31,7 +34,7 @@ HERE="$(cd "$(dirname "$0")/.." && pwd)"
 if [ "${OMX_INSTALL_CONFINED_INNER:-}" != 1 ]; then
   image=${OMX_INSTALL_CONFINED_IMAGE:-registry.fedoraproject.org/fedora:44}
   command -v podman >/dev/null 2>&1 || { echo "install-confined: UNJUDGED: no podman, and OMX_INSTALL_CONFINED_INNER=1 is not set: the check runs only in a throwaway container" >&2; exit 2; }
-  exec podman run --rm -e OMX_INSTALL_CONFINED_INNER=1 -v "$HERE:/src:ro" "$image" bash /src/tools/install-confined.sh
+  exec podman run --rm --security-opt label=disable -e OMX_INSTALL_CONFINED_INNER=1 -v "$HERE:/src:ro" "$image" bash /src/tools/install-confined.sh
 fi
 
 SRC=$HERE
