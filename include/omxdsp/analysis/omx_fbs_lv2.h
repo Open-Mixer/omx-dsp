@@ -35,6 +35,10 @@
  *
  * MONO, one in and one out, as the console's corrector runs per channel.
  */
+/**
+ * @file omx_fbs_lv2.h
+ * @brief the feedback corrector AS A LIVE INSERT: omx-fbs's shell core, with no LV2 in it.
+ */
 #ifndef OMX_FBS_LV2_H
 #define OMX_FBS_LV2_H
 

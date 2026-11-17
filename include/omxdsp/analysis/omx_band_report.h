@@ -14,6 +14,10 @@
  * CURVE_SHAPES index (OMX_CURVE_SHAPE_WORDS). A free slot is off, origin user, shape off, and every
  * number zero.
  */
+/**
+ * @file omx_band_report.h
+ * @brief what a corrector's live shell reports per slot: six read-only words.
+ */
 #ifndef OMX_BAND_REPORT_H
 #define OMX_BAND_REPORT_H
 

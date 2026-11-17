@@ -49,6 +49,10 @@
  *
  * Worker thread only: no allocation, no lock, no I/O, bounded loops over OMX_FBS_PLACE_SLOTS.
  */
+/**
+ * @file omx_fbs_place.h
+ * @brief the feedback corrector's PLACEMENT in C: what a confirmed ring becomes.
+ */
 #ifndef OMX_FBS_PLACE_H
 #define OMX_FBS_PLACE_H
 

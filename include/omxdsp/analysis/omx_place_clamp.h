@@ -5,6 +5,10 @@
  * (omx_fbs_place.c, omx_hrp_place.c): below lo is lo, above hi is hi, anything else passes through, a NaN too.
  * Doubles, as the console computes. One copy, so the two placements cannot drift apart on it.
  */
+/**
+ * @file omx_place_clamp.h
+ * @brief the console's clamp, shared by the placements that port the console's rules (omx_fbs_place.c, omx_hrp_place.c): below lo is lo, above hi is hi, anything else passes through, a NaN too.
+ */
 #ifndef OMX_PLACE_CLAMP_H
 #define OMX_PLACE_CLAMP_H
 

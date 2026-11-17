@@ -18,6 +18,10 @@
  * draws as a flat block. The arithmetic is double throughout, the twin's own; it allocates nothing and
  * runs on a control thread, never in an audio callback.
  */
+/**
+ * @file omx_rta_bands.h
+ * @brief a magnitude spectrum reduced to log-spaced display bands: the reduction every surface that draws a spectrum shares. Its TypeScript twin is ts/src/rta.ts aggregateSpectrumBands, held to it by vectors/rta-bands.json. The numbers are data/kernels/rta.json's: the band edges (OMX_RTA_BAND_F_MIN, OMX_RTA_BAND_F_MAX_CAP), the tier crossover and the quiet gate.
+ */
 #ifndef OMX_RTA_BANDS_H
 #define OMX_RTA_BANDS_H
 

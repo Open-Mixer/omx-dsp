@@ -23,6 +23,10 @@
  *
  * No mutable globals: every word of state is in the caller's {@link OmxTremoloInstance}.
  */
+/**
+ * @file omx_tremolo_instance.h
+ * @brief the native tremolo / auto-pan as a plugin instance: the shell's core, with no format in it. The same shape as omx_flanger_instance.h (one C core, N shells): the core is `omx_tremolo.h`'s `omx_tremolo_process`, THE SAME INLINE the console's tremolo stage runs, and this file adds no DSP to it.
+ */
 #ifndef OMX_TREMOLO_INSTANCE_H
 #define OMX_TREMOLO_INSTANCE_H
 

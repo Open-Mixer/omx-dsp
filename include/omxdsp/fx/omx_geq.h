@@ -2,7 +2,7 @@
 // Copyright (C) 2026 Pau Aliagas <linuxnow@gmail.com>
 /**
  * @file omx_geq.h
- * @brief The 31-band graphic EQ kernel: {@link OMX_GEQ_BANDS} peaking sections at the ISO
+ * @brief The 31-band graphic EQ kernel: OMX_GEQ_BANDS peaking sections at the ISO
  *        third-octave centres, in their OWN section array, run by the library's double cascade.
  *
  * Composed from the library

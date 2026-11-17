@@ -35,6 +35,10 @@
  * feeding it numbers. Allocation-free, no globals, caller owns the memory. Never called from
  * the RT callback.
  */
+/**
+ * @file omx_hrp_baseline.h
+ * @brief HRP per-note harmonic baseline: what THIS instrument's harmonics normally are, at THIS pitch.
+ */
 #ifndef OMX_HRP_BASELINE_H
 #define OMX_HRP_BASELINE_H
 

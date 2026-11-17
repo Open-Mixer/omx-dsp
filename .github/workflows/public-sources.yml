@@ -24,8 +24,10 @@ jobs:
         with:
           lint-workflow: public-sources.yml
   docs:
-    name: make docs (the public headers are fully documented)
-    runs-on: ubuntu-latest
+    name: make docs-check (every installed header's public declarations, against a baseline that only shrinks)
+    # Pinned: the baseline is what THIS runner's doxygen (1.9.8) warns; another version's extra doc-error
+    # rows would be read as new declarations. The release's api-docs job renders with the same pin.
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
@@ -33,8 +35,19 @@ jobs:
       - name: Install doxygen
         run: sudo apt-get update -qq && sudo apt-get install -y --no-install-recommends doxygen
 
-      - name: make docs
-        run: make docs
+      # docs/doxygen-baseline.txt at the pull request's base: a row this head adds to it is red. A base
+      # without the file has nothing to shrink from, and the head's own copy stands in.
+      - name: make docs-check
+        run: |
+          set -euo pipefail
+          git fetch --depth=1 origin "${{ github.event.pull_request.base.sha }}"
+          mkdir -p build/docs
+          git show FETCH_HEAD:docs/doxygen-baseline.txt > build/docs/baseline-base.txt 2>/dev/null \
+            || cp docs/doxygen-baseline.txt build/docs/baseline-base.txt
+          make docs-check DOCS_BASELINE_BASE=build/docs/baseline-base.txt
+
+      - name: make docs-sabotage
+        run: make docs-sabotage
   # the checks every OpenMixer repository runs on what it publishes: commit messages, private references, and no
   # local copy of either (Open-Mixer/.github's public-sources-check)
   public-sources:

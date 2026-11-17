@@ -27,6 +27,10 @@
  * points into the instance's own rings, so an instance is initialised where it lives and is never
  * copied after init.
  */
+/**
+ * @file omx_flanger_instance.h
+ * @brief the native flanger as a plugin instance: the shell's core, with no format in it. The same shape as omx-plugins' omx_delay_instance.h (one C core, N shells): the core is `omx_flanger.h`'s `omx_flanger_process`, THE SAME INLINE the console's flanger stage runs, and this file adds no DSP to it.
+ */
 #ifndef OMX_FLANGER_INSTANCE_H
 #define OMX_FLANGER_INSTANCE_H
 

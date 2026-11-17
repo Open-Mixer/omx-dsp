@@ -27,6 +27,10 @@
  * points into the instance's own rings, so an instance is initialised where it lives and is never
  * copied after init.
  */
+/**
+ * @file omx_chorus_instance.h
+ * @brief the native chorus as a plugin instance: the shell's core, with no format in it. The same shape as omx-plugins' omx_delay_instance.h (one C core, N shells): the core is `omx_chorus.h`'s `omx_chorus_process`, THE SAME INLINE the console's chorus stage runs, and this file adds no DSP to it.
+ */
 #ifndef OMX_CHORUS_INSTANCE_H
 #define OMX_CHORUS_INSTANCE_H
 
@@ -37,30 +41,39 @@
 #include <omxdsp/fx/omx_instance_io.h>
 #include <omxdsp/omx_param.h>
 
+/** The face's channel count: a stereo pair over one atom. */
 #define OMX_CHORUS_INSTANCE_CHANNELS 2
+/** The frames of latency the face introduces: none. */
 #define OMX_CHORUS_INSTANCE_LATENCY_FRAMES 0.0f
 
-/** Port defaults: the declaration's (CHORUS_*_RANGE.default). */
+/* Port defaults: the declaration's (CHORUS_*_RANGE.default). */
+/** The voice count a non-finite word reads as: CHORUS_VOICES_RANGE's default. */
 #define OMX_CHORUS_INSTANCE_VOICES_DEFAULT ((float)OMX_CHORUS_VOICES_RANGE_DEFAULT)
+/** The depth a non-finite word reads as, ms: CHORUS_DEPTH_RANGE's default. */
 #define OMX_CHORUS_INSTANCE_DEPTH_MS_DEFAULT ((float)OMX_CHORUS_DEPTH_RANGE_DEFAULT)
+/** The rate a non-finite word reads as, Hz: CHORUS_RATE_RANGE's default. */
 #define OMX_CHORUS_INSTANCE_RATE_HZ_DEFAULT ((float)OMX_CHORUS_RATE_RANGE_DEFAULT)
+/** The mix a non-finite word reads as, percent: CHORUS_MIX_RANGE's default. */
 #define OMX_CHORUS_INSTANCE_MIX_PCT_DEFAULT ((float)OMX_CHORUS_MIX_RANGE_DEFAULT)
+/** The spread a non-finite word reads as, turns: CHORUS_SPREAD_RANGE's default. */
 #define OMX_CHORUS_INSTANCE_SPREAD_DEFAULT ((float)OMX_CHORUS_SPREAD_RANGE_DEFAULT)
 
 /** One instance. It owns its rings; the kernel is armed over the first `cap` floats of each. */
 typedef struct {
-  float sr;
-  struct omx_chorus atom;
-  struct omx_chorus_state state;
-  float ring_l[OMX_CHORUS_CAP];
-  float ring_r[OMX_CHORUS_CAP];
-  uint32_t cap;
+  float sr;                      /**< The sample rate the instance is bound to, Hz. */
+  struct omx_chorus atom;        /**< The kernel's atom as last resolved. */
+  struct omx_chorus_state state; /**< The kernel's state over the instance's rings. */
+  float ring_l[OMX_CHORUS_CAP];  /**< The left delay line, the instance's own. */
+  float ring_r[OMX_CHORUS_CAP];  /**< The right delay line, the instance's own. */
+  uint32_t cap;                  /**< How many floats of each ring the kernel is armed over: omx_chorus_instance_cap_for(). */
   /** The previous cycle's engaged flag, so a bypass->engaged edge can clear the rings. */
   int was_engaged;
-  int ready;
+  int ready;                     /**< 1 after a successful omx_chorus_instance_init(); 0 makes run() the identity. */
 } OmxChorusInstance;
 
-/** The ring, per leg, the deepest sweep needs at `sr`: the floats of each inline ring the kernel uses.
+/** @brief The ring, per leg, the deepest sweep needs at `sr`: the floats of each inline ring the kernel uses.
+ * @param sr The sample rate, Hz.
+ * @return The ring length, floats; above OMX_CHORUS_CAP when the inline rings cannot hold the sweep.
  * @thread audio */
 static inline uint32_t omx_chorus_instance_cap_for(float sr) {
   return omx_fdelay_cap_for((OMX_CHORUS_BASE_MS + OMX_CHORUS_MAX_DEPTH_MS) * 0.001f * sr,
@@ -68,9 +81,11 @@ static inline uint32_t omx_chorus_instance_cap_for(float sr) {
 }
 
 /**
- * Bind an instance to its rate, over its own rings. Returns 1 when usable, 0 when not (a refused
- * init leaves `ready` clear and run() is the identity). A rate that is not declared, or whose
- * sweep the inline rings cannot hold, is refused. Allocates nothing.
+ * @brief Bind an instance to its rate, over its own rings. Allocates nothing.
+ * @param s The instance; every word of it is written.
+ * @param sr The sample rate, Hz, one the console declares.
+ * @return 1 when usable, 0 when not: a rate that is not declared, or whose sweep the inline rings
+ *         cannot hold, is refused, `ready` stays clear and run() is the identity.
  * @thread control
  */
 static inline int omx_chorus_instance_init(OmxChorusInstance *s, float sr) {
@@ -83,10 +98,11 @@ static inline int omx_chorus_instance_init(OmxChorusInstance *s, float sr) {
   return s->ready;
 }
 
-/** Clear the rings and restart the oscillator — the re-enable recipe. A bounded memset over the
- * instance's own rings, no allocation.
- * @thread audio */
 #define OMX_CONTRACT_STAGE "chorus/instance-clear"
+/** @brief Clear the rings and restart the oscillator — the re-enable recipe. A bounded memset over the
+ * instance's own rings, no allocation.
+ * @param s The instance; null or not ready is ignored.
+ * @thread audio */
 static inline void omx_chorus_instance_clear(OmxChorusInstance *s) {
   if (!s || !s->ready) return;
   omx_instance_rings_clear(s->ring_l, s->ring_r, s->cap);
@@ -96,15 +112,22 @@ static inline void omx_chorus_instance_clear(OmxChorusInstance *s) {
 }
 #undef OMX_CONTRACT_STAGE
 
+#define OMX_CONTRACT_STAGE "chorus/instance-resolve"
 /**
- * Resolve the host's control-port values into the kernel's atom for one cycle. `bypass` non-zero
- * disables the atom. The arguments are the kernel's contract controls, in their declared order and
- * user units: `spread` (turns), `rate` (Hz), `depth` (ms), `voices` (a count, rounded to
- * 1..OMX_CHORUS_MAX_VOICES) and `mix` (percent), each clamped into its declared travel, a
- * non-finite word reading as the declared default.
+ * @brief Resolve the host's control-port values into the kernel's atom for one cycle. The arguments are
+ * the kernel's contract controls, in their declared order and user units, each clamped into its
+ * declared travel, a non-finite word reading as the declared default. A null or not-ready instance is
+ * refused and nothing changes.
+ * @param s The instance.
+ * @param bypass Non-zero disables the atom: run() is then the identity.
+ * @param spread The voices' phase spread, turns, inside CHORUS_SPREAD_RANGE.
+ * @param rate The modulation rate, Hz, inside CHORUS_RATE_RANGE.
+ * @param depth The modulation depth, ms, inside CHORUS_DEPTH_RANGE.
+ * @param voices The voice count, rounded to 1..OMX_CHORUS_MAX_VOICES.
+ * @param mix The wet share, percent, inside CHORUS_MIX_RANGE.
+ * @post The atom satisfies every precondition of the chorus kernel.
  * @thread audio
  */
-#define OMX_CONTRACT_STAGE "chorus/instance-resolve"
 static inline void omx_chorus_instance_resolve(OmxChorusInstance *s, int bypass, float spread,
                                                float rate, float depth, float voices, float mix) {
   if (!s || !s->ready) return;
@@ -140,12 +163,18 @@ static inline void omx_chorus_instance_resolve(OmxChorusInstance *s, int bypass,
 }
 #undef OMX_CONTRACT_STAGE
 
+#define OMX_CONTRACT_STAGE "chorus/instance-run"
 /**
- * THE AUDIO CALLBACK'S WHOLE SHARE: copy in to out where they differ, run the console's kernel
+ * @brief THE AUDIO CALLBACK'S WHOLE SHARE: copy in to out where they differ, run the console's kernel
  * in place on out. `in_*` and `out_*` may alias. Not ready, or bypassed, is the identity.
+ * @param s The instance; null, not ready or bypassed copies in to out.
+ * @param in_l The left input, `n` frames.
+ * @param in_r The right input, `n` frames.
+ * @param out_l The left output, `n` frames, may be `in_l`.
+ * @param out_r The right output, `n` frames, may be `in_r`.
+ * @param n The block length, frames; a null port or 0 touches nothing.
  * @thread audio
  */
-#define OMX_CONTRACT_STAGE "chorus/instance-run"
 static inline void omx_chorus_instance_run(OmxChorusInstance *s, const float *in_l,
                                            const float *in_r, float *out_l, float *out_r,
                                            uint32_t n) {

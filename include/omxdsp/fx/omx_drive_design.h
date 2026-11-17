@@ -27,6 +27,10 @@
  * The clamps are the TypeScript's, term for term: the corner is held in [1, 0.999*Nyquist] and a
  * non-positive Q becomes 1e-3. Q is always SQRT1_2 here, the one value the console passes.
  */
+/**
+ * @file omx_drive_design.h
+ * @brief the drive stage's four biquad sections, designed in C.
+ */
 #ifndef OMX_MIX_DRIVE_DESIGN_H
 #define OMX_MIX_DRIVE_DESIGN_H
 

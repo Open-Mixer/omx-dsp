@@ -30,6 +30,10 @@
  * Control thread only, never the audio callback: no allocation (every buffer is the caller's), no
  * lock, no global state, no I/O, so any number of threads may run fits on their own buffers.
  */
+/**
+ * @file omx_align_fit.h
+ * @brief the cross-spectrum two microphones share, and the delay and polarity it implies: Smart Alignment's fit, moved from OpenMixer core's TypeScript (smart-align.ts).
+ */
 #ifndef OMX_ALIGN_FIT_H
 #define OMX_ALIGN_FIT_H
 

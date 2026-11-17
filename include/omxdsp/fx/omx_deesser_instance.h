@@ -27,6 +27,10 @@
  *
  * No mutable globals: every word of state is in the caller's {@link OmxDeesserInstance}.
  */
+/**
+ * @file omx_deesser_instance.h
+ * @brief the native de-esser as a plugin instance: the shell's core, with no format in it.
+ */
 #ifndef OMX_DEESSER_INSTANCE_H
 #define OMX_DEESSER_INSTANCE_H
 

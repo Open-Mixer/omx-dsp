@@ -25,6 +25,10 @@
  * LATENCY IS ZERO. Nothing is allocated; every word of state is in {@link OmxToneInstance}. The
  * sections are designed in resolve(), one tan for the tilt and the EQ design for the filter.
  */
+/**
+ * @file omx_tone_instance.h
+ * @brief the tone face as a plugin instance: a tilt about one pivot and a DJ filter, one knob each, for a monitor mix or an FX return made brighter or darker and a playback swept. It mints no DSP: the tilt is omx_tilt, one first-order complementary shelf pair, and the filter is the EQ's own low-pass or high-pass section (omx_eq_design), both run in double (omx_biquad_d).
+ */
 #ifndef OMX_TONE_INSTANCE_H
 #define OMX_TONE_INSTANCE_H
 

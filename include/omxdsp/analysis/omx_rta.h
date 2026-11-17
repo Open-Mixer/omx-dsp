@@ -18,6 +18,10 @@
  * ({@link omx_decimate_halfband}), whose table and interior dot product are omx_oversampler.h's.
  * Not in the umbrella header: omx_fft.h includes the umbrella. Include this header by name.
  */
+/**
+ * @file omx_rta.h
+ * @brief the RTA's capture ring and its magnitude spectrum, the two pieces every analysis engine reads its audio through: the ring an audio callback writes a block into, and the one windowed FFT that turns a window of it into the linear magnitudes FBS and HRP measure.
+ */
 #ifndef OMX_RTA_H
 #define OMX_RTA_H
 

@@ -65,6 +65,10 @@
  * has to be recomputed at the right moment. So there is no "finish" step to forget and no field
  * whose meaning depends on which phase the caller is in.
  */
+/**
+ * @file omx_hrp_render.h
+ * @brief HRP over a WHOLE RECORDED TRACK: the offline render kernel.
+ */
 #ifndef OMX_HRP_RENDER_H
 #define OMX_HRP_RENDER_H
 
@@ -141,7 +145,7 @@ typedef struct {
   float baseline_db;
   /** Σ over HOT windows of (measured − baseline). §23's positive deviations only: a partial
    *  QUIETER than its baseline is not a resonance and HRP never boosts (§25). "Hot" means
-   *  above the baseline by more than the model's own step — see {@link omx_hrp_render_window}. */
+   *  above the baseline by more than the model's own step — see omx_hrp_render_window(). */
   float sum_excess_db;
   /** Σ over hot windows of the partial's attribution confidence (§10's third output). */
   float sum_confidence;

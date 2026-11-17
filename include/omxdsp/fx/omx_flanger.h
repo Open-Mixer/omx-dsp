@@ -45,6 +45,10 @@
  *  4. BOTH LEGS, ONE PHASE, and no synthetic widening — the chorus's reason, unchanged: width is
  *     the BUS's fact.
  */
+/**
+ * @file omx_flanger.h
+ * @brief the native FLANGER stage: one modulated fractional delay with FEEDBACK.
+ */
 #ifndef OMX_MIX_FLANGER_H
 #define OMX_MIX_FLANGER_H
 
@@ -74,30 +78,32 @@
 
 /** The resolved control atom — times already in SAMPLES at the live rate. */
 struct omx_flanger {
-  int enabled;         /* 0 → passthrough, before a sample or a state word is touched */
-  float base_samples;  /* the shortest delay the sweep reaches */
-  float depth_samples; /* peak-to-peak excursion above the base */
-  /* The oscillator's speed in TURNS PER SAMPLE (`omx_lfo_inc`), for the chorus's reason. */
+  int enabled;         /**< 0 → passthrough, before a sample or a state word is touched */
+  float base_samples;  /**< the shortest delay the sweep reaches, samples */
+  float depth_samples; /**< peak-to-peak excursion above the base, samples */
+  /** The oscillator's speed in TURNS PER SAMPLE (`omx_lfo_inc`), for the chorus's reason. */
   float lfo_inc;
-  float feedback;      /* −OMX_FLANGER_FB_MAX .. +OMX_FLANGER_FB_MAX, signed */
-  float mix;           /* 0 = dry (bit-identical), 1 = wet only */
+  float feedback;      /**< −OMX_FLANGER_FB_MAX .. +OMX_FLANGER_FB_MAX, signed */
+  float mix;           /**< 0 = dry (bit-identical), 1 = wet only */
 };
 
 /** Caller-owned rings + RT-owned state. `fb_l`/`fb_r` are the previous wet samples — the one
  *  state word per leg the loop is made of, and the one that is flushed. */
 struct omx_flanger_state {
-  struct omx_fdelay line_l;
-  struct omx_fdelay line_r;
-  struct omx_lfo lfo;
-  float fb_l;
-  float fb_r;
+  struct omx_fdelay line_l; /**< the left leg's fractional delay line, armed over `ring_l` */
+  struct omx_fdelay line_r; /**< the right leg's fractional delay line, armed over `ring_r` */
+  struct omx_lfo lfo;       /**< the stage's one oscillator, advanced once per sample */
+  float fb_l;               /**< the previous wet sample, left leg: the loop's one state word */
+  float fb_r;               /**< the previous wet sample, right leg */
 };
 
-/** Clamp the feedback into the declared bound. The row's travel is what REFUSES an out-of-range
- *  control; this is the enforcement half, at the last line before a recursion.
- * @thread audio */
 #undef OMX_CONTRACT_STAGE
 #define OMX_CONTRACT_STAGE "flanger/clamp"
+/** @brief Clamp the feedback into the declared bound. The row's travel is what REFUSES an out-of-range
+ *  control; this is the enforcement half, at the last line before a recursion.
+ * @param fb The feedback, signed.
+ * @return `fb` inside [−OMX_FLANGER_FB_MAX, +OMX_FLANGER_FB_MAX].
+ * @thread audio */
 static inline float omx_flanger_clamp_fb(float fb) {
   const float f = omx_clamp_or(fb, -OMX_FLANGER_FB_MAX, OMX_FLANGER_FB_MAX, 0.0f); /* non-finite: none */
   OMX_POST(f > -1.0f && f < 1.0f, "a-clamped-feedback-is-strictly-inside-unity");
@@ -106,7 +112,7 @@ static inline float omx_flanger_clamp_fb(float fb) {
 #undef OMX_CONTRACT_STAGE
 
 /**
- * The most this stage can exceed its input by, as a LINEAR factor: (1 − mix) + mix·Λ/(1 − Λ|fb|),
+ * @brief The most this stage can exceed its input by, as a LINEAR factor: (1 − mix) + mix·Λ/(1 − Λ|fb|),
  * Λ the read kernel's ℓ1 norm read from the generated header. The feedback passes
  * through the read every round, so each round adds at most Λ·|fb| of the loop's own peak — a
  * geometric series, proven for ANY sweep of the fraction while Λ·|fb| < 1 (|fb| < 0.8).
@@ -116,6 +122,8 @@ static inline float omx_flanger_clamp_fb(float fb) {
  * For Λ·|fb| ≥ 1 (0.8 ≤ |fb| ≤ OMX_FLANGER_FB_MAX) NO finite bound is proven — there is no
  * closed form — and this returns +INFINITY: no bound is claimed rather than a false one. The ring
  * still decays there (`tail-decays`); only the sample-peak bound is unproven.
+ * @param p The resolved atom; its `feedback` clamped, its `mix` read as a unit value.
+ * @return The factor, at least 1; +INFINITY where no bound is proven.
  * @thread audio
  */
 static inline float omx_flanger_gain_bound(const struct omx_flanger *p) {
@@ -127,25 +135,37 @@ static inline float omx_flanger_gain_bound(const struct omx_flanger *p) {
   return (1.0f - mix) + mix * OMX_FDELAY_READ_L1_NORM / (1.0f - loop);
 }
 
-/** The RESONANT delay, in samples: the line's own delay plus the feedback word's one sample. The
+/** @brief The RESONANT delay, in samples: the line's own delay plus the feedback word's one sample. The
  *  number a row publishes, and the one the oracle's closed form stands on.
+ * @param delay_samples The line's delay, samples.
+ * @return `delay_samples + 1`.
  * @thread audio */
 static inline float omx_flanger_loop_delay(float delay_samples) { return delay_samples + 1.0f; }
 
-/** The stage's own effect time, in samples: the ends of the sweep. A READBACK, never a latency
+/** @brief The stage's own effect time, in samples: the near end of the sweep. A READBACK, never a latency
  *  term — the dry path is direct and nothing downstream waits.
+ * @param p The resolved atom.
+ * @return `base_samples`.
  * @thread audio */
 static inline float omx_flanger_shortest_delay(const struct omx_flanger *p) {
   return p->base_samples;
 }
-/** @thread audio */
+/** @brief The stage's own effect time, in samples: the far end of the sweep. A READBACK, as the shortest.
+ * @param p The resolved atom.
+ * @return `base_samples + depth_samples`.
+ * @thread audio */
 static inline float omx_flanger_longest_delay(const struct omx_flanger *p) {
   return p->base_samples + p->depth_samples;
 }
 
-/** Arm both legs over caller-owned rings, silence the feedback words, start the turn at zero.
- * @thread audio */
 #define OMX_CONTRACT_STAGE "flanger/init"
+/** @brief Arm both legs over caller-owned rings, silence the feedback words, start the turn at zero.
+ * @param s The state written.
+ * @param ring_l The left ring, `cap` floats, caller-owned.
+ * @param ring_r The right ring, `cap` floats, caller-owned.
+ * @param cap Each ring's length, floats; omx_fdelay_cap_for() of the longest delay at the order.
+ * @return The line's own code: OMX_FDELAY_OK, else the first leg's refusal, and the stage is a passthrough.
+ * @thread audio */
 static inline enum omx_fdelay_code omx_flanger_state_init(struct omx_flanger_state *s,
                                                           float *ring_l, float *ring_r,
                                                           uint32_t cap) {
@@ -163,21 +183,29 @@ static inline enum omx_fdelay_code omx_flanger_state_init(struct omx_flanger_sta
 }
 #undef OMX_CONTRACT_STAGE
 
-/** The delay the sweep is at, at the oscillator's current phase — one place, as the chorus has.
- * @thread audio */
 #define OMX_CONTRACT_STAGE "flanger/sweep"
+/** @brief The delay the sweep is at, at the oscillator's current phase — one place, as the chorus has.
+ * @param p The resolved atom.
+ * @param lfo The stage's one oscillator, read and never moved.
+ * @return A delay in samples inside [base, base + depth].
+ * @thread audio */
 static inline float omx_flanger_delay(const struct omx_flanger *p, const struct omx_lfo *lfo) {
   return omx_lfo_sweep(p->base_samples, p->depth_samples, omx_lfo_at(lfo, 0.0f));
 }
 #undef OMX_CONTRACT_STAGE
 
+#define OMX_CONTRACT_STAGE "flanger"
 /**
- * Process one block IN PLACE. `l`/`r` are the strip's two legs; a disabled atom, a NULL ring or an
+ * @brief Process one block IN PLACE. `l`/`r` are the strip's two legs; a disabled atom, a NULL ring or an
  * unarmed line is a passthrough. RT-safe: one kernel evaluation per sample serves both legs, four
  * taps read per leg, no allocation, no libm in the loop.
+ * @param l The left leg, `n` frames, processed in place.
+ * @param r The right leg, `n` frames, processed in place.
+ * @param n The block length, frames.
+ * @param p The resolved atom, times in samples at the live rate, the feedback clamped on read.
+ * @param s The state armed by omx_flanger_state_init().
  * @thread audio
  */
-#define OMX_CONTRACT_STAGE "flanger"
 static inline void omx_flanger_process(float *l, float *r, uint32_t n, const struct omx_flanger *p,
                                        struct omx_flanger_state *s) {
   /* CONTRACT (omx_contract.h). A flanger is a feedback comb whose loop gain is strictly below one

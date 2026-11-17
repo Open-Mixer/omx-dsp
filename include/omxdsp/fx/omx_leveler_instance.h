@@ -20,6 +20,10 @@
  * LATENCY IS ZERO: the slots never take the 4x control path. Nothing is allocated; every word of state
  * is in {@link OmxLevelerInstance}.
  */
+/**
+ * @file omx_leveler_instance.h
+ * @brief one-knob dynamics as a plugin instance: an amount, a direction and a speed for a second engineer, a volunteer desk or a speech channel. It mints no DSP: it is two slots of the dynamics kernel (omx_dynamics), a downward compressor and an upward one (omx_dyn's UPWARD law), both on an RMS detector with LEVELER_KNEE_DB of knee, stereo-linked.
+ */
 #ifndef OMX_LEVELER_INSTANCE_H
 #define OMX_LEVELER_INSTANCE_H
 

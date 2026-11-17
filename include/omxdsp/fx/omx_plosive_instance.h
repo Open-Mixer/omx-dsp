@@ -28,6 +28,10 @@
  *
  * LATENCY IS ZERO (L1). Nothing is allocated; every word of state is in {@link OmxPlosiveInstance}.
  */
+/**
+ * @file omx_plosive_instance.h
+ * @brief the plosive and consonant tamer as a plugin instance (the FX-13 design): a transient detector listening to two bands and cutting only them.
+ */
 #ifndef OMX_PLOSIVE_INSTANCE_H
 #define OMX_PLOSIVE_INSTANCE_H
 

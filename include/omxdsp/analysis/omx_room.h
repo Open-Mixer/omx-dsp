@@ -29,6 +29,10 @@
  * Control thread only, never the audio callback: no allocation (every buffer and scratch is the
  * caller's, sized as each function states), no lock, no global state, no I/O.
  */
+/**
+ * @file omx_room.h
+ * @brief ROOM ANALYSIS: the transfer curve, the impulse response and its early reflections, RT60 per octave band, the room-mode finder and the narrow cut a confirmed mode proposes. Moved from OpenMixer core's TypeScript (room-transfer.ts, room-impulse.ts, room-rt60.ts, room-modes.ts and room-mode-eq.ts).
+ */
 #ifndef OMX_ROOM_H
 #define OMX_ROOM_H
 

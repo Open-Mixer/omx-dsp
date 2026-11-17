@@ -35,6 +35,10 @@
  * points into the instance's own rings, so an instance is initialised where it lives and is never
  * copied after init.
  */
+/**
+ * @file omx_pitch_instance.h
+ * @brief the native pitch shifter as a plugin instance: the shell's core, with no format in it. The same shape as omx_chorus_instance.h (one C core, N shells): the core is `omx_pitch.h`'s `omx_pitch_process`, THE SAME INLINE the console's pitch stage runs, and this file adds no DSP to it.
+ */
 #ifndef OMX_PITCH_INSTANCE_H
 #define OMX_PITCH_INSTANCE_H
 

@@ -33,6 +33,10 @@
  * LATENCY IS ZERO, AND PUBLISHED: the gain is computed from the sample it multiplies
  * (omx_transient_latency()), and a host cannot tell "zero" from "never said".
  */
+/**
+ * @file omx_transient_instance.h
+ * @brief the native transient designer as a plugin instance: the shell's core, with no format in it.
+ */
 #ifndef OMX_TRANSIENT_INSTANCE_H
 #define OMX_TRANSIENT_INSTANCE_H
 

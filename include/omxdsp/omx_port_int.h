@@ -13,6 +13,10 @@
  *
  * Oracle: test/kernels/port_int.c (the face-level oracle stays the engine's src/lv2_int_ports.test.c).
  */
+/**
+ * @file omx_port_int.h
+ * @brief a float control word read as an INTEGER, the one reader every plugin face uses for a port its TTL marks `lv2:integer` (an enum member, a slope, a factor, a band budget).
+ */
 #ifndef OMX_PORT_INT_H
 #define OMX_PORT_INT_H
 

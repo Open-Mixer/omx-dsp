@@ -22,6 +22,10 @@
  * LATENCY IS ZERO: the dry is frame-aligned; the sub's own lag is the effect's, not a latency. Nothing
  * is allocated; every word of state is in {@link OmxSuboctInstance}.
  */
+/**
+ * @file omx_suboct_instance.h
+ * @brief the sub-octaver as a plugin instance (the FX-17 design): a zero-crossing divider armed by hysteresis and fired at the crossing, gating a low-passed copy. It mints no word: the divider is omx_divider, the bands the EQ's own sections (omx_eq_design), the level the dynamics envelope (omx_env_step, peak).
+ */
 #ifndef OMX_SUBOCT_INSTANCE_H
 #define OMX_SUBOCT_INSTANCE_H
 

@@ -31,6 +31,10 @@
  *
  * Allocation-free, no globals, caller owns the tracker. Never called from the RT callback.
  */
+/**
+ * @file omx_hrp_track.h
+ * @brief HRP voice tracking: the same singer, frame after frame.
+ */
 #ifndef OMX_HRP_TRACK_H
 #define OMX_HRP_TRACK_H
 
