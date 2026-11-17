@@ -11,6 +11,7 @@
 #   other      the probe fails some other way       -> NOT RUN, "the TSan probe does not run", with its own words
 #   noaslr     setarch -R allowed: the probe and the consumer run under it, and the probe, which acts out the mapping
 #              fatal unless it runs under setarch -R, passes; the consumer runs
+#   hang       the compiler never returns          -> RED by flavour-check's own bound, naming the compile and the bound
 # Exit 0 when every case reads as it must; each failing case prints `flavour-probe-sabotage: FAIL <case> ...`.
 set -u
 PLAIN="${1:?}"; CONTRACTS="${2:?}"; TSAN="${3:?}"; FLAGS="${4:?}"
@@ -74,6 +75,25 @@ case_() {
   if [ -n "$nope" ] && grep -qE "$nope" <<< "$out"; then echo "flavour-probe-sabotage: FAIL $name: /$nope/ is there"; fail=1; return; fi
   echo "flavour-probe-sabotage: ok   $name: $(grep -E "$want" <<< "$out" | head -1)"
 }
+# hang: a compiler that sleeps forever. flavour-check must end red by its own bound (FLAVOUR_COMPILE_TIMEOUT, here 2 s),
+# naming the compile; the outer bound is only so that this test never hangs, and it killing flavour-check (exit 124)
+# is the failure this case exists to catch.
+cat > "$S/hang-cc" <<'SH'
+#!/bin/bash
+exec sleep 600
+SH
+chmod +x "$S/hang-cc"
+hang_() {
+  local out rc
+  out="$(FLAVOUR_COMPILE_TIMEOUT=2 CC="$S/hang-cc" NM="${NM:-nm}" \
+    timeout 20 bash tools/flavour-check.sh "$S/out-hang" "$FLAGS" "$PLAIN" "$CONTRACTS" "$TSAN" 2>&1)"; rc=$?
+  if [ "$rc" = 124 ]; then echo "flavour-probe-sabotage: FAIL hang: a hanging compiler was ended only by the outer 20 s bound, flavour-check has none"; fail=1; return; fi
+  if [ "$rc" != 1 ] || ! grep -qE '^flavour-check: FAIL — .*timed out after 2 s \(FLAVOUR_COMPILE_TIMEOUT\)' <<< "$out"; then
+    echo "flavour-probe-sabotage: FAIL hang: exit $rc, wanted 1 with a timed-out line"; printf '%s\n' "$out" | tail -3; fail=1; return
+  fi
+  echo "flavour-probe-sabotage: ok   hang: $(grep -E 'timed out' <<< "$out" | head -1)"
+}
+hang_
 case_ link    link    allow  0 '^flavour-check: NOT RUN — the TSan probe does not link'                  'TSan consumer reads'
 case_ mapping mapping refuse 0 '^flavour-check: NOT RUN — the TSan probe: FATAL: ThreadSanitizer: unexpected memory mapping.*setarch -R is not allowed' 'TSan consumer reads'
 case_ other   other   allow  0 '^flavour-check: NOT RUN — the TSan probe does not run: stand-in: the probe broke its own way \(exit 3\)' 'TSan consumer reads'
