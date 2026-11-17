@@ -355,7 +355,6 @@ static inline void omx_eq_design_f(enum omx_eq_kind kind, double freq_hz, double
  * @return The section count, 1 or 2.
  * @post `one-or-two-sections`.
  * @note Thread-safe: constants.
- * @twin butterworthQs
  * @thread audio
  */
 static inline uint32_t omx_eq_butterworth_qs(int slope_24, double q_out[2]) {
