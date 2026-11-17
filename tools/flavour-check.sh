@@ -21,6 +21,23 @@ CC="${CC:-cc}"; NM="${NM:-nm}"
 mkdir -p "$OUT"
 fail() { echo "flavour-check: FAIL — $*"; exit 1; }
 
+# The bound on every compile this script starts, declared once: a compiler that never returns ends the check RED,
+# naming the compile, not a pass and not an hour-long wait. A normal compile here is under a second; 60 s is the floor
+# the bound is never set under.
+BOUND="${FLAVOUR_COMPILE_TIMEOUT:-60}"
+# timeout 0 never fires, so a bound that is not a whole number of seconds above 0 is refused before any compile.
+[[ "$BOUND" =~ ^[1-9][0-9]*$ ]] || fail "FLAVOUR_COMPILE_TIMEOUT=$BOUND: must be a whole number of seconds above 0"
+# timeout -k 5 ends a compiler that ignores SIGTERM with 137: both 124 and 137 are the bound.
+is_timeout() { [ "$1" -eq 124 ] || [ "$1" -eq 137 ]; }
+timed_out() { fail "$1: the compile timed out after $BOUND s (FLAVOUR_COMPILE_TIMEOUT)"; }
+# bounded <what> <command...>: the command's own status, or a red end naming <what> when the bound killed it.
+bounded() {
+  local what="$1" rc; shift
+  timeout -k 5 "$BOUND" "$@"; rc=$?
+  is_timeout "$rc" && timed_out "$what"
+  return "$rc"
+}
+
 refs() { "$NM" "$1" 2>/dev/null | grep -cE "$2"; }
 for a in "$PLAIN" "$CONTRACTS" "$TSAN"; do [ -f "$a" ] || fail "$a is missing"; done
 [ "$(refs "$PLAIN" ' omx_contract_log$')" -eq 0 ] || fail "$PLAIN references the contract ledger"
@@ -32,11 +49,11 @@ for a in "$PLAIN" "$CONTRACTS" "$TSAN"; do [ -f "$a" ] || fail "$a is missing"; 
 echo "flavour-check: the three archives carry their flavours"
 
 # shellcheck disable=SC2086
-$CC $FLAGS -o "$OUT/contracts" test/omxdsp_flavour.c "$CONTRACTS" -lm || fail "the consumer does not link the contracts archive"
+bounded "the consumer on the contracts archive" $CC $FLAGS -o "$OUT/contracts" test/omxdsp_flavour.c "$CONTRACTS" -lm || fail "the consumer does not link the contracts archive"
 "$OUT/contracts" || fail "the contracts consumer on $CONTRACTS"
 
 # shellcheck disable=SC2086
-$CC $FLAGS -o "$OUT/plain" test/omxdsp_flavour.c "$PLAIN" -lm || fail "the consumer does not link the plain archive"
+bounded "the consumer on the plain archive" $CC $FLAGS -o "$OUT/plain" test/omxdsp_flavour.c "$PLAIN" -lm || fail "the consumer does not link the plain archive"
 if out="$("$OUT/plain")"; then
   fail "the consumer linked against $PLAIN passed: the check cannot tell the flavours apart"
 fi
@@ -53,7 +70,9 @@ NOASLR=()
 if command -v setarch > /dev/null && setarch "$(uname -m)" -R true 2> /dev/null; then NOASLR=(setarch "$(uname -m)" -R); fi
 printf 'int main(void) { return 0; }\n' > "$OUT/probe.c"
 probe_ok=0
-if ! plink="$($CC -fsanitize=thread -o "$OUT/probe" "$OUT/probe.c" 2>&1)"; then
+plink="$(timeout -k 5 "$BOUND" $CC -fsanitize=thread -o "$OUT/probe" "$OUT/probe.c" 2>&1)"; plrc=$?
+is_timeout "$plrc" && timed_out "the TSan probe"
+if [ "$plrc" -ne 0 ]; then
   echo "flavour-check: NOT RUN — the TSan probe does not link: $(grep -m1 . <<< "$plink")"
 else
   pout="$("${NOASLR[@]}" "$OUT/probe" 2>&1)"; prc=$?
@@ -69,7 +88,7 @@ else
 fi
 if [ "$probe_ok" = 1 ]; then
   # shellcheck disable=SC2086
-  $CC $FLAGS -fsanitize=thread -o "$OUT/tsan" test/omxdsp_flavour.c "$TSAN" -lm || fail "the consumer does not link the TSan archive"
+  bounded "the consumer on the TSan archive" $CC $FLAGS -fsanitize=thread -o "$OUT/tsan" test/omxdsp_flavour.c "$TSAN" -lm || fail "the consumer does not link the TSan archive"
   if ! tout="$(TSAN_OPTIONS="halt_on_error=1 exitcode=66" "${NOASLR[@]}" "$OUT/tsan" 2>&1)"; then
     if [ "${#NOASLR[@]}" -eq 0 ] && grep -q 'ThreadSanitizer: unexpected memory mapping' <<< "$tout"; then
       echo "flavour-check: NOT RUN — the TSan consumer: $(grep -m1 'unexpected memory mapping' <<< "$tout") (address randomisation, and setarch -R is not allowed here)"
