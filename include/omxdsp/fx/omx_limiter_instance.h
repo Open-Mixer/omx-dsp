@@ -43,6 +43,7 @@
 #include <omxdsp/fx/omx_instance_io.h>
 #include <omxdsp/omx_param.h>
 
+/** The face's channel count: a stereo pair, one linked gain. */
 #define OMX_LIMITER_INSTANCE_CHANNELS 2
 
 /** The highest rate, Hz, the inline rings are sized for: the top of the declared rate set. */
@@ -55,29 +56,34 @@
 
 /** One instance. It owns its rings; the kernel is armed over the first `cap` of them. */
 typedef struct {
-  float sr;
-  struct omx_limiter atom;
-  struct omx_limiter_state state;
-  float mem[4u * OMX_LIMITER_INSTANCE_CAP];
-  uint32_t idx[OMX_LIMITER_INSTANCE_CAP];
-  uint32_t cap;
+  float sr;                                 /**< The sample rate the instance is bound to, Hz. */
+  struct omx_limiter atom;                  /**< The kernel's atom as last resolved. */
+  struct omx_limiter_state state;           /**< The kernel's state, armed over `mem` and `idx`. */
+  float mem[4u * OMX_LIMITER_INSTANCE_CAP]; /**< The kernel's float rings, the instance's own: omx_limiter_mem_floats() of `cap` used. */
+  uint32_t idx[OMX_LIMITER_INSTANCE_CAP];   /**< The kernel's index ring, the instance's own: `cap` used. */
+  uint32_t cap;                             /**< The ring length the kernel is armed over: omx_limiter_instance_cap_for(). */
   /** The look-ahead, ms, the state is armed at. */
   float lookahead_ms;
   /** The previous cycle's engaged flag, so a bypass->engaged edge can re-arm the state. */
   int was_engaged;
-  int ready;
+  int ready; /**< 1 after a successful omx_limiter_instance_init(); 0 makes run() the identity. */
 } OmxLimiterInstance;
 
-/** The ring length every declared look-ahead fits at `sr`: how much of the inline rings the
+/** @brief The ring length every declared look-ahead fits at `sr`: how much of the inline rings the
  * kernel uses (omx_limiter_mem_floats() of it in floats and as many indices).
+ * @param sr The sample rate, Hz.
+ * @return The ring length, frames.
  * @thread audio */
 static inline uint32_t omx_limiter_instance_cap_for(float sr) { return omx_limiter_cap(sr); }
 
 /**
- * Bind an instance to its rate, over its own rings. Returns 1 when usable, 0 when not (a refused
- * init leaves `ready` clear and run() is the identity). The kernel is defined at the declared rates
- * only, so any other rate is refused, as is one the inline rings cannot hold. The state is armed
- * at the declared default look-ahead. Allocates nothing.
+ * @brief Bind an instance to its rate, over its own rings. The state is armed at the declared default
+ * look-ahead. Allocates nothing.
+ * @param s The instance; every word of it is written.
+ * @param sr The sample rate, Hz, one the console declares.
+ * @return 1 when usable, 0 when not: the kernel is defined at the declared rates only, so any other
+ *         rate is refused, as is one the inline rings cannot hold; `ready` stays clear and run() is
+ *         the identity.
  * @thread control
  */
 static inline int omx_limiter_instance_init(OmxLimiterInstance *s, float sr) {
@@ -94,15 +100,20 @@ static inline int omx_limiter_instance_init(OmxLimiterInstance *s, float sr) {
   return 1;
 }
 
+#define OMX_CONTRACT_STAGE "limiter/instance-resolve"
 /**
- * Resolve the host's control-port values into the kernel's atom for one cycle. `bypass` non-zero
- * disables the atom. The arguments are the kernel's contract controls, in their declared order and
- * user units: `ceiling_db` (dBFS, true peak), `lookahead_ms` and `release_ms` (ms), each clamped
- * into its declared travel, a non-finite word reading as the declared default. A look-ahead that
- * lands on another frame count, or a bypass->engaged edge, re-arms the state.
+ * @brief Resolve the host's control-port values into the kernel's atom for one cycle. The arguments are
+ * the kernel's contract controls, in their declared order and user units, each clamped into its
+ * declared travel, a non-finite word reading as the declared default. A look-ahead that lands on
+ * another frame count, or a bypass->engaged edge, re-arms the state. A null or not-ready instance is
+ * refused and nothing changes.
+ * @param s The instance.
+ * @param bypass Non-zero disables the atom: run() is then the identity.
+ * @param ceiling_db The ceiling, dBFS true peak, inside LIMITER_CEILING_DB's travel.
+ * @param lookahead_ms The look-ahead, ms, inside LIMITER_LOOKAHEAD_MS's travel; the latency follows it.
+ * @param release_ms The release, ms, inside LIMITER_RELEASE_MS's travel.
  * @thread audio
  */
-#define OMX_CONTRACT_STAGE "limiter/instance-resolve"
 static inline void omx_limiter_instance_resolve(OmxLimiterInstance *s, int bypass, float ceiling_db,
                                                 float lookahead_ms, float release_ms) {
   if (!s || !s->ready) return;
@@ -129,20 +140,27 @@ static inline void omx_limiter_instance_resolve(OmxLimiterInstance *s, int bypas
 }
 #undef OMX_CONTRACT_STAGE
 
+#define OMX_CONTRACT_STAGE "limiter/instance-run"
 /**
- * THE AUDIO CALLBACK'S WHOLE SHARE: copy in to out where they differ, run the console's kernel
+ * @brief THE AUDIO CALLBACK'S WHOLE SHARE: copy in to out where they differ, run the console's kernel
  * in place on out. `in_*` and `out_*` may alias. Not ready, or bypassed, is the identity.
+ * @param s The instance; null, not ready or bypassed copies in to out.
+ * @param in_l The left input, `n` frames.
+ * @param in_r The right input, `n` frames.
+ * @param out_l The left output, `n` frames, may be `in_l`.
+ * @param out_r The right output, `n` frames, may be `in_r`.
+ * @param n The block length, frames; a null port or 0 touches nothing.
  * @thread audio
  */
-#define OMX_CONTRACT_STAGE "limiter/instance-run"
 static inline void omx_limiter_instance_run(OmxLimiterInstance *s, const float *in_l, const float *in_r,
                                             float *out_l, float *out_r, uint32_t n) {
   OMX_INSTANCE_RUN_IN_PLACE(s, in_l, in_r, out_l, out_r, n, omx_limiter_process(out_l, out_r, n, &s->atom, &s->state));
 }
 #undef OMX_CONTRACT_STAGE
 
-/** The frames of latency the instance introduces now: the armed state's `T` while engaged, 0
- * while bypassed or not ready.
+/** @brief The frames of latency the instance introduces now.
+ * @param s The instance.
+ * @return The armed state's look-ahead `T`, frames, while engaged; 0 while bypassed, not ready or null.
  * @thread audio */
 static inline uint32_t omx_limiter_instance_latency(const OmxLimiterInstance *s) {
   if (!s || !s->ready || !s->atom.enabled) return 0u;

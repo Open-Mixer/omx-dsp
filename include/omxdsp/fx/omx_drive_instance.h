@@ -81,6 +81,7 @@
 #include <omxdsp/fx/omx_instance_io.h>
 #include <omxdsp/omx_param.h>
 
+/** The face's channel count: a stereo pair over one atom. */
 #define OMX_DRIVE_INSTANCE_CHANNELS 2
 
 /** The shared oversampler's largest factor, the `oversample` control's come-up. */
@@ -94,38 +95,52 @@ OMXDSP_STATIC_ASSERT(OMX_DRIVE_OVERSAMPLES_COUNT == 3u && OMX_DRIVE_OVERSAMPLES_
  * `hfHz = ... ? 20000 : ...`). */
 #define OMX_DRIVE_INSTANCE_HF_OFF_DESIGN_HZ 20000.0f
 
-/** Control defaults: the contract's (DRIVE_*_RANGE.default); a choice comes up at its first id. */
+/* Control defaults: the contract's (DRIVE_*_RANGE.default); a choice comes up at its first id. */
+/** The amount a non-finite word reads as, dB: DRIVE_AMOUNT_RANGE's default. */
 #define OMX_DRIVE_INSTANCE_AMOUNT_DEFAULT ((float)OMX_DRIVE_AMOUNT_RANGE_DEFAULT)
+/** The character a non-finite word reads as, -1..+1: DRIVE_CHARACTER_RANGE's default. */
 #define OMX_DRIVE_INSTANCE_CHARACTER_DEFAULT ((float)OMX_DRIVE_CHARACTER_RANGE_DEFAULT)
+/** The band corner a non-finite word reads as, Hz: DRIVE_BAND_FREQ_RANGE's default. */
 #define OMX_DRIVE_INSTANCE_BAND_FREQ_DEFAULT ((float)OMX_DRIVE_BAND_FREQ_RANGE_DEFAULT)
+/** The mix a non-finite word reads as, percent: DRIVE_MIX_RANGE's default. */
 #define OMX_DRIVE_INSTANCE_MIX_DEFAULT ((float)OMX_DRIVE_MIX_RANGE_DEFAULT)
+/** The trim a non-finite word reads as, dB: DRIVE_TRIM_RANGE's default. */
 #define OMX_DRIVE_INSTANCE_TRIM_DEFAULT ((float)OMX_DRIVE_TRIM_RANGE_DEFAULT)
+/** The curve an out-of-range word reads as: the soft shaper, DRIVE_CURVES' first id. */
 #define OMX_DRIVE_INSTANCE_CURVE_DEFAULT OMX_DRIVE_SOFT
+/** The band an out-of-range word reads as: the full band, DRIVE_BANDS' first id. */
 #define OMX_DRIVE_INSTANCE_BAND_DEFAULT OMX_DRIVE_BAND_FULL
+/** The auto-gain switch an out-of-range word reads as: DRIVE_AUTO_GAINS' default id. */
 #define OMX_DRIVE_INSTANCE_AUTO_GAIN_DEFAULT ((int)OMX_DRIVE_AUTO_GAINS_DEFAULT)
+/** The stereo-link switch an out-of-range word reads as: DRIVE_STEREO_LINKS' default id. */
 #define OMX_DRIVE_INSTANCE_STEREO_LINK_DEFAULT ((int)OMX_DRIVE_STEREO_LINKS_DEFAULT)
+/** The HF roll-off an out-of-range word reads as: DRIVE_HF_ROLLOFFS' default id. */
 #define OMX_DRIVE_INSTANCE_HF_ROLLOFF_DEFAULT ((int)OMX_DRIVE_HF_ROLLOFFS_DEFAULT)
+/** The oversampling an out-of-range word reads as: DRIVE_OVERSAMPLES' default id (the factor 4). */
 #define OMX_DRIVE_INSTANCE_OVERSAMPLE_DEFAULT ((int)OMX_DRIVE_OVERSAMPLES_DEFAULT)
 
 /** One instance: the atom, the kernel's state (inline: the oversampler histories and the
  * compensation line), and what the coefficient bank was last designed for. Nothing is caller-owned. */
 typedef struct {
-  uint32_t rate;
-  struct omx_drive atom;
-  struct omx_drive_state state;
-  /* What the coefficient bank was last designed for, so resolve() redesigns only on a change. */
-  float designed_band_hz;
-  float designed_hf_hz;
-  int ready;
+  uint32_t rate;                /**< The sample rate the instance is bound to, Hz. */
+  struct omx_drive atom;        /**< The kernel's atom as last resolved. */
+  struct omx_drive_state state; /**< The kernel's state: the oversampler histories and the compensation line, inline. */
+  float designed_band_hz;       /**< The band corner, Hz, the coefficient bank was last designed for: resolve() redesigns only on a change. */
+  float designed_hf_hz;         /**< The HF roll-off corner, Hz, the bank was last designed for. */
+  int ready;                    /**< 1 after a successful omx_drive_instance_init(); 0 makes run() the identity. */
 } OmxDriveInstance;
 
 /**
- * The atom's static controls from the host's words: the shaper (`curve`, a DRIVE_CURVES index, any other value
- * reading as the declared default), the pre-shaper gain from `amount` (dB), the bias weight from `character`
- * (-1..+1, folded to (character + 1) / 2), the wet share from `mix` (percent) and the make-up from `trim` (dB),
- * each clamped into its declared travel, a non-finite word reading as the declared default. The one mapping:
+ * @brief The atom's static controls from the host's words, each clamped into its declared travel, a
+ * non-finite word reading as the declared default. The one mapping:
  * {@link omx_drive_instance_resolve} applies it to the atom it runs, and omx_curve_points() draws the drive's
  * transfer curve through it, so the curve is what the kernel runs at those words. Pure.
+ * @param o The atom written.
+ * @param amount The pre-shaper gain, dB, inside DRIVE_AMOUNT_RANGE.
+ * @param character The bias weight, -1..+1, folded to (character + 1) / 2.
+ * @param mix The wet share, percent, inside DRIVE_MIX_RANGE.
+ * @param trim The make-up, dB, inside DRIVE_TRIM_RANGE.
+ * @param curve The shaper, a DRIVE_CURVES index; any other value reads as the declared default.
  * @thread audio
  */
 static inline void omx_drive_instance_controls(struct omx_drive *o, float amount, float character, float mix,
@@ -143,27 +158,33 @@ static inline void omx_drive_instance_controls(struct omx_drive *o, float amount
                                            OMX_DRIVE_INSTANCE_TRIM_DEFAULT));
 }
 
+#define OMX_CONTRACT_STAGE "drive-instance/resolve"
 /**
- * Resolve the host's control values into the atom for this cycle. `bypass` non-zero disables the
- * atom. The arguments are the drive kernel's contract controls, in their declared order and user
- * units: `amount` (dB), `character` (-1..+1), `band_freq` (Hz), `mix` (percent) and `trim` (dB)
- * are clamped into their declared travels, a non-finite word reading as the declared default;
- * `curve` and `band` are the DRIVE_CURVES and DRIVE_BANDS indices (`enum omx_drive_curve`,
- * `enum omx_drive_band`), any other value reading as the first; `auto_gain` and `stereo_link` are
- * the DRIVE_AUTO_GAINS and DRIVE_STEREO_LINKS indices (0 off, 1 on), any other value reading as the
- * declared default; `hf_rolloff` is a DRIVE_HF_ROLLOFFS id (`enum omx_drive_hf_rolloffs`: 0 off, 1, 2), any
- * other value reading as the declared default; the corner in Hz comes from the contract's
- * `omx_drive_hf_rolloffs_value`, so a corner the low-pass design cannot take is never designed; `oversample` is a DRIVE_OVERSAMPLES id, the factor (1, 2 or 4), any other
- * value reading as the declared default (4). The clamps are the row's, applied
+ * @brief Resolve the host's control values into the atom for this cycle. The arguments are the drive
+ * kernel's contract controls, in their declared order and user units. The clamps are the row's, applied
  * for the same reason the console's controller applies them: the kernel's contract requires mix in
- * [0,1], and a host is free to write anything to a port.
- *
- * Coefficients are redesigned only when `band_freq` or the roll-off corner moved; the state is
- * rebuilt for the new factor only when `oversample` moved, and the latency follows the factor.
- * Allocation-free.
+ * [0,1], and a host is free to write anything to a port. Coefficients are redesigned only when
+ * `band_freq` or the roll-off corner moved; the state is rebuilt for the new factor only when
+ * `oversample` moved, and the latency follows the factor. Allocation-free. A null or not-ready
+ * instance is refused and nothing changes.
+ * @param s The instance.
+ * @param bypass Non-zero disables the atom: run() is then the identity.
+ * @param amount The pre-shaper gain, dB, clamped into DRIVE_AMOUNT_RANGE; non-finite reads the declared default.
+ * @param character The bias weight, -1..+1, clamped into DRIVE_CHARACTER_RANGE; non-finite reads the declared default.
+ * @param band_freq The band corner, Hz, clamped into DRIVE_BAND_FREQ_RANGE; non-finite reads the declared default.
+ * @param mix The wet share, percent, clamped into DRIVE_MIX_RANGE; non-finite reads the declared default.
+ * @param trim The make-up, dB, clamped into DRIVE_TRIM_RANGE; non-finite reads the declared default.
+ * @param curve The shaper, a DRIVE_CURVES index (`enum omx_drive_curve`); any other value reads as the first.
+ * @param band The band driven, a DRIVE_BANDS index (`enum omx_drive_band`); any other value reads as the first.
+ * @param auto_gain The DRIVE_AUTO_GAINS index, 0 off, 1 on; any other value reads as the declared default.
+ * @param stereo_link The DRIVE_STEREO_LINKS index, 0 off, 1 on; any other value reads as the declared default.
+ * @param hf_rolloff A DRIVE_HF_ROLLOFFS id (`enum omx_drive_hf_rolloffs`: 0 off, 1, 2); any other value reads as
+ *        the declared default. The corner in Hz comes from the contract's `omx_drive_hf_rolloffs_value`, so a
+ *        corner the low-pass design cannot take is never designed.
+ * @param oversample A DRIVE_OVERSAMPLES id, the factor (1, 2 or 4); any other value reads as the declared default (4).
+ * @post The atom satisfies every precondition of the drive kernel.
  * @thread audio
  */
-#define OMX_CONTRACT_STAGE "drive-instance/resolve"
 static inline void omx_drive_instance_resolve(OmxDriveInstance *s, int bypass, float amount, float character,
                                               float band_freq, float mix, float trim, int curve, int band,
                                               int auto_gain, int stereo_link, int hf_rolloff, int oversample) {
@@ -208,10 +229,13 @@ static inline void omx_drive_instance_resolve(OmxDriveInstance *s, int bypass, f
 #undef OMX_CONTRACT_STAGE
 
 /**
- * Bind an instance to its rate: the time constants, the state built for the default factor, the
- * contract's defaults resolved and the bank designed, engaged. Returns 1 when usable, 0 when not: a
- * rate the console does not declare is refused, leaving `ready` clear, and run() is then the
- * identity. Allocates nothing — the caller owns the struct.
+ * @brief Bind an instance to its rate: the time constants, the state built for the default factor, the
+ * contract's defaults resolved and the bank designed, engaged. Allocates nothing — the caller owns
+ * the struct.
+ * @param s The instance; every word of it is written.
+ * @param sr The sample rate, Hz, one the console declares.
+ * @return 1 when usable, 0 when not: a rate the console does not declare is refused, leaving `ready`
+ *         clear, and run() is then the identity.
  * @thread control
  */
 static inline int omx_drive_instance_init(OmxDriveInstance *s, float sr) {
@@ -232,13 +256,20 @@ static inline int omx_drive_instance_init(OmxDriveInstance *s, float sr) {
   return 1;
 }
 
+#define OMX_CONTRACT_STAGE "drive-instance/run"
 /**
- * One cycle: `out = drive(in)` for both legs, `n` frames. `in_*` and `out_*` may alias. Not ready,
+ * @brief One cycle: `out = drive(in)` for both legs, `n` frames. `in_*` and `out_*` may alias. Not ready,
  * or bypassed, is a copy and nothing else — the kernel's own "zero cost when disengaged" (§4g),
  * reached through the same `enabled` word.
+ * @param s The instance; null, not ready or bypassed copies in to out.
+ * @param in_l The left input, `n` frames.
+ * @param in_r The right input, `n` frames.
+ * @param out_l The left output, `n` frames, may be `in_l`.
+ * @param out_r The right output, `n` frames, may be `in_r`.
+ * @param n The block length, frames; a null port or 0 touches nothing.
+ * @post Finite in, finite out, on both legs.
  * @thread audio
  */
-#define OMX_CONTRACT_STAGE "drive-instance/run"
 static inline void omx_drive_instance_run(OmxDriveInstance *s, const float *in_l, const float *in_r, float *out_l,
                                           float *out_r, uint32_t n) {
   /* CONTRACT (omx_contract.h). Finite in, finite out, on both legs — the kernel's own law,
@@ -252,8 +283,10 @@ static inline void omx_drive_instance_run(OmxDriveInstance *s, const float *in_l
 }
 #undef OMX_CONTRACT_STAGE
 
-/** The stage's declared latency in frames at the instance rate — the element's at the resolved
- * factor (0, 48 or 72 at 1x, 2x, 4x), 0 while bypassed or not ready.
+/** @brief The stage's declared latency in frames at the instance rate.
+ * @param s The instance.
+ * @return The element's latency at the resolved factor (0, 48 or 72 frames at 1x, 2x, 4x); 0 while
+ *         bypassed, not ready or null.
  * @thread audio */
 static inline uint32_t omx_drive_instance_latency(const OmxDriveInstance *s) {
   return s && s->ready ? (uint32_t)omx_drive_latency(&s->atom) : 0u;

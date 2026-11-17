@@ -390,26 +390,6 @@ include/omxdsp/fx/omx_chorus.h: warning: return type of member omx_chorus_gain_b
 include/omxdsp/fx/omx_chorus.h: warning: return type of member omx_chorus_longest_delay is not documented
 include/omxdsp/fx/omx_chorus.h: warning: return type of member omx_chorus_shortest_delay is not documented
 include/omxdsp/fx/omx_chorus.h: warning: return type of member omx_chorus_voice_delay is not documented
-include/omxdsp/fx/omx_chorus_instance.h: warning: Member OMX_CHORUS_INSTANCE_CHANNELS (macro definition) of file omx_chorus_instance.h is not documented.
-include/omxdsp/fx/omx_chorus_instance.h: warning: Member OMX_CHORUS_INSTANCE_DEPTH_MS_DEFAULT (macro definition) of file omx_chorus_instance.h is not documented.
-include/omxdsp/fx/omx_chorus_instance.h: warning: Member OMX_CHORUS_INSTANCE_LATENCY_FRAMES (macro definition) of file omx_chorus_instance.h is not documented.
-include/omxdsp/fx/omx_chorus_instance.h: warning: Member OMX_CHORUS_INSTANCE_MIX_PCT_DEFAULT (macro definition) of file omx_chorus_instance.h is not documented.
-include/omxdsp/fx/omx_chorus_instance.h: warning: Member OMX_CHORUS_INSTANCE_RATE_HZ_DEFAULT (macro definition) of file omx_chorus_instance.h is not documented.
-include/omxdsp/fx/omx_chorus_instance.h: warning: Member OMX_CHORUS_INSTANCE_SPREAD_DEFAULT (macro definition) of file omx_chorus_instance.h is not documented.
-include/omxdsp/fx/omx_chorus_instance.h: warning: Member atom (variable) of struct OmxChorusInstance is not documented.
-include/omxdsp/fx/omx_chorus_instance.h: warning: Member cap (variable) of struct OmxChorusInstance is not documented.
-include/omxdsp/fx/omx_chorus_instance.h: warning: Member omx_chorus_instance_clear(OmxChorusInstance *s) (function) of file omx_chorus_instance.h is not documented.
-include/omxdsp/fx/omx_chorus_instance.h: warning: Member omx_chorus_instance_resolve(OmxChorusInstance *s, int bypass, float spread, float rate, float depth, float voices, float mix) (function) of file omx_chorus_instance.h is not documented.
-include/omxdsp/fx/omx_chorus_instance.h: warning: Member omx_chorus_instance_run(OmxChorusInstance *s, const float *in_l, const float *in_r, float *out_l, float *out_r, uint32_t n) (function) of file omx_chorus_instance.h is not documented.
-include/omxdsp/fx/omx_chorus_instance.h: warning: Member ready (variable) of struct OmxChorusInstance is not documented.
-include/omxdsp/fx/omx_chorus_instance.h: warning: Member ring_l[OMX_CHORUS_CAP] (variable) of struct OmxChorusInstance is not documented.
-include/omxdsp/fx/omx_chorus_instance.h: warning: Member ring_r[OMX_CHORUS_CAP] (variable) of struct OmxChorusInstance is not documented.
-include/omxdsp/fx/omx_chorus_instance.h: warning: Member sr (variable) of struct OmxChorusInstance is not documented.
-include/omxdsp/fx/omx_chorus_instance.h: warning: Member state (variable) of struct OmxChorusInstance is not documented.
-include/omxdsp/fx/omx_chorus_instance.h: warning: parameters of member omx_chorus_instance_cap_for are not documented
-include/omxdsp/fx/omx_chorus_instance.h: warning: parameters of member omx_chorus_instance_init are not documented
-include/omxdsp/fx/omx_chorus_instance.h: warning: return type of member omx_chorus_instance_cap_for is not documented
-include/omxdsp/fx/omx_chorus_instance.h: warning: return type of member omx_chorus_instance_init is not documented
 include/omxdsp/fx/omx_clipper_instance.h: warning: Compound OmxClipperInstance is not documented.
 include/omxdsp/fx/omx_clipper_instance.h: warning: Member OMX_CLIPPER_INSTANCE_CHANNELS (macro definition) of file omx_clipper_instance.h is not documented.
 include/omxdsp/fx/omx_clipper_instance.h: warning: Member enabled (variable) of struct OmxClipperInstance is not documented.
@@ -495,35 +475,6 @@ include/omxdsp/fx/omx_delay.h: warning: parameters of member omx_fxdelay_read_fr
 include/omxdsp/fx/omx_delay.h: warning: parameters of member omx_fxdelay_soft are not documented
 include/omxdsp/fx/omx_delay.h: warning: return type of member omx_fxdelay_read_frac is not documented
 include/omxdsp/fx/omx_delay.h: warning: return type of member omx_fxdelay_soft is not documented
-include/omxdsp/fx/omx_delay_instance.h: warning: Member OMX_DELAY_INSTANCE_ANALOG_LP_HZ (macro definition) of file omx_delay_instance.h is not documented.
-include/omxdsp/fx/omx_delay_instance.h: warning: Member OMX_DELAY_INSTANCE_CHANNELS (macro definition) of file omx_delay_instance.h is not documented.
-include/omxdsp/fx/omx_delay_instance.h: warning: Member OMX_DELAY_INSTANCE_FEEDBACK_DEFAULT (macro definition) of file omx_delay_instance.h is not documented.
-include/omxdsp/fx/omx_delay_instance.h: warning: Member OMX_DELAY_INSTANCE_LATENCY_FRAMES (macro definition) of file omx_delay_instance.h is not documented.
-include/omxdsp/fx/omx_delay_instance.h: warning: Member OMX_DELAY_INSTANCE_MIX_DEFAULT (macro definition) of file omx_delay_instance.h is not documented.
-include/omxdsp/fx/omx_delay_instance.h: warning: Member OMX_DELAY_INSTANCE_PINGPONG_DEFAULT (macro definition) of file omx_delay_instance.h is not documented.
-include/omxdsp/fx/omx_delay_instance.h: warning: Member OMX_DELAY_INSTANCE_TAPE_LP_HZ (macro definition) of file omx_delay_instance.h is not documented.
-include/omxdsp/fx/omx_delay_instance.h: warning: Member OMX_DELAY_INSTANCE_TAPE_WOW_HZ (macro definition) of file omx_delay_instance.h is not documented.
-include/omxdsp/fx/omx_delay_instance.h: warning: Member OMX_DELAY_INSTANCE_TAPE_WOW_MS (macro definition) of file omx_delay_instance.h is not documented.
-include/omxdsp/fx/omx_delay_instance.h: warning: Member OMX_DELAY_INSTANCE_TAP_DENS[OMX_DELAY_TAP_FACTOR_DENS_COUNT] (variable) of file omx_delay_instance.h is not documented.
-include/omxdsp/fx/omx_delay_instance.h: warning: Member OMX_DELAY_INSTANCE_TONE_DEFAULT (macro definition) of file omx_delay_instance.h is not documented.
-include/omxdsp/fx/omx_delay_instance.h: warning: Member atom (variable) of struct OmxDelayInstance is not documented.
-include/omxdsp/fx/omx_delay_instance.h: warning: Member omx_delay_instance_clear(OmxDelayInstance *s) (function) of file omx_delay_instance.h is not documented.
-include/omxdsp/fx/omx_delay_instance.h: warning: Member omx_delay_instance_resolve(OmxDelayInstance *s, int bypass, float fx_delay_time, float fx_delay_feedback, float tone, float mix, int pingpong, float fx_delay_taps, float tap0_gain, float tap0_pan, int tap1_factor, float tap1_gain, float tap1_pan, int tap2_factor, float tap2_gain, float tap2_pan, int tap3_factor, float tap3_gain, float tap3_pan, int sync, int division, int mode, float duck_db, float duck_threshold_db, float duck_release_ms) (function) of file omx_delay_instance.h is not documented.
-include/omxdsp/fx/omx_delay_instance.h: warning: Member omx_delay_instance_run(OmxDelayInstance *s, const float *in_l, const float *in_r, float *out_l, float *out_r, uint32_t n) (function) of file omx_delay_instance.h is not documented.
-include/omxdsp/fx/omx_delay_instance.h: warning: Member ready (variable) of struct OmxDelayInstance is not documented.
-include/omxdsp/fx/omx_delay_instance.h: warning: Member ring_l[OMX_FXDELAY_CAP] (variable) of struct OmxDelayInstance is not documented.
-include/omxdsp/fx/omx_delay_instance.h: warning: Member ring_r[OMX_FXDELAY_CAP] (variable) of struct OmxDelayInstance is not documented.
-include/omxdsp/fx/omx_delay_instance.h: warning: Member sr (variable) of struct OmxDelayInstance is not documented.
-include/omxdsp/fx/omx_delay_instance.h: warning: Member state (variable) of struct OmxDelayInstance is not documented.
-include/omxdsp/fx/omx_delay_instance.h: warning: parameters of member omx_delay_instance_init are not documented
-include/omxdsp/fx/omx_delay_instance.h: warning: parameters of member omx_delay_instance_latency are not documented
-include/omxdsp/fx/omx_delay_instance.h: warning: parameters of member omx_delay_instance_set_tempo are not documented
-include/omxdsp/fx/omx_delay_instance.h: warning: parameters of member omx_delay_instance_synced are not documented
-include/omxdsp/fx/omx_delay_instance.h: warning: parameters of member omx_delay_instance_tap_ms are not documented
-include/omxdsp/fx/omx_delay_instance.h: warning: return type of member omx_delay_instance_init is not documented
-include/omxdsp/fx/omx_delay_instance.h: warning: return type of member omx_delay_instance_latency is not documented
-include/omxdsp/fx/omx_delay_instance.h: warning: return type of member omx_delay_instance_synced is not documented
-include/omxdsp/fx/omx_delay_instance.h: warning: return type of member omx_delay_instance_tap_ms is not documented
 include/omxdsp/fx/omx_doubler_instance.h: warning: Compound OmxDoublerInstance is not documented.
 include/omxdsp/fx/omx_doubler_instance.h: warning: Member OMX_DOUBLER_INSTANCE_CHANNELS (macro definition) of file omx_doubler_instance.h is not documented.
 include/omxdsp/fx/omx_doubler_instance.h: warning: Member OMX_DOUBLER_INSTANCE_DELAYS[OMX_DOUBLER_VOICE_DELAYS_COUNT] (variable) of file omx_doubler_instance.h is not documented.
@@ -629,30 +580,6 @@ include/omxdsp/fx/omx_drive_design_corpus.h: warning: Member gain_db (variable) 
 include/omxdsp/fx/omx_drive_design_corpus.h: warning: Member kind (variable) of struct OmxDriveDesignRow is not documented.
 include/omxdsp/fx/omx_drive_design_corpus.h: warning: Member rate (variable) of struct OmxDriveDesignRow is not documented.
 include/omxdsp/fx/omx_drive_design_corpus.h: warning: Member why (variable) of struct OmxDriveDesignRow is not documented.
-include/omxdsp/fx/omx_drive_instance.h: warning: Member OMX_DRIVE_INSTANCE_AUTO_GAIN_DEFAULT (macro definition) of file omx_drive_instance.h is not documented.
-include/omxdsp/fx/omx_drive_instance.h: warning: Member OMX_DRIVE_INSTANCE_BAND_DEFAULT (macro definition) of file omx_drive_instance.h is not documented.
-include/omxdsp/fx/omx_drive_instance.h: warning: Member OMX_DRIVE_INSTANCE_BAND_FREQ_DEFAULT (macro definition) of file omx_drive_instance.h is not documented.
-include/omxdsp/fx/omx_drive_instance.h: warning: Member OMX_DRIVE_INSTANCE_CHANNELS (macro definition) of file omx_drive_instance.h is not documented.
-include/omxdsp/fx/omx_drive_instance.h: warning: Member OMX_DRIVE_INSTANCE_CHARACTER_DEFAULT (macro definition) of file omx_drive_instance.h is not documented.
-include/omxdsp/fx/omx_drive_instance.h: warning: Member OMX_DRIVE_INSTANCE_CURVE_DEFAULT (macro definition) of file omx_drive_instance.h is not documented.
-include/omxdsp/fx/omx_drive_instance.h: warning: Member OMX_DRIVE_INSTANCE_HF_ROLLOFF_DEFAULT (macro definition) of file omx_drive_instance.h is not documented.
-include/omxdsp/fx/omx_drive_instance.h: warning: Member OMX_DRIVE_INSTANCE_MIX_DEFAULT (macro definition) of file omx_drive_instance.h is not documented.
-include/omxdsp/fx/omx_drive_instance.h: warning: Member OMX_DRIVE_INSTANCE_OVERSAMPLE_DEFAULT (macro definition) of file omx_drive_instance.h is not documented.
-include/omxdsp/fx/omx_drive_instance.h: warning: Member OMX_DRIVE_INSTANCE_STEREO_LINK_DEFAULT (macro definition) of file omx_drive_instance.h is not documented.
-include/omxdsp/fx/omx_drive_instance.h: warning: Member OMX_DRIVE_INSTANCE_TRIM_DEFAULT (macro definition) of file omx_drive_instance.h is not documented.
-include/omxdsp/fx/omx_drive_instance.h: warning: Member atom (variable) of struct OmxDriveInstance is not documented.
-include/omxdsp/fx/omx_drive_instance.h: warning: Member designed_band_hz (variable) of struct OmxDriveInstance is not documented.
-include/omxdsp/fx/omx_drive_instance.h: warning: Member designed_hf_hz (variable) of struct OmxDriveInstance is not documented.
-include/omxdsp/fx/omx_drive_instance.h: warning: Member omx_drive_instance_resolve(OmxDriveInstance *s, int bypass, float amount, float character, float band_freq, float mix, float trim, int curve, int band, int auto_gain, int stereo_link, int hf_rolloff, int oversample) (function) of file omx_drive_instance.h is not documented.
-include/omxdsp/fx/omx_drive_instance.h: warning: Member omx_drive_instance_run(OmxDriveInstance *s, const float *in_l, const float *in_r, float *out_l, float *out_r, uint32_t n) (function) of file omx_drive_instance.h is not documented.
-include/omxdsp/fx/omx_drive_instance.h: warning: Member rate (variable) of struct OmxDriveInstance is not documented.
-include/omxdsp/fx/omx_drive_instance.h: warning: Member ready (variable) of struct OmxDriveInstance is not documented.
-include/omxdsp/fx/omx_drive_instance.h: warning: Member state (variable) of struct OmxDriveInstance is not documented.
-include/omxdsp/fx/omx_drive_instance.h: warning: parameters of member omx_drive_instance_controls are not documented
-include/omxdsp/fx/omx_drive_instance.h: warning: parameters of member omx_drive_instance_init are not documented
-include/omxdsp/fx/omx_drive_instance.h: warning: parameters of member omx_drive_instance_latency are not documented
-include/omxdsp/fx/omx_drive_instance.h: warning: return type of member omx_drive_instance_init is not documented
-include/omxdsp/fx/omx_drive_instance.h: warning: return type of member omx_drive_instance_latency is not documented
 include/omxdsp/fx/omx_dyneq_instance.h: warning: Member OMX_DYNEQ_INSTANCE_CHANNELS (macro definition) of file omx_dyneq_instance.h is not documented.
 include/omxdsp/fx/omx_dyneq_instance.h: warning: Member band[OMX_DYNEQ_INSTANCE_BANDS] (variable) of struct OmxDyneqInstance is not documented.
 include/omxdsp/fx/omx_dyneq_instance.h: warning: Member designed[OMX_DYNEQ_INSTANCE_BANDS] (variable) of struct OmxDyneqInstance is not documented.
@@ -788,22 +715,6 @@ include/omxdsp/fx/omx_leveler_instance.h: warning: return type of member omx_lev
 include/omxdsp/fx/omx_leveler_instance.h: warning: return type of member omx_leveler_instance_latency is not documented
 include/omxdsp/fx/omx_leveler_instance.h: warning: return type of member omx_leveler_table is not documented
 include/omxdsp/fx/omx_limiter.h: warning: Member omx_limiter_lookahead_frames(float lookahead_ms, float rate) (function) of file omx_limiter.h is not documented.
-include/omxdsp/fx/omx_limiter_instance.h: warning: Member OMX_LIMITER_INSTANCE_CHANNELS (macro definition) of file omx_limiter_instance.h is not documented.
-include/omxdsp/fx/omx_limiter_instance.h: warning: Member atom (variable) of struct OmxLimiterInstance is not documented.
-include/omxdsp/fx/omx_limiter_instance.h: warning: Member cap (variable) of struct OmxLimiterInstance is not documented.
-include/omxdsp/fx/omx_limiter_instance.h: warning: Member idx[OMX_LIMITER_INSTANCE_CAP] (variable) of struct OmxLimiterInstance is not documented.
-include/omxdsp/fx/omx_limiter_instance.h: warning: Member mem[4u *OMX_LIMITER_INSTANCE_CAP] (variable) of struct OmxLimiterInstance is not documented.
-include/omxdsp/fx/omx_limiter_instance.h: warning: Member omx_limiter_instance_resolve(OmxLimiterInstance *s, int bypass, float ceiling_db, float lookahead_ms, float release_ms) (function) of file omx_limiter_instance.h is not documented.
-include/omxdsp/fx/omx_limiter_instance.h: warning: Member omx_limiter_instance_run(OmxLimiterInstance *s, const float *in_l, const float *in_r, float *out_l, float *out_r, uint32_t n) (function) of file omx_limiter_instance.h is not documented.
-include/omxdsp/fx/omx_limiter_instance.h: warning: Member ready (variable) of struct OmxLimiterInstance is not documented.
-include/omxdsp/fx/omx_limiter_instance.h: warning: Member sr (variable) of struct OmxLimiterInstance is not documented.
-include/omxdsp/fx/omx_limiter_instance.h: warning: Member state (variable) of struct OmxLimiterInstance is not documented.
-include/omxdsp/fx/omx_limiter_instance.h: warning: parameters of member omx_limiter_instance_cap_for are not documented
-include/omxdsp/fx/omx_limiter_instance.h: warning: parameters of member omx_limiter_instance_init are not documented
-include/omxdsp/fx/omx_limiter_instance.h: warning: parameters of member omx_limiter_instance_latency are not documented
-include/omxdsp/fx/omx_limiter_instance.h: warning: return type of member omx_limiter_instance_cap_for is not documented
-include/omxdsp/fx/omx_limiter_instance.h: warning: return type of member omx_limiter_instance_init is not documented
-include/omxdsp/fx/omx_limiter_instance.h: warning: return type of member omx_limiter_instance_latency is not documented
 include/omxdsp/fx/omx_loudlevel_instance.h: warning: Compound OmxLoudlevelInstance is not documented.
 include/omxdsp/fx/omx_loudlevel_instance.h: warning: Member OMX_LOUDLEVEL_INSTANCE_CHANNELS (macro definition) of file omx_loudlevel_instance.h is not documented.
 include/omxdsp/fx/omx_loudlevel_instance.h: warning: Member enabled (variable) of struct OmxLoudlevelInstance is not documented.

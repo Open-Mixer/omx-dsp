@@ -55,20 +55,28 @@
 #include <omxdsp/fx/omx_instance_io.h>
 #include <omxdsp/omx_param.h>
 
+/** The face's channel count: a stereo pair over one atom. */
 #define OMX_DELAY_INSTANCE_CHANNELS 2
+/** The frames of latency the face introduces: none, the delay is the effect. */
 #define OMX_DELAY_INSTANCE_LATENCY_FRAMES 0.0f
 
-/** Control defaults: the contract's (FX_DELAY_*_RANGE.default, DELAY_*_RANGE.default, DELAY_PINGPONGS). */
+/* Control defaults: the contract's (FX_DELAY_*_RANGE.default, DELAY_*_RANGE.default, DELAY_PINGPONGS). */
+/** The time a non-finite word reads as, ms: FX_DELAY_TIME_RANGE's default. */
 #define OMX_DELAY_INSTANCE_TIME_DEFAULT ((float)OMX_FX_DELAY_TIME_RANGE_DEFAULT)
+/** The feedback a non-finite word reads as, 0..1: FX_DELAY_FEEDBACK_RANGE's default. */
 #define OMX_DELAY_INSTANCE_FEEDBACK_DEFAULT ((float)OMX_FX_DELAY_FEEDBACK_RANGE_DEFAULT)
+/** The tone a non-finite word reads as, 0..1: DELAY_TONE_RANGE's default. */
 #define OMX_DELAY_INSTANCE_TONE_DEFAULT ((float)OMX_DELAY_TONE_RANGE_DEFAULT)
+/** The mix a non-finite word reads as, 0..1: DELAY_MIX_RANGE's default. */
 #define OMX_DELAY_INSTANCE_MIX_DEFAULT ((float)OMX_DELAY_MIX_RANGE_DEFAULT)
+/** The ping-pong switch an out-of-range word reads as: DELAY_PINGPONGS' default id. */
 #define OMX_DELAY_INSTANCE_PINGPONG_DEFAULT ((int)OMX_DELAY_PINGPONGS_DEFAULT)
 
 /** The beats of each division, DELAY_DIVISION_BEATS, in the order of its ids. */
 static const float OMX_DELAY_INSTANCE_DIVISION_BEATS[OMX_DELAY_DIVISION_BEATS_COUNT] = OMX_DELAY_DIVISION_BEATS_INIT;
-/** The tap factor set, DELAY_TAP_FACTOR_NUMS / DELAY_TAP_FACTOR_DENS, member by member: tap1..3Factor's ids. */
+/** The tap factors' numerators, DELAY_TAP_FACTOR_NUMS, member by member: tap1..3Factor's ids. */
 static const uint32_t OMX_DELAY_INSTANCE_TAP_NUMS[OMX_DELAY_TAP_FACTOR_NUMS_COUNT] = OMX_DELAY_TAP_FACTOR_NUMS_INIT;
+/** The tap factors' denominators, DELAY_TAP_FACTOR_DENS, in the same order as the numerators. */
 static const uint32_t OMX_DELAY_INSTANCE_TAP_DENS[OMX_DELAY_TAP_FACTOR_DENS_COUNT] = OMX_DELAY_TAP_FACTOR_DENS_INIT;
 _Static_assert(OMX_DELAY_TAP_FACTOR_NUMS_COUNT == OMX_DELAY_TAP1_FACTORS_COUNT &&
                    OMX_DELAY_TAP_FACTOR_DENS_COUNT == OMX_DELAY_TAP1_FACTORS_COUNT &&
@@ -79,19 +87,24 @@ _Static_assert(OMX_DELAY_DIVISION_BEATS_COUNT == OMX_DELAY_DIVISIONS_COUNT, "one
 _Static_assert((int)OMX_DELAY_MODES_DIGITAL == (int)OMX_FX_DELAY_DIGITAL && (int)OMX_DELAY_MODES_TAPE == (int)OMX_FX_DELAY_TAPE &&
                    (int)OMX_DELAY_MODES_ANALOG == (int)OMX_FX_DELAY_ANALOG,
                "the mode's ids are the kernel's colours, in order");
-/** The colour's declared constants: FX_DUCK_ATTACK_MS, DELAY_TAPE_LP_HZ, DELAY_TAPE_WOW_HZ, DELAY_TAPE_WOW_MS,
+/* The colour's declared constants: FX_DUCK_ATTACK_MS, DELAY_TAPE_LP_HZ, DELAY_TAPE_WOW_HZ, DELAY_TAPE_WOW_MS,
  * DELAY_ANALOG_LP_HZ. */
+/** The wet duck's attack, ms: FX_DUCK_ATTACK_MS. */
 #define OMX_DELAY_INSTANCE_DUCK_ATTACK_MS ((float)OMX_FX_DUCK_ATTACK_MS)
+/** The tape mode's loop low-pass corner, Hz: DELAY_TAPE_LP_HZ. */
 #define OMX_DELAY_INSTANCE_TAPE_LP_HZ ((float)OMX_DELAY_TAPE_LP_HZ)
+/** The tape mode's wow rate, Hz: DELAY_TAPE_WOW_HZ. */
 #define OMX_DELAY_INSTANCE_TAPE_WOW_HZ ((float)OMX_DELAY_TAPE_WOW_HZ)
+/** The tape mode's wow depth, ms: DELAY_TAPE_WOW_MS. */
 #define OMX_DELAY_INSTANCE_TAPE_WOW_MS ((float)OMX_DELAY_TAPE_WOW_MS)
+/** The analog mode's loop low-pass corner, Hz: DELAY_ANALOG_LP_HZ. */
 #define OMX_DELAY_INSTANCE_ANALOG_LP_HZ ((float)OMX_DELAY_ANALOG_LP_HZ)
 
 /** One instance: the atom, the kernel's state over the instance's own rings. */
 typedef struct {
-  float sr;
-  struct omx_fx_delay atom;
-  struct omx_fx_delay_state state;
+  float sr;                               /**< The sample rate the instance is bound to, Hz. */
+  struct omx_fx_delay atom;               /**< The kernel's atom as last resolved. */
+  struct omx_fx_delay_state state;        /**< The kernel's state over the instance's rings. */
   struct omx_fx_delay_color color;        /**< the mode and the wet duck */
   struct omx_fx_delay_color_state cstate; /**< the loop low pass, the wow and the duck's follower */
   struct omx_fx_delay_taps taps;          /**< the read taps, from fxDelayTaps and tap0..3 */
@@ -99,17 +112,19 @@ typedef struct {
   int tap_clamped[OMX_FXDELAY_MAX_TAPS];  /**< each tap's time met the time travel's top */
   float bpm;                              /**< the host's tempo, BPM; 0 while it hands none */
   int synced;                             /**< the last resolve's time followed the tempo */
-  float ring_l[OMX_FXDELAY_CAP];
-  float ring_r[OMX_FXDELAY_CAP];
+  float ring_l[OMX_FXDELAY_CAP];          /**< The left delay line, the instance's own. */
+  float ring_r[OMX_FXDELAY_CAP];          /**< The right delay line, the instance's own. */
   /** The previous cycle's engaged flag, so a bypass->engaged edge can clear the rings. */
   int was_engaged;
-  int ready;
+  int ready;                              /**< 1 after a successful omx_delay_instance_init(); 0 makes run() the identity. */
 } OmxDelayInstance;
 
 /**
- * Bind an instance to its rate, over its own rings. Returns 1 when usable, 0 when not: a rate the
- * console does not declare is refused, `ready` stays clear and run() is the identity. Allocates
- * nothing.
+ * @brief Bind an instance to its rate, over its own rings. Allocates nothing.
+ * @param s The instance; every word of it is written.
+ * @param sr The sample rate, Hz, one the console declares.
+ * @return 1 when usable, 0 when not: a rate the console does not declare is refused, `ready` stays
+ *         clear and run() is the identity.
  * @thread control
  */
 static inline int omx_delay_instance_init(OmxDelayInstance *s, float sr) {
@@ -124,19 +139,22 @@ static inline int omx_delay_instance_init(OmxDelayInstance *s, float sr) {
   return 1;
 }
 
-/** The host's tempo, BPM, for a delay at tempo sync. A value that is not a positive finite tempo (0 is
+/** @brief The host's tempo, BPM, for a delay at tempo sync. A value that is not a positive finite tempo (0 is
  * how a face says its host handed none this block) is NO tempo: a delay at tempo then keeps its time
  * control, as free. Takes effect at the next resolve.
+ * @param s The instance; null is ignored.
+ * @param bpm The tempo, beats per minute, above 0; anything else is no tempo.
  * @thread audio */
 static inline void omx_delay_instance_set_tempo(OmxDelayInstance *s, float bpm) {
   if (!s) return;
   s->bpm = bpm > 0.0f && bpm - bpm == 0.0f ? bpm : 0.0f;
 }
 
-/** The engage-edge clear: both rings and the per-leg damping back to silence. RT-safe: a bounded
- * memset over the inline rings.
- * @thread audio */
 #define OMX_CONTRACT_STAGE "fx-delay/instance-clear"
+/** @brief The engage-edge clear: both rings and the per-leg damping back to silence. RT-safe: a bounded
+ * memset over the inline rings.
+ * @param s The instance; null or not ready is ignored.
+ * @thread audio */
 static inline void omx_delay_instance_clear(OmxDelayInstance *s) {
   if (!s || !s->ready) return;
   /* CONTRACT (omx_contract.h). A cleared delay holds nothing: the next tap read, at any delay, is
@@ -152,18 +170,40 @@ static inline void omx_delay_instance_clear(OmxDelayInstance *s) {
 }
 #undef OMX_CONTRACT_STAGE
 
+#define OMX_CONTRACT_STAGE "fx-delay/instance-resolve"
 /**
- * Resolve the host's control values into the kernel's atom for one cycle. `bypass` non-zero
- * disables the atom. The arguments are the delay kernel's contract controls, in their declared
- * order and user units: `fx_delay_time` (ms, both legs), `fx_delay_feedback`, `tone` and `mix`
- * (0..1) are clamped into their declared travels, a non-finite word reading as the declared
- * default; `pingpong` is the DELAY_PINGPONGS index (0 off, 1 on), any other value reading as the
- * declared default. Then `sync` (DELAY_SYNCS: free, tempo), `division` (DELAY_DIVISIONS) and `mode`
- * (DELAY_MODES: digital, tape, analog), each outside its ids reading as its default, and the duck's
- * `duck_db`, `duck_threshold_db` (dB) and `duck_release_ms` (ms), clamped into their travels.
+ * @brief Resolve the host's control values into the kernel's atom for one cycle. The arguments are the
+ * delay kernel's contract controls, in their declared order and user units; every travel is clamped
+ * into its declared range, a non-finite word reading as the declared default, and a choice outside
+ * its ids reads as its default. A null or not-ready instance is refused and nothing changes.
+ * @param s The instance.
+ * @param bypass Non-zero disables the atom: run() is then the identity.
+ * @param fx_delay_time The time, ms, both legs, inside FX_DELAY_TIME_RANGE.
+ * @param fx_delay_feedback The feedback, 0..1, inside FX_DELAY_FEEDBACK_RANGE.
+ * @param tone The loop tone, 0..1, inside DELAY_TONE_RANGE.
+ * @param mix The wet share, 0..1, inside DELAY_MIX_RANGE.
+ * @param pingpong The DELAY_PINGPONGS index: 0 off, 1 on.
+ * @param fx_delay_taps How many read taps, 1 to OMX_FXDELAY_MAX_TAPS, the fxDelayTaps control.
+ * @param tap0_gain Tap 0's gain, dB, inside its declared travel.
+ * @param tap0_pan Tap 0's pan, -1 (left) to +1 (right).
+ * @param tap1_factor Tap 1's time factor, a DELAY_TAP_FACTOR id (OMX_DELAY_INSTANCE_TAP_NUMS / _DENS).
+ * @param tap1_gain Tap 1's gain, dB.
+ * @param tap1_pan Tap 1's pan, -1 to +1.
+ * @param tap2_factor Tap 2's time factor, a DELAY_TAP_FACTOR id.
+ * @param tap2_gain Tap 2's gain, dB.
+ * @param tap2_pan Tap 2's pan, -1 to +1.
+ * @param tap3_factor Tap 3's time factor, a DELAY_TAP_FACTOR id.
+ * @param tap3_gain Tap 3's gain, dB.
+ * @param tap3_pan Tap 3's pan, -1 to +1.
+ * @param sync The DELAY_SYNCS index: free, or tempo (the time follows the host's tempo and `division`).
+ * @param division The DELAY_DIVISIONS index, the beats of OMX_DELAY_INSTANCE_DIVISION_BEATS.
+ * @param mode The DELAY_MODES index: digital, tape, analog.
+ * @param duck_db The wet duck's depth, dB, inside its declared travel.
+ * @param duck_threshold_db The duck's threshold, dB.
+ * @param duck_release_ms The duck's release, ms.
+ * @post The atom satisfies every precondition of omx_fx_delay_process().
  * @thread audio
  */
-#define OMX_CONTRACT_STAGE "fx-delay/instance-resolve"
 static inline void omx_delay_instance_resolve(OmxDelayInstance *s, int bypass, float fx_delay_time,
                                               float fx_delay_feedback, float tone, float mix, int pingpong,
                                               float fx_delay_taps, float tap0_gain, float tap0_pan, int tap1_factor,
@@ -251,32 +291,46 @@ static inline void omx_delay_instance_resolve(OmxDelayInstance *s, int bypass, f
 }
 #undef OMX_CONTRACT_STAGE
 
+#define OMX_CONTRACT_STAGE "fx-delay/instance-run"
 /**
- * THE AUDIO CALLBACK'S WHOLE SHARE: copy in to out where they differ, run the console's kernel in
+ * @brief THE AUDIO CALLBACK'S WHOLE SHARE: copy in to out where they differ, run the console's kernel in
  * place on out. `in_*` and `out_*` may alias. Not ready, or bypassed, is the identity byte for byte.
+ * @param s The instance; null, not ready or bypassed copies in to out.
+ * @param in_l The left input, `n` frames.
+ * @param in_r The right input, `n` frames.
+ * @param out_l The left output, `n` frames, may be `in_l`.
+ * @param out_r The right output, `n` frames, may be `in_r`.
+ * @param n The block length, frames; a null port or 0 touches nothing.
  * @thread audio
  */
-#define OMX_CONTRACT_STAGE "fx-delay/instance-run"
 static inline void omx_delay_instance_run(OmxDelayInstance *s, const float *in_l, const float *in_r, float *out_l,
                                           float *out_r, uint32_t n) {
   OMX_INSTANCE_RUN_IN_PLACE(s, in_l, in_r, out_l, out_r, n, omx_fx_delay_process_color(out_l, out_r, n, &s->atom, &s->taps, &s->color, &s->cstate, &s->state, s->sr));
 }
 #undef OMX_CONTRACT_STAGE
 
-/** The frames of latency the instance introduces: none, at every rate (the delay is the effect).
+/** @brief The frames of latency the instance introduces: none, at every rate (the delay is the effect).
+ * @param s The instance, unread.
+ * @return 0.
  * @thread audio */
 static inline uint32_t omx_delay_instance_latency(const OmxDelayInstance *s) {
   (void)s;
   return 0u;
 }
 
-/** 1 when the last resolve's time followed the host's tempo (sync at tempo and a tempo handed), 0 when it
- * is the time control: free, or at tempo with no tempo from the host. The plugin's state readout.
+/** @brief Whether the last resolve's time followed the host's tempo. The plugin's state readout.
+ * @param s The instance; null reads 0.
+ * @return 1 when sync is at tempo and a tempo was handed, 0 when the time control rules: free, or at
+ *         tempo with no tempo from the host.
  * @thread audio */
 static inline int omx_delay_instance_synced(const OmxDelayInstance *s) { return s ? s->synced : 0; }
 
-/** Tap `k`'s time as the last resolve delivered it, ms, and whether it met the time travel's top: the
- * plugin's tapMs and tapClamped outputs. A `k` outside the taps reads 0.
+/** @brief Tap `k`'s time as the last resolve delivered it, ms, and whether it met the time travel's top: the
+ * plugin's tapMs and tapClamped outputs.
+ * @param s The instance; null reads 0.
+ * @param k The tap, 0 to OMX_FXDELAY_MAX_TAPS - 1; outside the taps reads 0.
+ * @param clamped When non-null, set to 1 when the tap's time met the time travel's top, else 0.
+ * @return The tap's time, ms.
  * @thread audio */
 static inline float omx_delay_instance_tap_ms(const OmxDelayInstance *s, uint32_t k, int *clamped) {
   const int in = s && k < (uint32_t)OMX_FXDELAY_MAX_TAPS;
