@@ -12,13 +12,17 @@
 #   noaslr     setarch -R allowed: the probe and the consumer run under it, and the probe, which acts out the mapping
 #              fatal unless it runs under setarch -R, passes; the consumer runs
 #   phang      only the TSan probe's compile hangs -> RED, "the TSan probe: the compile timed out after 3 s"
+#   masq       the real compiler is a ccache-style masquerade wrapper (a cc that runs the next cc on PATH after its own
+#              directory): the whole script run again with one first on PATH must pass, not loop through the stand-in
 #   hang       the compiler never returns          -> RED by flavour-check's own bound, naming the compile and the bound
 # Exit 0 when every case reads as it must; each failing case prints `flavour-probe-sabotage: FAIL <case> ...`.
 set -u
+SELF="$(readlink -f "$0")"; ARGS=("$@")
 PLAIN="${1:?}"; CONTRACTS="${2:?}"; TSAN="${3:?}"; FLAGS="${4:?}"
 # The real compiler by its absolute path: the stand-in is named cc and goes first on PATH, so a bare "cc" there
 # would be the stand-in calling itself.
 REAL_CC="$(command -v "${CC:-cc}")" || { echo "flavour-probe-sabotage: FAIL no compiler ${CC:-cc}"; exit 2; }
+REAL_PATH="$PATH"
 S="$(mktemp -d "${TMPDIR:-/tmp}/flavour-probe.XXXXXX")"
 trap 'rm -rf "$S"' EXIT
 fail=0
@@ -51,6 +55,7 @@ int main(void) {
 C
 cat > "$S/bin/cc" <<SH
 #!/bin/bash
+REAL_PATH='$REAL_PATH'
 tsan=0 probe=0 consumer=0 out=""
 prev=""
 for a in "\$@"; do
@@ -95,7 +100,24 @@ hang_() {
   fi
   echo "flavour-probe-sabotage: ok   hang: $(grep -E 'timed out' <<< "$out" | head -1)"
 }
-hang_
+# masq: the stand-in must reach the real compiler through the wrapper without the wrapper finding the stand-in again.
+# The script runs itself with such a wrapper first on PATH (FLAVOUR_PROBE_MASQ marks the inner run, which skips this arm
+# and the hang arms); the outer bound is only for the loop this arm exists to catch.
+masq_() {
+  local out rc
+  mkdir -p "$S/masq"
+  cat > "$S/masq/cc" <<'SH'
+#!/bin/bash
+me="$(dirname "$(readlink -f "$0")")"; P=""; IFS=:
+for d in $PATH; do [ "$(readlink -f "$d")" = "$me" ] || P="$P:$d"; done
+PATH="${P#:}" exec cc "$@"
+SH
+  chmod +x "$S/masq/cc"
+  out="$(FLAVOUR_PROBE_MASQ=1 PATH="$S/masq:$PATH" timeout 60 bash "$SELF" "${ARGS[@]}" 2>&1)"; rc=$?
+  if [ "$rc" != 0 ]; then echo "flavour-probe-sabotage: FAIL masq: with a masquerade wrapper as the compiler the arms exit $rc, wanted 0"; printf '%s\n' "$out" | grep -E 'FAIL|timed out' | head -3; fail=1; return; fi
+  echo "flavour-probe-sabotage: ok   masq: the arms pass through a masquerade wrapper ($(grep -c ' ok ' <<< "$out") ok)"
+}
+if [ -z "${FLAVOUR_PROBE_MASQ:-}" ]; then hang_; masq_; fi
 case_ link    link    allow  0 '^flavour-check: NOT RUN — the TSan probe does not link'                  'TSan consumer reads'
 case_ mapping mapping refuse 0 '^flavour-check: NOT RUN — the TSan probe: FATAL: ThreadSanitizer: unexpected memory mapping.*setarch -R is not allowed' 'TSan consumer reads'
 case_ other   other   allow  0 '^flavour-check: NOT RUN — the TSan probe does not run: stand-in: the probe broke its own way \(exit 3\)' 'TSan consumer reads'
