@@ -10,7 +10,7 @@
 #               writable-data check, the doc check and the effect kernels' oracles and golden
 #               digests — pure C + -lm (+ -pthread), no node
 #   make install   headers, the three archives and their .pc files under PREFIX/LIBDIR/INCLUDEDIR,
-#               and data/ as the package omx-dsp of omx-contract's contract directory, into DESTDIR
+#               and data/ as the package omx-dsp of PREFIX's own contract directory (DATADIR/omx-contract/contract.d), into DESTDIR
 #   make flavours  each archive carries its flavour, and a contracts consumer sees the compiled
 #               unit's contracts only through the contracts archive
 #   make test-fx   the effect kernels' oracles and golden digests alone
@@ -179,7 +179,10 @@ DESTDIR    ?=
 # The definitions this library implements (data/) install as the package omx-dsp of the installed
 # omx-contract's contract directory, <contractdir>/<schema major>/omx-dsp/, with the installer that
 # omx-contract ships beside its schema: plain shell, no node. Read when `make install` runs, only.
-CONTRACTDIR        ?= $(shell pkg-config --variable=contractdir omx-contract 2>/dev/null)
+# The contract directory is PREFIX's own (<DATADIR>/omx-contract/contract.d, where omx-contract.pc puts it at
+# PREFIX=/usr): install writes nowhere outside DESTDIR+PREFIX, so the installed omx-contract's directory is never
+# the target of another prefix (#75). Only the installer and the schema major are read from omx-contract.
+CONTRACTDIR        ?= $(DATADIR)/omx-contract/contract.d
 CONTRACT_DATADIR    = $(shell pkg-config --variable=datadir omx-contract 2>/dev/null)
 CONTRACT_INSTALLER ?= $(CONTRACT_DATADIR)/install-contract-dir.sh
 CONTRACT_MAJOR      = $(shell sed -n 's/^  "x-omx-schema-version": "\([0-9]*\)\..*",$$/\1/p' $(CONTRACT_DATADIR)/omx-contract.schema.json 2>/dev/null)
