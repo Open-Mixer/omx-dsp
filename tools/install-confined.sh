@@ -4,37 +4,43 @@
 #
 # install-confined.sh — make install writes and removes nothing outside $(DESTDIR)$(PREFIX) (#75).
 #
-#   tools/install-confined.sh            the check: in a throwaway podman container (OMX_INSTALL_CONFINED_IMAGE, default
-#                                        registry.fedoraproject.org/fedora:44, which installs gcc, make, pkgconf and
-#                                        omx-contract-devel from the OpenMixer channel), so a red run never touches the host;
-#                                        run inside a container already (a CI job's), it runs there, which is as throwaway
-#   tools/install-confined.sh --inner    the check itself, on THIS filesystem: only ever run it in a container
+#   tools/install-confined.sh            the check, in a throwaway podman container (OMX_INSTALL_CONFINED_IMAGE, default
+#                                        registry.fedoraproject.org/fedora:44, by tag), so a red run never touches the host
+#   OMX_INSTALL_CONFINED_INNER=1 tools/install-confined.sh
+#                                        the check itself, on THIS file system. Only an explicit opt-in, set by the CI job
+#                                        whose container is thrown away and by the podman call above: a container marker
+#                                        (/run/.containerenv, /.dockerenv) is NEVER taken for one, a developer's toolbox has it
 #
-# Two installs run on a copy of the tree: `make install PREFIX=<tmp>/p` and `make install DESTDIR=<tmp>/d PREFIX=/usr`.
-# Before them the check plants a sentinel in the system contract directory (/usr/share/omx-contract/contract.d/3/omx-dsp/),
-# lists every file, directory and link of the container's filesystem (outside /proc /sys /dev /run /tmp /var/tmp and the
-# work copy), and lists it again after each install. Any path that appeared, vanished or changed outside the install's
-# own root fails the check, each named.
-# Exit 0 green; 1 a path escaped or the install did not land where it should; 2 it could not be judged (no podman and
-# not in a container, no image, no omx-contract), never a pass.
+# Inner check, what it WRITES and REMOVES (all of it in a container that is thrown away):
+#   /w                a copy of the tree (removed first); the install runs there
+#   a mktemp -d       under /tmp: the prefix, the destdir, the snapshots and the make log (removed at the end)
+#   the system contract directory /usr/share/omx-contract/contract.d/3/omx-dsp/: ONE sentinel file planted (the proof the
+#                     install does not remove it); and, when omx-contract is not installed, dnf installs gcc, make,
+#                     pkgconf, omx-contract-devel and the OpenMixer release package (no chmod anywhere)
+# The two installs are `make install PREFIX=<scratch>/p` and `make install DESTDIR=<scratch>/d PREFIX=/usr`. The snapshots
+# list every file, directory and link of the file system (find -xdev) and are compared before and after each install. PRUNED
+# (not listed): /proc /sys /dev /run /tmp /var/tmp (kernel, runtime and scratch, where the check itself writes), /w and the
+# tree copied from (the check's own work; the install is run from /w, never from the source), and CI's /__w and /github (the
+# runner's own directories). $HOME and every other path is listed, so an escape into it is seen. An install that wrote into
+# /tmp or /var/tmp is not seen: the install's own root and the build's scratch live there.
+# Exit 0 green; 1 a path escaped or the install did not land where it should; 2 it could not be judged (no podman and no
+# opt-in, no image, no omx-contract), never a pass.
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
-in_container() { [ -f /run/.containerenv ] || [ -f /.dockerenv ]; }
 
-if [ "${1:-}" != --inner ]; then
-  if in_container; then exec bash "$HERE/tools/install-confined.sh" --inner; fi
+if [ "${OMX_INSTALL_CONFINED_INNER:-}" != 1 ]; then
   image=${OMX_INSTALL_CONFINED_IMAGE:-registry.fedoraproject.org/fedora:44}
-  command -v podman >/dev/null 2>&1 || { echo "install-confined: UNJUDGED: no podman and not in a container; the check runs only in a throwaway container" >&2; exit 2; }
-  exec podman run --rm -v "$HERE:/src:ro,z" "$image" bash /src/tools/install-confined.sh --inner
+  command -v podman >/dev/null 2>&1 || { echo "install-confined: UNJUDGED: no podman, and OMX_INSTALL_CONFINED_INNER=1 is not set: the check runs only in a throwaway container" >&2; exit 2; }
+  exec podman run --rm -e OMX_INSTALL_CONFINED_INNER=1 -v "$HERE:/src:ro" "$image" bash /src/tools/install-confined.sh
 fi
 
-in_container || { echo "install-confined: --inner refuses to run outside a container" >&2; exit 2; }
 SRC=$HERE
+scratch=$(mktemp -d); trap 'rm -rf "$scratch"' EXIT
 if ! pkg-config --exists omx-contract 2>/dev/null; then
   command -v dnf >/dev/null || { echo "install-confined: UNJUDGED: no omx-contract and no dnf to install it" >&2; exit 2; }
   dnf install -y -q --setopt=tsflags=nodocs --setopt=install_weak_deps=False gcc make binutils gawk diffutils git curl tar gzip pkgconf-pkg-config \
-    https://www.openmixer.org/rpm/openmixer-release.noarch.rpm >/var/tmp/dnf.log 2>&1 || { cat /var/tmp/dnf.log; echo "install-confined: UNJUDGED: the build tools did not install" >&2; exit 2; }
-  dnf install -y -q --setopt=tsflags=nodocs --setopt=install_weak_deps=False omx-contract-devel >/var/tmp/dnf.log 2>&1 || { cat /var/tmp/dnf.log; echo "install-confined: UNJUDGED: omx-contract-devel did not install" >&2; exit 2; }
+    https://www.openmixer.org/rpm/openmixer-release.noarch.rpm >"$scratch/dnf.log" 2>&1 || { cat "$scratch/dnf.log"; echo "install-confined: UNJUDGED: the build tools did not install" >&2; exit 2; }
+  dnf install -y -q --setopt=tsflags=nodocs --setopt=install_weak_deps=False omx-contract-devel >"$scratch/dnf.log" 2>&1 || { cat "$scratch/dnf.log"; echo "install-confined: UNJUDGED: omx-contract-devel did not install" >&2; exit 2; }
   pkg-config --exists omx-contract || { echo "install-confined: UNJUDGED: omx-contract did not install" >&2; exit 2; }
 fi
 work=/w
@@ -49,22 +55,22 @@ snap() {
 fail=0
 confined() { # <label> <make args...>
   local label=$1; shift
-  snap /var/tmp/before.txt
-  (cd "$work" && make "$@" >/var/tmp/make.log 2>&1) || { tail -20 /var/tmp/make.log; echo "install-confined: $label: make install failed"; fail=1; return; }
-  snap /var/tmp/after.txt
+  snap "$scratch/before.txt"
+  (cd "$work" && make "$@" >"$scratch/make.log" 2>&1) || { tail -20 "$scratch/make.log"; echo "install-confined: $label: make install failed"; fail=1; return; }
+  snap "$scratch/after.txt"
   local d
-  d=$( { diff /var/tmp/before.txt /var/tmp/after.txt || true; } | sed -n 's/^[<>] \([^\t]*\)\t.*$/\1/p' | sort -u)
+  d=$( { diff "$scratch/before.txt" "$scratch/after.txt" || true; } | sed -n 's/^[<>] \([^\t]*\)\t.*$/\1/p' | sort -u)
   if [ -n "$d" ]; then
     echo "install-confined: $label: written or removed outside DESTDIR+PREFIX:"; echo "$d" | sed 's/^/  /'; fail=1
   fi
   [ -e "$sentinel" ] || { echo "install-confined: $label: $sentinel is gone (a system contract directory was removed)"; fail=1; }
 }
 
-rm -rf /tmp/p /tmp/d
-confined "PREFIX=/tmp/p" install PREFIX=/tmp/p
-[ -f /tmp/p/share/omx-contract/contract.d/3/omx-dsp/MANIFEST.json ] || { echo "install-confined: PREFIX=/tmp/p: the contract directory is not under the prefix"; fail=1; }
-[ -f /tmp/p/include/omxdsp/omx_dsp.h ] || ls /tmp/p/include/omxdsp >/dev/null 2>&1 || { echo "install-confined: PREFIX=/tmp/p: no headers under the prefix"; fail=1; }
-confined "DESTDIR=/tmp/d PREFIX=/usr" install DESTDIR=/tmp/d PREFIX=/usr
-[ -f /tmp/d/usr/share/omx-contract/contract.d/3/omx-dsp/MANIFEST.json ] || { echo "install-confined: DESTDIR=/tmp/d PREFIX=/usr: the contract directory is not under the destdir"; fail=1; }
+P=$scratch/p D=$scratch/d
+confined "PREFIX=$P" install PREFIX=$P
+[ -f $P/share/omx-contract/contract.d/3/omx-dsp/MANIFEST.json ] || { echo "install-confined: PREFIX=$P: the contract directory is not under the prefix"; fail=1; }
+[ -f $P/include/omxdsp/omx_dsp.h ] || ls $P/include/omxdsp >/dev/null 2>&1 || { echo "install-confined: PREFIX=$P: no headers under the prefix"; fail=1; }
+confined "DESTDIR=$D PREFIX=/usr" install DESTDIR=$D PREFIX=/usr
+[ -f $D/usr/share/omx-contract/contract.d/3/omx-dsp/MANIFEST.json ] || { echo "install-confined: DESTDIR=$D PREFIX=/usr: the contract directory is not under the destdir"; fail=1; }
 [ "$fail" = 0 ] || { echo "install-confined: FAIL"; exit 1; }
 echo "install-confined: both installs stayed inside DESTDIR+PREFIX and the planted system directory is intact"

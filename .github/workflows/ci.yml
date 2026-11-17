@@ -118,6 +118,9 @@ jobs:
       - name: make test
         id: handback-test
         if: startsWith(matrix.image, 'fedora')
+        # this job's container is thrown away after the job: the one place install-confined runs its check in place (#75)
+        env:
+          OMX_INSTALL_CONFINED_INNER: '1'
         run: make -j"$OMX_JOBS" test
 
       - name: make check-package
