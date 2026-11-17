@@ -5,6 +5,11 @@ omx-dsp (0.32.4) unstable; urgency=medium
     roles drive, tone, model, mix and output, the unit pc, the sample
     extents. The TypeScript twin draws it too. Added names only; the three
     moved curve counts are proven in tools/patch-count-proofs.txt.
+  * curve: omx_curve_points_json (omx_curve_json.h), the curve function with JSON
+    text on both sides, and curve-io.schema.json (shapes/), the shape of its
+    two documents; vectors/curve-points.json, 22 rows written by
+    tools/curve-vectors-oracle.py from closed forms, never by the library, held
+    through the native door. Added names only. omx_curve_json.h is 461 lines.
   * patch-names-check: a count or size macro whose value moves in a patch
     needs its proof line.
 

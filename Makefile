@@ -41,6 +41,9 @@
 #               sides together and fails when the twin is left at the old literal (omx-dsp#5)
 #   make eq-sabotage  the EQ bank, head filter and curve arms fail against nine sabotages
 #   make curve-sabotage  the one curve function's arm (omx_curve.h) fails against twelve sabotages
+#   make curve-json-sabotage  the curve-json arm (omx_curve_json.h) fails against nine sabotages
+#   make curve-vectors  vectors/curve-points.json through the native door (and WASM=<file>): needs python3 and node;
+#               make curve-vectors-write rewrites it, make curve-vectors-sabotage breaks the library nine ways
 #   make curve-golden  test/kernels/fixtures/curve_golden.h rewritten from omx_curve_points() (tools/curve-golden.c)
 #   make meter-view-sabotage  the meter view arm (mix/omx_meter_view.h) fails against seven sabotages
 #   make meter-view-golden  vectors/meter-view.json rewritten from the meter view law (tools/meter-view-golden.c)
@@ -197,7 +200,7 @@ VERSION    := $(shell sed -n 's/^\#define OMXDSP_VERSION_\(MAJOR\|MINOR\|PATCH\)
 
 
 
-.PHONY: fuzz fuzz-run fuzz-sabotage fuzz-records fuzz-coverage fuzz-corpus all lib test lint docs docs-check docs-baseline docs-sabotage clean contract-dir definitions definitions-check contract-proof contract-tests test-tsan suite negative consumer gen-once perturb fdelay-sabotage doppler-sabotage onepole-sabotage threads threads-sabotage checks cost-prel test-fx test-analysis install version golden-write flavours bench-mixmatrix bench-gate bench-drive bench-flanger check-log10f strip-input-identity analysis-engine-identity test-mix mix-engine-identity test-engine-kernels engine-kernels-identity magnitude-sabotage eq-sabotage curve-golden curve-sabotage meter-view-golden rta-bands-golden meter-view-sabotage rta-bands-sabotage geq-true-sabotage delay-taps-sabotage align-fdelay-sabotage pitch-rates-sabotage instance-rates-sabotage bandwidth-q-table bandwidth-q-sabotage eq-default-bands eq-defaults-table room-ts-golden public-sources private-refs deps deps-check cost-deesser note-map-sabotage exports copy-check eq-q-range-sabotage
+.PHONY: fuzz fuzz-run fuzz-sabotage fuzz-records fuzz-coverage fuzz-corpus all lib test lint docs docs-check docs-baseline docs-sabotage clean contract-dir definitions definitions-check contract-proof contract-tests test-tsan suite negative consumer gen-once perturb fdelay-sabotage doppler-sabotage onepole-sabotage threads threads-sabotage checks cost-prel test-fx test-analysis install version golden-write flavours bench-mixmatrix bench-gate bench-drive bench-flanger check-log10f strip-input-identity analysis-engine-identity test-mix mix-engine-identity test-engine-kernels engine-kernels-identity magnitude-sabotage eq-sabotage curve-golden curve-sabotage curve-json-sabotage curve-vectors curve-vectors-write curve-vectors-sabotage meter-view-golden rta-bands-golden meter-view-sabotage rta-bands-sabotage geq-true-sabotage delay-taps-sabotage align-fdelay-sabotage pitch-rates-sabotage instance-rates-sabotage bandwidth-q-table bandwidth-q-sabotage eq-default-bands eq-defaults-table room-ts-golden public-sources private-refs deps deps-check cost-deesser note-map-sabotage exports copy-check eq-q-range-sabotage
 
 all: lib
 
@@ -382,6 +385,28 @@ meter-view-sabotage: test/omxdsp_suite.c test/meter-view-sabotage.sh $(KERNELS) 
 # The curve arm fails against twelve sabotages of omx_curve.h (test/curve-sabotage.sh); the real suite is the control.
 curve-sabotage: test/omxdsp_suite.c test/curve-sabotage.sh $(KERNELS) $(LIB_CONTRACTS) $(HEADERS) | $(BUILD)
 	CC="$(CC)" CFLAGS="$(CFLAGS)" bash test/curve-sabotage.sh $(BUILD)/curve-sabotage $(LIB_CONTRACTS)
+
+# The curve function with JSON text on both sides (omx_curve_json.h): its arm is in the suite; the sabotages of the
+# header's reader and writer, and the native door of the shared vectors (below), are built here.
+curve-json-sabotage: test/omxdsp_suite.c test/curve-json-sabotage.sh $(KERNELS) $(LIB_CONTRACTS) $(HEADERS) | $(BUILD)
+	CC="$(CC)" CFLAGS="$(CFLAGS)" bash test/curve-json-sabotage.sh $(BUILD)/curve-json-sabotage $(LIB_CONTRACTS)
+
+$(BUILD)/curve_json_cli: tools/curve-json-cli.c $(HEADERS) | $(BUILD)
+	$(CC) $(CFLAGS_PLAIN) $(INC) -o $@ $< -lm
+
+# vectors/curve-points.json is the contract of omx_curve_points_json: tools/curve-vectors-oracle.py writes it from closed
+# forms in decimal arithmetic, never from the library (`make curve-vectors-write` rewrites it); `make curve-vectors` puts
+# every row to the native door (and to the WebAssembly build when WASM=<file> names one) and holds each answer to the row's
+# tolerance; `make curve-vectors-sabotage` breaks the library nine ways and requires the vectors to go red. Python and node.
+curve-vectors-write:
+	python3 -I tools/curve-vectors-oracle.py vectors/curve-points.json
+
+curve-vectors: $(BUILD)/curve_json_cli
+	python3 -I tools/curve-vectors-oracle.py --check vectors/curve-points.json
+	node test/curve-vectors.mjs --native $(BUILD)/curve_json_cli $(if $(WASM),--wasm $(WASM),)
+
+curve-vectors-sabotage: test/curve-vectors-sabotage.sh $(HEADERS) | $(BUILD)
+	CC="$(CC)" CFLAGS="$(CFLAGS)" bash test/curve-vectors-sabotage.sh $(BUILD)/curve-vectors-sabotage
 
 eq-defaults-table:
 	node tools/eq-defaults-golden.mjs --check
@@ -1014,7 +1039,7 @@ rt-gate-sabotage: $(RT_GATE) $(RT_GATE_ARM) $(RT_GATE_FIXTURES)
 # The one list is TEST_TARGETS (make test's); CHECK_PACKAGE is derived from it: everything but PROVE_TESTS, with a
 # target that holds an oracle together with its sabotage (test-fx, test-analysis, ...) replaced by its oracle half.
 # tools/check-package-derived.sh (part of make checks) holds it to this shape.
-TEST_TARGETS = lib checks gen-once suite negative magnitude-sabotage eq-sabotage curve-sabotage meter-view-sabotage rta-bands-sabotage geq-true-sabotage delay-taps-sabotage align-fdelay-sabotage pitch-rates-sabotage instance-rates-sabotage bandwidth-q-table bandwidth-q-sabotage eq-default-bands consumer perturb fdelay-sabotage doppler-sabotage onepole-sabotage note-map-sabotage threads threads-sabotage test-fx test-analysis test-engine-kernels test-mix flavours flavour-probe-sabotage fastmath fastmath-diff fastmath-sabotage fastmath-plain fastmath-partial rt-gate rt-gate-sabotage
+TEST_TARGETS = lib checks gen-once suite negative magnitude-sabotage eq-sabotage curve-sabotage curve-json-sabotage meter-view-sabotage rta-bands-sabotage geq-true-sabotage delay-taps-sabotage align-fdelay-sabotage pitch-rates-sabotage instance-rates-sabotage bandwidth-q-table bandwidth-q-sabotage eq-default-bands consumer perturb fdelay-sabotage doppler-sabotage onepole-sabotage note-map-sabotage threads threads-sabotage test-fx test-analysis test-engine-kernels test-mix flavours flavour-probe-sabotage fastmath fastmath-diff fastmath-sabotage fastmath-plain fastmath-partial rt-gate rt-gate-sabotage
 PROVE_TESTS = checks gen-once fastmath-plain perturb $(filter %-sabotage,$(TEST_TARGETS))
 ORACLE_HALVES = test-fx=fx-oracles test-analysis=analysis-oracles test-engine-kernels=engine-kernels-golden test-mix=mix-golden
 CHECK_PACKAGE = $(foreach t,$(filter-out $(PROVE_TESTS),$(TEST_TARGETS)),$(or $(patsubst $(t)=%,%,$(filter $(t)=%,$(ORACLE_HALVES))),$(t)))

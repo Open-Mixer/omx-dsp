@@ -165,6 +165,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: The shared curve vectors, native
+        run: |
+          apt-get -o Dpkg::Options::=--force-unsafe-io install -y --no-install-recommends python3
+          make -j"$OMX_JOBS" curve-vectors curve-vectors-sabotage
       - name: npm test
         working-directory: ts
         run: |

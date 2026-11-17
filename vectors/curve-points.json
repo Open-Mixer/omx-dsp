@@ -1,0 +1,1052 @@
+{
+ "description": "The contract of omx_curve_points_json (curve-io.schema.json): each row a request, the answer a closed form gives, and the tolerance its arithmetic earns. Written by tools/curve-vectors-oracle.py in 60-digit decimal arithmetic, never by the library. A row of `exact` lists every point or stem in order; any other lists points found by their x. A row with a code is a refusal.",
+ "rows": [
+  {
+   "name": "dynamics hard knee",
+   "request": {
+    "kind": "transfer_curve",
+    "family": "dynamics",
+    "sampleRate": 48000,
+    "points": 13,
+    "extents": {
+     "min": -60,
+     "max": 0
+    },
+    "terms": [
+     {
+      "role": "threshold",
+      "value": -20,
+      "unit": "db"
+     },
+     {
+      "role": "ratio",
+      "value": 4,
+      "unit": "ratio"
+     }
+    ]
+   },
+   "tolerance": {
+    "x": 0,
+    "y": 2e-05
+   },
+   "expect": {
+    "points": [
+     {
+      "x": -60.0,
+      "y": -60.0
+     },
+     {
+      "x": -55.0,
+      "y": -55.0
+     },
+     {
+      "x": -50.0,
+      "y": -50.0
+     },
+     {
+      "x": -45.0,
+      "y": -45.0
+     },
+     {
+      "x": -40.0,
+      "y": -40.0
+     },
+     {
+      "x": -35.0,
+      "y": -35.0
+     },
+     {
+      "x": -30.0,
+      "y": -30.0
+     },
+     {
+      "x": -25.0,
+      "y": -25.0
+     },
+     {
+      "x": -20.0,
+      "y": -20.0
+     },
+     {
+      "x": -15.0,
+      "y": -18.75
+     },
+     {
+      "x": -10.0,
+      "y": -17.5
+     },
+     {
+      "x": -5.0,
+      "y": -16.25
+     },
+     {
+      "x": 0.0,
+      "y": -15.0
+     }
+    ],
+    "exact": true
+   }
+  },
+  {
+   "name": "dynamics soft knee with make-up",
+   "request": {
+    "kind": "transfer_curve",
+    "family": "dynamics",
+    "sampleRate": 48000,
+    "points": 25,
+    "extents": {
+     "min": -60,
+     "max": 0
+    },
+    "terms": [
+     {
+      "role": "threshold",
+      "value": -20,
+      "unit": "db"
+     },
+     {
+      "role": "ratio",
+      "value": 4,
+      "unit": "ratio"
+     },
+     {
+      "role": "knee",
+      "value": 8,
+      "unit": "db"
+     },
+     {
+      "role": "makeup",
+      "value": 3,
+      "unit": "db"
+     }
+    ]
+   },
+   "tolerance": {
+    "x": 0,
+    "y": 2e-05
+   },
+   "expect": {
+    "points": [
+     {
+      "x": -60.0,
+      "y": -57.0
+     },
+     {
+      "x": -57.5,
+      "y": -54.5
+     },
+     {
+      "x": -55.0,
+      "y": -52.0
+     },
+     {
+      "x": -52.5,
+      "y": -49.5
+     },
+     {
+      "x": -50.0,
+      "y": -47.0
+     },
+     {
+      "x": -47.5,
+      "y": -44.5
+     },
+     {
+      "x": -45.0,
+      "y": -42.0
+     },
+     {
+      "x": -42.5,
+      "y": -39.5
+     },
+     {
+      "x": -40.0,
+      "y": -37.0
+     },
+     {
+      "x": -37.5,
+      "y": -34.5
+     },
+     {
+      "x": -35.0,
+      "y": -32.0
+     },
+     {
+      "x": -32.5,
+      "y": -29.5
+     },
+     {
+      "x": -30.0,
+      "y": -27.0
+     },
+     {
+      "x": -27.5,
+      "y": -24.5
+     },
+     {
+      "x": -25.0,
+      "y": -22.0
+     },
+     {
+      "x": -22.5,
+      "y": -19.60546875
+     },
+     {
+      "x": -20.0,
+      "y": -17.75
+     },
+     {
+      "x": -17.5,
+      "y": -16.48046875
+     },
+     {
+      "x": -15.0,
+      "y": -15.75
+     },
+     {
+      "x": -12.5,
+      "y": -15.125
+     },
+     {
+      "x": -10.0,
+      "y": -14.5
+     },
+     {
+      "x": -7.5,
+      "y": -13.875
+     },
+     {
+      "x": -5.0,
+      "y": -13.25
+     },
+     {
+      "x": -2.5,
+      "y": -12.625
+     },
+     {
+      "x": 0.0,
+      "y": -12.0
+     }
+    ],
+    "exact": true
+   }
+  },
+  {
+   "name": "de-esser",
+   "request": {
+    "kind": "transfer_curve",
+    "family": "deesser",
+    "sampleRate": 48000,
+    "points": 7,
+    "extents": {
+     "min": -60,
+     "max": 0
+    },
+    "terms": [
+     {
+      "role": "threshold",
+      "value": -30,
+      "unit": "db"
+     },
+     {
+      "role": "ratio",
+      "value": 2.5,
+      "unit": "ratio"
+     }
+    ]
+   },
+   "tolerance": {
+    "x": 0,
+    "y": 2e-05
+   },
+   "expect": {
+    "points": [
+     {
+      "x": -60.0,
+      "y": -60.0
+     },
+     {
+      "x": -50.0,
+      "y": -50.0
+     },
+     {
+      "x": -40.0,
+      "y": -40.0
+     },
+     {
+      "x": -30.0,
+      "y": -30.0
+     },
+     {
+      "x": -20.0,
+      "y": -26.0
+     },
+     {
+      "x": -10.0,
+      "y": -22.0
+     },
+     {
+      "x": 0.0,
+      "y": -18.0
+     }
+    ],
+    "exact": true
+   }
+  },
+  {
+   "name": "limiter",
+   "request": {
+    "kind": "transfer_curve",
+    "family": "limiter",
+    "sampleRate": 48000,
+    "points": 9,
+    "extents": {
+     "min": -40,
+     "max": 0
+    },
+    "terms": [
+     {
+      "role": "threshold",
+      "value": -6,
+      "unit": "db"
+     }
+    ]
+   },
+   "tolerance": {
+    "x": 0,
+    "y": 2e-05
+   },
+   "expect": {
+    "points": [
+     {
+      "x": -40.0,
+      "y": -40.0
+     },
+     {
+      "x": -35.0,
+      "y": -35.0
+     },
+     {
+      "x": -30.0,
+      "y": -30.0
+     },
+     {
+      "x": -25.0,
+      "y": -25.0
+     },
+     {
+      "x": -20.0,
+      "y": -20.0
+     },
+     {
+      "x": -15.0,
+      "y": -15.0
+     },
+     {
+      "x": -10.0,
+      "y": -10.0
+     },
+     {
+      "x": -5.0,
+      "y": -6.0
+     },
+     {
+      "x": 0.0,
+      "y": -6.0
+     }
+    ],
+    "exact": true
+   }
+  },
+  {
+   "name": "gate hard knee",
+   "request": {
+    "kind": "transfer_curve",
+    "family": "gate",
+    "sampleRate": 48000,
+    "points": 13,
+    "extents": {
+     "min": -80,
+     "max": -20
+    },
+    "terms": [
+     {
+      "role": "threshold",
+      "value": -40,
+      "unit": "db"
+     },
+     {
+      "role": "ratio",
+      "value": 3,
+      "unit": "ratio"
+     },
+     {
+      "role": "range",
+      "value": -30,
+      "unit": "db"
+     }
+    ]
+   },
+   "tolerance": {
+    "x": 0,
+    "y": 2e-05
+   },
+   "expect": {
+    "points": [
+     {
+      "x": -80.0,
+      "y": -110.0
+     },
+     {
+      "x": -75.0,
+      "y": -105.0
+     },
+     {
+      "x": -70.0,
+      "y": -100.0
+     },
+     {
+      "x": -65.0,
+      "y": -95.0
+     },
+     {
+      "x": -60.0,
+      "y": -90.0
+     },
+     {
+      "x": -55.0,
+      "y": -85.0
+     },
+     {
+      "x": -50.0,
+      "y": -70.0
+     },
+     {
+      "x": -45.0,
+      "y": -55.0
+     },
+     {
+      "x": -40.0,
+      "y": -40.0
+     },
+     {
+      "x": -35.0,
+      "y": -35.0
+     },
+     {
+      "x": -30.0,
+      "y": -30.0
+     },
+     {
+      "x": -25.0,
+      "y": -25.0
+     },
+     {
+      "x": -20.0,
+      "y": -20.0
+     }
+    ],
+    "exact": true
+   }
+  },
+  {
+   "name": "high-pass 12 dB/oct at 100 Hz, 48 kHz",
+   "request": {
+    "kind": "eq_response",
+    "family": "eq",
+    "sampleRate": 48000,
+    "points": 24,
+    "terms": [
+     {
+      "role": "hpf_freq",
+      "value": 100,
+      "unit": "hz"
+     },
+     {
+      "role": "hpf_slope",
+      "value": 12,
+      "unit": "db"
+     }
+    ]
+   },
+   "tolerance": {
+    "x": 1e-12,
+    "y": 1e-05
+   },
+   "expect": {
+    "points": [
+     {
+      "x": 20.0,
+      "y": -27.965981082785138
+     },
+     {
+      "x": 121.23797986995146,
+      "y": -1.6519767974699373
+     },
+     {
+      "x": 734.9323881473379,
+      "y": -0.0014839007791458403
+     },
+     {
+      "x": 4455.0859039991155,
+      "y": -9.8209047452812e-07
+     },
+     {
+      "x": 20000.0,
+      "y": -4.1082178737104094e-11
+     }
+    ]
+   }
+  },
+  {
+   "name": "high-pass 24 dB/oct at 250 Hz, 96 kHz",
+   "request": {
+    "kind": "eq_response",
+    "family": "eq",
+    "sampleRate": 96000,
+    "points": 24,
+    "terms": [
+     {
+      "role": "hpf_freq",
+      "value": 250,
+      "unit": "hz"
+     },
+     {
+      "role": "hpf_slope",
+      "value": 24,
+      "unit": "db"
+     }
+    ]
+   },
+   "tolerance": {
+    "x": 1e-12,
+    "y": 1e-05
+   },
+   "expect": {
+    "points": [
+     {
+      "x": 20.0,
+      "y": -87.75357125721335
+     },
+     {
+      "x": 121.23797986995146,
+      "y": -25.157961544208963
+     },
+     {
+      "x": 734.9323881473379,
+      "y": -0.0007774884463915548
+     },
+     {
+      "x": 4455.0859039991155,
+      "y": -4.034540986505359e-10
+     },
+     {
+      "x": 20000.0,
+      "y": -7.253827592813168e-16
+     }
+    ]
+   }
+  },
+  {
+   "name": "bell +6 dB at its centre",
+   "request": {
+    "kind": "eq_response",
+    "family": "eq",
+    "sampleRate": 48000,
+    "points": 32,
+    "terms": [
+     {
+      "role": "band_freq",
+      "value": 1000,
+      "unit": "hz",
+      "shape": "bell"
+     },
+     {
+      "role": "band_gain",
+      "value": 6,
+      "unit": "db"
+     },
+     {
+      "role": "band_q",
+      "value": 1,
+      "unit": "none"
+     },
+     {
+      "role": "band_on",
+      "value": 1,
+      "unit": "none"
+     }
+    ]
+   },
+   "tolerance": {
+    "x": 1e-12,
+    "y": 5e-05
+   },
+   "expect": {
+    "points": [
+     {
+      "x": 1000.0,
+      "y": 6.0
+     }
+    ]
+   }
+  },
+  {
+   "name": "bell -9 dB at its centre, 192 kHz",
+   "request": {
+    "kind": "eq_response",
+    "family": "eq",
+    "sampleRate": 192000,
+    "points": 32,
+    "terms": [
+     {
+      "role": "band_freq",
+      "value": 4000,
+      "unit": "hz",
+      "shape": "bell"
+     },
+     {
+      "role": "band_gain",
+      "value": -9,
+      "unit": "db"
+     },
+     {
+      "role": "band_q",
+      "value": 2,
+      "unit": "none"
+     },
+     {
+      "role": "band_on",
+      "value": 1,
+      "unit": "none"
+     }
+    ]
+   },
+   "tolerance": {
+    "x": 1e-12,
+    "y": 5e-05
+   },
+   "expect": {
+    "points": [
+     {
+      "x": 4000.0,
+      "y": -9.0
+     }
+    ]
+   }
+  },
+  {
+   "name": "notch at its centre is the drawing's floor",
+   "request": {
+    "kind": "eq_response",
+    "family": "eq",
+    "sampleRate": 48000,
+    "points": 32,
+    "terms": [
+     {
+      "role": "band_freq",
+      "value": 3000,
+      "unit": "hz",
+      "shape": "notch"
+     },
+     {
+      "role": "band_q",
+      "value": 8,
+      "unit": "none"
+     },
+     {
+      "role": "band_on",
+      "value": 1,
+      "unit": "none"
+     }
+    ]
+   },
+   "tolerance": {
+    "x": 1e-12,
+    "y": 1e-09
+   },
+   "expect": {
+    "points": [
+     {
+      "x": 3000.0,
+      "y": -120.0
+     }
+    ]
+   }
+  },
+  {
+   "name": "delay, half mix, half feedback",
+   "request": {
+    "kind": "time_response",
+    "family": "delay",
+    "sampleRate": 48000,
+    "points": 8,
+    "terms": [
+     {
+      "role": "time",
+      "value": 250,
+      "unit": "ms"
+     },
+     {
+      "role": "feedback",
+      "value": 0.5,
+      "unit": "none"
+     },
+     {
+      "role": "mix",
+      "value": 0.5,
+      "unit": "none"
+     },
+     {
+      "role": "pingpong",
+      "value": 0,
+      "unit": "none"
+     }
+    ]
+   },
+   "tolerance": {
+    "x": 1e-09,
+    "y": 1e-09
+   },
+   "expect": {
+    "stems": [
+     {
+      "x": 0.0,
+      "y": -6.020599913279624,
+      "leg": "both"
+     },
+     {
+      "x": 250.0,
+      "y": -6.020599913279624,
+      "leg": "both"
+     },
+     {
+      "x": 500.0,
+      "y": -12.041199826559248,
+      "leg": "both"
+     },
+     {
+      "x": 750.0,
+      "y": -18.06179973983887,
+      "leg": "both"
+     },
+     {
+      "x": 1000.0,
+      "y": -24.082399653118497,
+      "leg": "both"
+     },
+     {
+      "x": 1250.0,
+      "y": -30.10299956639812,
+      "leg": "both"
+     },
+     {
+      "x": 1500.0,
+      "y": -36.12359947967774,
+      "leg": "both"
+     },
+     {
+      "x": 1750.0,
+      "y": -42.14419939295737,
+      "leg": "both"
+     },
+     {
+      "x": 2000.0,
+      "y": -48.16479930623699,
+      "leg": "both"
+     },
+     {
+      "x": 2250.0,
+      "y": -54.18539921951662,
+      "leg": "both"
+     }
+    ],
+    "exact": true
+   }
+  },
+  {
+   "name": "delay, ping-pong, light feedback",
+   "request": {
+    "kind": "time_response",
+    "family": "delay",
+    "sampleRate": 48000,
+    "points": 8,
+    "terms": [
+     {
+      "role": "time",
+      "value": 120,
+      "unit": "ms"
+     },
+     {
+      "role": "feedback",
+      "value": 0.3,
+      "unit": "none"
+     },
+     {
+      "role": "mix",
+      "value": 0.4,
+      "unit": "none"
+     },
+     {
+      "role": "pingpong",
+      "value": 1,
+      "unit": "none"
+     }
+    ]
+   },
+   "tolerance": {
+    "x": 1e-09,
+    "y": 1e-09
+   },
+   "expect": {
+    "stems": [
+     {
+      "x": 0.0,
+      "y": -4.436974992327127,
+      "leg": "both"
+     },
+     {
+      "x": 120.0,
+      "y": -7.958800173440752,
+      "leg": "left"
+     },
+     {
+      "x": 240.0,
+      "y": -18.416375079047505,
+      "leg": "right"
+     },
+     {
+      "x": 360.0,
+      "y": -28.873949984654256,
+      "leg": "left"
+     },
+     {
+      "x": 480.0,
+      "y": -39.33152489026101,
+      "leg": "right"
+     },
+     {
+      "x": 600.0,
+      "y": -49.789099795867756,
+      "leg": "left"
+     }
+    ],
+    "exact": true
+   }
+  },
+  {
+   "name": "a transfer curve with no threshold",
+   "request": {
+    "kind": "transfer_curve",
+    "family": "dynamics",
+    "sampleRate": 48000,
+    "points": 8,
+    "terms": [
+     {
+      "role": "ratio",
+      "value": 4,
+      "unit": "ratio"
+     }
+    ]
+   },
+   "expect": {
+    "code": "termMissing"
+   }
+  },
+  {
+   "name": "a transfer curve with no ratio",
+   "request": {
+    "kind": "transfer_curve",
+    "family": "dynamics",
+    "sampleRate": 48000,
+    "points": 8,
+    "terms": [
+     {
+      "role": "threshold",
+      "value": -20,
+      "unit": "db"
+     }
+    ]
+   },
+   "expect": {
+    "code": "termMissing"
+   }
+  },
+  {
+   "name": "a threshold in kHz",
+   "request": {
+    "kind": "transfer_curve",
+    "family": "dynamics",
+    "sampleRate": 48000,
+    "points": 8,
+    "terms": [
+     {
+      "role": "threshold",
+      "value": -20,
+      "unit": "khz"
+     },
+     {
+      "role": "ratio",
+      "value": 4,
+      "unit": "ratio"
+     }
+    ]
+   },
+   "expect": {
+    "code": "unitRefused"
+   }
+  },
+  {
+   "name": "a sample rate of zero",
+   "request": {
+    "kind": "transfer_curve",
+    "family": "dynamics",
+    "sampleRate": 0,
+    "points": 8,
+    "terms": [
+     {
+      "role": "threshold",
+      "value": -20,
+      "unit": "db"
+     },
+     {
+      "role": "ratio",
+      "value": 4,
+      "unit": "ratio"
+     }
+    ]
+   },
+   "expect": {
+    "code": "valueNotFinite"
+   }
+  },
+  {
+   "name": "one grid point",
+   "request": {
+    "kind": "transfer_curve",
+    "family": "dynamics",
+    "sampleRate": 48000,
+    "points": 1,
+    "terms": [
+     {
+      "role": "threshold",
+      "value": -20,
+      "unit": "db"
+     },
+     {
+      "role": "ratio",
+      "value": 4,
+      "unit": "ratio"
+     }
+    ]
+   },
+   "expect": {
+    "code": "pointsRange"
+   }
+  },
+  {
+   "name": "an eq display on the dynamics family",
+   "request": {
+    "kind": "eq_response",
+    "family": "dynamics",
+    "sampleRate": 48000,
+    "points": 8,
+    "terms": [
+     {
+      "role": "threshold",
+      "value": -20,
+      "unit": "db"
+     },
+     {
+      "role": "ratio",
+      "value": 4,
+      "unit": "ratio"
+     }
+    ]
+   },
+   "expect": {
+    "code": "kindUnknown"
+   }
+  },
+  {
+   "name": "an eq with no band and no head filter",
+   "request": {
+    "kind": "eq_response",
+    "family": "eq",
+    "sampleRate": 48000,
+    "points": 8,
+    "terms": []
+   },
+   "expect": {
+    "code": "termMissing"
+   }
+  },
+  {
+   "name": "a band with no shape",
+   "request": {
+    "kind": "eq_response",
+    "family": "eq",
+    "sampleRate": 48000,
+    "points": 8,
+    "terms": [
+     {
+      "role": "band_freq",
+      "value": 1000,
+      "unit": "hz"
+     },
+     {
+      "role": "band_gain",
+      "value": 3,
+      "unit": "db"
+     }
+    ]
+   },
+   "expect": {
+    "code": "termMissing"
+   }
+  },
+  {
+   "name": "a 18 dB/oct head filter",
+   "request": {
+    "kind": "eq_response",
+    "family": "eq",
+    "sampleRate": 48000,
+    "points": 8,
+    "terms": [
+     {
+      "role": "hpf_freq",
+      "value": 100,
+      "unit": "hz"
+     },
+     {
+      "role": "hpf_slope",
+      "value": 18,
+      "unit": "db"
+     }
+    ]
+   },
+   "expect": {
+    "code": "kindUnknown"
+   }
+  },
+  {
+   "name": "a delay with no feedback",
+   "request": {
+    "kind": "time_response",
+    "family": "delay",
+    "sampleRate": 48000,
+    "points": 8,
+    "terms": [
+     {
+      "role": "time",
+      "value": 100,
+      "unit": "ms"
+     }
+    ]
+   },
+   "expect": {
+    "code": "termMissing"
+   }
+  }
+ ]
+}
