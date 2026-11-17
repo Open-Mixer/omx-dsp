@@ -98,17 +98,19 @@
 
 /** @brief One instance: the rate, the resolved atom, the slot's state and the key path. */
 typedef struct {
-  float sr;
-  struct omx_dyn atom;
-  struct omx_dyn_state st;
-  int ready;
+  float sr;                /**< The sample rate the instance is bound to, Hz. */
+  struct omx_dyn atom;     /**< The slot's atom as last resolved: what the kernel runs. */
+  struct omx_dyn_state st; /**< The slot's state: detector, envelope and oversampler history. */
+  int ready;               /**< 1 after a successful omx_comp_instance_init(); 0 makes run() the identity. */
   int src;    /**< keySource: 1 the sidechain, 0 the strip's own legs */
   int listen; /**< keyListen: 1 puts what the detector hears on the output */
   int fold;   /**< detectLink, an OMX_COMP_DETECT_LINKS_* member */
   struct omx_gate_key filt[2]; /**< the key filter, per key leg */
   struct omx_tilt tilt;        /**< the key's tilt */
   double tilt_s[2][4];         /**< the tilt's history, per key leg */
-  float ka[OMX_COMP_INSTANCE_CHUNK], kb[OMX_COMP_INSTANCE_CHUNK], kd[OMX_COMP_INSTANCE_CHUNK];
+  float ka[OMX_COMP_INSTANCE_CHUNK]; /**< The key path's scratch: the left key leg, filtered and tilted. */
+  float kb[OMX_COMP_INSTANCE_CHUNK]; /**< The key path's scratch: the right key leg, filtered and tilted. */
+  float kd[OMX_COMP_INSTANCE_CHUNK]; /**< The key path's scratch: the detector's input, the two legs folded. */
 } OmxCompInstance;
 
 /* CONTRACT (omx_contract.h). The atom this leaves behind satisfies every PRE the kernel's gain

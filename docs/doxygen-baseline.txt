@@ -423,13 +423,6 @@ include/omxdsp/fx/omx_clipper_instance.h: warning: parameters of member omx_clip
 include/omxdsp/fx/omx_clipper_instance.h: warning: return type of member omx_clipper_instance_gain_reduction_db is not documented
 include/omxdsp/fx/omx_clipper_instance.h: warning: return type of member omx_clipper_instance_init is not documented
 include/omxdsp/fx/omx_clipper_instance.h: warning: return type of member omx_clipper_instance_latency is not documented
-include/omxdsp/fx/omx_comp_instance.h: warning: Member atom (variable) of struct OmxCompInstance is not documented.
-include/omxdsp/fx/omx_comp_instance.h: warning: Member ka[OMX_COMP_INSTANCE_CHUNK] (variable) of struct OmxCompInstance is not documented.
-include/omxdsp/fx/omx_comp_instance.h: warning: Member kb[OMX_COMP_INSTANCE_CHUNK] (variable) of struct OmxCompInstance is not documented.
-include/omxdsp/fx/omx_comp_instance.h: warning: Member kd[OMX_COMP_INSTANCE_CHUNK] (variable) of struct OmxCompInstance is not documented.
-include/omxdsp/fx/omx_comp_instance.h: warning: Member ready (variable) of struct OmxCompInstance is not documented.
-include/omxdsp/fx/omx_comp_instance.h: warning: Member sr (variable) of struct OmxCompInstance is not documented.
-include/omxdsp/fx/omx_comp_instance.h: warning: Member st (variable) of struct OmxCompInstance is not documented.
 include/omxdsp/fx/omx_deesser.h: warning: Compound omx_deess is not documented.
 include/omxdsp/fx/omx_deesser.h: warning: Member bp_c[5] (variable) of struct omx_deess is not documented.
 include/omxdsp/fx/omx_deesser.h: warning: Member dyn (variable) of struct omx_deess is not documented.
@@ -693,89 +686,6 @@ include/omxdsp/fx/omx_dyneq_instance.h: warning: return type of member omx_dyneq
 include/omxdsp/fx/omx_dyneq_instance.h: warning: return type of member omx_dyneq_instance_init is not documented
 include/omxdsp/fx/omx_dyneq_instance.h: warning: return type of member omx_dyneq_instance_kind is not documented
 include/omxdsp/fx/omx_dyneq_instance.h: warning: return type of member omx_dyneq_instance_latency is not documented
-include/omxdsp/fx/omx_eq_instance.h: warning: Compound omx_eq_lv2 is not documented.
-include/omxdsp/fx/omx_eq_instance.h: warning: Compound omx_eq_lv2_pass is not documented.
-include/omxdsp/fx/omx_eq_instance.h: warning: Member OMX_EQ_INSTANCE_BANDS (macro definition) of file omx_eq_instance.h is not documented.
-include/omxdsp/fx/omx_eq_instance.h: warning: Member OMX_EQ_INSTANCE_CHANNELS (macro definition) of file omx_eq_instance.h is not documented.
-include/omxdsp/fx/omx_eq_instance.h: warning: Member OMX_EQ_INSTANCE_LATENCY_FRAMES (macro definition) of file omx_eq_instance.h is not documented.
-include/omxdsp/fx/omx_eq_instance.h: warning: Member OMX_EQ_LV2_BANDS (macro definition) of file omx_eq_instance.h is not documented.
-include/omxdsp/fx/omx_eq_instance.h: warning: Member OMX_EQ_LV2_BAND_GAIN_DEFAULT (macro definition) of file omx_eq_instance.h is not documented.
-include/omxdsp/fx/omx_eq_instance.h: warning: Member OMX_EQ_LV2_BAND_Q_DEFAULT (macro definition) of file omx_eq_instance.h is not documented.
-include/omxdsp/fx/omx_eq_instance.h: warning: Member OMX_EQ_LV2_LPF_FREQ_DEFAULT (macro definition) of file omx_eq_instance.h is not documented.
-include/omxdsp/fx/omx_eq_instance.h: warning: Member OMX_EQ_LV2_SECTIONS (macro definition) of file omx_eq_instance.h is not documented.
-include/omxdsp/fx/omx_eq_instance.h: warning: Member OMX_EQ_LV2_TYPE_COUNT (macro definition) of file omx_eq_instance.h is not documented.
-include/omxdsp/fx/omx_eq_instance.h: warning: Member band[OMX_EQ_LV2_BANDS] (variable) of struct omx_eq_lv2 is not documented.
-include/omxdsp/fx/omx_eq_instance.h: warning: Member band[OMX_EQ_LV2_BANDS][5] (variable) of struct omx_eq_lv2_controls is not documented.
-include/omxdsp/fx/omx_eq_instance.h: warning: Member coeffs[2][5] (variable) of struct omx_eq_lv2_pass is not documented.
-include/omxdsp/fx/omx_eq_instance.h: warning: Member coeffs[5] (variable) of struct omx_eq_lv2_band is not documented.
-include/omxdsp/fx/omx_eq_instance.h: warning: Member coeffs[OMX_EQ_LV2_SECTIONS][5] (variable) of struct omx_eq_lv2 is not documented.
-include/omxdsp/fx/omx_eq_instance.h: warning: Member count (variable) of struct omx_eq_lv2 is not documented.
-include/omxdsp/fx/omx_eq_instance.h: warning: Member designed (variable) of struct omx_eq_lv2_band is not documented.
-include/omxdsp/fx/omx_eq_instance.h: warning: Member designed (variable) of struct omx_eq_lv2_pass is not documented.
-include/omxdsp/fx/omx_eq_instance.h: warning: Member dirty (variable) of struct omx_eq_lv2 is not documented.
-include/omxdsp/fx/omx_eq_instance.h: warning: Member enabled[OMX_EQ_LV2_SECTIONS] (variable) of struct omx_eq_lv2 is not documented.
-include/omxdsp/fx/omx_eq_instance.h: warning: Member freq_hz (variable) of struct omx_eq_lv2_band is not documented.
-include/omxdsp/fx/omx_eq_instance.h: warning: Member freq_hz (variable) of struct omx_eq_lv2_pass is not documented.
-include/omxdsp/fx/omx_eq_instance.h: warning: Member gain_db (variable) of struct omx_eq_lv2_band is not documented.
-include/omxdsp/fx/omx_eq_instance.h: warning: Member hpf_freq (variable) of struct omx_eq_lv2_controls is not documented.
-include/omxdsp/fx/omx_eq_instance.h: warning: Member hpf_on (variable) of struct omx_eq_lv2_controls is not documented.
-include/omxdsp/fx/omx_eq_instance.h: warning: Member hpf_slope (variable) of struct omx_eq_lv2_controls is not documented.
-include/omxdsp/fx/omx_eq_instance.h: warning: Member leg[2] (variable) of struct OmxEqInstance is not documented.
-include/omxdsp/fx/omx_eq_instance.h: warning: Member lpf (variable) of struct omx_eq_lv2 is not documented.
-include/omxdsp/fx/omx_eq_instance.h: warning: Member lpf_freq (variable) of struct omx_eq_lv2_controls is not documented.
-include/omxdsp/fx/omx_eq_instance.h: warning: Member lpf_on (variable) of struct omx_eq_lv2_controls is not documented.
-include/omxdsp/fx/omx_eq_instance.h: warning: Member lpf_slope (variable) of struct omx_eq_lv2_controls is not documented.
-include/omxdsp/fx/omx_eq_instance.h: warning: Member omx_eq_instance_resolve(OmxEqInstance *s, int bypass, int hpf_on, float hpf_freq, int hpf_slope, int lpf_on, float lpf_freq, int lpf_slope, const int band_type[OMX_EQ_INSTANCE_BANDS], const float freq[OMX_EQ_INSTANCE_BANDS], const float gain[OMX_EQ_INSTANCE_BANDS], const float q[OMX_EQ_INSTANCE_BANDS], const int band_on[OMX_EQ_INSTANCE_BANDS]) (function) of file omx_eq_instance.h is not documented.
-include/omxdsp/fx/omx_eq_instance.h: warning: Member omx_eq_lv2_process(struct omx_eq_lv2 *e, float *buf, uint32_t n) (function) of file omx_eq_instance.h is not documented.
-include/omxdsp/fx/omx_eq_instance.h: warning: Member omx_eq_lv2_publish(struct omx_eq_lv2 *e) (function) of file omx_eq_instance.h is not documented.
-include/omxdsp/fx/omx_eq_instance.h: warning: Member omx_eq_lv2_run(struct omx_eq_lv2 *e, const float *in, float *out, uint32_t n) (function) of file omx_eq_instance.h is not documented.
-include/omxdsp/fx/omx_eq_instance.h: warning: Member omx_eq_lv2_set_band(struct omx_eq_lv2 *e, uint32_t i, int type, float freq_hz, float gain_db, float q, int on) (function) of file omx_eq_instance.h is not documented.
-include/omxdsp/fx/omx_eq_instance.h: warning: Member on (variable) of struct omx_eq_lv2 is not documented.
-include/omxdsp/fx/omx_eq_instance.h: warning: Member on (variable) of struct omx_eq_lv2_band is not documented.
-include/omxdsp/fx/omx_eq_instance.h: warning: Member on (variable) of struct omx_eq_lv2_controls is not documented.
-include/omxdsp/fx/omx_eq_instance.h: warning: Member on (variable) of struct omx_eq_lv2_pass is not documented.
-include/omxdsp/fx/omx_eq_instance.h: warning: Member q (variable) of struct omx_eq_lv2_band is not documented.
-include/omxdsp/fx/omx_eq_instance.h: warning: Member rate (variable) of struct omx_eq_lv2 is not documented.
-include/omxdsp/fx/omx_eq_instance.h: warning: Member ready (variable) of struct OmxEqInstance is not documented.
-include/omxdsp/fx/omx_eq_instance.h: warning: Member sections (variable) of struct omx_eq_lv2_pass is not documented.
-include/omxdsp/fx/omx_eq_instance.h: warning: Member slope_24 (variable) of struct omx_eq_lv2_pass is not documented.
-include/omxdsp/fx/omx_eq_instance.h: warning: Member sr (variable) of struct OmxEqInstance is not documented.
-include/omxdsp/fx/omx_eq_instance.h: warning: Member state[OMX_EQ_LV2_SECTIONS][4] (variable) of struct omx_eq_lv2 is not documented.
-include/omxdsp/fx/omx_eq_instance.h: warning: Member type (variable) of struct omx_eq_lv2_band is not documented.
-include/omxdsp/fx/omx_eq_instance.h: warning: parameters of member omx_eq_instance_init are not documented
-include/omxdsp/fx/omx_eq_instance.h: warning: parameters of member omx_eq_instance_latency are not documented
-include/omxdsp/fx/omx_eq_instance.h: warning: parameters of member omx_eq_instance_run are not documented
-include/omxdsp/fx/omx_eq_instance.h: warning: parameters of member omx_eq_instance_slope_24 are not documented
-include/omxdsp/fx/omx_eq_instance.h: warning: parameters of member omx_eq_instance_switch are not documented
-include/omxdsp/fx/omx_eq_instance.h: warning: parameters of member omx_eq_lv2_band_freq_default are not documented
-include/omxdsp/fx/omx_eq_instance.h: warning: parameters of member omx_eq_lv2_band_is_identity are not documented
-include/omxdsp/fx/omx_eq_instance.h: warning: parameters of member omx_eq_lv2_clamp_q are not documented
-include/omxdsp/fx/omx_eq_instance.h: warning: parameters of member omx_eq_lv2_init are not documented
-include/omxdsp/fx/omx_eq_instance.h: warning: parameters of member omx_eq_lv2_kind are not documented
-include/omxdsp/fx/omx_eq_instance.h: warning: parameters of member omx_eq_lv2_reset_state are not documented
-include/omxdsp/fx/omx_eq_instance.h: warning: parameters of member omx_eq_lv2_set_controls are not documented
-include/omxdsp/fx/omx_eq_instance.h: warning: parameters of member omx_eq_lv2_set_hpf are not documented
-include/omxdsp/fx/omx_eq_instance.h: warning: parameters of member omx_eq_lv2_set_lpf are not documented
-include/omxdsp/fx/omx_eq_instance.h: warning: parameters of member omx_eq_lv2_set_on are not documented
-include/omxdsp/fx/omx_eq_instance.h: warning: parameters of member omx_eq_lv2_set_pass are not documented
-include/omxdsp/fx/omx_eq_instance.h: warning: parameters of member omx_eq_lv2_word are not documented
-include/omxdsp/fx/omx_eq_instance.h: warning: parameters of member omx_eq_lv2_word_int are not documented
-include/omxdsp/fx/omx_eq_instance.h: warning: parameters of member omx_eq_lv2_word_on are not documented
-include/omxdsp/fx/omx_eq_instance.h: warning: return type of member omx_eq_instance_init is not documented
-include/omxdsp/fx/omx_eq_instance.h: warning: return type of member omx_eq_instance_latency is not documented
-include/omxdsp/fx/omx_eq_instance.h: warning: return type of member omx_eq_instance_slope_24 is not documented
-include/omxdsp/fx/omx_eq_instance.h: warning: return type of member omx_eq_instance_switch is not documented
-include/omxdsp/fx/omx_eq_instance.h: warning: return type of member omx_eq_lv2_band_freq_default is not documented
-include/omxdsp/fx/omx_eq_instance.h: warning: return type of member omx_eq_lv2_band_is_identity is not documented
-include/omxdsp/fx/omx_eq_instance.h: warning: return type of member omx_eq_lv2_clamp_q is not documented
-include/omxdsp/fx/omx_eq_instance.h: warning: return type of member omx_eq_lv2_kind is not documented
-include/omxdsp/fx/omx_eq_instance.h: warning: return type of member omx_eq_lv2_set_hpf is not documented
-include/omxdsp/fx/omx_eq_instance.h: warning: return type of member omx_eq_lv2_set_lpf is not documented
-include/omxdsp/fx/omx_eq_instance.h: warning: return type of member omx_eq_lv2_set_on is not documented
-include/omxdsp/fx/omx_eq_instance.h: warning: return type of member omx_eq_lv2_set_pass is not documented
-include/omxdsp/fx/omx_eq_instance.h: warning: return type of member omx_eq_lv2_word is not documented
-include/omxdsp/fx/omx_eq_instance.h: warning: return type of member omx_eq_lv2_word_int is not documented
-include/omxdsp/fx/omx_eq_instance.h: warning: return type of member omx_eq_lv2_word_on is not documented
 include/omxdsp/fx/omx_flanger.h: warning: Member base_samples (variable) of struct omx_flanger is not documented.
 include/omxdsp/fx/omx_flanger.h: warning: Member depth_samples (variable) of struct omx_flanger is not documented.
 include/omxdsp/fx/omx_flanger.h: warning: Member enabled (variable) of struct omx_flanger is not documented.
@@ -818,15 +728,6 @@ include/omxdsp/fx/omx_flanger_instance.h: warning: parameters of member omx_flan
 include/omxdsp/fx/omx_flanger_instance.h: warning: parameters of member omx_flanger_instance_init are not documented
 include/omxdsp/fx/omx_flanger_instance.h: warning: return type of member omx_flanger_instance_cap_for is not documented
 include/omxdsp/fx/omx_flanger_instance.h: warning: return type of member omx_flanger_instance_init is not documented
-include/omxdsp/fx/omx_gate_instance.h: warning: Member atom (variable) of struct OmxGateInstance is not documented.
-include/omxdsp/fx/omx_gate_instance.h: warning: Member gate (variable) of struct OmxGateInstance is not documented.
-include/omxdsp/fx/omx_gate_instance.h: warning: Member ready (variable) of struct OmxGateInstance is not documented.
-include/omxdsp/fx/omx_gate_instance.h: warning: Member sr (variable) of struct OmxGateInstance is not documented.
-include/omxdsp/fx/omx_gate_instance.h: warning: argument 's' from the argument list of omx_gate_instance_resolve has multiple @param documentation sections
-include/omxdsp/fx/omx_gate_instance.h: warning: argument 'sr' of command @param is not found in the argument list of omx_gate_instance_resolve(OmxGateInstance *s, int bypass, int key_source, float threshold_db, float range_db, float knee_start_db, float knee_end_db, float attack_ms, float hold_ms, float release_ms, float hysteresis_db, float ratio, float hp_hz, float lp_hz, int key_listen, float key_tilt_db)
-include/omxdsp/fx/omx_gate_instance.h: warning: found documented return type for omx_gate_instance_resolve that does not return anything
-include/omxdsp/fx/omx_gate_instance.h: warning: parameters of member omx_gate_instance_init are not documented
-include/omxdsp/fx/omx_gate_instance.h: warning: return type of member omx_gate_instance_init is not documented
 include/omxdsp/fx/omx_geq.h: warning: unable to resolve link to 'OMX_GEQ_BANDS' for \link command
 include/omxdsp/fx/omx_geq_instance.h: warning: Member atom (variable) of struct OmxGeqInstance is not documented.
 include/omxdsp/fx/omx_geq_instance.h: warning: Member coeffs[OMX_GEQ_BANDS][5] (variable) of struct OmxGeqInstance is not documented.

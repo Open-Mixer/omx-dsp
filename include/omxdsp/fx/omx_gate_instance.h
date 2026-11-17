@@ -57,13 +57,19 @@
 
 /** @brief One instance: the rate, the resolved atom, the key-source control and the gate's state. */
 typedef struct {
-  float sr;
-  struct omx_dyn atom;
+  float sr;             /**< The sample rate the instance is bound to, Hz. */
+  struct omx_dyn atom;  /**< The slot's atom as last resolved: what the kernel runs. */
   /** The key-source control as resolved: 1 listens to the key, 0 is SELF. */
   float key_external;
-  struct omx_gate gate;
-  int ready;
+  struct omx_gate gate; /**< The gate kernel's state: detector, key filter and envelope history. */
+  int ready;            /**< 1 after a successful omx_gate_instance_init(); 0 makes run() the identity. */
 } OmxGateInstance;
+
+static inline void omx_gate_instance_resolve(OmxGateInstance *s, int bypass, int key_source,
+                                             float threshold_db, float range_db, float knee_start_db,
+                                             float knee_end_db, float attack_ms, float hold_ms,
+                                             float release_ms, float hysteresis_db, float ratio, float hp_hz,
+                                             float lp_hz, int key_listen, float key_tilt_db);
 
 /**
  * @brief Bind an instance to its rate (instantiate/activate): the slot's state cleared, base path,
@@ -75,14 +81,8 @@ typedef struct {
  * @return 1 when usable, 0 when not (NULL instance, rate not positive or NaN); a refused instance
  *         is the identity.
  * @note No allocation; clears the whole instance. Thread-safe on distinct instances.
+ * @thread control
  */
-static inline void omx_gate_instance_resolve(OmxGateInstance *s, int bypass, int key_source,
-                                             float threshold_db, float range_db, float knee_start_db,
-                                             float knee_end_db, float attack_ms, float hold_ms,
-                                             float release_ms, float hysteresis_db, float ratio, float hp_hz,
-                                             float lp_hz, int key_listen, float key_tilt_db);
-
-/** @thread control */
 static inline int omx_gate_instance_init(OmxGateInstance *s, float sr) {
   if (!omx_instance_bind_positive(s, sizeof(*s), sr)) return 0;
   s->sr = sr;

@@ -78,12 +78,15 @@
  * (`-DOMX_EQ_INSTANCE_BANDS=OMX_EQ_BAND_COUNTS_EQ16_MAX`). OMX_EQ_LV2_BANDS, the mono core's name
  * for the same number, follows it; a build that names only OMX_EQ_LV2_BANDS sets both. */
 #if !defined(OMX_EQ_INSTANCE_BANDS) && !defined(OMX_EQ_LV2_BANDS)
+/** The face's band count: one of the contract's EQ_BAND_COUNTS variants (8, 16 or 32), eq8 unless the build names another. */
 #define OMX_EQ_INSTANCE_BANDS OMX_EQ_BAND_COUNTS_EQ8_MAX
 #endif
 #ifndef OMX_EQ_LV2_BANDS
+/** The mono core's name for the same band count as OMX_EQ_INSTANCE_BANDS. */
 #define OMX_EQ_LV2_BANDS OMX_EQ_INSTANCE_BANDS
 #endif
 #ifndef OMX_EQ_INSTANCE_BANDS
+/** The face's band count, from a build that named only OMX_EQ_LV2_BANDS. */
 #define OMX_EQ_INSTANCE_BANDS OMX_EQ_LV2_BANDS
 #endif
 _Static_assert(OMX_EQ_INSTANCE_BANDS == OMX_EQ_LV2_BANDS, "one band count for the face and its mono core");
@@ -100,6 +103,7 @@ enum omx_eq_lv2_type {
   OMX_EQ_LV2_ALLPASS1 = OMX_EQ_BAND_TYPES_ALLPASS1,
   OMX_EQ_LV2_ALLPASS2 = OMX_EQ_BAND_TYPES_ALLPASS2,
 };
+/** How many band types there are: a type word at or above it reads as the default type. */
 #define OMX_EQ_LV2_TYPE_COUNT ((int)OMX_EQ_BAND_TYPES_COUNT)
 
 /** The pass-filter slopes, dB/oct, in core's `FILTER_SLOPES` order: the two members a slope port
@@ -114,8 +118,9 @@ enum omx_eq_lv2_slope {
  * OMX_<NAME>_MIN/_MAX of omxdsp_definitions.h (dsp-primitives §7's scalar door) — this face types
  * none of them (audit 2026-09-29 C-1). */
 
-/** The bank's capacity: every band plus two Butterworth sections per pass filter. */
+/** The pass filters' share of the bank: two Butterworth sections each for the HPF and the LPF. */
 #define OMX_EQ_LV2_PASS_SECTIONS 4u
+/** The bank's capacity, sections: every band plus OMX_EQ_LV2_PASS_SECTIONS. */
 #define OMX_EQ_LV2_SECTIONS ((uint32_t)OMX_EQ_LV2_BANDS + OMX_EQ_LV2_PASS_SECTIONS)
 
 /** Zero intentional latency: a biquad cascade has group delay and no delay line. */
@@ -123,41 +128,46 @@ enum omx_eq_lv2_slope {
 
 /** One band as the host last set it — the desk's `EqBand`, minus the id and the label. */
 struct omx_eq_lv2_band {
-  int type;
-  float freq_hz;
-  float gain_db;
-  float q;
-  int on;
-  float coeffs[5]; /* designed for the four above, at the core's rate */
-  int designed;    /* 0 until the first design */
+  int type;        /**< The shape, an ::omx_eq_lv2_type value. */
+  float freq_hz;   /**< The centre or corner, Hz, inside EQ_FREQ_RANGE. */
+  float gain_db;   /**< The gain, dB, inside EQ_GAIN_RANGE; meaningless for a notch or an all-pass. */
+  float q;         /**< The Q, inside EQ_Q_RANGE (EQ_NOTCH_Q_RANGE for a notch). */
+  int on;          /**< 1 when the band is in the bank, 0 when dropped from it. */
+  float coeffs[5]; /**< The section designed for the four above at the core's rate: b0 b1 b2 a1 a2. */
+  int designed;    /**< 0 until the first design, 1 once `coeffs` is valid. */
 };
 
+/** One pass filter (the HPF or the LPF) as the host last set it: one or two Butterworth sections. */
 struct omx_eq_lv2_pass {
-  int on;
-  float freq_hz;
-  int slope_24;
-  float coeffs[2][5];
-  uint32_t sections; /* 1 or 2 */
-  int designed;
+  int on;             /**< 1 when the filter is in the bank. */
+  float freq_hz;      /**< The corner, Hz, inside HPF_FREQ_RANGE or LPF_FREQ_RANGE. */
+  int slope_24;       /**< 1 for 24 dB/oct (two sections), 0 for 12 dB/oct (one). */
+  float coeffs[2][5]; /**< The designed sections, `sections` of them valid. */
+  uint32_t sections;  /**< How many sections the slope takes: 1 or 2. */
+  int designed;       /**< 0 until the first design, 1 once `coeffs` is valid. */
 };
 
+/** The mono EQ core: the bands and pass filters as set, the bank assembled from them, and the
+ * cascade's state. One per leg; the caller owns it and nothing in it is shared between threads. */
 struct omx_eq_lv2 {
-  double rate;
-  int on;
-  struct omx_eq_lv2_band band[OMX_EQ_LV2_BANDS];
-  struct omx_eq_lv2_pass hpf, lpf;
+  double rate;                                   /**< The sample rate the sections are designed at, Hz. */
+  int on;                                        /**< The whole-EQ switch: 0 publishes an empty bank. */
+  struct omx_eq_lv2_band band[OMX_EQ_LV2_BANDS]; /**< The parametric bands, in port order. */
+  struct omx_eq_lv2_pass hpf;                    /**< The high-pass filter. */
+  struct omx_eq_lv2_pass lpf;                    /**< The low-pass filter. */
 
-  /* The PUBLISHED bank — what the desk's control thread hands mix_lane.h. */
-  uint32_t count;
-  float coeffs[OMX_EQ_LV2_SECTIONS][5];
-  uint8_t enabled[OMX_EQ_LV2_SECTIONS];
-  int dirty; /* a control moved since the bank was last assembled */
+  uint32_t count;                                /**< The published bank's length, sections, at most OMX_EQ_LV2_SECTIONS. */
+  float coeffs[OMX_EQ_LV2_SECTIONS][5];          /**< The published bank: the bands that are on, then the pass sections. */
+  uint8_t enabled[OMX_EQ_LV2_SECTIONS];          /**< Per bank entry, 0 for a parked identity band the cascade skips. */
+  int dirty;                                     /**< 1 when a control moved since the bank was last assembled. */
 
-  /* The RT state, one 4-word slot per bank entry, aligned with `coeffs` by index. */
-  float state[OMX_EQ_LV2_SECTIONS][4];
+  float state[OMX_EQ_LV2_SECTIONS][4];           /**< The cascade's history, one 4-word slot per bank entry, aligned with `coeffs`. */
 };
 
-/** `clampEqQFor`: a notch may go ultra-narrow; every other shape keeps `EQ_Q_RANGE`.
+/** @brief `clampEqQFor`: a notch may go ultra-narrow; every other shape keeps `EQ_Q_RANGE`.
+ * @param type The band's shape, an ::omx_eq_lv2_type value.
+ * @param q The Q asked for; a NaN reads as the floor.
+ * @return The Q inside EQ_NOTCH_Q_RANGE for a notch, inside EQ_Q_RANGE for every other shape.
  * @twin clampEqQFor
  * @thread audio
  */
@@ -166,14 +176,19 @@ static inline float omx_eq_lv2_clamp_q(int type, float q) {
                                   : omx_clampf(q, OMX_EQ_Q_RANGE_MIN, OMX_EQ_Q_RANGE_MAX);
 }
 
-/** `bandHasGain` ∧ gain == 0 → `eqBandIsIdentity`: present in the bank, parked.
+/** @brief `bandHasGain` ∧ gain == 0 → `eqBandIsIdentity`: present in the bank, parked.
+ * @param b The band.
+ * @return 1 when the band is a gain-carrying shape at exactly 0 dB, else 0.
  * @thread audio */
 static inline int omx_eq_lv2_band_is_identity(const struct omx_eq_lv2_band *b) {
   return b->type != OMX_EQ_LV2_NOTCH && b->type != OMX_EQ_LV2_ALLPASS1 && b->type != OMX_EQ_LV2_ALLPASS2 &&
          b->gain_db == 0.0f;
 }
 
-/** @thread audio */
+/** @brief The design kind of a band type.
+ * @param type An ::omx_eq_lv2_type value; anything else designs as a bell.
+ * @return The omx_eq_design.h kind the type is designed with.
+ * @thread audio */
 static inline enum omx_eq_kind omx_eq_lv2_kind(int type) {
   switch (type) {
     case OMX_EQ_LV2_LOWSHELF: return OMX_EQ_LOWSHELF;
@@ -186,9 +201,11 @@ static inline enum omx_eq_kind omx_eq_lv2_kind(int type) {
   }
 }
 
-/** A fresh core at `rate`: the desk's flat default is not assumed — every band is OFF until the
+/** @brief A fresh core at `rate`: the desk's flat default is not assumed — every band is OFF until the
  * host sets it (the TTL's defaults are what a host racks it with), the pass filters are off,
  * and the whole EQ is on. A freshly racked instance is therefore a wire.
+ * @param e The core; every word of it is written.
+ * @param rate The sample rate, Hz, above 0.
  * @thread audio */
 static inline void omx_eq_lv2_init(struct omx_eq_lv2 *e, double rate) {
   memset(e, 0, sizeof *e);
@@ -197,20 +214,31 @@ static inline void omx_eq_lv2_init(struct omx_eq_lv2 *e, double rate) {
   e->dirty = 1;
 }
 
-/** `activate`: the history is cleared, the design is kept.
+/** @brief `activate`: the history is cleared, the design is kept.
+ * @param e The core.
  * @thread audio */
 static inline void omx_eq_lv2_reset_state(struct omx_eq_lv2 *e) {
   memset(e->state, 0, sizeof e->state);
 }
 
-/** Set band `i` from the host's four words plus its switch. Clamps to the declared ranges
- * (`clampEqFreq`/`clampEqGain`/`clampEqQFor`) and redesigns the section only if something
- * moved. Returns 1 when the bank must be rebuilt. A foreign host may write NaN or ±Inf: freq
- * and Q read a NaN as the floor (omx_clampf), the gain reads any non-finite word as 0 dB
- * (omx_clamp_or) — primitives row 23.
- * @thread audio */
 #undef OMX_CONTRACT_STAGE
 #define OMX_CONTRACT_STAGE "eq-lv2/set-band"
+/** @brief Set band `i` from the host's four words plus its switch. Clamps to the declared ranges
+ * (`clampEqFreq`/`clampEqGain`/`clampEqQFor`) and redesigns the section only if something
+ * moved. A foreign host may write NaN or ±Inf: freq
+ * and Q read a NaN as the floor (omx_clampf), the gain reads any non-finite word as 0 dB
+ * (omx_clamp_or) — primitives row 23.
+ * @param e The core.
+ * @param i The band, 0 to OMX_EQ_LV2_BANDS - 1; a band beyond is refused and nothing changes.
+ * @param type The shape, an ::omx_eq_lv2_type value; outside them, a bell.
+ * @param freq_hz The centre, Hz, clamped into EQ_FREQ_RANGE.
+ * @param gain_db The gain, dB, clamped into EQ_GAIN_RANGE.
+ * @param q The Q, clamped by omx_eq_lv2_clamp_q().
+ * @param on Non-zero puts the band in the bank.
+ * @return 1 when a word moved and the bank must be rebuilt, 0 when nothing changed or `i` is out of range.
+ * @pre `e->rate` is above 0.
+ * @post The band's centre, gain and Q are inside their declared ranges and its coefficients are finite.
+ * @thread audio */
 static inline int omx_eq_lv2_set_band(struct omx_eq_lv2 *e, uint32_t i, int type, float freq_hz,
                                       float gain_db, float q, int on) {
   OMX_PRE(e->rate > 0.0, "rate-positive");
@@ -246,7 +274,19 @@ static inline int omx_eq_lv2_set_band(struct omx_eq_lv2 *e, uint32_t i, int type
 #undef OMX_CONTRACT_STAGE
 
 #define OMX_CONTRACT_STAGE "eq-lv2/set-pass"
-/** @thread audio */
+/** @brief Set one pass filter from the host's words, redesigning its sections only when a word moved.
+ * @param e The core.
+ * @param pf The filter, `e->hpf` or `e->lpf`.
+ * @param kind OMX_EQ_HIGHPASS or OMX_EQ_LOWPASS.
+ * @param lo The corner's floor, Hz.
+ * @param hi The corner's ceiling, Hz, above `lo`.
+ * @param on Non-zero puts the filter in the bank.
+ * @param freq_hz The corner, Hz, clamped into [`lo`, `hi`].
+ * @param slope_24 Non-zero for 24 dB/oct (two sections), 0 for 12 dB/oct (one).
+ * @return 1 when a word moved and the bank must be rebuilt, else 0.
+ * @pre `e->rate` is above 0 and `lo` is below `hi`.
+ * @post The corner is inside [`lo`, `hi`], the filter has one or two sections, and their coefficients are finite.
+ * @thread audio */
 static inline int omx_eq_lv2_set_pass(struct omx_eq_lv2 *e, struct omx_eq_lv2_pass *pf,
                                       enum omx_eq_kind kind, float lo, float hi, int on,
                                       float freq_hz, int slope_24) {
@@ -275,21 +315,34 @@ static inline int omx_eq_lv2_set_pass(struct omx_eq_lv2 *e, struct omx_eq_lv2_pa
 }
 #undef OMX_CONTRACT_STAGE
 
-/** The HPF: `clampFilterFreq('hpf')`, `HPF_FREQ_RANGE`.
+/** @brief The HPF: `clampFilterFreq('hpf')`, `HPF_FREQ_RANGE`.
+ * @param e The core.
+ * @param on Non-zero puts the filter in the bank.
+ * @param freq_hz The corner, Hz, clamped into HPF_FREQ_RANGE.
+ * @param slope_24 Non-zero for 24 dB/oct, 0 for 12 dB/oct.
+ * @return 1 when a word moved and the bank must be rebuilt, else 0.
  * @thread audio */
 static inline int omx_eq_lv2_set_hpf(struct omx_eq_lv2 *e, int on, float freq_hz, int slope_24) {
   return omx_eq_lv2_set_pass(e, &e->hpf, OMX_EQ_HIGHPASS, OMX_HPF_FREQ_RANGE_MIN, OMX_HPF_FREQ_RANGE_MAX,
                              on, freq_hz, slope_24);
 }
 
-/** The LPF: `clampFilterFreq('lpf')`, `LPF_FREQ_RANGE`.
+/** @brief The LPF: `clampFilterFreq('lpf')`, `LPF_FREQ_RANGE`.
+ * @param e The core.
+ * @param on Non-zero puts the filter in the bank.
+ * @param freq_hz The corner, Hz, clamped into LPF_FREQ_RANGE.
+ * @param slope_24 Non-zero for 24 dB/oct, 0 for 12 dB/oct.
+ * @return 1 when a word moved and the bank must be rebuilt, else 0.
  * @thread audio */
 static inline int omx_eq_lv2_set_lpf(struct omx_eq_lv2 *e, int on, float freq_hz, int slope_24) {
   return omx_eq_lv2_set_pass(e, &e->lpf, OMX_EQ_LOWPASS, OMX_LPF_FREQ_RANGE_MIN, OMX_LPF_FREQ_RANGE_MAX,
                              on, freq_hz, slope_24);
 }
 
-/** The whole-EQ switch (`EqState.on`).
+/** @brief The whole-EQ switch (`EqState.on`).
+ * @param e The core.
+ * @param on Non-zero engages the EQ; 0 makes it a wire.
+ * @return 1 when the switch moved and the bank must be rebuilt, else 0.
  * @thread audio */
 static inline int omx_eq_lv2_set_on(struct omx_eq_lv2 *e, int on) {
   on = on ? 1 : 0;
@@ -299,10 +352,12 @@ static inline int omx_eq_lv2_set_on(struct omx_eq_lv2 *e, int on) {
   return 1;
 }
 
-/** `eqCoeffs`: assemble the bank from the bands and the pass filters, in that order, dropping
- * `on: false` bands and parking identity ones. Idempotent; a no-op unless a control moved.
- * @thread audio */
 #define OMX_CONTRACT_STAGE "eq-lv2/publish"
+/** @brief `eqCoeffs`: assemble the bank from the bands and the pass filters, in that order, dropping
+ * `on: false` bands and parking identity ones. Idempotent; a no-op unless a control moved.
+ * @param e The core.
+ * @post The bank is within OMX_EQ_LV2_SECTIONS and finite; an EQ that is off has an empty bank.
+ * @thread audio */
 static inline void omx_eq_lv2_publish(struct omx_eq_lv2 *e) {
   if (!e->dirty) return;
   e->dirty = 0;
@@ -334,13 +389,18 @@ static inline void omx_eq_lv2_publish(struct omx_eq_lv2 *e) {
 }
 #undef OMX_CONTRACT_STAGE
 
+#define OMX_CONTRACT_STAGE "eq-lv2/process"
 /**
- * ONE block, in place over `buf`: the published bank through `omx_biquad_cascade`, the desk's
+ * @brief ONE block, in place over `buf`: the published bank through `omx_biquad_cascade`, the desk's
  * applier, in chunks of at most `OMX_EQ_MAX_BANDS` sections (see the header note — band-outer,
  * so a chunked walk IS the unchunked walk). An empty bank leaves every sample untouched.
+ * @param e The core; its bank is published first.
+ * @param buf `n` samples, read and written in place.
+ * @param n The block length, samples.
+ * @pre `buf` is finite and the bank is within OMX_EQ_LV2_SECTIONS.
+ * @post `buf` and the cascade's state are finite.
  * @thread audio
  */
-#define OMX_CONTRACT_STAGE "eq-lv2/process"
 static inline void omx_eq_lv2_process(struct omx_eq_lv2 *e, float *buf, uint32_t n) {
   OMX_PRE(omx_block_finite(buf, n), "finite-in");
   omx_eq_lv2_publish(e);
@@ -355,9 +415,15 @@ static inline void omx_eq_lv2_process(struct omx_eq_lv2 *e, float *buf, uint32_t
 }
 #undef OMX_CONTRACT_STAGE
 
-/** The LV2 face: `in` to `out` (they may alias — an in-place host is fine).
- * @thread audio */
 #define OMX_CONTRACT_STAGE "eq-lv2/run"
+/** @brief The LV2 face: `in` to `out` (they may alias — an in-place host is fine).
+ * @param e The core.
+ * @param in `n` input samples.
+ * @param out `n` output samples, may be `in`.
+ * @param n The block length, samples.
+ * @pre Both ports are connected (non-null).
+ * @post `out` is finite.
+ * @thread audio */
 static inline void omx_eq_lv2_run(struct omx_eq_lv2 *e, const float *in, float *out, uint32_t n) {
   OMX_PRE(in != NULL && out != NULL, "ports-connected");
   if (out != in) memmove(out, in, n * sizeof(float));
@@ -368,17 +434,23 @@ static inline void omx_eq_lv2_run(struct omx_eq_lv2 *e, const float *in, float *
 
 /* ---- the control words: eq_lv2.c's run(), without the LV2 face -------------------------------- */
 
-/** The defaults a word reads when its port is not connected (eq_lv2.c's `ctl(…, dflt)` arguments),
+/* The defaults a word reads when its port is not connected (eq_lv2.c's `ctl(…, dflt)` arguments),
  * all declared in omx-contract: the pass filters' corners, a band's gain and Q, all off. A band's
  * type and centre are the one default rule for a bank of OMX_EQ_LV2_BANDS bands (omx_eq_defaults.h:
  * omx_eq_default_type, omx_eq_default_centres). */
+/** The HPF corner an unconnected port reads, Hz: EQ_PASS_FILTER_DEFAULTS. */
 #define OMX_EQ_LV2_HPF_FREQ_DEFAULT ((float)OMX_EQ_PASS_FILTER_DEFAULTS_HPF_FREQ_HZ)
+/** The LPF corner an unconnected port reads, Hz: EQ_PASS_FILTER_DEFAULTS. */
 #define OMX_EQ_LV2_LPF_FREQ_DEFAULT ((float)OMX_EQ_PASS_FILTER_DEFAULTS_LPF_FREQ_HZ)
+/** The band gain an unconnected port reads, dB: EQ_BAND_DEFAULTS. */
 #define OMX_EQ_LV2_BAND_GAIN_DEFAULT ((float)OMX_EQ_BAND_DEFAULTS_GAIN_DB)
+/** The band Q an unconnected port reads: EQ_BAND_DEFAULTS. */
 #define OMX_EQ_LV2_BAND_Q_DEFAULT ((float)OMX_EQ_BAND_DEFAULTS_Q)
 
-/** Band `i`'s default centre in a bank of OMX_EQ_LV2_BANDS bands, Hz: omx_eq_default_centres(). Run only
+/** @brief Band `i`'s default centre in a bank of OMX_EQ_LV2_BANDS bands, Hz: omx_eq_default_centres(). Run only
  * for an unconnected frequency port, so a plugin host (every port connected) never pays for it.
+ * @param i The band, 0 to OMX_EQ_LV2_BANDS - 1.
+ * @return The centre, Hz; EQ_FREQ_RANGE's floor when the default rule has no table for the count.
  * @thread audio */
 static inline float omx_eq_lv2_band_freq_default(uint32_t i) {
   float centres[OMX_EQ_LV2_BANDS];
@@ -390,28 +462,45 @@ static inline float omx_eq_lv2_band_freq_default(uint32_t i) {
  * triple, the LPF triple, then N band quintets in `EqBand` order. A NULL word is an unconnected
  * port and reads its default. */
 struct omx_eq_lv2_controls {
-  const float *on;
-  const float *hpf_on, *hpf_freq, *hpf_slope;
-  const float *lpf_on, *lpf_freq, *lpf_slope;
-  const float *band[OMX_EQ_LV2_BANDS][5]; /* type, freq, gain, Q, on */
+  const float *on;                        /**< The whole-EQ switch. */
+  const float *hpf_on;                    /**< The HPF switch. */
+  const float *hpf_freq;                  /**< The HPF corner, Hz. */
+  const float *hpf_slope;                 /**< The HPF slope, a FILTER_SLOPES id. */
+  const float *lpf_on;                    /**< The LPF switch. */
+  const float *lpf_freq;                  /**< The LPF corner, Hz. */
+  const float *lpf_slope;                 /**< The LPF slope, a FILTER_SLOPES id. */
+  const float *band[OMX_EQ_LV2_BANDS][5]; /**< Per band: type, centre (Hz), gain (dB), Q, switch. */
 };
 
-/** A float word, or its default when unconnected.
+/** @brief A float word, or its default when unconnected.
+ * @param w The port, null when unconnected.
+ * @param dflt The value an unconnected port reads.
+ * @return The word.
  * @thread audio */
 static inline float omx_eq_lv2_word(const float *w, float dflt) { return w ? *w : dflt; }
 
-/** A switch word: on above one half.
+/** @brief A switch word: on above one half.
+ * @param w The port, null when unconnected.
+ * @param dflt The switch an unconnected port reads.
+ * @return 1 or 0.
  * @thread audio */
 static inline int omx_eq_lv2_word_on(const float *w, int dflt) { return w ? (*w > 0.5f) : dflt; }
 
-/** An integer word (a slope, a band type): omx_port_int() of the word, its default when unconnected.
+/** @brief An integer word (a slope, a band type): omx_port_int() of the word, its default when unconnected.
+ * @param w The port, null when unconnected.
+ * @param lo The smallest id the word may read as.
+ * @param hi The largest id the word may read as.
+ * @param dflt The id read when the port is unconnected or the word is outside [`lo`, `hi`].
+ * @return An id inside [`lo`, `hi`].
  * @thread audio */
 static inline int omx_eq_lv2_word_int(const float *w, int lo, int hi, int dflt) {
   return w ? omx_port_int(*w, lo, hi, dflt) : dflt;
 }
 
-/** eq_lv2.c's run() up to the cascade: every control word handed to the setters, which clamp and
+/** @brief eq_lv2.c's run() up to the cascade: every control word handed to the setters, which clamp and
  * redesign only what moved. No allocation, no lock, no I/O.
+ * @param e The core.
+ * @param c The cycle's words; a null word reads its default.
  * @thread audio */
 static inline void omx_eq_lv2_set_controls(struct omx_eq_lv2 *e, const struct omx_eq_lv2_controls *c) {
   omx_eq_lv2_set_on(e, omx_eq_lv2_word_on(c->on, 1));
@@ -452,19 +541,23 @@ static inline void omx_eq_lv2_set_controls(struct omx_eq_lv2 *e, const struct om
  * across it, as the mono core keeps them. LATENCY IS ZERO.
  */
 
+/** The face's channel count: a stereo pair, one mono core per leg. */
 #define OMX_EQ_INSTANCE_CHANNELS 2
+/** The frames of latency the face introduces: none. */
 #define OMX_EQ_INSTANCE_LATENCY_FRAMES 0.0f
 
 /** One instance: a mono core per leg, the same controls on both. */
 typedef struct {
-  float sr;
-  struct omx_eq_lv2 leg[2];
-  int ready;
+  float sr;                 /**< The sample rate the instance is bound to, Hz. */
+  struct omx_eq_lv2 leg[2]; /**< The left and right cores. */
+  int ready;                /**< 1 after a successful omx_eq_instance_init(); 0 makes run() the identity. */
 } OmxEqInstance;
 
-/** Bind an instance to its rate: both legs fresh, every band and filter off, the EQ engaged, a
- * wire. Returns 1 when usable, 0 when not: a rate the console does not declare is refused and run()
- * is the identity. Allocates nothing.
+/** @brief Bind an instance to its rate: both legs fresh, every band and filter off, the EQ engaged, a
+ * wire. Allocates nothing.
+ * @param s The instance; every word of it is written.
+ * @param sr The sample rate, Hz, one the console declares.
+ * @return 1 when usable, 0 when not: a rate the console does not declare is refused and run() is the identity.
  * @thread control */
 static inline int omx_eq_instance_init(OmxEqInstance *s, float sr) {
   if (!omx_instance_bind(s, sizeof(*s), sr)) return 0;
@@ -475,24 +568,43 @@ static inline int omx_eq_instance_init(OmxEqInstance *s, float sr) {
   return 1;
 }
 
-/** A switch: 0 or 1, any other value the declared default.
+/** @brief A switch: 0 or 1, any other value the declared default.
+ * @param v The host's word.
+ * @param dflt The declared default, 0 or 1.
+ * @return 0 or 1.
  * @thread audio */
 static inline int omx_eq_instance_switch(int v, int dflt) { return v == 0 || v == 1 ? v : dflt; }
 
-/** A slope: a FILTER_SLOPES id, any other value the declared default; 1 when it is 24 dB/oct.
+/** @brief A slope: a FILTER_SLOPES id, any other value the declared default; 1 when it is 24 dB/oct.
+ * @param v The host's word, a FILTER_SLOPES id (12 or 24).
+ * @return 1 for 24 dB/oct, 0 for 12.
  * @thread audio */
 static inline int omx_eq_instance_slope_24(int v) {
   return (v == OMX_FILTER_SLOPES_12 || v == OMX_FILTER_SLOPES_24 ? v : (int)OMX_FILTER_SLOPES_DEFAULT) ==
          OMX_FILTER_SLOPES_24;
 }
 
+#define OMX_CONTRACT_STAGE "eq-instance/resolve"
 /**
- * Resolve the host's control values into both legs for one cycle. `bypass` non-zero empties the
+ * @brief Resolve the host's control values into both legs for one cycle. `bypass` non-zero empties the
  * bank. The arguments are the eq kernel's contract controls, in their declared order and units
- * (see the note above).
+ * (see the note above). A null instance, one not ready, or a null array is refused and nothing changes.
+ * @param s The instance.
+ * @param bypass Non-zero makes the EQ a wire; the section histories are kept.
+ * @param hpf_on The HPF switch, 0 or 1; anything else the declared default.
+ * @param hpf_freq The HPF corner, Hz, clamped into HPF_FREQ_RANGE; non-finite reads the declared default.
+ * @param hpf_slope The HPF slope, a FILTER_SLOPES id (12 or 24); anything else the declared default.
+ * @param lpf_on The LPF switch, 0 or 1; anything else the declared default.
+ * @param lpf_freq The LPF corner, Hz, clamped into LPF_FREQ_RANGE; non-finite reads the declared default.
+ * @param lpf_slope The LPF slope, a FILTER_SLOPES id (12 or 24); anything else the declared default.
+ * @param band_type Per band, an EQ_BAND_TYPES index; outside them the declared default (bell).
+ * @param freq Per band, the centre, Hz, clamped into EQ_FREQ_RANGE; non-finite reads the band's default centre.
+ * @param gain Per band, the gain, dB, clamped into EQ_GAIN_RANGE; non-finite reads the declared default.
+ * @param q Per band, the Q, clamped by omx_eq_lv2_clamp_q(); non-finite reads the declared default.
+ * @param band_on Per band, the switch, 0 or 1; anything else off.
+ * @post Both legs are resolved alike: the same switch and the same dirty flag.
  * @thread audio
  */
-#define OMX_CONTRACT_STAGE "eq-instance/resolve"
 static inline void omx_eq_instance_resolve(OmxEqInstance *s, int bypass, int hpf_on, float hpf_freq, int hpf_slope,
                                            int lpf_on, float lpf_freq, int lpf_slope,
                                            const int band_type[OMX_EQ_INSTANCE_BANDS],
@@ -527,8 +639,14 @@ static inline void omx_eq_instance_resolve(OmxEqInstance *s, int bypass, int hpf
 }
 #undef OMX_CONTRACT_STAGE
 
-/** One block, stereo: each leg through its core. `in_*` and `out_*` may alias. Not ready is the
+/** @brief One block, stereo: each leg through its core. `in_*` and `out_*` may alias. Not ready is the
  * identity.
+ * @param s The instance; null or not ready copies in to out.
+ * @param in_l The left input, `n` samples.
+ * @param in_r The right input, `n` samples.
+ * @param out_l The left output, `n` samples, may be `in_l`.
+ * @param out_r The right output, `n` samples, may be `in_r`.
+ * @param n The block length, samples; a null port or 0 touches nothing.
  * @thread audio */
 static inline void omx_eq_instance_run(OmxEqInstance *s, const float *in_l, const float *in_r, float *out_l,
                                        float *out_r, uint32_t n) {
@@ -541,7 +659,9 @@ static inline void omx_eq_instance_run(OmxEqInstance *s, const float *in_l, cons
   omx_eq_lv2_run(&s->leg[1], in_r, out_r, n);
 }
 
-/** The frames of latency the instance introduces: none (a biquad cascade has no delay line).
+/** @brief The frames of latency the instance introduces: none (a biquad cascade has no delay line).
+ * @param s The instance, unread.
+ * @return 0.
  * @thread audio */
 static inline uint32_t omx_eq_instance_latency(const OmxEqInstance *s) {
   (void)s;
