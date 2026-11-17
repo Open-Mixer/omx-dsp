@@ -1003,8 +1003,8 @@ rt-gate-sabotage: $(RT_GATE) $(RT_GATE_ARM) $(RT_GATE_FIXTURES)
 # The one list is TEST_TARGETS (make test's); CHECK_PACKAGE is derived from it: everything but PROVE_TESTS, with a
 # target that holds an oracle together with its sabotage (test-fx, test-analysis, ...) replaced by its oracle half.
 # tools/check-package-derived.sh (part of make checks) holds it to this shape.
-TEST_TARGETS = lib checks gen-once suite negative magnitude-sabotage eq-sabotage curve-sabotage meter-view-sabotage rta-bands-sabotage geq-true-sabotage delay-taps-sabotage align-fdelay-sabotage pitch-rates-sabotage instance-rates-sabotage bandwidth-q-table bandwidth-q-sabotage eq-default-bands consumer perturb fdelay-sabotage doppler-sabotage onepole-sabotage note-map-sabotage threads threads-sabotage test-fx test-analysis test-engine-kernels test-mix flavours flavour-probe-sabotage fastmath fastmath-diff fastmath-sabotage fastmath-plain fastmath-partial rt-gate rt-gate-sabotage
-PROVE_TESTS = checks gen-once fastmath-plain perturb $(filter %-sabotage,$(TEST_TARGETS))
+TEST_TARGETS = lib checks gen-once suite negative magnitude-sabotage eq-sabotage curve-sabotage meter-view-sabotage rta-bands-sabotage geq-true-sabotage delay-taps-sabotage align-fdelay-sabotage pitch-rates-sabotage instance-rates-sabotage bandwidth-q-table bandwidth-q-sabotage eq-default-bands consumer perturb fdelay-sabotage doppler-sabotage onepole-sabotage note-map-sabotage threads threads-sabotage test-fx test-analysis test-engine-kernels test-mix flavours flavour-probe-sabotage fastmath fastmath-diff fastmath-sabotage fastmath-plain fastmath-partial rt-gate rt-gate-sabotage install-confined
+PROVE_TESTS = checks gen-once fastmath-plain perturb install-confined $(filter %-sabotage,$(TEST_TARGETS))
 ORACLE_HALVES = test-fx=fx-oracles test-analysis=analysis-oracles test-engine-kernels=engine-kernels-golden test-mix=mix-golden
 CHECK_PACKAGE = $(foreach t,$(filter-out $(PROVE_TESTS),$(TEST_TARGETS)),$(or $(patsubst $(t)=%,%,$(filter $(t)=%,$(ORACLE_HALVES))),$(t)))
 
@@ -1094,6 +1094,12 @@ install: $(LIBS_ALL) $(PC_ALL) $(EXPORTS) install-rt-gate install-rta-read
 	install -m 0644 vectors/rta-delta.json $(DESTDIR)$(DATADIR)/omxdsp/rta-delta-vectors.json
 	install -m 0755 tools/omx-dsp-copy-check.sh $(DESTDIR)$(BINDIR)/omx-dsp-copy-check
 	install -m 0644 omx-dsp-copy-check.1 $(DESTDIR)$(MANDIR)/man1/
+
+# make install stays inside DESTDIR+PREFIX (#75): two installs in a throwaway container, the file system compared
+# before and after, a planted system contract directory still there (tools/install-confined.sh).
+.PHONY: install-confined
+install-confined: tools/install-confined.sh
+	bash tools/install-confined.sh
 
 # §4.3 (e): UNJUDGED (exit 0, never a pass) where the toolchain has no TSan; where it has, the
 # thread arm must be report-free and its shared-state sabotage must race. The gate's own report
