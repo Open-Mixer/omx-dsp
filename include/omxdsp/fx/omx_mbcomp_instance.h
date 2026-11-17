@@ -26,6 +26,10 @@
  * Bypass is the identity and keeps every state word; a change of the stage's factor re-arms the band
  * compressors at the new one. Nothing is allocated.
  */
+/**
+ * @file omx_mbcomp_instance.h
+ * @brief the multiband compressor as a plugin instance: the shell's core, with no format in it. The core is fx/omx_mbcomp.h's `omx_mbcomp_process`, the LR4 tree with one RMS compressor per band, and this file adds no DSP to it.
+ */
 #ifndef OMX_MBCOMP_INSTANCE_H
 #define OMX_MBCOMP_INSTANCE_H
 

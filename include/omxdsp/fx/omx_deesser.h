@@ -61,6 +61,10 @@
  * once per block; the working state ({@link omx_deess_state}) is PLAIN INLINE FLOATS — this kernel
  * has no buffers, so unlike mix_drive.h there is nothing to calloc and nothing that can be NULL.
  */
+/**
+ * @file omx_deesser.h
+ * @brief the native DE-ESSER stage: a band-limited detector driving the COMPRESSOR's own gain computer.
+ */
 #ifndef OMX_MIX_DEESSER_H
 #define OMX_MIX_DEESSER_H
 

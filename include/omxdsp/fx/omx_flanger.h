@@ -45,6 +45,10 @@
  *  4. BOTH LEGS, ONE PHASE, and no synthetic widening — the chorus's reason, unchanged: width is
  *     the BUS's fact.
  */
+/**
+ * @file omx_flanger.h
+ * @brief the native FLANGER stage: one modulated fractional delay with FEEDBACK.
+ */
 #ifndef OMX_MIX_FLANGER_H
 #define OMX_MIX_FLANGER_H
 

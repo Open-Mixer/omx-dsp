@@ -68,6 +68,10 @@
  *
  * Everything below is plain C; test/fx/comp_instance.test.c drives it with a plain `cc`.
  */
+/**
+ * @file omx_comp_instance.h
+ * @brief the strip compressor as a plugin instance: the shell's core, with no format in it. Named after the contract's `comp` kernel, the engine's one spelling (OMX_STAGE_COMP, COMP_LIMITS).
+ */
 #ifndef OMX_COMP_INSTANCE_H
 #define OMX_COMP_INSTANCE_H
 

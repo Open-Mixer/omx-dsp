@@ -46,6 +46,10 @@
  * beside it. Where the transcription and its TypeScript twin could disagree, a test makes them
  * agree rather than a comment asking someone to remember.
  */
+/**
+ * @file omx_hrp_correct.h
+ * @brief the correcting half of HRP, in C: what a shell needs to turn the render engine's MEASUREMENTS into a filter, when there is no TypeScript on the other side of the boundary to do it.
+ */
 #ifndef OMX_HRP_CORRECT_H
 #define OMX_HRP_CORRECT_H
 

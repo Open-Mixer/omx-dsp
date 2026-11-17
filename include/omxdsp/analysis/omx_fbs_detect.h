@@ -11,6 +11,10 @@
  * NEVER called from the audio callback: the detector allocates nothing, takes every buffer from
  * the caller, holds no global mutable state and does no I/O.
  */
+/**
+ * @file omx_fbs_detect.h
+ * @brief FBS feedback detection: one magnitude spectrum per push in, the confirmed rings out.
+ */
 #ifndef OMX_FBS_DETECT_H
 #define OMX_FBS_DETECT_H
 

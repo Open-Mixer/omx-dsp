@@ -33,6 +33,10 @@
  * LATENCY IS ZERO. No allocation, no lock; every word of state is in the caller's
  * {@link OmxTrimInstance}.
  */
+/**
+ * @file omx_trim_instance.h
+ * @brief the console's input trim as a plugin instance: the lane's head gain, a de-zippered ramp from the gain the last block ended on to the one resolved now, both legs from the same start. No format in it.
+ */
 #ifndef OMX_TRIM_INSTANCE_H
 #define OMX_TRIM_INSTANCE_H
 

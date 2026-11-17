@@ -40,6 +40,10 @@
  * LATENCY IS ZERO, AND PUBLISHED (omx_geq_latency()): a biquad cascade has group delay and no
  * delay line, and a host cannot tell "zero" from "never said".
  */
+/**
+ * @file omx_geq_instance.h
+ * @brief the native 31-band graphic EQ as a plugin instance: the shell's core, with no format in it.
+ */
 #ifndef OMX_GEQ_INSTANCE_H
 #define OMX_GEQ_INSTANCE_H
 

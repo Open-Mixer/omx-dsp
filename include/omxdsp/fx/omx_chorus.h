@@ -42,6 +42,10 @@
  *     the dry path is a multiply by exactly 1 and a sum with exactly 0, which this file takes as
  *     an early return rather than as arithmetic.
  */
+/**
+ * @file omx_chorus.h
+ * @brief the native CHORUS stage: N voices reading ONE modulated fractional delay line.
+ */
 #ifndef OMX_MIX_CHORUS_H
 #define OMX_MIX_CHORUS_H
 

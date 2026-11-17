@@ -71,6 +71,10 @@
  * point to rack it at, so the shape of the plugin refuses the use rather than a runtime check
  * hoping to detect it. {@link OMX_HRP_LV2_CHANNELS} is the number, and it is 1 for that reason.
  */
+/**
+ * @file omx_hrp_lv2.h
+ * @brief HRP+ AS A LIVE INSERT: the third shell's core, with no LV2 in it.
+ */
 #ifndef OMX_HRP_LV2_H
 #define OMX_HRP_LV2_H
 

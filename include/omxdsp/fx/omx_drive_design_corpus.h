@@ -23,6 +23,10 @@
  *
  * Tolerance is float32's: the C returns `float` and the TS returns `double`.
  */
+/**
+ * @file omx_drive_design_corpus.h
+ * @brief GENERATED. The frozen contract between the two languages that design the drive stage's four biquad sections.
+ */
 #ifndef OMX_MIX_DRIVE_DESIGN_CORPUS_H
 #define OMX_MIX_DRIVE_DESIGN_CORPUS_H
 

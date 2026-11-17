@@ -65,6 +65,10 @@
  * by a host cannot link, so the plugin is 2x2 and a host racking it on a mono strip feeds one
  * leg; the other runs on silence at no audible cost.
  */
+/**
+ * @file omx_drive_instance.h
+ * @brief the DRIVE stage as a live insert for other hosts: the shell's core, with no format in it.
+ */
 #ifndef OMX_DRIVE_INSTANCE_H
 #define OMX_DRIVE_INSTANCE_H
 

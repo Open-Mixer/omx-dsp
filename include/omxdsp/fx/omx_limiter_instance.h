@@ -29,6 +29,10 @@
  * points into the instance's own rings, so an instance is initialised where it lives and is never
  * copied after init.
  */
+/**
+ * @file omx_limiter_instance.h
+ * @brief the precision limiter as a plugin instance: the shell's core, with no format in it. The same shape as omx_chorus_instance.h (one C core, N shells): the core is `omx_limiter.h`'s `omx_limiter_process`, THE SAME INLINE the console's limiter stage runs, and this file adds no DSP to it.
+ */
 #ifndef OMX_LIMITER_INSTANCE_H
 #define OMX_LIMITER_INSTANCE_H
 

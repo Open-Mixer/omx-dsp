@@ -56,6 +56,10 @@
  * `lv2:hardRTCapable` asks for. The desk designs on its control thread because it has one; a
  * plugin's control words arrive on its ports.
  */
+/**
+ * @file omx_eq_instance.h
+ * @brief the console's channel EQ as a plugin instance: ONE shim over the native EQ stage (`OMX_STAGE_EQ`, mix_lane.h), with the band count a COMPILE-TIME constant, and no format in it.
+ */
 #ifndef OMX_EQ_LV2_H
 #define OMX_EQ_LV2_H
 

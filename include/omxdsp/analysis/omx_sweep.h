@@ -16,6 +16,10 @@
  * duration, which omx-contract does not declare yet). Control thread only, never the audio
  * callback: no allocation (every buffer and scratch is the caller's), no lock, no global state.
  */
+/**
+ * @file omx_sweep.h
+ * @brief the exponential sine sweep, its Farina inverse filter, and the deconvolution that recovers a room's impulse response from a swept capture. Moved from OpenMixer core's TypeScript (room-sweep-stimulus.ts).
+ */
 #ifndef OMX_SWEEP_H
 #define OMX_SWEEP_H
 

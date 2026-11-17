@@ -12,6 +12,10 @@
  * a single caller-owned float POOL bound by omx_reverb_state_layout (allocated on insert). Denormals
  * are flushed to zero so a long tail never falls into denormal-slow math. mix=0 is bit-identical dry.
  */
+/**
+ * @file omx_reverb.h
+ * @brief native algorithmic reverb: ONE Schroeder-Moorer comb+allpass kernel (Freeverb lineage) serving the ROOM and HALL configurations, and a second kernel, the Dattorro figure-8 PLATE tank.
+ */
 #ifndef OMX_MIX_REVERB_H
 #define OMX_MIX_REVERB_H
 

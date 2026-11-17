@@ -16,6 +16,10 @@
  * LATENCY IS ZERO: the Haas delay and the comb are the effect, the dry mid is frame-aligned.
  * Nothing is allocated: the word's ring is inline in {@link OmxWidthInstance}.
  */
+/**
+ * @file omx_width_instance.h
+ * @brief stereo width and pseudo-stereo as a plugin instance (FX-11): a mono keyboard or playback made wide on the PA, a monitor mix narrowed. It adds no DSP to the omx_width word.
+ */
 #ifndef OMX_WIDTH_INSTANCE_H
 #define OMX_WIDTH_INSTANCE_H
 

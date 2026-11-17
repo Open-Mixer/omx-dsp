@@ -57,6 +57,10 @@
  * `mix = 0` stays bit-identical dry at every factor and every band, and the oracle checks it at
  * all twelve combinations rather than at the one the author happened to try.
  */
+/**
+ * @file omx_drive.h
+ * @brief the native DRIVE stage: one waveshaper, run inside the console's ONE oversampler.
+ */
 #ifndef OMX_MIX_DRIVE_H
 #define OMX_MIX_DRIVE_H
 

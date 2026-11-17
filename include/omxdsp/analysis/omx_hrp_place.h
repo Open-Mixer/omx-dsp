@@ -31,6 +31,10 @@
  *
  * Worker thread or the console's server: no allocation, no lock, no I/O, one pass over the gains plus the cap's.
  */
+/**
+ * @file omx_hrp_place.h
+ * @brief the harmonic resonance processor's PLACEMENT and STEPPING in C: which bands a voice's per-harmonic gains become, and how far one move takes a band toward its depth.
+ */
 #ifndef OMX_HRP_PLACE_H
 #define OMX_HRP_PLACE_H
 

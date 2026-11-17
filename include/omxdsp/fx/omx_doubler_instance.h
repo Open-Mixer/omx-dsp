@@ -27,6 +27,10 @@
  * allocated: the line's ring is inline in {@link OmxDoublerInstance}, sized for the longest voice at
  * the highest rate, so an instance is initialised where it lives and is never copied after init.
  */
+/**
+ * @file omx_doubler_instance.h
+ * @brief the vocal doubler as a plugin instance: one to four voices of the input, each a little later, a little detuned and drifting, spread across the stereo field.
+ */
 #ifndef OMX_DOUBLER_INSTANCE_H
 #define OMX_DOUBLER_INSTANCE_H
 

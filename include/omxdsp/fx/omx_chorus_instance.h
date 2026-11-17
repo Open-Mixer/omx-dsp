@@ -27,6 +27,10 @@
  * points into the instance's own rings, so an instance is initialised where it lives and is never
  * copied after init.
  */
+/**
+ * @file omx_chorus_instance.h
+ * @brief the native chorus as a plugin instance: the shell's core, with no format in it. The same shape as omx-plugins' omx_delay_instance.h (one C core, N shells): the core is `omx_chorus.h`'s `omx_chorus_process`, THE SAME INLINE the console's chorus stage runs, and this file adds no DSP to it.
+ */
 #ifndef OMX_CHORUS_INSTANCE_H
 #define OMX_CHORUS_INSTANCE_H
 

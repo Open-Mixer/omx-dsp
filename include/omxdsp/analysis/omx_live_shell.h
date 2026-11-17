@@ -5,6 +5,10 @@
  * the audio passed bit-exact, the input fed to the analysis ring and counted, the pass counters a face reads as
  * "in flight", the unconsumed audio a pass is due on, and a report slot read by value.
  */
+/**
+ * @file omx_live_shell.h
+ * @brief what every corrector's live shell (omx_hrp_lv2.h, omx_fbs_lv2.h) does the same way, once: the audio passed bit-exact, the input fed to the analysis ring and counted, the pass counters a face reads as "in flight", the unconsumed audio a pass is due on, and a report slot read by value.
+ */
 #ifndef OMX_LIVE_SHELL_H
 #define OMX_LIVE_SHELL_H
 

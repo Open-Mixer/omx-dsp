@@ -38,6 +38,10 @@
  *
  * Everything below is plain C; test/fx/gate_instance.test.c drives it with a plain `cc`.
  */
+/**
+ * @file omx_gate_instance.h
+ * @brief the strip gate as a plugin instance: the shell's core, with no format in it.
+ */
 #ifndef OMX_GATE_INSTANCE_H
 #define OMX_GATE_INSTANCE_H
 

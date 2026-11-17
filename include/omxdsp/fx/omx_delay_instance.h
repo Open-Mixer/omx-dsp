@@ -40,6 +40,10 @@
  * Moved from omx-plugins' plugins/omx-delay/omx_delay_instance.h (the caller-ring form), into the
  * instance face's shape.
  */
+/**
+ * @file omx_delay_instance.h
+ * @brief the native FX delay as a plugin instance: the shell's core, with no format in it. The core is `omx_delay.h`'s `omx_fx_delay_process` — THE SAME INLINE the console's delay stage runs (mix_lane.h step OMX_STAGE_DELAY) — and this file adds no DSP to it.
+ */
 #ifndef OMX_DELAY_INSTANCE_H
 #define OMX_DELAY_INSTANCE_H
 

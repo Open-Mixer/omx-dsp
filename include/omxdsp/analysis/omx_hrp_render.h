@@ -65,6 +65,10 @@
  * has to be recomputed at the right moment. So there is no "finish" step to forget and no field
  * whose meaning depends on which phase the caller is in.
  */
+/**
+ * @file omx_hrp_render.h
+ * @brief HRP over a WHOLE RECORDED TRACK: the offline render kernel.
+ */
 #ifndef OMX_HRP_RENDER_H
 #define OMX_HRP_RENDER_H
 

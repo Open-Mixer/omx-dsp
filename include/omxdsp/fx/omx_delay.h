@@ -13,6 +13,10 @@
  * back into the ring, with a one-pole low-pass (tone) in the feedback path so repeats darken. Ping-pong
  * cross-feeds the two legs' feedback so echoes bounce L<->R.
  */
+/**
+ * @file omx_delay.h
+ * @brief native stereo FX delay line (send/return or channel insert), pure-C, RT-safe.
+ */
 #ifndef OMX_MIX_DELAY_H
 #define OMX_MIX_DELAY_H
 

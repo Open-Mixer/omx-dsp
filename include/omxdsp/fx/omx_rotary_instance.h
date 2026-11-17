@@ -22,6 +22,10 @@
  *
  * No mutable globals: every word of state is in the caller's {@link OmxRotaryInstance}.
  */
+/**
+ * @file omx_rotary_instance.h
+ * @brief the native rotary speaker as a plugin instance: the shell's core, with no format in it. The same shape as omx_tremolo_instance.h (one C core, N shells): the core is `omx_rotary.h`'s `omx_rotary_process`, THE SAME INLINE the console's rotary stage runs, and this file adds no DSP to it.
+ */
 #ifndef OMX_ROTARY_INSTANCE_H
 #define OMX_ROTARY_INSTANCE_H
 

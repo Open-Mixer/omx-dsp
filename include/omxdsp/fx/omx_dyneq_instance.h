@@ -33,6 +33,10 @@
  * Bypass is the identity and keeps every state word. LATENCY IS ZERO. Nothing is allocated; the
  * whole state is inline in {@link OmxDyneqInstance}.
  */
+/**
+ * @file omx_dyneq_instance.h
+ * @brief the dynamic EQ as a plugin instance: six EQ bands, each with its own dynamics, and no format in it. It mints no DSP: every band's static section is the EQ face's own (fx/omx_eq_instance.h: its design, its clamps, its parking, its bank and its state), and every band's dynamics are the band-dynamics word (omx_band_dyn.h), the word the de-esser runs.
+ */
 #ifndef OMX_DYNEQ_INSTANCE_H
 #define OMX_DYNEQ_INSTANCE_H
 

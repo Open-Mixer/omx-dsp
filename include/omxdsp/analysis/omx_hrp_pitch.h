@@ -32,6 +32,10 @@
  * mutable state, and does no I/O or logging — so it is deterministic and safe to call from a
  * worker, which is the only place it is called from.
  */
+/**
+ * @file omx_hrp_pitch.h
+ * @brief HRP multi-f0 estimation: a magnitude spectrum in, a SET of musical voices out.
+ */
 #ifndef OMX_HRP_PITCH_H
 #define OMX_HRP_PITCH_H
 
