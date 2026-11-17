@@ -25,7 +25,9 @@ jobs:
           lint-workflow: public-sources.yml
   docs:
     name: make docs-check (every installed header's public declarations, against a baseline that only shrinks)
-    runs-on: ubuntu-latest
+    # Pinned: the baseline is what THIS runner's doxygen (1.9.8) warns; another version's extra doc-error
+    # rows would be read as new declarations. The release's api-docs job renders with the same pin.
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4

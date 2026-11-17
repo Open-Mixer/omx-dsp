@@ -1122,22 +1122,38 @@ docs: $(HEADERS) $(FX_HEADERS) $(ANALYSIS_HEADERS) $(MIX_HEADERS) | $(BUILD)
 # text with the tree's path stripped and a warning's continuation lines (the parameters it lists) joined,
 # so it reads the same in every checkout and names one declaration. With DOCS_BASELINE_BASE=<file>
 # (the baseline at the branch's base, `git show <base>:$(DOCS_BASELINE)`), a row not in that file is red.
-# Only tracked headers may feed it: an untracked header under include/omxdsp is refused by name, so a
-# scratch file never enters the reference or the baseline. #70 is closed when the baseline is empty.
+# What doxygen cannot see is refused by name before it runs: a tracked header under include/omxdsp
+# without a doc-comment @file (doxygen reports nothing about an undocumented file's declarations), a
+# conditional doc command (@cond, @internal, @if) that would hide a declaration, a Doxyfile without the
+# gate's lines or with a filter line, an untracked header (a scratch file never enters the reference or
+# the baseline), a failed git read, a baseline not sorted and unique, and a missing warning log. The
+# one header outside the guard is the one the Doxyfile excludes, rendered from data/ and documented
+# there. #70 is closed when the baseline is empty.
 docs-check: docs
 	@test -f $(DOCS_BASELINE) || { echo "docs-check: FAIL — $(DOCS_BASELINE) is missing: the baseline of undocumented public declarations" >&2; exit 1; }
-	@untracked=$$(git ls-files --others --exclude-standard include/omxdsp) || { echo "docs-check: FAIL — git ls-files failed: the tracked-only rule needs a git checkout" >&2; exit 1; }; \
-	  if [ -n "$$untracked" ]; then \
-	  printf '%s\n' "$$untracked" >&2; echo "docs-check: FAIL — untracked headers would enter the API reference: track or remove them" >&2; exit 1; fi
-	@LC_ALL=C sort -c -u $(DOCS_BASELINE)
-	@test -e $(DOCS_WARNINGS) || : > $(DOCS_WARNINGS)
+	@test -f $(DOCS_WARNINGS) || { echo "docs-check: FAIL — $(DOCS_WARNINGS) is missing: doxygen wrote no warning log" >&2; exit 1; }
+	@printf '%s\n' 'INPUT                  = include/omxdsp' 'EXCLUDE                = include/omxdsp/omxdsp_definitions.h' \
+	  'FILE_PATTERNS          = *.h' 'RECURSIVE              = YES' 'EXTRACT_ALL            = NO' 'HIDE_UNDOC_MEMBERS     = NO' \
+	  'WARN_IF_UNDOCUMENTED   = YES' 'WARN_IF_DOC_ERROR      = YES' 'WARN_NO_PARAMDOC       = YES' 'WARN_AS_ERROR          = NO' \
+	  'WARN_LOGFILE           = $(DOCS_WARNINGS)' 'EXCLUDE_SYMBOLS        = OMX_CONTRACT_STAGE M_PI' | while read -r line; do \
+	  grep -qxF "$$line" Doxyfile || { echo "docs-check: FAIL — Doxyfile lacks the gate's line: $$line" >&2; exit 1; }; done
+	@filters=$$(grep -nE '^(EXCLUDE_PATTERNS|ENABLED_SECTIONS|INPUT_FILTER|FILTER_PATTERNS)[[:space:]]*=[[:space:]]*[^[:space:]]' Doxyfile); \
+	  if [ -n "$$filters" ]; then printf '%s\n' "$$filters" >&2; echo "docs-check: FAIL — Doxyfile filters what doxygen sees: the gate reads every installed header" >&2; exit 1; fi
+	@tracked=$$(git ls-files include/omxdsp) && [ -n "$$tracked" ] || { echo "docs-check: FAIL — git ls-files failed or lists no header: the tracked-only rule needs a git checkout of this tree" >&2; exit 1; }; \
+	  untracked=$$(git ls-files --others --exclude-standard include/omxdsp); \
+	  if [ -n "$$untracked" ]; then printf '%s\n' "$$untracked" >&2; echo "docs-check: FAIL — untracked headers would enter the API reference: track or remove them" >&2; exit 1; fi; \
+	  nofile=$$(printf '%s\n' "$$tracked" | grep -v '^include/omxdsp/omxdsp_definitions.h$$' | xargs grep -L -E '^[[:space:]]*(/\*\*|\*)[[:space:]]*@file([[:space:]]|$$)'); \
+	  if [ -n "$$nofile" ]; then printf '%s\n' "$$nofile" >&2; echo "docs-check: FAIL — headers without a doc-comment @file: doxygen would report none of their declarations" >&2; exit 1; fi; \
+	  cond=$$(printf '%s\n' "$$tracked" | xargs grep -nE '[@\\](cond|endcond|internal|endinternal|if|ifnot|endif)([[:space:]]|$$)'); \
+	  if [ -n "$$cond" ]; then printf '%s\n' "$$cond" >&2; echo "docs-check: FAIL — a conditional doc command would hide declarations from the gate" >&2; exit 1; fi
+	@LC_ALL=C sort -c -u $(DOCS_BASELINE) 2>/dev/null || { echo "docs-check: FAIL — $(DOCS_BASELINE) is not sorted and unique (LC_ALL=C sort -u)" >&2; exit 1; }
 	@sed "s#$$(pwd -P)/##g" $(DOCS_WARNINGS) | awk '/^[^ \t]/ { if (r != "") print r; r = $$0; next } { r = r " " $$0 } END { if (r != "") print r }' \
 	  | LC_ALL=C sort -u > $(DOCS_WARNINGS).sorted
-	@new=$$(comm -13 $(DOCS_BASELINE) $(DOCS_WARNINGS).sorted); if [ -n "$$new" ]; then \
+	@new=$$(LC_ALL=C comm -13 $(DOCS_BASELINE) $(DOCS_WARNINGS).sorted); if [ -n "$$new" ]; then \
 	  printf '%s\n' "$$new" >&2; echo "docs-check: FAIL — undocumented public declarations not in $(DOCS_BASELINE) (document them)" >&2; exit 1; fi
-	@gone=$$(comm -23 $(DOCS_BASELINE) $(DOCS_WARNINGS).sorted); if [ -n "$$gone" ]; then \
+	@gone=$$(LC_ALL=C comm -23 $(DOCS_BASELINE) $(DOCS_WARNINGS).sorted); if [ -n "$$gone" ]; then \
 	  printf '%s\n' "$$gone" >&2; echo "docs-check: FAIL — these $(DOCS_BASELINE) rows are documented now: drop them" >&2; exit 1; fi
-	@if [ -n "$(DOCS_BASELINE_BASE)" ]; then grew=$$(LC_ALL=C sort -u $(DOCS_BASELINE_BASE) | comm -13 - $(DOCS_BASELINE)); \
+	@if [ -n "$(DOCS_BASELINE_BASE)" ]; then grew=$$(LC_ALL=C sort -u $(DOCS_BASELINE_BASE) | LC_ALL=C comm -13 - $(DOCS_BASELINE)); \
 	  if [ -n "$$grew" ]; then printf '%s\n' "$$grew" >&2; echo "docs-check: FAIL — $(DOCS_BASELINE) grew against $(DOCS_BASELINE_BASE); it only shrinks" >&2; exit 1; fi; fi
 	@echo "docs-check: ok — $$(wc -l < $(DOCS_BASELINE)) undocumented public declarations in the baseline, none new"
 
@@ -1146,17 +1162,19 @@ docs-check: docs
 docs-baseline: docs
 	@sed "s#$$(pwd -P)/##g" $(DOCS_WARNINGS) | awk '/^[^ \t]/ { if (r != "") print r; r = $$0; next } { r = r " " $$0 } END { if (r != "") print r }' \
 	  | LC_ALL=C sort -u > $(DOCS_WARNINGS).sorted
-	@new=$$(comm -13 $(DOCS_BASELINE) $(DOCS_WARNINGS).sorted); if [ -n "$$new" ]; then \
+	@new=$$(LC_ALL=C comm -13 $(DOCS_BASELINE) $(DOCS_WARNINGS).sorted); if [ -n "$$new" ]; then \
 	  printf '%s\n' "$$new" >&2; echo "docs-baseline: FAIL — these rows would be added to $(DOCS_BASELINE); it only lowers: document them" >&2; exit 1; fi
 	@cp $(DOCS_WARNINGS).sorted $(DOCS_BASELINE)
 	@echo "docs-baseline: $(DOCS_BASELINE) rewritten, $$(wc -l < $(DOCS_BASELINE)) rows"
 
-# docs-check against sabotaged copies of the tree (test/docs-sabotage.sh): an undocumented public declaration
-# added to a header is red naming it, the same documented is green with no row, its row in the baseline is
-# green, a baseline row swapped for it is red naming both, a baseline without its last newline is the same
-# set, a row added against the tree's baseline as base is red (it only shrinks), a stale row is red, a
-# missing Doxyfile or baseline is red by name, an untracked header is red by name, and docs-baseline
-# refuses to add a row. The tree is never edited.
+# docs-check against sabotaged copies of the tree (test/docs-sabotage.sh, one arm each): an undocumented
+# public declaration added to a header is red naming it, the same documented is green with no row, its row
+# in the baseline is green, a baseline row swapped for it is red naming the dropped one, a baseline without
+# its last newline is the same set, a duplicated row is red, a row added against the tree's baseline as base
+# is red (it only shrinks), a stale row is red, a missing Doxyfile, baseline or warning log is red by name,
+# a Doxyfile exclusion or a @cond around the declaration is red by name, a header without @file is red by
+# name, an untracked header or a tree that is no git checkout is red by name, and docs-baseline refuses to
+# add a row. The tree is never edited.
 docs-sabotage: Doxyfile Makefile test/docs-sabotage.sh $(DOCS_BASELINE)
 	bash test/docs-sabotage.sh $(BUILD)/docs-sabotage
 
