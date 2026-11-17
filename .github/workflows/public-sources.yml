@@ -35,16 +35,11 @@ jobs:
       - name: Install doxygen
         run: sudo apt-get update -qq && sudo apt-get install -y --no-install-recommends doxygen
 
-      # docs/doxygen-baseline.txt at the pull request's base: a row this head adds to it is red. A base
-      # without the file has nothing to shrink from, and the head's own copy stands in.
+      # The base rule: docs-check fetches the pull request's base branch itself and refuses by name an
+      # unset base, a failed fetch, an unresolvable ref or a base without docs/doxygen-baseline.txt;
+      # a row this head adds to the base's baseline is red. Never the head's own copy.
       - name: make docs-check
-        run: |
-          set -euo pipefail
-          git fetch --depth=1 origin "${{ github.event.pull_request.base.sha }}"
-          mkdir -p build/docs
-          git show FETCH_HEAD:docs/doxygen-baseline.txt > build/docs/baseline-base.txt 2>/dev/null \
-            || cp docs/doxygen-baseline.txt build/docs/baseline-base.txt
-          make docs-check DOCS_BASELINE_BASE=build/docs/baseline-base.txt
+        run: make docs-check DOCS_BASE="origin/${{ github.base_ref }}"
 
       - name: make docs-sabotage
         run: make docs-sabotage
