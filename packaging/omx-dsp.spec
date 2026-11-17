@@ -14,6 +14,11 @@ BuildRequires: make
 BuildRequires: binutils
 BuildRequires: gawk
 BuildRequires: diffutils
+# the WebAssembly module of the omx-dsp-wasm package (tools/wasm-build.sh): the distribution's own toolchain
+BuildRequires: clang
+BuildRequires: lld
+BuildRequires: wasi-libc-devel
+BuildRequires: wasi-libc-static
 BuildRequires: pkgconfig
 BuildRequires: omx-contract-devel >= 3.18.0
 BuildRequires: omx-contract-devel < 4
@@ -82,6 +87,19 @@ BuildArch: noarch
 Requires: omx-contract-data >= 3.18.0
 Requires: omx-contract-data < 4
 
+%package -n omx-dsp-wasm
+Summary: omx-dsp's curve function as a WebAssembly module, for JavaScript runtimes
+BuildArch: noarch
+
+%description -n omx-dsp-wasm
+The curve function of omx-dsp (the points of an EQ or transfer curve from a
+panel description's terms) compiled to one WebAssembly module,
+/usr/share/omx-dsp/wasm/omx-dsp.wasm. A Node program or a browser loads it with
+the built-in WebAssembly and gets the arithmetic the console and the plugins run,
+not a second implementation of it. It is also the module of the npm package
+@openmixer/omx-dsp.
+Its documentation is on openmixer.org.
+
 %description contract
 omx-dsp's package of omx-contract's contract directory: the declarations of
 its kernels and instance faces (their controls, units and readouts) under
@@ -104,10 +122,10 @@ Its documentation is on openmixer.org.
 
 %build
 %set_build_flags
-%make_build lib rt-gate-ship rta-read
+%make_build lib rt-gate-ship rta-read wasm
 
 %install
-%make_install PREFIX=%{_prefix} LIBDIR=%{_libdir} INCLUDEDIR=%{_includedir}
+%make_install PREFIX=%{_prefix} LIBDIR=%{_libdir} INCLUDEDIR=%{_includedir} install-wasm
 
 %check
 %make_build check-package
@@ -141,6 +159,10 @@ Its documentation is on openmixer.org.
 %license LICENSE
 %{_bindir}/omx-rta-read
 %{_mandir}/man1/omx-rta-read.1*
+
+%files -n omx-dsp-wasm
+%license LICENSE
+%{_datadir}/omx-dsp/wasm/
 
 %files contract
 %license LICENSE

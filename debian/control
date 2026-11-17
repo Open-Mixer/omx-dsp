@@ -4,7 +4,7 @@ Source: omx-dsp
 Section: libdevel
 Priority: optional
 Maintainer: Pau Aliagas <linuxnow@gmail.com>
-Build-Depends: debhelper-compat (= 13), libomx-contract-dev (>= 3.18.0~), libomx-contract-dev (<< 4~), pkgconf, libjack-jackd2-dev, jackd2
+Build-Depends: debhelper-compat (= 13), libomx-contract-dev (>= 3.18.0~), libomx-contract-dev (<< 4~), pkgconf, libjack-jackd2-dev, jackd2, clang, lld, wasi-libc
 Standards-Version: 4.6.2
 Homepage: https://github.com/Open-Mixer/omx-dsp
 Rules-Requires-Root: no
@@ -72,5 +72,19 @@ Description: omx-dsp's kernel and instance declarations, read at run time
  /usr/share/omx-contract/contract.d/3/omx-dsp. A program that reads them while
  it runs (a panel, the omx-contract command) needs this package, not the
  development one.
+ .
+ Its documentation is on openmixer.org.
+
+Package: omx-dsp-wasm
+Architecture: all
+Multi-Arch: foreign
+Depends: ${misc:Depends}
+Description: omx-dsp's curve function as a WebAssembly module, for JavaScript runtimes
+ The curve function of omx-dsp (the points of an EQ or transfer curve from a
+ panel description's terms) compiled to one WebAssembly module,
+ /usr/share/omx-dsp/wasm/omx-dsp.wasm. A Node program or a browser loads it with
+ the built-in WebAssembly and gets the arithmetic the console and the plugins run,
+ not a second implementation of it. It is also the module of the npm package
+ @openmixer/omx-dsp.
  .
  Its documentation is on openmixer.org.

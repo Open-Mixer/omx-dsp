@@ -10,19 +10,20 @@ include /usr/share/dpkg/architecture.mk
 	dh $@
 
 override_dh_auto_build:
-	dh_auto_build -- lib rt-gate-ship rta-read
+	dh_auto_build -- lib rt-gate-ship rta-read wasm
 
 override_dh_auto_install:
-	dh_auto_install -- PREFIX=/usr LIBDIR=/usr/lib/$(DEB_HOST_MULTIARCH) INCLUDEDIR=/usr/include
+	dh_auto_install -- PREFIX=/usr LIBDIR=/usr/lib/$(DEB_HOST_MULTIARCH) INCLUDEDIR=/usr/include install-wasm
 
 # The gate and the reader are packages of their own, omx-rt-gate and omx-rta-read: an executable has no
 # place in libomxdsp-dev, which is Multi-Arch: same, and only the reader needs JACK. libomxdsp-dev.install
 # takes whole directories (usr/bin, usr/share/man, usr/share/omxdsp), so its dh_install leaves out every
 # path that names either.
 override_dh_install:
-	dh_install -Nomx-rt-gate -Nomx-rta-read -Xrt-gate -Xomx-rta-read
+	dh_install -Nomx-rt-gate -Nomx-rta-read -Nomx-dsp-wasm -Xrt-gate -Xomx-rta-read
 	dh_install -pomx-rt-gate
 	dh_install -pomx-rta-read
+	dh_install -pomx-dsp-wasm
 
 # The package's check is make check-package (the tests that prove the built library; the sabotage and
 # perturbation arms run in CI's make test), one make job per CPU dpkg-buildpackage was given
