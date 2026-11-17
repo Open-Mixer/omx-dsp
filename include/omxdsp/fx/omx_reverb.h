@@ -287,19 +287,42 @@ static inline float omx_reverb_damp_pole(float damping, float sr) {
  * makes a re-layout replay whatever the last layout left in it. The clear lives HERE, in the
  * primitive that hands the memory out, and not in each caller, because a caller that forgets is
  * a reverb that opens playing the old room (test/fx/reverb_math.test.c's re-layout arm bounds the
- * residue). Layout runs on INSERT, never on the RT thread, so the cost is paid once.
+ * residue). Layout runs on INSERT and on a re-enable edge (omx_reverb_instance_clear, on the audio
+ * thread), so the cost is bounded by the pool and paid once per edge.
  * @thread audio */
 static inline float *omx_pool_take(struct omx_reverb_state *s, uint32_t len) {
-  if (s->next_free + len > s->pool_len) { s->_exhausted = 1; return NULL; }
+  if (len > s->pool_len - s->next_free) { /* no unsigned wrap */ s->_exhausted = 1; return NULL; }
   float *p = s->_pool + s->next_free;
   s->next_free += len;
   for (uint32_t i = 0; i < len; i++) p[i] = 0.0f;
   return p;
 }
 
-/* Bind a caller pool into all sub-buffers, scaling the canonical tunings to `sr`. Call once on insert.
+/** @brief Bind a caller pool into all sub-buffers, scaling the canonical tunings to `sr`. Call on insert
+ * and on a re-enable edge (the instance's clear).
+ *
+ * THE DOOR. A layout that does not fit is REFUSED: it leaves the state inert and unpublished
+ * (`sr` 0, `_pool` NULL, `_exhausted` set), returns 0, and runs nothing past the checks. It never
+ * aborts: this runs on the audio thread at a re-enable edge.
+ *
+ * @param s         the reverb state to bind; non-NULL, caller-owned
+ * @param pool      the caller's float pool, `pool_len` floats, non-NULL
+ * @param pool_len  floats in `pool`; must hold the layout at `sr` (OMX_REVERB_POOL_FLOATS holds
+ *                  every rate up to OMX_REVERB_MAX_RATE)
+ * @param sr        sample rate in Hz: finite, above 0 and at most OMX_REVERB_MAX_RATE
+ * @return 1 when laid out and published; 0 when refused (NULL `s` or `pool`, `sr` not finite, not
+ *         above 0 or above OMX_REVERB_MAX_RATE, or a pool too small for the layout)
+ * @pre `s` and `pool` are non-NULL, `sr` is in (0, OMX_REVERB_MAX_RATE]: checked on every build and
+ *      refused through the return
+ * @post on 1: `sr` is published last, `_exhausted` is 0 and every line is silent; on 0: `sr` is 0 and
+ *       `_pool` is NULL, so omx_reverb_process is a passthrough
  * @thread audio */
-static inline void omx_reverb_state_layout(struct omx_reverb_state *s, float *pool, uint32_t pool_len, float sr) {
+static inline int omx_reverb_state_layout(struct omx_reverb_state *s, float *pool, uint32_t pool_len, float sr) {
+  if (!s) return 0;
+  if (!pool || !(sr > 0.0f) || !(sr <= (float)OMX_REVERB_MAX_RATE)) { /* NaN fails both */
+    s->sr = 0.0f; s->_pool = NULL; s->pool_len = 0; s->next_free = 0; s->_exhausted = 1;
+    return 0;
+  }
   /* bind the pool; zero the sub-buffer state (the caller calloc'd the pool, but be explicit for reuse) */
   /* THE RATE IS PUBLISHED LAST. `omx_reverb_process` runs a pool only when the rate it is
    * called at equals `s->sr`, so a layout in progress reads `sr == 0` — a rate no graph runs at —
@@ -395,22 +418,24 @@ static inline void omx_reverb_state_layout(struct omx_reverb_state *s, float *po
    *     44 100 Hz   187 469 floats   fits, x4.89 headroom
    *     96 000 Hz   408 006 floats   fits, x2.25     <- THE RIG'S RATE (decision 2026-09-14)
    *    192 000 Hz   815 976 floats   fits, x1.12     <- OMX_REVERB_MAX_RATE, the declared ceiling
-   *    384 000 Hz 1 631 922 floats   EXHAUSTS by 714 418
+   *    384 000 Hz 1 631 922 floats   would exhaust by 714 418 (refused above the ceiling, never laid out)
    *
-   * THE GUARD BELOW IS THEREFORE REACHABLE, not theoretical: the operator stated on 2026-08-07
-   * that the desk runs "at most 192 or 384 kHz, usually 96", and at 384 kHz this layout does not
-   * fit. What happens then is a SILENT REVERB on that insert — not a NULL dereference on the RT
+   * A rate above OMX_REVERB_MAX_RATE is REFUSED at the top of this function, before any layout
+   * runs, so 384 kHz never reaches the pool: it returns 0 and the state stays unpublished. The
+   * exhaustion guard below is still reachable, for a pool too small for the rate it is given
+   * (a caller sizing its own pool, or a test), and what it does then is a refused layout: `sr`
+   * stays 0, `_pool` is NULL, the insert is a passthrough, never a NULL dereference on the RT
    * thread, which is what it was before the guard.
    *
-   * A rate above OMX_REVERB_MAX_RATE is out of contract for this file and belongs refused ABOVE
-   * it, where the operator can be told, rather than absorbed here as a missing tail. Sizing the
-   * pool for 384 kHz instead would cost (1 631 922 - 917 504) x 4 B = 2.7 MB more per reverb
-   * state and is a deliberate decision, not a default.
+   * Taking 384 kHz instead would need a pool of 1 631 922 floats, (1 631 922 - 917 504) x 4 B =
+   * 2.7 MB more per reverb state: a deliberate decision, not a default. The operator stated on
+   * 2026-08-07 that the desk runs "at most 192 or 384 kHz, usually 96"; the ceiling is 192 kHz today.
    *
    * failure mode is exactly the one already designed for: the insert is a no-op. */
-  if (s->_exhausted) s->_pool = NULL;
+  if (s->_exhausted) { s->_pool = NULL; return 0; } /* sr stays 0: the rate is not published */
   atomic_thread_fence(memory_order_release); /* every line above is cut before the rate says so */
   s->sr = sr;
+  return 1;
 }
 
 /*

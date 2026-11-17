@@ -22,6 +22,8 @@
 #include <math.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/wait.h>
+#include <unistd.h>
 
 #include <omxdsp/analysis/omx_hrp_track.h>
 
@@ -462,6 +464,65 @@ static void test_projection_answers_nothing_when_there_is_nothing(void) {
   check(1, "no output is a no-op");
 }
 
+/* P0 door: omx_hrp_track_update refuses what it cannot follow. A NULL pointer is a crash in the
+ * worker today; a NaN threshold makes every match fail silently, so every frame opens a new
+ * track. A refused update leaves the tracker exactly as it was. Each NULL call runs in its own
+ * child so a crash reads as a failed arm, not a dead test. */
+static int child_survives(int which) {
+  fflush(NULL);
+  pid_t pid = fork();
+  if (pid == 0) {
+    OmxHrpTracker t;
+    OmxHrpTrackConfig c = omx_hrp_track_config_default();
+    omx_hrp_tracker_init(&t);
+    float a[] = {A4};
+    OmxHrpVoiceSet f = frame_of(a, 1);
+    if (which == 0) omx_hrp_track_update(NULL, &f, &c);
+    if (which == 1) omx_hrp_track_update(&t, NULL, &c);
+    if (which == 2) omx_hrp_track_update(&t, &f, NULL);
+    _exit(0);
+  }
+  int st = 0;
+  waitpid(pid, &st, 0);
+  return WIFEXITED(st) && WEXITSTATUS(st) == 0;
+}
+
+static void test_update_refuses_what_it_cannot_follow(void) {
+  check(child_survives(0), "a NULL tracker is refused, not dereferenced");
+  check(child_survives(1), "a NULL frame is refused, not dereferenced");
+  check(child_survives(2), "a NULL config is refused, not dereferenced");
+
+  float a[] = {A4};
+  {
+    OmxHrpTracker g; OmxHrpTrackConfig gc = omx_hrp_track_config_default();
+    omx_hrp_tracker_init(&g);
+    OmxHrpVoiceSet gf = frame_of(a, 1);
+    check(omx_hrp_track_update(&g, &gf, &gc) == 1 && omx_hrp_track_count(&g) == 1, "a valid update returns 1 and is applied");
+    gc.steady_cents = INFINITY;
+    check(omx_hrp_track_update(&g, &gf, &gc) == 0, "an infinite threshold returns 0");
+  }
+  for (int field = 0; field < 2; field++) {
+    OmxHrpTracker t;
+    OmxHrpTrackConfig c = omx_hrp_track_config_default();
+    omx_hrp_tracker_init(&t);
+    if (field == 0) c.match_cents = NAN; else c.steady_cents = NAN;
+    feed(&t, &c, a, 1, 5);
+    check(omx_hrp_track_count(&t) == 0,
+          field == 0 ? "a NaN match_cents is refused: the tracker is untouched, no track per frame"
+                     : "a NaN steady_cents is refused: the tracker is untouched");
+    check(t.next_id == 1, "a refused update spends no identity");
+  }
+  OmxHrpTracker t;
+  OmxHrpTrackConfig c = omx_hrp_track_config_default();
+  omx_hrp_tracker_init(&t);
+  c.match_cents = 0.0f;
+  feed(&t, &c, a, 1, 3);
+  check(omx_hrp_track_count(&t) == 0, "a zero match_cents is refused");
+  c.match_cents = -5.0f;
+  feed(&t, &c, a, 1, 3);
+  check(omx_hrp_track_count(&t) == 0, "a negative match_cents is refused");
+}
+
 int main(void) {
   test_octave_flap_is_one_note();
   test_two_octave_flap_is_still_one_note();
@@ -481,6 +542,7 @@ int main(void) {
   test_projection_packs_the_active_tracks_in_slot_order();
   test_projection_fills_at_most_the_voice_set();
   test_projection_answers_nothing_when_there_is_nothing();
+  test_update_refuses_what_it_cannot_follow();
 
   printf("hrp_track: %d checks, %d failures\n", g_checks, g_fail);
   return g_fail == 0 ? 0 : 1;

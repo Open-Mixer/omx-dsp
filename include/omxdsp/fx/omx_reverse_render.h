@@ -166,8 +166,7 @@ static inline int omx_reverse_render(float *l, float *r, uint32_t n, const struc
      * in, which is what makes the swell's span `reverse_ms` and not the network's RT60. */
     memset(sc->st, 0, sizeof(*sc->st));
     memset(sc->pool, 0, (size_t)sc->pool_len * sizeof(float));
-    omx_reverb_state_layout(sc->st, sc->pool, sc->pool_len, sr);
-    if (sc->st->_exhausted) return -1;
+    if (!omx_reverb_state_layout(sc->st, sc->pool, sc->pool_len, sr)) return -1;
 
     for (uint32_t i = 0; i < w; i++) {
       const int64_t k = start + (int64_t)i;              /* reversed-domain index */

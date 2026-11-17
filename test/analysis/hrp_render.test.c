@@ -568,6 +568,18 @@ static void test_an_unusable_config_refuses_rather_than_rendering_nonsense(void)
   check(omx_hrp_render_init(&r, &cfg, carry_a, work_re_a, work_im_a, mags_a, residual_a) == 0,
         "a hop longer than the window is refused");
 
+  /* Review of #71: the window loop calls omx_hrp_track_update, which refuses a config it cannot
+     follow, and the loop cannot report a refusal mid-window. Today a NaN threshold is accepted here
+     and the tracker then freezes silently, every window. The refusal belongs at the door. */
+  cfg = test_config();
+  cfg.track.match_cents = NAN;
+  check(omx_hrp_render_init(&r, &cfg, carry_a, work_re_a, work_im_a, mags_a, residual_a) == 0,
+        "a NaN match_cents is refused at init, not left to freeze the tracker");
+  cfg = test_config();
+  cfg.track.steady_cents = 0.0f;
+  check(omx_hrp_render_init(&r, &cfg, carry_a, work_re_a, work_im_a, mags_a, residual_a) == 0,
+        "a zero steady_cents is refused at init");
+
   cfg = test_config();
   check(omx_hrp_render_init(&r, &cfg, NULL, work_re_a, work_im_a, mags_a, residual_a) == 0,
         "a missing buffer is refused");

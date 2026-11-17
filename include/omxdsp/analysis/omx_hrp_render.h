@@ -252,7 +252,7 @@ static inline OmxHrpRenderConfig omx_hrp_render_config_default(uint32_t rate) {
 /**
  * Bind a render to its config and the caller's five buffers. Returns 1 when the render is
  * usable, 0 when it is not — a zero window, a window that is not a power of two, a hop outside
- * (0, fft_size], or a missing buffer. A refused init leaves `ready` clear, and every entry
+ * (0, fft_size], a track config the tracker refuses, or a missing buffer. A refused init leaves `ready` clear, and every entry
  * below is a no-op on a render that is not ready: absence is a fact, not a crash.
  *
  * `carry`, `work_re` and `work_im` hold `fft_size` floats; `mags` and `residual` hold
@@ -268,6 +268,7 @@ static inline int omx_hrp_render_init(OmxHrpRender *r, const OmxHrpRenderConfig 
   if (n < 4u || (n & (n - 1u)) != 0u) return 0;
   if (cfg->hop == 0u || cfg->hop > n) return 0;
   if (!carry || !work_re || !work_im || !mags || !residual) return 0;
+  if (!omx_hrp_track_config_valid(&cfg->track)) return 0; /* omx_hrp_render_window cannot report a refused update */
   r->cfg = *cfg;
   r->carry = carry;
   r->work_re = work_re;
@@ -324,7 +325,8 @@ static inline void omx_hrp_render_window(OmxHrpRender *r, int pass) {
 
   OmxHrpVoiceSet detected;
   omx_hrp_detect(r->mags, nbins, bin_hz, &r->cfg.pitch, r->residual, &detected);
-  omx_hrp_track_update(&r->tracker, &detected, &r->cfg.track);
+  /* cannot refuse: init checked the config and the pointers are ours */
+  (void)omx_hrp_track_update(&r->tracker, &detected, &r->cfg.track);
 
   /* Attribution runs over the TRACKED voices, through the projection hrp_analyze.c marshals
      the live frame with — one `omx_hrp_project_voices`, so offline and live cannot come to

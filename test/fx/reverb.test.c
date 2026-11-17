@@ -464,6 +464,73 @@ static void test_reenable_clears_stale_tail(void) {
 }
 
 
+/* P0 door: a layout that does not fit is REFUSED, not published. A refused layout leaves the
+ * state inert and unpublished (`sr` 0, `_pool` NULL, the rate the process path never meets), so
+ * the insert is dry on purpose and the caller can tell. Today's silent result: the rate is
+ * stored on a state whose pool ran out. */
+static void test_layout_refuses_what_does_not_fit(void) {
+  static const float bad_rates[] = {384000.0f, 1.0e9f, 0.0f, -48000.0f};
+  for (unsigned i = 0; i < sizeof bad_rates / sizeof bad_rates[0]; i++) {
+    float *pool = calloc(OMX_REVERB_POOL_FLOATS, sizeof(float));
+    struct omx_reverb_state *st = calloc(1, sizeof(*st));
+    int rc = omx_reverb_state_layout(st, pool, OMX_REVERB_POOL_FLOATS, bad_rates[i]);
+    check(rc == 0, "a refused layout returns 0");
+    char b[160];
+    snprintf(b, sizeof b, "layout at %g Hz is refused: state unpublished (sr %g, pool %s)",
+             (double)bad_rates[i], (double)st->sr, st->_pool ? "bound" : "NULL");
+    check(st->sr == 0.0f && st->_pool == NULL, b);
+    free(st); free(pool);
+  }
+  /* NaN rate, NULL pool, a pool too small, a good layout: the return says which. */
+  static float tiny[64];
+  struct omx_reverb_state st;
+  float *pool = calloc(OMX_REVERB_POOL_FLOATS, sizeof(float));
+  memset(&st, 0, sizeof st);
+  check(omx_reverb_state_layout(&st, pool, OMX_REVERB_POOL_FLOATS, NAN) == 0 && st.sr == 0.0f && st._pool == NULL,
+        "a NaN rate is refused");
+  check(omx_reverb_state_layout(&st, NULL, OMX_REVERB_POOL_FLOATS, 48000.0f) == 0 && st._pool == NULL,
+        "a NULL pool is refused");
+  check(omx_reverb_state_layout(NULL, pool, OMX_REVERB_POOL_FLOATS, 48000.0f) == 0, "a NULL state is refused");
+  check(omx_reverb_state_layout(&st, tiny, 64, 48000.0f) == 0 && st.sr == 0.0f,
+        "a pool too small is refused and the rate not published");
+  check(omx_reverb_state_layout(&st, pool, OMX_REVERB_POOL_FLOATS, (float)OMX_REVERB_MAX_RATE) == 1 &&
+            st.sr == (float)OMX_REVERB_MAX_RATE && st._pool == pool,
+        "the ceiling rate fits and is published");
+  free(pool);
+}
+
+
+/* Review of #71, gap 1: the rate ceiling is its own refusal. The exhausted-pool path already
+ * refuses 384 kHz, so a rate arm with a pool that does not fit cannot tell whether the ceiling
+ * clause exists. One Hz above the ceiling, with a pool that FITS the layout, can. */
+static void test_layout_refuses_a_rate_above_the_ceiling_with_a_fitting_pool(void) {
+  float *pool = calloc(OMX_REVERB_POOL_FLOATS, sizeof(float));
+  struct omx_reverb_state *st = calloc(1, sizeof(*st));
+  float above = (float)OMX_REVERB_MAX_RATE + 1.0f;
+  check(omx_reverb_state_layout(st, pool, OMX_REVERB_POOL_FLOATS, (float)OMX_REVERB_MAX_RATE) == 1,
+        "presence: the pool fits the layout at the ceiling");
+  check(omx_reverb_state_layout(st, pool, OMX_REVERB_POOL_FLOATS, above) == 0,
+        "one Hz above the ceiling is refused although the pool fits");
+  check(st->sr == 0.0f && st->_pool == NULL, "the refused rate leaves the state unpublished");
+  free(st); free(pool);
+}
+
+/* Review of #71, gap 2: omx_pool_take called directly, where next_free + len wraps the unsigned
+ * range. The summed form accepts the request and hands out a pointer past the pool. */
+static void test_pool_take_refuses_a_length_that_wraps(void) {
+  static float pool[100];
+  struct omx_reverb_state st;
+  memset(&st, 0, sizeof st);
+  st._pool = pool; st.pool_len = 100; st.next_free = 50;
+  float *p = omx_pool_take(&st, 0xFFFFFFF0u); /* 50 + len wraps to 34, which is below pool_len */
+  check(p == NULL && st._exhausted == 1 && st.next_free == 50, "a length whose sum wraps is refused, the cursor unmoved");
+  memset(&st, 0, sizeof st);
+  st._pool = pool; st.pool_len = 100; st.next_free = 50;
+  check(omx_pool_take(&st, 50) == pool + 50 && st.next_free == 100 && !st._exhausted, "presence: an exact fit is taken");
+  check(omx_pool_take(&st, 1) == NULL && st._exhausted == 1, "one float past the end is refused");
+}
+
+
 /* A pool too small to lay out must leave the reverb INERT — `_pool` NULL, so omx_reverb_process
  * returns immediately — rather than storing NULLs in the sub-buffers for the RT thread to
  * dereference. REACHABLE: mix_reverb.h's per-rate table shows x3.71 headroom at 96 kHz and the
@@ -596,6 +663,9 @@ int main(void) {
     test_lowcut_attenuates_low_leaves_mid();
     test_reenable_clears_stale_tail();
     test_exhausted_pool_is_inert_not_a_crash();
+    test_layout_refuses_what_does_not_fit();
+    test_layout_refuses_a_rate_above_the_ceiling_with_a_fitting_pool();
+    test_pool_take_refuses_a_length_that_wraps();
   }
   printf("fx/reverb: %d checks, %d failures (%d rates)\n", g_checks, g_fail, (int)OMX_FX_ORACLE_RATE_COUNT);
   return g_fail == 0 ? 0 : 1;
