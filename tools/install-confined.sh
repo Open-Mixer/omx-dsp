@@ -16,7 +16,7 @@
 #
 # Inner check, what it WRITES and REMOVES (all of it in a container that is thrown away):
 #   /w                a copy of the tree (removed first); the install runs there
-#   a mktemp -d       under /tmp: the prefix, the destdir, the snapshots and the make log (removed at the end)
+#   a mktemp -d       (TMPDIR, else /tmp): the prefix, the destdir, the snapshots and the make log (removed at the end)
 #   the system contract directory /usr/share/omx-contract/contract.d/3/omx-dsp/: ONE sentinel file planted (the proof the
 #                     install does not remove it); and, when omx-contract is not installed, dnf installs gcc, make,
 #                     pkgconf, omx-contract-devel and the OpenMixer release package (no chmod anywhere)
@@ -26,6 +26,8 @@
 # tree copied from (the check's own work; the install is run from /w, never from the source), and CI's /__w and /github (the
 # runner's own directories). $HOME and every other path is listed, so an escape into it is seen. An install that wrote into
 # /tmp or /var/tmp is not seen: the install's own root and the build's scratch live there.
+# The snapshot records type, mode, owner and group as well as size, time and link target, so a chmod or chown outside the
+# prefix is seen (the cost is one more find field). Every header of include/omxdsp must land under the prefix.
 # Exit 0 green; 1 a path escaped or the install did not land where it should; 2 it could not be judged (no podman and no
 # opt-in, no image, no omx-contract), never a pass.
 set -euo pipefail
@@ -53,7 +55,7 @@ mkdir -p "$(dirname "$sentinel")"; echo planted > "$sentinel"
 
 snap() {
   find / -xdev \( -path /proc -o -path /sys -o -path /dev -o -path /run -o -path /tmp -o -path /var/tmp -o -path "$work" -o -path "$SRC" -o -path /__w -o -path /github \) -prune \
-    -o -type d -printf '%p\td\n' -o -printf '%p\t%y %s %T@ %l\n' | LC_ALL=C sort > "$1"
+    -o -type d -printf '%p\td %m %u %g\n' -o -printf '%p\t%y %m %u %g %s %T@ %l\n' | LC_ALL=C sort > "$1"
 }
 fail=0
 confined() { # <label> <make args...>
@@ -72,7 +74,10 @@ confined() { # <label> <make args...>
 P=$scratch/p D=$scratch/d
 confined "PREFIX=$P" install PREFIX="$P"
 [ -f "$P"/share/omx-contract/contract.d/3/omx-dsp/MANIFEST.json ] || { echo "install-confined: PREFIX=$P: the contract directory is not under the prefix"; fail=1; }
-[ -f "$P"/include/omxdsp/omx_dsp.h ] || ls "$P"/include/omxdsp >/dev/null 2>&1 || { echo "install-confined: PREFIX=$P: no headers under the prefix"; fail=1; }
+for h in "$SRC"/include/omxdsp/*.h "$SRC"/include/omxdsp/*/*.h; do
+  rel=${h#"$SRC"/}
+  [ -f "$P/$rel" ] || { echo "install-confined: PREFIX=$P: the install put no $rel under the prefix"; fail=1; }
+done
 confined "DESTDIR=$D PREFIX=/usr" install DESTDIR="$D" PREFIX=/usr
 [ -f "$D"/usr/share/omx-contract/contract.d/3/omx-dsp/MANIFEST.json ] || { echo "install-confined: DESTDIR=$D PREFIX=/usr: the contract directory is not under the destdir"; fail=1; }
 [ "$fail" = 0 ] || { echo "install-confined: FAIL"; exit 1; }
