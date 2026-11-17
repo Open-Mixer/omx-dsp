@@ -112,9 +112,17 @@ static inline int omx_reverb_instance_init(OmxReverbInstance *s, float sr) {
 #define OMX_CONTRACT_STAGE "reverb/instance-clear"
 static inline void omx_reverb_instance_clear(OmxReverbInstance *s) {
   if (!s || !s->ready) return;
-  omx_reverb_state_layout(&s->state, s->pool, OMX_REVERB_POOL_FLOATS, s->sr);
+  /* Neither call below can refuse here, so their returns are dropped on purpose. `ready` is set only
+   * by omx_reverb_instance_init, after omx_reverb_state_layout accepted this same pool
+   * (OMX_REVERB_POOL_FLOATS floats) at this same `sr`, and omx_fdelay_init this same ring, cap and
+   * order; each is a function of those arguments alone and reads nothing a cycle has written since.
+   * The precondition is stated and counted under OMX_CONTRACTS; the POST below holds the result
+   * (test/fx/reverb_instance.test.c arm F, the nine oracle rates; omx-dsp#72). */
+  OMX_PRE(s->sr > 0.0f && s->sr <= (float)OMX_REVERB_MAX_RATE, "clear-layout-cannot-refuse");
+  (void)omx_reverb_state_layout(&s->state, s->pool, OMX_REVERB_POOL_FLOATS, s->sr);
   memset(s->early_ring, 0, sizeof s->early_ring);
-  omx_fdelay_init(&s->rstate.line, s->early_ring, OMX_REVERB_INSTANCE_EARLY_CAP, OMX_REVERB_INSTANCE_EARLY_ORDER);
+  (void)omx_fdelay_init(&s->rstate.line, s->early_ring, OMX_REVERB_INSTANCE_EARLY_CAP,
+                        OMX_REVERB_INSTANCE_EARLY_ORDER);
   s->rstate.duck.level = 0.0f;
   omx_deess_state_init(&s->rstate.deess);
   OMX_POST(!s->state._exhausted && s->state.sr == s->sr && s->state.pre_pos == 0u &&
