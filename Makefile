@@ -44,6 +44,8 @@
 #   make curve-json-sabotage  the curve-json arm (omx_curve_json.h) fails against nine sabotages
 #   make curve-vectors  vectors/curve-points.json through the native door: needs python3 and node;
 #               make curve-vectors-write rewrites it, make curve-vectors-sabotage breaks the library nine ways
+#   make wasm  build/wasm/omx-dsp.wasm, the curve function as WebAssembly (clang, lld, wasi-libc; tools/wasm-build.sh);
+#               make wasm-check holds it to the loader's contract (node), make install-wasm installs it, make wasm-sabotage breaks it four ways
 #   make curve-golden  test/kernels/fixtures/curve_golden.h rewritten from omx_curve_points() (tools/curve-golden.c)
 #   make meter-view-sabotage  the meter view arm (mix/omx_meter_view.h) fails against seven sabotages
 #   make meter-view-golden  vectors/meter-view.json rewritten from the meter view law (tools/meter-view-golden.c)
@@ -200,7 +202,7 @@ VERSION    := $(shell sed -n 's/^\#define OMXDSP_VERSION_\(MAJOR\|MINOR\|PATCH\)
 
 
 
-.PHONY: fuzz fuzz-run fuzz-sabotage fuzz-records fuzz-coverage fuzz-corpus all lib test lint docs docs-check docs-baseline docs-sabotage clean contract-dir definitions definitions-check contract-proof contract-tests test-tsan suite negative consumer gen-once perturb fdelay-sabotage doppler-sabotage onepole-sabotage threads threads-sabotage checks cost-prel test-fx test-analysis install version golden-write flavours bench-mixmatrix bench-gate bench-drive bench-flanger check-log10f strip-input-identity analysis-engine-identity test-mix mix-engine-identity test-engine-kernels engine-kernels-identity magnitude-sabotage eq-sabotage curve-golden curve-sabotage curve-json-sabotage curve-vectors curve-vectors-write curve-vectors-sabotage meter-view-golden rta-bands-golden meter-view-sabotage rta-bands-sabotage geq-true-sabotage delay-taps-sabotage align-fdelay-sabotage pitch-rates-sabotage instance-rates-sabotage bandwidth-q-table bandwidth-q-sabotage eq-default-bands eq-defaults-table room-ts-golden public-sources private-refs deps deps-check cost-deesser note-map-sabotage exports copy-check eq-q-range-sabotage
+.PHONY: wasm wasm-check wasm-sabotage install-wasm fuzz fuzz-run fuzz-sabotage fuzz-records fuzz-coverage fuzz-corpus all lib test lint docs docs-check docs-baseline docs-sabotage clean contract-dir definitions definitions-check contract-proof contract-tests test-tsan suite negative consumer gen-once perturb fdelay-sabotage doppler-sabotage onepole-sabotage threads threads-sabotage checks cost-prel test-fx test-analysis install version golden-write flavours bench-mixmatrix bench-gate bench-drive bench-flanger check-log10f strip-input-identity analysis-engine-identity test-mix mix-engine-identity test-engine-kernels engine-kernels-identity magnitude-sabotage eq-sabotage curve-golden curve-sabotage curve-json-sabotage curve-vectors curve-vectors-write curve-vectors-sabotage meter-view-golden rta-bands-golden meter-view-sabotage rta-bands-sabotage geq-true-sabotage delay-taps-sabotage align-fdelay-sabotage pitch-rates-sabotage instance-rates-sabotage bandwidth-q-table bandwidth-q-sabotage eq-default-bands eq-defaults-table room-ts-golden public-sources private-refs deps deps-check cost-deesser note-map-sabotage exports copy-check eq-q-range-sabotage
 
 all: lib
 
@@ -407,6 +409,25 @@ curve-vectors: $(BUILD)/curve_json_cli
 
 curve-vectors-sabotage: test/curve-vectors-sabotage.sh $(HEADERS) | $(BUILD)
 	CC="$(CC)" CFLAGS="$(CFLAGS)" bash test/curve-vectors-sabotage.sh $(BUILD)/curve-vectors-sabotage
+
+# The curve function as one WebAssembly module (wasm/omx_curve_wasm.c), built with the distribution's clang, lld and
+# wasi-libc by tools/wasm-build.sh, the one recipe (omx-panel's module is built by the same script): `make wasm` writes
+# build/wasm/omx-dsp.wasm, `make wasm-check` (node) holds it to the loader's contract (no imports, four exports, a request
+# answered), `make install-wasm` puts it under DATADIR/omx-dsp/wasm/ for the noarch omx-dsp-wasm package. Never committed.
+wasm: $(BUILD)/wasm/omx-dsp.wasm
+
+$(BUILD)/wasm/omx-dsp.wasm: wasm/omx_curve_wasm.c tools/wasm-build.sh $(HEADERS) | $(BUILD)
+	sh tools/wasm-build.sh $@ wasm/omx_curve_wasm.c
+
+wasm-check: $(BUILD)/wasm/omx-dsp.wasm
+	node tools/wasm-check.mjs $<
+
+wasm-sabotage: wasm/omx_curve_wasm.c test/wasm-sabotage.sh tools/wasm-check.mjs tools/wasm-build.sh
+	bash test/wasm-sabotage.sh $(BUILD)/wasm-sabotage
+
+install-wasm: $(BUILD)/wasm/omx-dsp.wasm
+	install -d $(DESTDIR)$(DATADIR)/omx-dsp/wasm
+	install -m 0644 $< $(DESTDIR)$(DATADIR)/omx-dsp/wasm/omx-dsp.wasm
 
 eq-defaults-table:
 	node tools/eq-defaults-golden.mjs --check
