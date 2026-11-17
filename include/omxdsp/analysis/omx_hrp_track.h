@@ -94,7 +94,7 @@ typedef struct {
 
 /** 1 when `cfg` is a config omx_hrp_track_update accepts: non-NULL, `match_cents` and `steady_cents`
  * finite and above 0. A caller that cannot report a refused update mid-stream checks this once up front.
- * @thread any */
+ * @thread worker */
 static inline int omx_hrp_track_config_valid(const OmxHrpTrackConfig *cfg) {
   return cfg && isfinite(cfg->match_cents) && cfg->match_cents > 0.0f && isfinite(cfg->steady_cents) &&
          cfg->steady_cents > 0.0f;
