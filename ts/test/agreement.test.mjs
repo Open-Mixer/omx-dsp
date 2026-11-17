@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Pau Aliagas <linuxnow@gmail.com>
 /**
- * EVERY TWIN AGREES WITH ITS KERNEL: the twin (dist/, the published code) and the omx-dsp kernel
+ * EVERY TWIN AGREES WITH ITS KERNEL: the twin (dist/, the published code; the curve function is the C as WebAssembly) and the omx-dsp kernel
  * (oracle/ts-twin-oracle.c) run one grid and must agree inside the tolerance test/tolerances.mjs states. A twin
  * whose SABOTAGE arm stays green would be decoration, so each has one. Moved here from the console with the twins.
  */
@@ -16,9 +16,8 @@ import {
   EQ_NOTCH_Q_RANGE,
   EQ_Q_RANGE,
   biquadMagnitudeDb,
-  butterworthQs,
   clampEqQFor,
-  curvePoints,
+  loadCurve,
   dbToLinearGain,
   fftSizeForRate,
   gaincompDb,
@@ -30,7 +29,12 @@ import {
   octavesToQ,
   rbjSection,
 } from '../dist/index.js';
+import { readFileSync } from 'node:fs';
 import { TOLERANCES as T } from './tolerances.mjs';
+
+/** curvePoints is the C's own, as WebAssembly (ts/wasm/omx-dsp.wasm, built by `npm run build:wasm`): this file asks the
+ *  module and the native oracle the same questions, and a difference is a finding about the toolchain, not a twin's drift. */
+const { curvePoints } = await loadCurve(readFileSync(new URL('../wasm/omx-dsp.wasm', import.meta.url)));
 
 const red = (asked, twin, tol) => against(asked, twin, tol).failures.length > 0;
 
@@ -255,15 +259,6 @@ describe('gaincompDbShifted and gateKnee agree with omx_gaincomp_db_shifted and 
   it('SABOTAGE: the shift one float step off, and the centred knee for the shifted one: each red', () => {
     assert.ok(against(asked, (r) => [gaincompDbShifted({ mode: 'below', threshDb: r[0], ratio: r[1], kneeDb: r[2], rangeDb: r[3] }, r[4] === 0 ? 0 : nextFloat(r[4]), r[5])], T.gaincompDbShifted).failures.length > 50);
     assert.ok(against(asked, (r) => [gaincompDb({ mode: 'below', threshDb: r[0], ratio: r[1], kneeDb: r[2], rangeDb: r[3] }, r[5])], T.gaincompDbShifted).failures.length > 50);
-  });
-});
-
-describe('butterworthQs agrees with omx_eq_butterworth_qs', () => {
-  it('one section at 12 dB/oct, two at 24, the kernel\'s digits; the 24 dB pair swapped is red', () => {
-    const asked = ask('eq_butterworth_qs', [[0], [1]]);
-    const twin = (r) => { const q = butterworthQs(r[0] === 1); return [q.length, q[0], q[1] ?? 0]; };
-    assert.deepEqual(against(asked, twin, { abs: 0 }).failures, []);
-    assert.ok(against(asked, (r) => { const q = [...butterworthQs(r[0] === 1)].reverse(); return [q.length, q[0], q[1] ?? 0]; }, { abs: 0 }).failures.length > 0);
   });
 });
 
