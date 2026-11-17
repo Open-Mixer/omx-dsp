@@ -14,6 +14,7 @@
 #   pingpong-leg   the ping-pong's first echo on the right, not the left (omx_curve.h);
 #   precision      the numbers of an answer written %.6g, not %.17g (omx_curve_json.h);
 #   code-word      termMissing answered as kindUnknown (omx_curve_json.h).
+# With a wasm toolchain and ts/dist built, each sabotage is also built to WebAssembly and the --wasm door must go red.
 # The tree is never edited; a sed that matches nothing is a failure, not a skip.
 # Usage: CC=… CONTRACT_INC=… NODE=… curve-vectors-sabotage.sh <scratch-dir>
 set -euo pipefail
@@ -29,6 +30,8 @@ build() { # $1 = include root holding omxdsp/, $2 = output binary
   $CC $CFLAGS -ffp-contract=off -I"$1" -isystem "$CONTRACT_INC" -o "$2" "$PKG/tools/curve-json-cli.c" -lm
 }
 
+WASM_TOOLCHAIN=""
+if command -v "${CLANG:-clang}" >/dev/null 2>&1 && [ -f "$PKG/ts/dist/wasm.js" ]; then WASM_TOOLCHAIN=1; else echo "curve-vectors-sabotage: the wasm door is not exercised here (no clang, or ts/dist not built)"; fi
 mkdir -p "$OUT"
 build "$PKG/include" "$OUT/control"
 ( cd "$PKG" && "$NODE" test/curve-vectors.mjs --native "$OUT/control" ) >"$OUT/control.log" 2>&1 \
@@ -49,6 +52,15 @@ run() { # $1 = name, $2 = header under include/omxdsp, $3 = sed expression
     exit 1
   fi
   echo "curve-vectors-sabotage: $1 — $(grep -c '^FINDING' "$dir/run.log") findings, as there must be"
+  # the WebAssembly door built from the same broken header must go red too (where the toolchain is)
+  if [ -n "$WASM_TOOLCHAIN" ]; then
+    OMX_DSP_INCLUDE="$dir" sh "$PKG/tools/wasm-build.sh" "$dir/m.wasm" "$PKG/wasm/omx_curve_wasm.c" >/dev/null
+    if ( cd "$PKG" && "$NODE" test/curve-vectors.mjs --wasm "$dir/m.wasm" ) >"$dir/wasm.log" 2>&1; then
+      echo "curve-vectors-sabotage: FAIL — the WebAssembly door passed with the $1 sabotage"
+      exit 1
+    fi
+    echo "curve-vectors-sabotage: $1 — the wasm door is red too, $(grep -c '^FINDING' "$dir/wasm.log") findings"
+  fi
 }
 
 run makeup omx_curve.h 's|    y\[i\] = lv + (double)g + mk;|    y[i] = lv + (double)g + 0.0 * mk;|'

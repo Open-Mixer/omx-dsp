@@ -214,6 +214,11 @@ jobs:
         run: |
           apt-get -o Dpkg::Options::=--force-unsafe-io install -y --no-install-recommends python3
           make -j"$OMX_JOBS" curve-vectors curve-vectors-sabotage
+      - name: The shared curve vectors, through the native door and the WebAssembly door
+        run: |
+          set -euo pipefail
+          (cd ts && npm ci && npm run build)
+          make -j"$OMX_JOBS" curve-vectors-wasm curve-vectors-sabotage
       - name: npm test
         working-directory: ts
         run: |
