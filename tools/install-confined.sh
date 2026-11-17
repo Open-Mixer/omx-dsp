@@ -34,7 +34,7 @@ set -euo pipefail
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
 
 if [ "${OMX_INSTALL_CONFINED_INNER:-}" != 1 ]; then
-  image=${OMX_INSTALL_CONFINED_IMAGE:-$(cat "$HERE/tools/install-confined.image")}
+  image=${OMX_INSTALL_CONFINED_IMAGE:-$(grep -m1 -v '^#' "$HERE/tools/install-confined.image")}
   command -v podman >/dev/null 2>&1 || { echo "install-confined: UNJUDGED: no podman, and OMX_INSTALL_CONFINED_INNER=1 is not set: the check runs only in a throwaway container" >&2; exit 2; }
   exec podman run --rm --security-opt label=disable -e OMX_INSTALL_CONFINED_INNER=1 -v "$HERE:/src:ro" "$image" bash /src/tools/install-confined.sh
 fi

@@ -12,7 +12,7 @@ set -euo pipefail
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
 if [ "${1:-}" != --inner ]; then
   command -v podman >/dev/null 2>&1 || { echo "install-confined-selftest: needs podman" >&2; exit 2; }
-  image=${OMX_INSTALL_CONFINED_IMAGE:-$(cat "$HERE/tools/install-confined.image")}
+  image=${OMX_INSTALL_CONFINED_IMAGE:-$(grep -m1 -v '^#' "$HERE/tools/install-confined.image")}
   exec podman run --rm --security-opt label=disable --user 1000 -v "$HERE:/src:ro" "$image" bash /src/tools/install-confined-selftest.sh --inner
 fi
 [ -f /run/.containerenv ] || [ -f /.dockerenv ] || { echo "install-confined-selftest: --inner refuses to run outside a container" >&2; exit 2; }
