@@ -59,7 +59,10 @@
 #               (tools/eq-defaults-golden.mjs, node)
 #   make public-sources  no tracked file names a private repository, path or issue (Open-Mixer/.github's
 #               private-refs-check, from a checkout of it: DOTGITHUB=<dir>)
-#   make docs   the API reference by doxygen (build-time only)
+#   make docs   the API reference by doxygen (build-time only), over every installed header
+#   make docs-check  doxygen's undocumented-declaration and parameter warnings against
+#               docs/doxygen-baseline.txt, which only shrinks (DOCS_BASELINE_BASE=<file>: the base's copy);
+#               make docs-sabotage  the gate against sabotaged copies of the tree
 #   make test-tsan  the thread arm under -fsanitize=thread where the toolchain has it
 #   make rt-gate   omx-rt-gate, the one static real-time gate (tools/rt-gate, omx-rt-gate(1)): its class
 #               table measured by the externals arm, its planted fixtures red and clean twins green, its
@@ -126,7 +129,7 @@ endif
 # at or above the floor packaging/omx-dsp.spec declares, found by pkg-config in tools/contract-include.sh
 # (nothing is downloaded); this tree commits no copy of them. Every sub-script that compiles gets the
 # directory as CONTRACT_INC.
-ifeq ($(filter version clean docs public-sources private-refs exports copy-check deps deps-check,$(MAKECMDGOALS)),)
+ifeq ($(filter version clean docs docs-check docs-sabotage public-sources private-refs exports copy-check deps deps-check,$(MAKECMDGOALS)),)
 CONTRACT_INC := $(shell sh tools/contract-include.sh)
 ifeq ($(CONTRACT_INC),)
 $(error tools/contract-include.sh found no omx-contract: see its message above)
@@ -137,6 +140,8 @@ INC      = -Iinclude -isystem $(CONTRACT_INC)
 # The floor the spec declares, rendered into omxdsp.pc's Requires, beside its ceiling, the next major.
 CONTRACT_FLOOR   := $(shell sh tools/contract-include.sh --floor)
 BUILD    = build
+DOCS_BASELINE = docs/doxygen-baseline.txt
+DOCS_WARNINGS = $(BUILD)/docs/warnings.txt
 LIB      = $(BUILD)/libomxdsp.a
 HEADERS  = $(wildcard include/omxdsp/*.h)
 ANALYSIS_HEADERS = $(wildcard include/omxdsp/analysis/*.h)
@@ -187,7 +192,7 @@ VERSION    := $(shell sed -n 's/^\#define OMXDSP_VERSION_\(MAJOR\|MINOR\|PATCH\)
 
 
 
-.PHONY: fuzz fuzz-run fuzz-sabotage fuzz-records fuzz-coverage fuzz-corpus all lib test lint docs clean contract-dir definitions definitions-check contract-proof contract-tests test-tsan suite negative consumer gen-once perturb fdelay-sabotage doppler-sabotage onepole-sabotage threads threads-sabotage checks cost-prel test-fx test-analysis install version golden-write flavours bench-mixmatrix bench-gate bench-drive bench-flanger check-log10f strip-input-identity analysis-engine-identity test-mix mix-engine-identity test-engine-kernels engine-kernels-identity magnitude-sabotage eq-sabotage curve-golden curve-sabotage meter-view-golden rta-bands-golden meter-view-sabotage rta-bands-sabotage geq-true-sabotage delay-taps-sabotage align-fdelay-sabotage pitch-rates-sabotage instance-rates-sabotage bandwidth-q-table bandwidth-q-sabotage eq-default-bands eq-defaults-table room-ts-golden public-sources private-refs deps deps-check cost-deesser note-map-sabotage exports copy-check eq-q-range-sabotage
+.PHONY: fuzz fuzz-run fuzz-sabotage fuzz-records fuzz-coverage fuzz-corpus all lib test lint docs docs-check docs-sabotage clean contract-dir definitions definitions-check contract-proof contract-tests test-tsan suite negative consumer gen-once perturb fdelay-sabotage doppler-sabotage onepole-sabotage threads threads-sabotage checks cost-prel test-fx test-analysis install version golden-write flavours bench-mixmatrix bench-gate bench-drive bench-flanger check-log10f strip-input-identity analysis-engine-identity test-mix mix-engine-identity test-engine-kernels engine-kernels-identity magnitude-sabotage eq-sabotage curve-golden curve-sabotage meter-view-golden rta-bands-golden meter-view-sabotage rta-bands-sabotage geq-true-sabotage delay-taps-sabotage align-fdelay-sabotage pitch-rates-sabotage instance-rates-sabotage bandwidth-q-table bandwidth-q-sabotage eq-default-bands eq-defaults-table room-ts-golden public-sources private-refs deps deps-check cost-deesser note-map-sabotage exports copy-check eq-q-range-sabotage
 
 all: lib
 
@@ -1103,8 +1108,38 @@ test-tsan: test/omxdsp_threads.c tools/tsan-gate.sh tools/tsan-gate-selftest.sh 
 	CC="$(CC)" bash tools/tsan-gate.sh $(BUILD)/tsan omxdsp_threads OMXDSP_THREADS_SABOTAGE_SHARED_STATE \
 	  $(TESTFLAGS) -pthread test/omxdsp_threads.c $(LIB_TSAN) -lm
 
-docs: $(HEADERS) | $(BUILD)
+# The API reference over every installed header; doxygen's undocumented-member and parameter warnings
+# go to $(DOCS_WARNINGS) (Doxyfile: WARN_LOGFILE), gated by docs-check, so the render itself never fails.
+docs: $(HEADERS) $(FX_HEADERS) $(ANALYSIS_HEADERS) $(MIX_HEADERS) Doxyfile | $(BUILD)
+	@mkdir -p $(BUILD)/docs
 	doxygen Doxyfile
+
+# The documentation gate: every warning doxygen wrote is in $(DOCS_BASELINE) (sorted, one row per
+# undocumented public declaration), and every baseline row is still warned, so the baseline only
+# shrinks and a new or changed public declaration must be documented. A row is the header and doxygen's
+# text with the tree's path stripped and a warning's continuation lines (the parameters it lists) joined,
+# so it reads the same in every checkout and names one declaration. With DOCS_BASELINE_BASE=<file>
+# (the baseline at the branch's base, `git show <base>:$(DOCS_BASELINE)`), a row not in that file is red.
+# #70 is closed when the baseline is empty.
+docs-check: docs
+	@LC_ALL=C sort -c -u $(DOCS_BASELINE)
+	@test -e $(DOCS_WARNINGS) || : > $(DOCS_WARNINGS)
+	@sed "s#$$(pwd -P)/##g" $(DOCS_WARNINGS) | awk '/^[^ \t]/ { if (r != "") print r; r = $$0; next } { r = r " " $$0 } END { if (r != "") print r }' \
+	  | LC_ALL=C sort -u > $(DOCS_WARNINGS).sorted
+	@new=$$(comm -13 $(DOCS_BASELINE) $(DOCS_WARNINGS).sorted); if [ -n "$$new" ]; then \
+	  printf '%s\n' "$$new" >&2; echo "docs-check: FAIL — undocumented public declarations not in $(DOCS_BASELINE) (document them)" >&2; exit 1; fi
+	@gone=$$(comm -23 $(DOCS_BASELINE) $(DOCS_WARNINGS).sorted); if [ -n "$$gone" ]; then \
+	  printf '%s\n' "$$gone" >&2; echo "docs-check: FAIL — these $(DOCS_BASELINE) rows are documented now: drop them" >&2; exit 1; fi
+	@if [ -n "$(DOCS_BASELINE_BASE)" ]; then grew=$$(LC_ALL=C sort -u $(DOCS_BASELINE_BASE) | comm -13 - $(DOCS_BASELINE)); \
+	  if [ -n "$$grew" ]; then printf '%s\n' "$$grew" >&2; echo "docs-check: FAIL — $(DOCS_BASELINE) grew against $(DOCS_BASELINE_BASE); it only shrinks" >&2; exit 1; fi; fi
+	@echo "docs-check: ok — $$(wc -l < $(DOCS_BASELINE)) undocumented public declarations in the baseline, none new"
+
+# docs-check against four sabotaged copies of the tree: an undocumented public declaration added to a
+# header (red, naming it), its row in the baseline (green: the baseline is the one allowance), its row
+# added to the baseline against the tree's as base (red: the baseline grew), and a baseline row nothing
+# warns (red: stale). The tree is never edited.
+docs-sabotage: Doxyfile Makefile test/docs-sabotage.sh $(DOCS_BASELINE)
+	bash test/docs-sabotage.sh $(BUILD)/docs-sabotage
 
 clean:
 	rm -rf $(BUILD)
