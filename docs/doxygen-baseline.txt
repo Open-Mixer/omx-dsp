@@ -1,4 +1,3 @@
-<include/omxdsp/fx/>: warning: unable to resolve link to 'OMX_GEQ_BANDS' for \link command
 include/omxdsp/analysis/omx_fbs_detect.h: warning: Member bin (variable) of struct OmxFbsCandidate is not documented.
 include/omxdsp/analysis/omx_fbs_detect.h: warning: Member bin (variable) of struct OmxFbsSlot is not documented.
 include/omxdsp/analysis/omx_fbs_detect.h: warning: Member confirm_seq (variable) of struct OmxFbsSlot is not documented.
@@ -568,7 +567,6 @@ include/omxdsp/fx/omx_flanger_instance.h: warning: parameters of member omx_flan
 include/omxdsp/fx/omx_flanger_instance.h: warning: parameters of member omx_flanger_instance_init are not documented
 include/omxdsp/fx/omx_flanger_instance.h: warning: return type of member omx_flanger_instance_cap_for is not documented
 include/omxdsp/fx/omx_flanger_instance.h: warning: return type of member omx_flanger_instance_init is not documented
-include/omxdsp/fx/omx_geq.h: warning: unable to resolve link to 'OMX_GEQ_BANDS' for \link command
 include/omxdsp/fx/omx_geq_instance.h: warning: Member atom (variable) of struct OmxGeqInstance is not documented.
 include/omxdsp/fx/omx_geq_instance.h: warning: Member coeffs[OMX_GEQ_BANDS][5] (variable) of struct OmxGeqInstance is not documented.
 include/omxdsp/fx/omx_geq_instance.h: warning: Member designed (variable) of struct OmxGeqInstance is not documented.

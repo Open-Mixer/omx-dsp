@@ -44,7 +44,9 @@ Test builds use `omxdsp-contracts` (or `omxdsp-tsan`) in place of `omxdsp`.
 <https://www.openmixer.org/projects/omx-dsp>, `man omx-dsp-copy-check`, and in this repository: how the
 kernels are tested, the three library flavours and the copy check for consumers
 ([docs/overview.md](docs/overview.md)); building from source and running the tests
-([BUILDING.md](BUILDING.md)).
+([BUILDING.md](BUILDING.md)). Every public declaration of the installed headers is documented with
+Doxygen, held by `make docs-check` against `docs/doxygen-baseline.txt`, the rows still undocumented,
+which only shrinks (BUILDING.md).
 
 ## Licence
 
