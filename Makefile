@@ -713,7 +713,7 @@ ANALYSIS_LDFLAGS_sweep = -Wl,--wrap=malloc,--wrap=calloc,--wrap=realloc,--wrap=f
 ANALYSIS_LDFLAGS_room = -Wl,--wrap=malloc,--wrap=calloc,--wrap=realloc,--wrap=free
 ANALYSIS_LDFLAGS_align_fit = -Wl,--wrap=malloc,--wrap=calloc,--wrap=realloc,--wrap=free
 ANALYSIS_DEPS = $(LIB) $(HEADERS) $(ANALYSIS_HEADERS) $(wildcard test/analysis/*.h) $(wildcard test/analysis/fixtures/*.h) \
-                test/fx/sha256.h $(SUPPORT_HEADERS) | $(BUILD)
+                test/fx/sha256.h test/fx/child_run.h $(SUPPORT_HEADERS) | $(BUILD)
 
 $(BUILD)/analysis_%: test/analysis/%.test.c $(ANALYSIS_DEPS)
 	$(CC) $(CFLAGS) $(INC) -Isrc -Itest/analysis -Itest/fx $(ANALYSIS_LDFLAGS_$*) -o $@ $< $(LIB) -lm
