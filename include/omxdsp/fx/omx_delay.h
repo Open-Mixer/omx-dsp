@@ -131,9 +131,11 @@ static inline float omx_fxdelay_read_frac(const float *ring, uint32_t w, uint32_
 #undef OMX_CONTRACT_STAGE
 #define OMX_CONTRACT_STAGE "fx-delay/bpm-division"
 /** @brief Tempo-synced delay time in ms: `division_beats * 60000 / bpm` (1/4=1.0, 1/8=0.5, dotted-1/8=0.75, 1/8T=1/3).
- * @param bpm The tempo, beats per minute, above 0.
- * @param division_beats The division, beats.
- * @return The time, ms.
+ * @param bpm The tempo, beats per minute; 0, negative or NaN is no tempo and the time is 0.
+ * @param division_beats The division, beats, at or above 0.
+ * @return The time, ms, finite and at or above 0; a tempo near 0 is held at FLT_MAX for the caller's travel to clamp.
+ * @pre `division-is-not-negative`.
+ * @post `a-synced-time-is-a-finite-non-negative-ms`.
  * @thread audio */
 static inline float omx_bpm_division_ms(float bpm, float division_beats) {
   /* CONTRACT (omx_contract.h). A synced time is a DERIVATION, and the one way it goes wrong is
@@ -167,9 +169,9 @@ static inline float omx_bpm_division_ms(float bpm, float division_beats) {
  */
 /** @brief The feedback one-pole's coefficient for the `tone` knob at the live rate: the knob's corner
  * is the same at every declared rate (R-058). Once per block.
- * @param tone The tone knob, 0..1 (0 bright, towards 1 dark); a non-finite tone is 0.
+ * @param tone The tone knob, clamped into 0..1 (0 bright, 1 dark); a non-finite tone is 0.
  * @param sr The live rate, Hz.
- * @return The pole, in [0, 1).
+ * @return The pole at `sr`, in [0, 1]: 0 and 1 are fixed points, as is the reference rate itself.
  * @thread audio */
 static inline float omx_fxdelay_tone_pole(float tone, float sr) {
   /* A non-finite tone is no tone at all (pole 0, bright): a NaN carried into the damping state
@@ -184,9 +186,11 @@ static inline float omx_fxdelay_tone_pole(float tone, float sr) {
 #define OMX_CONTRACT_STAGE "fx-delay/ms-to-samples"
 /**
  * @brief A per-leg delay TIME (ms) -> the ring tap (samples) at the live rate, saturated to the ring.
- * @param ms The time, ms; a non-finite or negative time is 0.
- * @param sr The live rate, Hz.
- * @return The tap, samples, inside [0, OMX_FXDELAY_CAP - 1].
+ * @param ms The time, ms; NaN or negative is 0, +infinity or past the ring is the ring's capacity.
+ * @param sr The live rate, Hz, a declared one.
+ * @return The tap, samples, inside [0, OMX_FXDELAY_CAP]; omx_fxdelay_clamp() then bounds it to cap-1.
+ * @pre `rate-is-declared`.
+ * @post `tap-is-within-the-ring-capacity`.
  *
  * ONE derivation, read by both shells that own a `struct omx_fx_delay`: the console's
  * `resolve_fx_delay` (mixer_rt.c) and the LV2 plugin's port resolve (omx-plugins' omx_delay_instance.h) — so a

@@ -14,9 +14,15 @@
 #   grew        — the function's row added to the baseline copy, the tree's baseline as the base: red,
 #                 the baseline only shrinks;
 #   stale       — a baseline row nothing warns: red, the row must be dropped;
+#   dup         — a baseline row twice: red, the baseline must be sorted and unique;
 #   nodoxyfile  — no Doxyfile: red, naming it;
 #   nobaseline  — no baseline: red, naming it;
+#   nolog       — the Doxyfile's WARN_LOGFILE moved, so the gate's log is missing: red, naming the line;
+#   exclude     — the header on the Doxyfile's EXCLUDE line: red, naming the gate's line it replaced;
+#   cond        — the function inside @cond: red, naming the command;
+#   nofile      — the header's @file removed: red, naming the header;
 #   untracked   — an untracked header under include/omxdsp: red, naming it;
+#   nogit       — the copy is no git checkout (its .git removed, GIT_DIR pointed nowhere): red, git ls-files failed;
 #   update      — `make docs-baseline` on the 'new' copy: red, it may only lower, naming the row it refuses.
 # The tree is never edited. Usage: docs-sabotage.sh <scratch-dir>
 set -euo pipefail
@@ -27,14 +33,15 @@ PROBE=omx_docs_sabotage_probe
 HEADER=include/omxdsp/fx/omx_instance_io.h
 rm -rf "$OUT" && mkdir -p "$OUT"
 
-copy() { # name [probe-doc-block]
+copy() { # name [probe-doc-block] [probe-tail]
   local d="$OUT/$1"
   mkdir -p "$d/docs"
   cp -r "$PKG/Makefile" "$PKG/Doxyfile" "$PKG/include" "$PKG/tools" "$PKG/packaging" "$d/"
   cp "$PKG/docs/doxygen-baseline.txt" "$d/docs/"
-  printf '\n%sint %s(float x);\n' "${2:-}" "$PROBE" >> "$d/$HEADER"
-  git -C "$d" init -q && git -C "$d" add -A && git -C "$d" -c user.name=sabotage -c user.email=sabotage@localhost commit -q -m copy
+  printf '\n%sint %s(float x);\n%s' "${2:-}" "$PROBE" "${3:-}" >> "$d/$HEADER"
+  track "$d"
 }
+track() { git -C "$1" init -q && git -C "$1" add -A && git -C "$1" -c user.name=sabotage -c user.email=sabotage@localhost commit -q -m copy; }
 check() { # name expected(red|green) [target] [make args] ; the gate's output in $OUT/<name>.log
   local name=$1 want=$2 target=${3:-docs-check} rc=0; shift 2; [ $# -gt 0 ] && shift
   make -s -C "$OUT/$name" "$target" "$@" >"$OUT/$name.log" 2>&1 || rc=$?
@@ -91,10 +98,36 @@ copy stale
 check stale red
 names stale 'documented now' omx_docs_never_declared
 
+copy dup
+{ probe_row; probe_row; } >> "$OUT/dup/docs/doxygen-baseline.txt"
+check dup red
+names dup 'not sorted and unique'
+
 copy nodoxyfile
 rm "$OUT/nodoxyfile/Doxyfile"
 check nodoxyfile red
 names nodoxyfile 'Doxyfile is missing'
+
+copy nolog
+probe_row | add_rows "$OUT/nolog"
+sed -i 's#^WARN_LOGFILE .*#WARN_LOGFILE = build/docs/elsewhere.txt#' "$OUT/nolog/Doxyfile"
+check nolog red
+names nolog 'warnings.txt is missing'
+
+copy exclude
+sed -i "s#^EXCLUDE  .*#EXCLUDE = include/omxdsp/omxdsp_definitions.h $HEADER#" "$OUT/exclude/Doxyfile"
+check exclude red
+names exclude "lacks the gate's line: EXCLUDE"
+
+copy cond '/** @cond HIDDEN */\n' '/** @endcond */\n'
+check cond red
+names cond '@cond' 'conditional doc command'
+
+copy nofile
+sed -i 's/@file omx_instance_io.h/the file/' "$OUT/nofile/$HEADER"
+probe_row | add_rows "$OUT/nofile"
+check nofile red
+names nofile "$HEADER" 'without a doc-comment @file'
 
 copy nobaseline
 rm "$OUT/nobaseline/docs/doxygen-baseline.txt"
@@ -107,9 +140,15 @@ printf '/** @file omx_docs_scratch.h\n * @brief A scratch header nobody tracks. 
 check untracked red
 names untracked 'untracked headers' omx_docs_scratch.h
 
+copy nogit
+probe_row | add_rows "$OUT/nogit"
+rm -rf "$OUT/nogit/.git"
+GIT_DIR="$OUT/nogit/no-such-dir" check nogit red
+names nogit 'git ls-files failed'
+
 copy update
 check update red docs-baseline
 names update 'only lowers' "$PROBE"
 cmp -s "$OUT/update/docs/doxygen-baseline.txt" "$PKG/docs/doxygen-baseline.txt" || { echo "docs-sabotage.sh: FAIL — docs-baseline rewrote the baseline it refused"; exit 1; }
 
-echo "docs-sabotage.sh: ok — docs-check sees a new undocumented declaration, a swapped or stale row, a grown baseline, a missing Doxyfile or baseline and an untracked header; passes a documented or listed one and a set without its last newline; docs-baseline only lowers"
+echo "docs-sabotage.sh: ok — docs-check sees a new undocumented declaration, a swapped, stale or duplicated row, a grown baseline, a missing Doxyfile, baseline or log, an exclusion, a @cond, a header without @file, an untracked header and a tree without git; passes a documented or listed one and a set without its last newline; docs-baseline only lowers"

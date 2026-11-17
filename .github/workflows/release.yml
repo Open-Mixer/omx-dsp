@@ -84,7 +84,8 @@ jobs:
   # the generated C API reference, fetched by the website from the release assets
   api-docs:
     needs: [rpm, deb]
-    runs-on: ubuntu-latest
+    # the same doxygen the documentation gate runs on (public-sources.yml)
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
