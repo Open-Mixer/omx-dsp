@@ -6,7 +6,7 @@
  * `omx_phaser.h`'s `omx_phaser_process`, THE SAME INLINE the console's phaser stage runs, and this
  * file adds no DSP to it. It adds what a host's port model needs and the atom does not carry:
  *
- *   1. RESOLVE. {@link omx_phaser_instance_resolve} takes the kernel's contract controls in their
+ *   1. RESOLVE. omx_phaser_instance_resolve() takes the kernel's contract controls in their
  *      declared order and user units (Hz, Hz, octaves, a section count, a signed resonance,
  *      percent) and turns them into the atom: `lfo_inc = omx_lfo_inc(rate_hz, sr)`, the section
  *      count rounded to the nearest even member, mix over 100. Every knob is clamped through
@@ -61,6 +61,9 @@ typedef struct {
  * Bind an instance to its rate. Returns 1 when usable, 0 when not (a refused init leaves `ready`
  * clear and run() is the identity). The rate must be finite and high enough that the sweep's
  * declared top (OMX_PHASER_F_TOP_HZ) stays below Nyquist, the kernel's own precondition.
+ * @param s The instance; every word of it is written.
+ * @param sr The sample rate, Hz, positive and finite, above twice OMX_PHASER_F_TOP_HZ.
+ * @return 1 when usable, 0 when not: a null instance or a rate that is not positive and finite, or whose Nyquist does not clear the sweep's top, leaves `ready` clear and run() the identity.
  * @thread control
  */
 static inline int omx_phaser_instance_init(OmxPhaserInstance *s, float sr) {
@@ -116,12 +119,18 @@ static inline void omx_phaser_instance_resolve(OmxPhaserInstance *s, int bypass,
 }
 #undef OMX_CONTRACT_STAGE
 
+#define OMX_CONTRACT_STAGE "phaser/instance-run"
 /**
  * THE AUDIO CALLBACK'S WHOLE SHARE: copy in to out where they differ, run the console's kernel
  * in place on out. `in_*` and `out_*` may alias. Not ready, or bypassed, is the identity.
+ * @param s The instance; null, not ready or bypassed leaves `out_*` holding `in_*`.
+ * @param in_l The left input, `n` frames.
+ * @param in_r The right input, `n` frames.
+ * @param out_l The left output, `n` frames, may be `in_l`.
+ * @param out_r The right output, `n` frames, may be `in_r`.
+ * @param n The block length, frames; a null port or 0 touches nothing.
  * @thread audio
  */
-#define OMX_CONTRACT_STAGE "phaser/instance-run"
 static inline void omx_phaser_instance_run(OmxPhaserInstance *s, const float *in_l,
                                            const float *in_r, float *out_l, float *out_r,
                                            uint32_t n) {
@@ -130,6 +139,8 @@ static inline void omx_phaser_instance_run(OmxPhaserInstance *s, const float *in
 #undef OMX_CONTRACT_STAGE
 
 /** The frames of latency the instance introduces: none, at every rate.
+ * @param s The instance.
+ * @return 0.
  * @thread audio */
 static inline uint32_t omx_phaser_instance_latency(const OmxPhaserInstance *s) {
   (void)s;

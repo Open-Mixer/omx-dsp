@@ -11,7 +11,7 @@
  *      (OMX_LIMITER_INSTANCE_CAP), and arms the kernel over the first
  *      omx_limiter_instance_cap_for(sr) of them. Nothing is allocated, at init or after; a rate
  *      the inline rings cannot serve is refused at init.
- *   2. RESOLVE. {@link omx_limiter_instance_resolve} takes the kernel's contract controls in their
+ *   2. RESOLVE. omx_limiter_instance_resolve() takes the kernel's contract controls in their
  *      declared order and user units (dBFS, ms, ms) and clamps each into its declared travel
  *      (OMX_LIMITER_*, omxdsp_definitions.h; a non-finite word reads as the declared default).
  *      The look-ahead is the state's geometry, not an atom word: when it moves by a frame the
@@ -20,7 +20,7 @@
  *   3. IN -> OUT. The kernel works IN PLACE; run() copies in to out where they differ (they may
  *      alias) and runs the kernel on out. Identity when bypassed or not ready.
  *
- * LATENCY IS PUBLISHED: {@link omx_limiter_instance_latency} answers the armed state's `T = U + D`
+ * LATENCY IS PUBLISHED: omx_limiter_instance_latency() answers the armed state's `T = U + D`
  * frames while engaged and 0 while bypassed (the kernel's disabled path delays nothing), so a host
  * reads it after every resolve. Re-engaging from bypass re-arms the state, so a re-enabled limiter
  * does not release a gain or replay audio held before the bypass.

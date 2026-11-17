@@ -18,13 +18,13 @@
  *    whether H1 is ever cut (the console's excess law never cuts it); this placement only places.
  *  - DROP, NEVER CLAMP: a band outside EQ_FREQ_RANGE (both bounds kept) is dropped here, because every door
  *    downstream CLAMPS a frequency into range, and a clamped partial is a real cut on a frequency nobody asked
- *    about ({@link omx_hrp_place_in_range}).
+ *    about (omx_hrp_place_in_range()).
  *  - THE BOUNDS: a gain is clamped into [-max_cut_db, max_boost_db]; a gain that is not finite is skipped.
  *  - SPARSE: a zero gain (asked for, or reached by the clamp) is no band.
  *  - THE BELL'S Q: every band is a bell at q clamped into EQ_Q_RANGE, as the console's store clamps it.
  *  - THE CAP: over max_bands, the LARGEST |gain| are kept, ties to the lower harmonic; the kept bands come back
  *    in harmonic order. max_bands is a free-slot count (a number; a fraction keeps its whole part).
- *  - ONE STEP: a band moves toward its depth by at most HRP_GAIN_STEP_DB per move ({@link omx_hrp_step_toward}).
+ *  - ONE STEP: a band moves toward its depth by at most HRP_GAIN_STEP_DB per move (omx_hrp_step_toward()).
  *
  * Doubles throughout, as the console computes: the console's server calls this with its own numbers, and a
  * float here would move a step by a rounding the console never had.

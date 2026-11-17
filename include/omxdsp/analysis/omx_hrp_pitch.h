@@ -61,7 +61,7 @@
 #define OMX_HRP_HARMONICS OMX_HRP_HARMONIC_COUNT
 
 /** The confidence floor is HALF a voice's fair share — the divisor, named so both languages
- * derive the floor the same way (see {@link omx_hrp_min_confidence_for}). */
+ * derive the floor the same way (see omx_hrp_min_confidence_for()). */
 #define OMX_HRP_CONFIDENCE_SHARE_DIVISOR 2
 
 /** One musical fundamental the analyser believes is sounding. */
@@ -93,7 +93,7 @@ typedef struct {
   uint32_t harmonics;        /* clamped to OMX_HRP_HARMONICS */
   uint32_t max_voices;       /* clamped to OMX_HRP_MAX_VOICES */
   /** Below this a candidate is not admitted as a voice. Derive it from `max_voices` with
-   * {@link omx_hrp_min_confidence_for} — a floor typed independently of the budget it is a
+   * omx_hrp_min_confidence_for() — a floor typed independently of the budget it is a
    * fraction of goes wrong in whichever direction the budget last moved. */
   float min_confidence;
   float subharmonic_accept;  /* §55's octave guard — see omx_hrp_detect */
@@ -170,7 +170,7 @@ static inline int32_t omx_hrp_peak_halfwidth(float exact_bins) {
  *
  * Interpolating would be wrong here: a partial that falls between bins is smeared across them by
  * the window, and the peak is the honest reading of "how much is there". The search radius is
- * {@link omx_hrp_peak_halfwidth} — proportional, so a displaced upper partial still reads as its
+ * omx_hrp_peak_halfwidth() — proportional, so a displaced upper partial still reads as its
  * own harmonic's level.
  * @thread worker */
 static inline float omx_hrp_bin_peak(const float *mag, uint32_t nbins, float bin_hz, float hz) {
@@ -277,7 +277,7 @@ static inline int omx_hrp_low_support(const float *mag, uint32_t nbins, float bi
  *
  * This is what makes the search polyphonic: without it, the second-best candidate is almost
  * always an octave or fifth of the first, because those combs share partials with it. Zeroing
- * ±1 bin matches the width {@link omx_hrp_bin_peak} reads over, so a partial is either fully
+ * ±1 bin matches the width omx_hrp_bin_peak() reads over, so a partial is either fully
  * credited to this voice or fully left for the next one.
  * @thread worker */
 static inline void omx_hrp_cancel(float *residual, uint32_t nbins, float bin_hz, float f0_hz,
@@ -289,7 +289,7 @@ static inline void omx_hrp_cancel(float *residual, uint32_t nbins, float bin_hz,
     if (hz > nyquist) break;
     float exact = hz / bin_hz;
     int32_t centre = (int32_t)(exact + 0.5f);
-    /* Erase over the SAME radius the readers credit ({@link omx_hrp_peak_halfwidth}): energy a
+    /* Erase over the SAME radius the readers credit (omx_hrp_peak_halfwidth()): energy a
        wider read attributed to this voice but a narrower erase left standing would be found
        again next round as a phantom. */
     int32_t half = omx_hrp_peak_halfwidth(exact);
@@ -429,7 +429,7 @@ static inline float omx_hrp_refine(const float *mag, uint32_t nbins, float bin_h
     float hz = (float)n * f0_hz;
     if (hz > nyquist) break;
     /* The bin this partial actually peaks in, searched over the same radius the score reads
-       ({@link omx_hrp_peak_halfwidth}). */
+       (omx_hrp_peak_halfwidth()). */
     float exact = hz / bin_hz;
     int32_t centre = (int32_t)(exact + 0.5f);
     int32_t half = omx_hrp_peak_halfwidth(exact);

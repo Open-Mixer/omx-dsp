@@ -8,7 +8,7 @@
  * Moved unchanged from the OpenMixer engine's eq_lv2.h, the strip EQ anchor of the instance headers (omx-plugins' omx_delay_instance.h's shape): the
  * includes now name the library's own headers (`omx_biquad_cascade` is omx_biquad.h's, the travels
  * omxdsp_definitions.h's), and the control-word processing eq_lv2.c's run() did is here as
- * {@link omx_eq_lv2_set_controls}, so a shell carries ports across its host boundary and nothing
+ * omx_eq_lv2_set_controls(), so a shell carries ports across its host boundary and nothing
  * more. The `omx_eq_lv2_*` names are kept, as omx-plugins' omx_delay_instance.h keeps `omx_delay_lv2_*`.
  *
  * Decision: LV2 has no variable
@@ -526,7 +526,7 @@ static inline void omx_eq_lv2_set_controls(struct omx_eq_lv2 *e, const struct om
 /*
  * The EQ as every instance face is shaped: a STEREO
  * instance of two of the mono cores above, fed the same controls, so a plugin binding generated
- * from the contract calls it with no hand-written map. {@link omx_eq_instance_resolve} takes the eq
+ * from the contract calls it with no hand-written map. omx_eq_instance_resolve() takes the eq
  * kernel's contract controls in their declared order and user units: the HPF's switch, corner (Hz)
  * and slope (a FILTER_SLOPES id, 12 or 24 dB/oct), the LPF's three, then, once per band
  * (OMX_EQ_INSTANCE_BANDS of each), the type (an EQ_BAND_TYPES index), the centre (Hz), the gain

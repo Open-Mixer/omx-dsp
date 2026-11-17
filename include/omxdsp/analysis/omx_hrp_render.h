@@ -21,7 +21,7 @@
  *      ACTIVATION of HRP corrections") plus §22's `ripe_updates` mean a live corrector cannot
  *      cut a note until the model has heard that note hold for seconds. So the opening of every
  *      new note is, by construction, uncorrected live. Offline the whole file exists before one
- *      sample is written, so {@link omx_hrp_render_feed} is run TWICE: pass one teaches the
+ *      sample is written, so omx_hrp_render_feed() is run TWICE: pass one teaches the
  *      per-note model from the entire performance, pass two measures every window — the first
  *      one included — against the model the whole file taught. The offline claim: "whole-file analysis".
  *
@@ -60,8 +60,8 @@
  *
  * ## The report is SUMS, never averages
  *
- * Every derived number ({@link omx_hrp_render_excess_db}, {@link omx_hrp_render_duty},
- * {@link omx_hrp_render_confidence}) is a function of what was accumulated, not a field that
+ * Every derived number (omx_hrp_render_excess_db(), omx_hrp_render_duty(),
+ * omx_hrp_render_confidence()) is a function of what was accumulated, not a field that
  * has to be recomputed at the right moment. So there is no "finish" step to forget and no field
  * whose meaning depends on which phase the caller is in.
  */
@@ -182,7 +182,7 @@ typedef struct {
   /** The take's sample rate. Carried, never assumed: §45 forbids hard-coding bin frequencies
    *  for one rate, and `bin_hz = rate / fft_size` is the one place the two meet. */
   uint32_t rate;
-  /** Analysis window, a power of two. {@link omx_rta_fft_size_for} of the take's rate. */
+  /** Analysis window, a power of two. omx_rta_fft_size_for() of the take's rate. */
   uint32_t fft_size;
   /** Frames between windows. `fft_size / 4` gives the 75 % overlap the default config uses. */
   uint32_t hop;
@@ -194,7 +194,7 @@ typedef struct {
 /**
  * One track's render state: the model, the tracker, the measurement, and the caller's scratch.
  *
- * NO BUFFER IS OWNED HERE. {@link omx_hrp_render_init} takes five caller-provided arrays, so a
+ * NO BUFFER IS OWNED HERE. omx_hrp_render_init() takes five caller-provided arrays, so a
  * shell decides where the memory comes from — a malloc at the N-API boundary, a stack frame in
  * a test, an LV2 host's own pool. §4 forbids this library allocating, and a render that had to
  * allocate could not be the same code the live tier is held to.
@@ -203,15 +203,15 @@ typedef struct {
   OmxHrpRenderConfig cfg;
   OmxHrpTracker tracker;
   /** The voice set the LAST analysed window projected out of `tracker` — this path's own
-   *  marshalled answer about that window, by {@link omx_hrp_project_voices}, the one projection
+   *  marshalled answer about that window, by omx_hrp_project_voices(), the one projection
    *  the live tier marshals a frame with too. Kept rather than local so what an offline window
    *  concluded is READABLE: a shell reports what it is hearing from it, and `hrp_render.test.c`
    *  compares it with the live chain's byte for byte. Empty until the first window, and emptied
-   *  by {@link omx_hrp_render_rewind} with the tracker it came from. */
+   *  by omx_hrp_render_rewind() with the tracker it came from. */
   OmxHrpVoiceSet voices;
   OmxHrpBaseline baseline;
   OmxHrpRenderReport report;
-  /** The sliding analysis window: `cfg.fft_size` floats, filled by {@link omx_hrp_render_feed}. */
+  /** The sliding analysis window: `cfg.fft_size` floats, filled by omx_hrp_render_feed(). */
   float *carry;
   /** FFT scratch, `cfg.fft_size` floats each. */
   float *work_re;
@@ -223,14 +223,14 @@ typedef struct {
   uint32_t fill;
   /** Windows the TEACHING pass analysed — the progress denominator for pass one. */
   uint32_t learn_windows;
-  /** Set once {@link omx_hrp_render_init} has been given a usable config and every buffer. */
+  /** Set once omx_hrp_render_init() has been given a usable config and every buffer. */
   int ready;
 } OmxHrpRender;
 
 /**
  * The defaults a take of `rate` Hz is analysed with.
  *
- * The window LENGTH is the RTA's own, derived from the rate ({@link omx_rta_fft_size_for}) so
+ * The window LENGTH is the RTA's own, derived from the rate (omx_rta_fft_size_for()) so
  * that a bin is about {@link OMX_RTA_TARGET_BIN_HZ} wide whatever the take was recorded at —
  * §45 forbids hard-coding bin frequencies for one rate, and deriving the length is how the live
  * tier already obeys it.
@@ -514,7 +514,7 @@ static inline float omx_hrp_render_f0_hz(const OmxHrpRenderCell *c) {
  * and the render is handed ready `{b0,b1,b2,a1,a2}` sets — the same division of labour the RT
  * lane runs under (mix_dsp.h: "the C here only RUNS the biquad cascade with those coeffs"). A
  * shell with no TypeScript on the other side designs its own with
- * {@link omx_hrp_peaking_coeffs}, which is the same matched section held equal to `eqCoeffs`
+ * omx_hrp_peaking_coeffs(), which is the same matched section held equal to `eqCoeffs`
  * by a corpus both languages check. Neither shell owns a second EQ (§1).
  */
 

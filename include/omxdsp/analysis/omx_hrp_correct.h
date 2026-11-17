@@ -331,7 +331,7 @@ static inline void omx_hrp_cascade_apply(OmxHrpCascade *c, const float *in, floa
    * finite-input and the coefficients it correcting FROM are the ones §23/§25 authorised
    * (never a correction outside the declared gain range); its postcondition is BIT-PRESERVING
    * BYPASS with no live section and a finite block otherwise, inherited from
-   * {@link omx_biquad_cascade}'s own finite-state contract. */
+   * omx_biquad_cascade()'s own finite-state contract. */
   OMX_PRE(n == 0u || omx_block_finite(in, n), "finite-in");
   if (!in || !out || n == 0u) return;
   if (out != in) memcpy(out, in, (size_t)n * sizeof(float));
@@ -395,9 +395,9 @@ typedef struct {
   /** Where the partial actually sounded, Hz — the MEASURED fundamental's harmonic, never the
    *  tempered grid's, so the bell lands on what was measured. */
   float freq_hz;
-  /** The authorised cut as a positive magnitude, dB ({@link omx_hrp_cut_db}). */
+  /** The authorised cut as a positive magnitude, dB (omx_hrp_cut_db()). */
   float cut_db;
-  /** {@link omx_hrp_resonance_score}'s answer — the weight the global ranking orders by. */
+  /** omx_hrp_resonance_score()'s answer — the weight the global ranking orders by. */
   float score;
   /** The tracker's voice id — never reused, so a planted band can never reattach. */
   int32_t voice_id;

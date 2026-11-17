@@ -6,15 +6,15 @@
  * The analogue of omx_hrp_lv2.h (spec 7.7 and 7.16). Plain C over the detector (omx_fbs_detect.h), the
  * placement (omx_fbs_place.h) and the RTA's ring and spectrum (omx_rta.h); the faces (an LV2 and a CLAP
  * plugin, in omx-plugins) add the ports and the host's worker and nothing else. No buffer is owned here:
- * {@link omx_fbs_lv2_init_block} partitions the caller's one block.
+ * omx_fbs_lv2_init_block() partitions the caller's one block.
  *
  * THE ANALYSIS NEVER RUNS IN THE AUDIO CALLBACK. The split is the HRP shell's:
  *
- *     run()          (audio)  {@link omx_fbs_lv2_run}     the input into the ring; the planted bands on the
+ *     run()          (audio)  omx_fbs_lv2_run()     the input into the ring; the planted bands on the
  *                                                         audio in `cut`, the audio untouched in `report`
- *     work()         (worker) {@link omx_fbs_lv2_answer}  one detector frame: the spectrum of the newest
+ *     work()         (worker) omx_fbs_lv2_answer()  one detector frame: the spectrum of the newest
  *                                                         window, the detector, the placement, the set
- *     work_response() (audio) {@link omx_fbs_lv2_adopt}   a fixed-size copy of the set
+ *     work_response() (audio) omx_fbs_lv2_adopt()   a fixed-size copy of the set
  *
  * One pass consumes one hop, the rate over FBS_WATCH_HZ (100 ms at every rate: the cadence the detector
  * gates were tuned at), counted by a written/consumed cursor pair, so WHICH audio a pass analyses never
@@ -126,7 +126,7 @@ typedef struct {
 #define OMX_FBS_LV2_ALIGN_(n) (((n) + 7u) & ~(size_t)7u)
 
 /**
- * @brief Bytes the caller's block holds at `rate` for {@link omx_fbs_lv2_init_block}.
+ * @brief Bytes the caller's block holds at `rate` for omx_fbs_lv2_init_block().
  * @param rate The sample rate, Hz.
  * @return The detector's slots, results and bin map, the spectrum in double, the snapshot frequencies, the
  *         window and the FFT's work, each aligned to 8 bytes.
@@ -141,7 +141,7 @@ static inline size_t omx_fbs_lv2_block_bytes(uint32_t rate) {
 }
 
 /**
- * @brief Bind an instance to its rate and one block of {@link omx_fbs_lv2_block_bytes} bytes, 8-aligned.
+ * @brief Bind an instance to its rate and one block of omx_fbs_lv2_block_bytes() bytes, 8-aligned.
  * @param s The instance.
  * @param rate The sample rate, Hz.
  * @param block The caller's block, or NULL.

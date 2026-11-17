@@ -312,7 +312,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
   void *a = fx_alloc(fx->size), *b = fx_alloc(fx->size);
   const int ra = fx->init(a, rate), rb = fx->init(b, rate);
   /* Two inits at one rate answer the same.
-   * mutant: include/omxdsp/fx/omx_trim_instance.h:75 `return 1;` -> `{ static int calls; return calls++ % 2; }`
+   * mutant: include/omxdsp/fx/omx_trim_instance.h:78 `return 1;` -> `{ static int calls; return calls++ % 2; }`
    * input: trim-neutral */
   if (!(ra == rb)) {
     FUZZ_SAY("%s: two inits at %g disagree (%d, %d)", fx->name, (double)rate, ra, rb);
@@ -351,7 +351,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     fx->run(b, il, ir, ol, orr, n);
 
     /* Aliasing is safe: running in place gives the samples of running out of place, bit for bit.
-     * mutant: include/omxdsp/fx/omx_trim_instance.h:102 `n)) return;` -> `n)) return; if (out_l == in_l) out_l[0] += 1.0f;`
+     * mutant: include/omxdsp/fx/omx_trim_instance.h:111 `n)) return;` -> `n)) return; if (out_l == in_l) out_l[0] += 1.0f;`
      * input: trim-neutral */
     if (!(memcmp(al, ol, n * sizeof(float)) == 0 && memcmp(ar, orr, n * sizeof(float)) == 0)) {
       FUZZ_SAY("%s: running in place gives other samples than running out of place", fx->name);
@@ -367,7 +367,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
       }
     } else if (!(bmode & 1u)) {
       /* An instance that took finite samples gives finite samples back, at any port value.
-       * mutant: include/omxdsp/fx/omx_trim_instance.h:105 `out_l[i] *= omx_ramp_at(g, i)` -> `out_l[i] = NAN`
+       * mutant: include/omxdsp/fx/omx_trim_instance.h:114 `out_l[i] *= omx_ramp_at(g, i)` -> `out_l[i] = NAN`
        * input: trim-neutral */
       if (!(fuzz_all_finite(ol, n) && fuzz_all_finite(orr, n))) {
         FUZZ_SAY("%s: finite samples in, a non-finite sample out", fx->name);

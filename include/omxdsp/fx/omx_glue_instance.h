@@ -49,6 +49,9 @@ static inline void omx_glue_instance_resolve(OmxGlueInstance *s, int bypass, flo
 
 /** Bind an instance to its rate. Returns 1 when usable, 0 when not: the rate must be one of the oracle
  * set. It comes up at its declared defaults. Allocates nothing.
+ * @param s The instance; every word of it is written.
+ * @param sr The sample rate, Hz, one of the oracle set.
+ * @return 1 when usable, 0 when not: a rate the console does not declare (the oracle set, 32 to 192 kHz) is refused, `ready` stays clear and run() is the identity, as is one the compressor core refuses.
  * @thread control */
 static inline int omx_glue_instance_init(OmxGlueInstance *s, float sr) {
   if (!omx_instance_bind(s, sizeof(*s), sr)) return 0;
@@ -100,6 +103,12 @@ static inline void omx_glue_instance_resolve(OmxGlueInstance *s, int bypass, flo
 /**
  * THE AUDIO CALLBACK'S WHOLE SHARE: the slot over both legs, in to out. `in_*` and `out_*` may alias.
  * Not ready or bypassed is the identity.
+ * @param s The instance; null, not ready or bypassed leaves `out_*` holding `in_*`.
+ * @param in_l The left input, `n` frames.
+ * @param in_r The right input, `n` frames.
+ * @param out_l The left output, `n` frames, may be `in_l`.
+ * @param out_r The right output, `n` frames, may be `in_r`.
+ * @param n The block length, frames; a null port or 0 touches nothing.
  * @thread audio
  */
 static inline void omx_glue_instance_run(OmxGlueInstance *s, const float *in_l, const float *in_r, float *out_l,
@@ -123,6 +132,8 @@ static inline float omx_glue_instance_effective_attack_ms(const OmxGlueInstance 
 }
 
 /** The frames of latency the instance introduces: none, in either topology (the slot never takes the 4x path).
+ * @param s The instance.
+ * @return 0, in either topology.
  * @thread audio */
 static inline uint32_t omx_glue_instance_latency(const OmxGlueInstance *s) {
   (void)s;

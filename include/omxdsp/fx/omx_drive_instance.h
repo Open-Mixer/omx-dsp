@@ -12,13 +12,13 @@
  * ## The face: init, resolve, run, latency
  *
  * Everything below is plain C over `omx_drive.h` and knows nothing about a plugin format. Its shape
- * is every instance face's: {@link omx_drive_instance_init} binds an instance to a declared rate,
- * {@link omx_drive_instance_resolve} takes the drive kernel's contract controls in their declared
+ * is every instance face's: omx_drive_instance_init() binds an instance to a declared rate,
+ * omx_drive_instance_resolve() takes the drive kernel's contract controls in their declared
  * order and user units (`amount` dB, `character`, `band_freq` Hz, `mix` %, `trim` dB, then the
  * `curve` and `band` choice indices, the `auto_gain` and `stereo_link` switches, the
- * `hf_rolloff` id and the `oversample` factor), {@link omx_drive_instance_run} runs the
+ * `hf_rolloff` id and the `oversample` factor), omx_drive_instance_run() runs the
  * kernel and
- * {@link omx_drive_instance_latency} publishes its latency. A plugin binding generated from the
+ * omx_drive_instance_latency() publishes its latency. A plugin binding generated from the
  * contract calls them with no hand-written map.
  *
  * ## The oversampling factor
@@ -32,13 +32,13 @@
  *
  * ## ZERO DUPLICATED DSP
  *
- * {@link omx_drive_instance_run} copies the host's input to its output and calls
+ * omx_drive_instance_run() copies the host's input to its output and calls
  * `omx_drive_process` — the SAME inline the console's lane walk calls (mix_lane.h) — on it.
  * There is no second waveshaper, no second oversampler, no second auto-gain. What this file
  * owns is the RESOLVER: the console builds its `struct omx_drive` from word-atomic controls
  * plus TypeScript-designed coefficients (mixer_rt.c's resolve_fx_drive over console-rig.ts's
  * driveStateToNativeDrive); a foreign host hands us its controls and a rate, so
- * {@link omx_drive_instance_resolve} does the same job from those, with the coefficient design in C
+ * omx_drive_instance_resolve() does the same job from those, with the coefficient design in C
  * (mix_drive_design.h — a pinned twin of the TypeScript, not a second opinion) and the time
  * constants from the kernel's own `omx_drive_time_constants`.
  *
@@ -52,7 +52,7 @@
  *
  * ## LATENCY IS PUBLISHED, and it is the ELEMENT's number
  *
- * {@link omx_drive_instance_latency} is `omx_drive_latency`: the shared oversampler's round-trip
+ * omx_drive_instance_latency() is `omx_drive_latency`: the shared oversampler's round-trip
  * at the face's factor (72 base samples at 4x — "declared by the element,
  * derived by everyone else"; 48 at 2x, 0 at 1x), and 0 while bypassed, exactly as the console's `latencySamples`
  * row derives it. A plugin publishes it every cycle, so a host can compensate the dry paths
@@ -133,7 +133,7 @@ typedef struct {
 /**
  * @brief The atom's static controls from the host's words, each clamped into its declared travel, a
  * non-finite word reading as the declared default. The one mapping:
- * {@link omx_drive_instance_resolve} applies it to the atom it runs, and omx_curve_points() draws the drive's
+ * omx_drive_instance_resolve() applies it to the atom it runs, and omx_curve_points() draws the drive's
  * transfer curve through it, so the curve is what the kernel runs at those words. Pure.
  * @param o The atom written.
  * @param amount The pre-shaper gain, dB, inside DRIVE_AMOUNT_RANGE.

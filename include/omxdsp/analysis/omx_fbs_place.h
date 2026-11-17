@@ -30,12 +30,12 @@
  *    EQ_GAIN_RANGE, as the strip's store does.
  *  - THE EQ IS SHARED: the slots are the placement's, but the bands land on one strip EQ the operator, the
  *    defaults and other correctors also fill. The caller says how many it holds that are not the placement's
- *    ({@link omx_fbs_place_set_others}); once the placement's own plus those reach EQ_MAX_BANDS, a plant is
+ *    (omx_fbs_place_set_others()); once the placement's own plus those reach EQ_MAX_BANDS, a plant is
  *    refused with no action, after the pool-full check, as the strip's store refuses the band.
- *  - THE OPERATOR'S EDITS: a planted band the operator deletes ({@link omx_fbs_place_remove}), re-tags or re-gains
- *    ({@link omx_fbs_place_edit}) is what the strip's store says from then on, and the edit itself says nothing.
+ *  - THE OPERATOR'S EDITS: a planted band the operator deletes (omx_fbs_place_remove()), re-tags or re-gains
+ *    (omx_fbs_place_edit()) is what the strip's store says from then on, and the edit itself says nothing.
  *    A band re-tagged fbs-fixed leaves the release ladder: the fixed pool never lifts.
- *  - A RESTORE: a band the EQ already holds is seated ({@link omx_fbs_place_seat}); it counts against the pool
+ *  - A RESTORE: a band the EQ already holds is seated (omx_fbs_place_seat()); it counts against the pool
  *    at once, and a live one is adopted at the next tick, with a fresh hold and its ring memory, as a planted one.
  *
  * SLOTS KEEP THEIR FINDS (spec 7.16): a plant takes the lowest free slot and a release frees its own,
@@ -43,7 +43,7 @@
  * console's band list (insertion order) does.
  *
  * TIME is the caller's, in ms. The console's ramp runs on interval timers between detector ticks;
- * here a ramp step is due at a time and fires when the clock reaches it ({@link omx_fbs_place_advance},
+ * here a ramp step is due at a time and fires when the clock reaches it (omx_fbs_place_advance(),
  * which every tick runs first): steps due at or before a tick fire before it, earliest first, ties in
  * the order the ramps began.
  *
@@ -273,7 +273,7 @@ int omx_fbs_place_remove(OmxFbsPlace *p, uint32_t k);
 
 /**
  * @brief The operator re-tagged or re-gained the band in slot k. To an origin that is not fbs-*, the band leaves
- *        the placement as {@link omx_fbs_place_remove} (the caller then counts it in its others). To an fbs-*
+ *        the placement as omx_fbs_place_remove() (the caller then counts it in its others). To an fbs-*
  *        origin, the slot takes it and the gain, held by that origin's cap. To fbs-live, the shape, Q, planted depth
  *        and any release in flight stay, so a ramp runs on from where it began and a regrowth compares the edited
  *        gain. To fbs-fixed, the band leaves the release ladder at the edited gain: the fixed pool never lifts, so

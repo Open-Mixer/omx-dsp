@@ -59,10 +59,11 @@ expected() {
 }
 
 # arguments <face.h> <kernel>: "type name" per resolve argument after `s` and `bypass`; a first two
-# that are not those are printed as found, so the comparison names them.
+# that are not those are printed as found, so the comparison names them. The definition line is the
+# one read: the header's prose names the function too (omx_<k>_instance_resolve(), autolinked).
 arguments() {
   awk -v fn="omx_$2_instance_resolve(" '
-    index($0, fn) { on = 1 }
+    index($0, fn) && /^static inline/ { on = 1 }
     on { proto = proto " " $0; if (index($0, ")")) exit }
     END {
       sub(/^[^(]*\(/, "", proto); sub(/\).*$/, "", proto)

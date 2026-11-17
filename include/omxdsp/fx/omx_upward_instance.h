@@ -43,6 +43,9 @@ static inline void omx_upward_instance_resolve(OmxUpwardInstance *s, int bypass,
 
 /** Bind an instance to its rate. Returns 1 when usable, 0 when not: the rate must be one of the oracle
  * set. It comes up at its declared defaults, a ratio of 1. Allocates nothing.
+ * @param s The instance; every word of it is written.
+ * @param sr The sample rate, Hz, one of the oracle set.
+ * @return 1 when usable, 0 when not: a rate the console does not declare (the oracle set, 32 to 192 kHz) is refused, `ready` stays clear and run() is the identity.
  * @thread control */
 static inline int omx_upward_instance_init(OmxUpwardInstance *s, float sr) {
   if (!omx_instance_bind(s, sizeof(*s), sr)) return 0;
@@ -99,6 +102,12 @@ static inline void omx_upward_instance_resolve(OmxUpwardInstance *s, int bypass,
 /**
  * THE AUDIO CALLBACK'S WHOLE SHARE: the slot over both legs, in to out. `in_*` and `out_*` may alias.
  * Not ready, bypassed, a ratio of 1 or a range of 0 is the identity and moves no state.
+ * @param s The instance; null, not ready or bypassed leaves `out_*` holding `in_*`.
+ * @param in_l The left input, `n` frames.
+ * @param in_r The right input, `n` frames.
+ * @param out_l The left output, `n` frames, may be `in_l`.
+ * @param out_r The right output, `n` frames, may be `in_r`.
+ * @param n The block length, frames; a null port or 0 touches nothing.
  * @thread audio
  */
 static inline void omx_upward_instance_run(OmxUpwardInstance *s, const float *in_l, const float *in_r, float *out_l,
@@ -125,6 +134,8 @@ static inline void omx_upward_instance_run(OmxUpwardInstance *s, const float *in
 static inline float omx_upward_instance_gain_db(const OmxUpwardInstance *s) { return s ? s->gain_db : 0.0f; }
 
 /** The frames of latency the instance introduces: none.
+ * @param s The instance.
+ * @return 0.
  * @thread audio */
 static inline uint32_t omx_upward_instance_latency(const OmxUpwardInstance *s) {
   (void)s;

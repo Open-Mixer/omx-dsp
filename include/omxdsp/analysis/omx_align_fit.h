@@ -6,7 +6,7 @@
  *
  * A run of paired complex spectra (target and reference, both windows taken in one pass) is
  * folded into one cross-spectrum accumulator, {@link OmxXspec}: per bin `Sxy = Σ T·conj(R)`,
- * `Pxx = Σ|T|²`, `Pyy = Σ|R|²`. Two readers build on it: {@link omx_align_fit} reduces it to a
+ * `Pxx = Σ|T|²`, `Pyy = Σ|R|²`. Two readers build on it: omx_align_fit() reduces it to a
  * delay, a polarity, a coherence and a residual; the room transfer (omx_room.h) keeps it per bin.
  *
  * The fit, as core computed it:
@@ -14,7 +14,7 @@
  *   - the ANCHOR is the peak of the analytic cross-correlation (the inverse transform of the
  *     band's bins alone), parabolically interpolated through the heights at the peak's lag and its
  *     two neighbours, read directly from the bins so that an exactly real cross-spectrum (an
- *     identical pair) anchors at exactly 0 ({@link omx_align_coarse_delay}); the circular
+ *     identical pair) anchors at exactly 0 (omx_align_coarse_delay()); the circular
  *     correlation names the peak on `[−n/2, n/2)` for `OMX_ALIGN_ARRIVAL_EITHER` and on `[0, n)`
  *     for `OMX_ALIGN_ARRIVAL_PHYSICAL`, a fact the caller declares;
  *   - the RESIDUAL is a magnitude-weighted line through `arg H` after de-ramping every bin by the
@@ -61,8 +61,8 @@ enum omx_align_arrival {
   OMX_ALIGN_ARRIVAL_PHYSICAL = 1 /**< The target cannot precede the reference: named on [0, n). */
 };
 
-/** A cross-spectrum accumulator over caller-owned arrays. Initialise with {@link omx_xspec_init};
- * fold frames with {@link omx_xspec_add}. */
+/** A cross-spectrum accumulator over caller-owned arrays. Initialise with omx_xspec_init();
+ * fold frames with omx_xspec_add(). */
 typedef struct {
   double *xr;           /**< Σ Re(T·conj R) per bin, `bins` entries */
   double *xi;           /**< Σ Im(T·conj R) per bin */

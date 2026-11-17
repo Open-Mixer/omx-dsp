@@ -5,7 +5,7 @@
  * format in it. The core is fx/omx_mbcomp.h's `omx_mbcomp_process`, the LR4 tree with one RMS
  * compressor per band, and this file adds no DSP to it. It adds what a host's port model needs:
  *
- *   1. RESOLVE. {@link omx_mbcomp_instance_resolve} takes the mbcomp kernel's contract controls in
+ *   1. RESOLVE. omx_mbcomp_instance_resolve() takes the mbcomp kernel's contract controls in
  *      their declared order (data/kernels/mbcomp.json): the band count, the corners, per band the
  *      threshold, ratio, attack, release, make-up, solo and bypass, then the mix and the output gain.
  *      Every travel is clamped into its declared range, a non-finite word reading as its default (a
@@ -20,7 +20,7 @@
  *   3. IN -> OUT. The kernel works in place; run() copies in to out where they differ (they may alias),
  *      runs the kernel on out, and applies the output gain when it is not 0 dB.
  *
- * READOUTS. {@link omx_mbcomp_instance_band_gr_db} is band<n>GainReductionDb: omx_mbcomp_band_gr_db().
+ * READOUTS. omx_mbcomp_instance_band_gr_db() is band<n>GainReductionDb: omx_mbcomp_band_gr_db().
  *
  * LATENCY IS PUBLISHED: OMX_OVS_LATENCY_4X while the stage runs at 4x (omx_mbcomp_factor()), else 0.
  * Bypass is the identity and keeps every state word; a change of the stage's factor re-arms the band
@@ -69,7 +69,11 @@ static inline void omx_mbcomp_instance_resolve(OmxMbcompInstance *s, int bypass,
                                                const float makeup_db[OMX_MBC_MAX_BANDS], const int solo[OMX_MBC_MAX_BANDS],
                                                const int band_bypass[OMX_MBC_MAX_BANDS], float mix_pct, float output_db);
 
-/** @thread control */
+/**
+ * @param s The instance; every word of it is written.
+ * @param sr The sample rate, Hz, one of the oracle set.
+ * @return 1 when usable, 0 when not: a rate the console does not declare (the oracle set, 32 to 192 kHz) is refused, `ready` stays clear and run() is the identity.
+ @thread control */
 static inline int omx_mbcomp_instance_init(OmxMbcompInstance *s, float sr) {
   if (!omx_instance_bind(s, sizeof(*s), sr)) return 0;
   s->sr = sr;
@@ -178,12 +182,18 @@ static inline void omx_mbcomp_instance_resolve(OmxMbcompInstance *s, int bypass,
 }
 #undef OMX_CONTRACT_STAGE
 
+#define OMX_CONTRACT_STAGE "mbcomp/instance-run"
 /**
  * THE AUDIO CALLBACK'S WHOLE SHARE: copy in to out where they differ, run the stage in place on out,
  * apply the output gain. `in_*` and `out_*` may alias. Not ready, or bypassed, is the identity.
+ * @param s The instance; null, not ready or bypassed leaves `out_*` holding `in_*`.
+ * @param in_l The left input, `n` frames.
+ * @param in_r The right input, `n` frames.
+ * @param out_l The left output, `n` frames, may be `in_l`.
+ * @param out_r The right output, `n` frames, may be `in_r`.
+ * @param n The block length, frames; a null port or 0 touches nothing.
  * @thread audio
  */
-#define OMX_CONTRACT_STAGE "mbcomp/instance-run"
 static inline void omx_mbcomp_instance_run(OmxMbcompInstance *s, const float *in_l, const float *in_r, float *out_l,
                                            float *out_r, uint32_t n) {
   if (!omx_instance_copy_through(in_l, in_r, out_l, out_r, n)) return;
@@ -206,6 +216,8 @@ static inline float omx_mbcomp_instance_band_gr_db(const OmxMbcompInstance *s, u
 }
 
 /** The frames of latency the instance reports: OMX_OVS_LATENCY_4X while the stage runs at 4x, else 0.
+ * @param s The instance.
+ * @return OMX_OVS_LATENCY_4X while the stage runs at 4x, else 0; 0 for a null or not-ready instance.
  * @thread audio */
 static inline uint32_t omx_mbcomp_instance_latency(const OmxMbcompInstance *s) {
   return s && s->ready && omx_mbcomp_factor(&s->atom) == 4u ? (uint32_t)OMX_OVS_LATENCY_4X : 0u;

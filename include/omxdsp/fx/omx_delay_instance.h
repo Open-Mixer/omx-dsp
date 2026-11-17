@@ -11,17 +11,17 @@
  *      192 kHz), so the full travel is reachable at every declared rate and nothing is allocated, at
  *      init or after. An instance is initialised where it lives and is never copied after init (the
  *      state points into its own rings).
- *   2. RESOLVE. {@link omx_delay_instance_resolve} takes the delay kernel's contract controls in
+ *   2. RESOLVE. omx_delay_instance_resolve() takes the delay kernel's contract controls in
  *      their declared order and user units: the time (ms) through the kernel's own
- *      {@link omx_fxdelay_ms_to_samples} — shared with the console's resolve, never a second
+ *      omx_fxdelay_ms_to_samples() — shared with the console's resolve, never a second
  *      conversion — the feedback, the tone and the mix (0..1) and the ping-pong switch. Every travel
  *      is clamped into its declared range (FX_DELAY_TIME_RANGE, FX_DELAY_FEEDBACK_RANGE, which stops
  *      short of the unity the kernel refuses, DELAY_TONE_RANGE, DELAY_MIX_RANGE), a non-finite word
  *      reading as the declared default: a foreign host's port is not the console's codec.
  *      Then the sync and the division (at tempo, the time is omx_bpm_division_ms of the host's tempo,
- *      {@link omx_delay_instance_set_tempo}, and the division's DELAY_DIVISION_BEATS, held to the
+ *      omx_delay_instance_set_tempo(), and the division's DELAY_DIVISION_BEATS, held to the
  *      time travel's top; while the host hands no tempo, the time control, and
- *      {@link omx_delay_instance_synced} says so), the mode (digital, tape, analog: the kernel's colour, its loop low pass
+ *      omx_delay_instance_synced() says so), the mode (digital, tape, analog: the kernel's colour, its loop low pass
  *      at DELAY_TAPE_LP_HZ or DELAY_ANALOG_LP_HZ, tape's wow at DELAY_TAPE_WOW_HZ, DELAY_TAPE_WOW_MS
  *      deep) and the wet duck (depth, threshold, release; attack FX_DUCK_ATTACK_MS).
  *   3. IN -> OUT. The kernel works IN PLACE on the two legs; run() copies in to out where they

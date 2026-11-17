@@ -77,6 +77,9 @@ static inline void omx_balancer_instance_restart(OmxBalancerInstance *s) {
 
 /** Bind an instance to its rate. Returns 1 when usable, 0 when not: the rate must be one of the oracle
  * set. It comes up at its declared defaults, an amount of 0. Allocates nothing.
+ * @param s The instance; every word of it is written.
+ * @param sr The sample rate, Hz, one of the oracle set.
+ * @return 1 when usable, 0 when not: a rate the console does not declare (the oracle set, 32 to 192 kHz) is refused, `ready` stays clear and run() is the identity.
  * @thread control */
 static inline int omx_balancer_instance_init(OmxBalancerInstance *s, float sr) {
   if (!omx_instance_bind(s, sizeof(*s), sr)) return 0;
@@ -156,12 +159,18 @@ static inline void omx_balancer_tick(OmxBalancerInstance *s) {
   }
 }
 
+#define OMX_CONTRACT_STAGE "balancer/instance-run"
 /**
  * THE AUDIO CALLBACK'S WHOLE SHARE: the detector over the mono sum, the sections over both legs, in to
  * out. `in_*` and `out_*` may alias. Not ready, bypassed or an amount of 0 is the identity and moves no state.
+ * @param s The instance; null, not ready or bypassed leaves `out_*` holding `in_*`.
+ * @param in_l The left input, `n` frames.
+ * @param in_r The right input, `n` frames.
+ * @param out_l The left output, `n` frames, may be `in_l`.
+ * @param out_r The right output, `n` frames, may be `in_r`.
+ * @param n The block length, frames; a null port or 0 touches nothing.
  * @thread audio
  */
-#define OMX_CONTRACT_STAGE "balancer/instance-run"
 static inline void omx_balancer_instance_run(OmxBalancerInstance *s, const float *in_l, const float *in_r, float *out_l,
                                              float *out_r, uint32_t n) {
   uint32_t o = 0u;
@@ -199,6 +208,8 @@ static inline float omx_balancer_instance_band_gain_db(const OmxBalancerInstance
 }
 
 /** The frames of latency the instance introduces: none.
+ * @param s The instance.
+ * @return 0.
  * @thread audio */
 static inline uint32_t omx_balancer_instance_latency(const OmxBalancerInstance *s) {
   (void)s;

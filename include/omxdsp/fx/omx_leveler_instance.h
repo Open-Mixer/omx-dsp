@@ -6,11 +6,11 @@
  * dynamics kernel (omx_dynamics), a downward compressor and an upward one (omx_dyn's UPWARD law), both
  * on an RMS detector with LEVELER_KNEE_DB of knee, stereo-linked.
  *
- *   1. RESOLVE. {@link omx_leveler_instance_resolve} takes the leveler kernel's contract controls in
+ *   1. RESOLVE. omx_leveler_instance_resolve() takes the leveler kernel's contract controls in
  *      their declared order (data/kernels/leveler.json). The amount reads the declared table: at each
  *      point of LEVELER_AMOUNT_POINTS a row of the downward slot's threshold, ratio and make-up
  *      (LEVELER_DOWN_*) and of the upward slot's threshold, ratio and largest boost (LEVELER_UP_*),
- *      linear between two points ({@link omx_leveler_table}). The speed picks an attack and a release
+ *      linear between two points (omx_leveler_table()). The speed picks an attack and a release
  *      from LEVELER_SPEED_ATTACK_MS and LEVELER_SPEED_RELEASE_MS. The direction runs the downward
  *      slot, the upward one, or both in series, downward first.
  *   2. RUN. Each engaged slot over both legs in place. An amount of 0 is the input, bit for bit, and
@@ -99,6 +99,9 @@ static inline void omx_leveler_instance_resolve(OmxLevelerInstance *s, int bypas
 
 /** Bind an instance to its rate. Returns 1 when usable, 0 when not: the rate must be one of the oracle
  * set. The leveler comes up at its declared defaults, an amount of 0. Allocates nothing.
+ * @param s The instance; every word of it is written.
+ * @param sr The sample rate, Hz, one of the oracle set.
+ * @return 1 when usable, 0 when not: a rate the console does not declare (the oracle set, 32 to 192 kHz) is refused, `ready` stays clear and run() is the identity.
  * @thread control */
 static inline int omx_leveler_instance_init(OmxLevelerInstance *s, float sr) {
   if (!omx_instance_bind(s, sizeof(*s), sr)) return 0;
@@ -163,6 +166,12 @@ static inline void omx_leveler_instance_resolve(OmxLevelerInstance *s, int bypas
 /**
  * THE AUDIO CALLBACK'S WHOLE SHARE: the engaged slots over both legs, in to out. `in_*` and `out_*`
  * may alias. Not ready, bypassed or an amount of 0 is the identity and moves no state.
+ * @param s The instance; null, not ready or bypassed leaves `out_*` holding `in_*`.
+ * @param in_l The left input, `n` frames.
+ * @param in_r The right input, `n` frames.
+ * @param out_l The left output, `n` frames, may be `in_l`.
+ * @param out_r The right output, `n` frames, may be `in_r`.
+ * @param n The block length, frames; a null port or 0 touches nothing.
  * @thread audio
  */
 static inline void omx_leveler_instance_run(OmxLevelerInstance *s, const float *in_l, const float *in_r, float *out_l,
@@ -174,6 +183,8 @@ static inline void omx_leveler_instance_run(OmxLevelerInstance *s, const float *
 }
 
 /** The frames of latency the instance introduces: none.
+ * @param s The instance.
+ * @return 0.
  * @thread audio */
 static inline uint32_t omx_leveler_instance_latency(const OmxLevelerInstance *s) {
   (void)s;

@@ -6,7 +6,7 @@
  * (fx/omx_eq_instance.h: its design, its clamps, its parking, its bank and its state), and every
  * band's dynamics are the band-dynamics word (omx_band_dyn.h), the word the de-esser runs.
  *
- *   1. RESOLVE. {@link omx_dyneq_instance_resolve} takes the dyneq kernel's contract controls in
+ *   1. RESOLVE. omx_dyneq_instance_resolve() takes the dyneq kernel's contract controls in
  *      their declared order (data/kernels/dyneq.json), one array per band control and the mix. The
  *      static half (switch, type, centre, gain, Q) goes to an EQ face whose first six bands are these
  *      and whose other bands and pass filters are off, so its bank is exactly the six bands that are
@@ -27,7 +27,7 @@
  *   4. MIX. Below 100 % the output is the convex blend of the input and the processed signal
  *      (omx_wetdry_mix()); at 100 % it is the processed signal itself.
  *
- * READOUTS. {@link omx_dyneq_instance_band_gain_db} is the dyneq kernel's band<n>GainDb: the band's
+ * READOUTS. omx_dyneq_instance_band_gain_db() is the dyneq kernel's band<n>GainDb: the band's
  * gain computer re-run on the level its detector holds after the last block, signed.
  *
  * Bypass is the identity and keeps every state word. LATENCY IS ZERO. Nothing is allocated; the
@@ -107,6 +107,9 @@ static inline enum omx_eq_kind omx_dyneq_instance_kind(int type) {
  * Bind an instance to its rate. Returns 1 when usable, 0 when not (a refused init leaves `ready`
  * clear and run() is the identity): the rate must be one of the oracle set. Every band comes up off,
  * so a fresh instance is a wire. Allocates nothing.
+ * @param s The instance; every word of it is written.
+ * @param sr The sample rate, Hz, one of the full oracle set.
+ * @return 1 when usable, 0 when not: a null instance, a rate outside the oracle set or one the EQ core refuses leaves `ready` clear and run() the identity.
  * @thread control
  */
 static inline int omx_dyneq_instance_init(OmxDyneqInstance *s, float sr) {
@@ -284,12 +287,18 @@ static inline void omx_dyneq_instance_chunk(OmxDyneqInstance *s, float *l, float
 }
 #undef OMX_CONTRACT_STAGE
 
+#define OMX_CONTRACT_STAGE "dyneq/instance-run"
 /**
  * THE AUDIO CALLBACK'S WHOLE SHARE: copy in to out where they differ, run the bands in place on out.
  * `in_*` and `out_*` may alias. Not ready, or bypassed, is the identity and moves no state word.
+ * @param s The instance; null, not ready or bypassed leaves `out_*` holding `in_*`.
+ * @param in_l The left input, `n` frames.
+ * @param in_r The right input, `n` frames.
+ * @param out_l The left output, `n` frames, may be `in_l`.
+ * @param out_r The right output, `n` frames, may be `in_r`.
+ * @param n The block length, frames; a null port or 0 touches nothing.
  * @thread audio
  */
-#define OMX_CONTRACT_STAGE "dyneq/instance-run"
 static inline void omx_dyneq_instance_run(OmxDyneqInstance *s, const float *in_l, const float *in_r, float *out_l,
                                           float *out_r, uint32_t n) {
   if (!omx_instance_copy_through(in_l, in_r, out_l, out_r, n)) return;
@@ -315,6 +324,8 @@ static inline float omx_dyneq_instance_band_gain_db(const OmxDyneqInstance *s, u
 }
 
 /** The frames of latency the instance introduces: none.
+ * @param s The instance.
+ * @return 0.
  * @thread audio */
 static inline uint32_t omx_dyneq_instance_latency(const OmxDyneqInstance *s) {
   (void)s;

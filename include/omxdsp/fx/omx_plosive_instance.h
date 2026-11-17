@@ -19,12 +19,12 @@
  * detector reads the voice without the pop's spill. Both legs share each detector, so the image never
  * shifts.
  *
- *   RESOLVE. {@link omx_plosive_instance_resolve} takes the plosive kernel's contract controls in their
+ *   RESOLVE. omx_plosive_instance_resolve() takes the plosive kernel's contract controls in their
  *   declared order (data/kernels/plosive.json), each clamped into its travel, a non-finite word reading
  *   as its default. The band's edges are bandHz / 2^(w/2) and bandHz 2^(w/2), the top one held under
  *   PLOSIVE_BAND_EDGE_FRACTION of the rate, and the section is designed from the held edges.
  *   RUN. Per sample as above; the deepest cut of each half in the block is its readout
- *   ({@link omx_plosive_instance_consonant_reduction_db}, {@link omx_plosive_instance_pop_reduction_db}).
+ *   (omx_plosive_instance_consonant_reduction_db(), omx_plosive_instance_pop_reduction_db()).
  *
  * LATENCY IS ZERO (L1). Nothing is allocated; every word of state is in {@link OmxPlosiveInstance}.
  */
@@ -106,6 +106,9 @@ static inline void omx_plosive_instance_resolve(OmxPlosiveInstance *s, int bypas
 
 /** Bind an instance to its rate. Returns 1 when usable, 0 when not: the rate must be one of the oracle
  * set. The tamer comes up at its declared defaults. Allocates nothing.
+ * @param s The instance; every word of it is written.
+ * @param sr The sample rate, Hz, one of the oracle set.
+ * @return 1 when usable, 0 when not: a rate the console does not declare (the oracle set, 32 to 192 kHz) is refused, `ready` stays clear and run() is the identity.
  * @thread control */
 static inline int omx_plosive_instance_init(OmxPlosiveInstance *s, float sr) {
   if (!omx_instance_bind(s, sizeof(*s), sr)) return 0;
@@ -171,12 +174,18 @@ static inline void omx_plosive_instance_resolve(OmxPlosiveInstance *s, int bypas
 }
 #undef OMX_CONTRACT_STAGE
 
+#define OMX_CONTRACT_STAGE "plosive/instance-run"
 /**
  * THE AUDIO CALLBACK'S WHOLE SHARE: the pop half then the consonant half, in to out. `in_*` and `out_*`
  * may alias. Not ready or bypassed is the identity and moves no state.
+ * @param s The instance; null, not ready or bypassed leaves `out_*` holding `in_*`.
+ * @param in_l The left input, `n` frames.
+ * @param in_r The right input, `n` frames.
+ * @param out_l The left output, `n` frames, may be `in_l`.
+ * @param out_r The right output, `n` frames, may be `in_r`.
+ * @param n The block length, frames; a null port or 0 touches nothing.
  * @thread audio
  */
-#define OMX_CONTRACT_STAGE "plosive/instance-run"
 static inline void omx_plosive_instance_run(OmxPlosiveInstance *s, const float *in_l, const float *in_r, float *out_l,
                                             float *out_r, uint32_t n) {
   if (!omx_instance_through_engaged(in_l, in_r, out_l, out_r, n, s && s->ready && s->enabled)) return;
@@ -226,6 +235,8 @@ static inline float omx_plosive_instance_pop_reduction_db(const OmxPlosiveInstan
 }
 
 /** The frames of latency the instance introduces: none.
+ * @param s The instance.
+ * @return 0.
  * @thread audio */
 static inline uint32_t omx_plosive_instance_latency(const OmxPlosiveInstance *s) {
   (void)s;

@@ -43,26 +43,31 @@
  * what is new is what happens to the wet after the network, which is why they are values of this
  * enum and not a second mechanism.
  */
+/** The five configurations over the two kernels: `omx_reverb.algorithm`, REVERB_ALGORITHMS' ids. */
 enum omx_reverb_algo {
-  OMX_REVERB_ROOM = 0,
-  OMX_REVERB_PLATE = 1,
-  OMX_REVERB_HALL = 2,
-  OMX_REVERB_REVERSE = 3,
-  OMX_REVERB_GATED = 4
+  OMX_REVERB_ROOM = 0,    /**< the Freeverb comb+allpass network over the room lines */
+  OMX_REVERB_PLATE = 1,   /**< the Dattorro figure-8 plate tank */
+  OMX_REVERB_HALL = 2,    /**< the Freeverb network over its own longer, wider-spread lines */
+  OMX_REVERB_REVERSE = 3, /**< ROOM's network, its wet mirrored in time over `reverse_ms` windows */
+  OMX_REVERB_GATED = 4    /**< ROOM's network, its wet held and cut by the gate envelope */
 };
 
 /* REVERSE's mirror window, in ms — the declared range of `reverse_ms`. The ceiling is what the
  * pool budgets a ring for at OMX_REVERB_MAX_RATE; the window is a DECLARED field and never
  * derived from `size`'s RT60, because an RT60 of seconds cannot be buffered and a window silently
  * clamped to fit is the silent-clamp defect. */
+/** REVERSE's shortest mirror window, ms: REVERB_REVERSE_RANGE's floor. */
 #define OMX_REVERB_REVERSE_MIN_MS OMX_REVERB_REVERSE_RANGE_MIN
+/** REVERSE's longest mirror window, ms: REVERB_REVERSE_RANGE's ceiling, what the pool budgets a ring for. */
 #define OMX_REVERB_REVERSE_MAX_MS OMX_REVERB_REVERSE_RANGE_MAX
 
 /* --- fixed tunings (samples @ 44.1 kHz, scaled to the live rate at layout) --------------------- */
 /* Freeverb comb tunings (the canonical set) + the stereo spread offset for the R channel. Shared
  * shape for ROOM and HALL: 8 combs + 4 series allpass per channel, each configuration owning its
  * own lengths (see omx_reverb_state_layout — HALL_COMB/HALL_AP below the room set). */
+/** Parallel combs per leg in the Freeverb network. */
 #define OMX_FV_NCOMB 8
+/** Series allpasses per leg in the Freeverb network. */
 #define OMX_FV_NALLPASS 4
 /* Dattorro plate delay-line lengths (the classic figure-8, @29761 Hz in the paper — scaled here). */
 
@@ -78,26 +83,35 @@ enum omx_reverb_algo {
  * and is NOT scaled, because 1 Hz is one hertz. BOTH halves are modulated, in quadrature: each
  * half feeds one leg, and modulating only the first would leave the right leg ringing at its own
  * 30.5 ms and the mono sum would bring it straight back. */
+/** The rate, Hz, Dattorro's tank lengths and excursion are quoted at; both scale by `sr` over it. */
 #define OMX_REVERB_PLATE_TUNING_RATE 29761.0f
+/** The paper's tank modulation excursion, samples at OMX_REVERB_PLATE_TUNING_RATE (plus or minus). */
 #define OMX_REVERB_PLATE_MOD_SAMPLES 8.0f
+/** The tank modulation rate, Hz, the same at every clock. */
 #define OMX_REVERB_PLATE_MOD_HZ 1.0f
 /* THE PLATE'S DECAY, declared once: the tank's loop gain is FLOOR + SPAN * size (0.5 at size 0,
  * 0.99 at size 1, the same 0.99 ceiling the other configurations keep under unity), and the tank
  * lines are Dattorro's lengths at OMX_REVERB_PLATE_TUNING_RATE, scaled to the live rate at layout.
  * A test that waits out a plate's tail reads its decay from these, never from a copy. */
+/** The plate tank's loop gain at size 0: REVERB_DECAY_LOOPS' plate floor. */
 #define OMX_REVERB_PLATE_DECAY_FLOOR OMX_REVERB_DECAY_LOOPS_PLATE_GAIN_FLOOR
+/** What size 1 adds to the plate tank's loop gain: REVERB_DECAY_LOOPS' plate span (floor + span under 1). */
 #define OMX_REVERB_PLATE_DECAY_SPAN OMX_REVERB_DECAY_LOOPS_PLATE_GAIN_SPAN
 /* THE LOOP EACH CONFIGURATION'S LATE DECAY FOLLOWS is declared once (REVERB_DECAY_LOOPS, data/primitives/reverb-decay.json): the
  * gains below and the comb tunings' longest line are read from it, and the curve twin draws the decay envelope from the same
  * numbers, so the picture and the tail cannot drift apart (omx_curve_time). */
+/** ROOM's eight comb lengths, samples at 44.1 kHz, the longest REVERB_DECAY_LOOPS' room loop. */
 #define OMX_REVERB_ROOM_COMB_TUNINGS 1116, 1188, 1277, 1356, 1422, 1491, 1557, OMX_REVERB_DECAY_LOOPS_ROOM_LOOP_SAMPLES
+/** HALL's eight comb lengths, samples at 44.1 kHz, the longest REVERB_DECAY_LOOPS' hall loop. */
 #define OMX_REVERB_HALL_COMB_TUNINGS 2455, 2614, 2809, 2983, 3128, 3280, 3425, OMX_REVERB_DECAY_LOOPS_HALL_LOOP_SAMPLES
+/** The plate tank's six line lengths, samples at OMX_REVERB_PLATE_TUNING_RATE: Dattorro's figure-8. */
 #define OMX_REVERB_PLATE_TANK_TUNINGS 672, 1800, 908, 2656, 1996, 3163
 /* THE DEPTH IS A FIELD, `plate_mod_depth`, in percent of the paper's excursion above
  * the paper's: 100 is the plate as it always ran, so the
  * come-up is bit-identical to the tank before the field; 0 is the unmodulated, ringing tank. The
  * row's travel is `REVERB_PLATE_MOD_DEPTH_RANGE`; this is its come-up, generated from that travel's
  * `default` (dsp-primitives §7), the value a fresh lane's atom holds before the row writes one. */
+/** The plate modulation depth a fresh atom holds, percent of the paper's excursion: REVERB_PLATE_MOD_DEPTH_RANGE's default. */
 #define OMX_REVERB_PLATE_MOD_DEPTH_DEFAULT ((float)OMX_REVERB_PLATE_MOD_DEPTH_RANGE_DEFAULT)
 
 /* GATED'S ARMING IS A RAMP, NOT A SNAP, and the ramp is in MILLISECONDS so it is the same ramp at
@@ -117,8 +131,11 @@ enum omx_reverb_algo {
  * inside it. */
 
 /* Pre-delay ring: up to 100 ms @ the declared rate roof (RT_HARD_TARGET_RATE, generated). */
+/** The longest pre-delay, ms: REVERB_PREDELAY_RANGE's ceiling. */
 #define OMX_REVERB_PREDELAY_MAX_MS OMX_REVERB_PREDELAY_RANGE_MAX
+/** The highest rate, Hz, the pool and the pre-delay ring are sized for: the declared rate roof. */
 #define OMX_REVERB_MAX_RATE OMX_RT_HARD_TARGET_RATE
+/** The pre-delay ring's length, samples: the longest pre-delay at OMX_REVERB_MAX_RATE, plus one. */
 #define OMX_REVERB_PREDELAY_CAP (((OMX_REVERB_MAX_RATE / 1000) * OMX_REVERB_PREDELAY_MAX_MS) + 1)
 
 /* The pool must hold: 2ch x (8 comb + 4 allpass) Freeverb lines TWICE (ROOM's set and HALL's own,
@@ -140,64 +157,105 @@ enum omx_reverb_algo {
  * never a silent passthrough; `test/fx/reverb_math.test.c` measures wet energy at every declared
  * rate. 384 kHz takes 1 631 922 floats, does not fit, and is not a rate this console declares.
  * (A pool 48 745 floats short once made 192 kHz a silent passthrough — review 2026-09-17.) */
+/** The caller's pool, floats: the layout at OMX_REVERB_MAX_RATE with headroom, one pool for any configuration. */
 #define OMX_REVERB_POOL_FLOATS (917504)
 
+/** The control atom, a per-block snapshot the caller resolves; the kernel reads it and writes nothing to it. */
 struct omx_reverb {
-  int enabled;        /* 0 -> passthrough */
-  int algorithm;      /* OMX_REVERB_ROOM | OMX_REVERB_PLATE | OMX_REVERB_HALL */
-  float size;         /* 0..1 -> comb feedback / tank decay (bigger = longer) */
-  float damping;      /* 0..1 -> comb/tank low-pass in the feedback (HF absorption) */
-  float predelay_ms;  /* onset delay before the reverb (ms) */
-  float width;        /* 0..1 stereo spread of the wet output */
-  float mix;          /* 0 = dry (bit-identical), 1 = wet-only */
-  float lowcut;       /* wet-path high-pass corner (Hz); 0 = none */
-  float highcut;      /* wet-path low-pass corner (Hz); >= Nyquist = none */
-  /* REVERSE only: the mirror window in ms (OMX_REVERB_REVERSE_MIN_MS..MAX_MS). The swell a hit
+  int enabled;        /**< 0 -> passthrough */
+  int algorithm;      /**< an ::omx_reverb_algo value */
+  float size;         /**< 0..1 -> comb feedback / tank decay (bigger = longer) */
+  float damping;      /**< 0..1 -> comb/tank low-pass in the feedback (HF absorption); the pole, see omx_reverb_damp_pole() */
+  float predelay_ms;  /**< onset delay before the reverb, ms, at most OMX_REVERB_PREDELAY_MAX_MS */
+  float width;        /**< 0..1 stereo spread of the wet output */
+  float mix;          /**< 0 = dry (bit-identical), 1 = wet-only */
+  float lowcut;       /**< wet-path high-pass corner, Hz; 0 = none */
+  float highcut;      /**< wet-path low-pass corner, Hz; >= Nyquist = none */
+  /** REVERSE only: the mirror window in ms (OMX_REVERB_REVERSE_MIN_MS..MAX_MS). The swell a hit
    * produces spans TWO windows after it; the dry is never delayed (see omx_reverb_process). */
   float reverse_ms;
-  /* GATED only: the wet's hold-and-cut envelope. `gate_threshold_db` is the level the kernel's own
-   * mono feed must reach to ARM the hold - an explicit comparison, never a hidden onset detector. */
+  /** GATED only: the hold, ms, the wet keeps full level after the gate arms. */
   float hold_ms;
+  /** GATED only: the release, ms, the wet falls over once the hold ends. */
   float release_ms;
+  /** GATED only: the level, dBFS, the kernel's own mono feed must reach to ARM the hold — an explicit
+   * comparison, never a hidden onset detector. */
   float gate_threshold_db;
-  /* PLATE only: the tank's modulation depth, % of Dattorro's excursion
-   * (OMX_REVERB_PLATE_MOD_DEPTH_DEFAULT = the plate's own). Read by omx_reverb_plate_excursion. */
+  /** PLATE only: the tank's modulation depth, % of Dattorro's excursion
+   * (OMX_REVERB_PLATE_MOD_DEPTH_DEFAULT = the plate's own). Read by omx_reverb_plate_excursion(). */
   float plate_mod_depth;
 };
 
+/** The RT state: every line a pointer into the caller's pool, laid out once by omx_reverb_state_layout();
+ * the caller owns the pool and the struct, one thread runs them. */
 struct omx_reverb_state {
-  float *_pool;             /* caller-owned pool base (freed by the caller, not here) */
-  int _exhausted;           /* set by omx_pool_take when the pool ran out — see the layout */
-  uint32_t pool_len;
-  float sr;
+  float *_pool;             /**< caller-owned pool base (freed by the caller, not here); NULL until laid out */
+  int _exhausted;           /**< set by omx_pool_take() when the pool ran out: the layout was refused */
+  uint32_t pool_len;        /**< the pool's length, floats */
+  float sr;                 /**< the rate, Hz, the lines are laid out at; 0 while unpublished */
   /* Freeverb: per-channel comb + allpass lines (pointers into _pool) + their state. */
-  float *comb_l[OMX_FV_NCOMB]; uint32_t comb_len_l[OMX_FV_NCOMB]; uint32_t comb_pos_l[OMX_FV_NCOMB]; float comb_damp_l[OMX_FV_NCOMB];
-  float *comb_r[OMX_FV_NCOMB]; uint32_t comb_len_r[OMX_FV_NCOMB]; uint32_t comb_pos_r[OMX_FV_NCOMB]; float comb_damp_r[OMX_FV_NCOMB];
-  float *ap_l[OMX_FV_NALLPASS]; uint32_t ap_len_l[OMX_FV_NALLPASS]; uint32_t ap_pos_l[OMX_FV_NALLPASS];
-  float *ap_r[OMX_FV_NALLPASS]; uint32_t ap_len_r[OMX_FV_NALLPASS]; uint32_t ap_pos_r[OMX_FV_NALLPASS];
+  float *comb_l[OMX_FV_NCOMB];        /**< ROOM's left comb lines */
+  uint32_t comb_len_l[OMX_FV_NCOMB];  /**< their lengths, samples */
+  uint32_t comb_pos_l[OMX_FV_NCOMB];  /**< their write positions */
+  float comb_damp_l[OMX_FV_NCOMB];    /**< their damping one-pole states */
+  float *comb_r[OMX_FV_NCOMB];        /**< ROOM's right comb lines */
+  uint32_t comb_len_r[OMX_FV_NCOMB];  /**< their lengths, samples */
+  uint32_t comb_pos_r[OMX_FV_NCOMB];  /**< their write positions */
+  float comb_damp_r[OMX_FV_NCOMB];    /**< their damping one-pole states */
+  float *ap_l[OMX_FV_NALLPASS];       /**< ROOM's left allpass lines */
+  uint32_t ap_len_l[OMX_FV_NALLPASS]; /**< their lengths, samples */
+  uint32_t ap_pos_l[OMX_FV_NALLPASS]; /**< their write positions */
+  float *ap_r[OMX_FV_NALLPASS];       /**< ROOM's right allpass lines */
+  uint32_t ap_len_r[OMX_FV_NALLPASS]; /**< their lengths, samples */
+  uint32_t ap_pos_r[OMX_FV_NALLPASS]; /**< their write positions */
   /* HALL: the SAME Freeverb kernel (omx_fv_comb/omx_fv_allpass) over its own, longer/wider-spread
    * lines — a second configuration of the comb+allpass network, not a second mechanism. */
-  float *comb_l_hall[OMX_FV_NCOMB]; uint32_t comb_len_l_hall[OMX_FV_NCOMB]; uint32_t comb_pos_l_hall[OMX_FV_NCOMB]; float comb_damp_l_hall[OMX_FV_NCOMB];
-  float *comb_r_hall[OMX_FV_NCOMB]; uint32_t comb_len_r_hall[OMX_FV_NCOMB]; uint32_t comb_pos_r_hall[OMX_FV_NCOMB]; float comb_damp_r_hall[OMX_FV_NCOMB];
-  float *ap_l_hall[OMX_FV_NALLPASS]; uint32_t ap_len_l_hall[OMX_FV_NALLPASS]; uint32_t ap_pos_l_hall[OMX_FV_NALLPASS];
-  float *ap_r_hall[OMX_FV_NALLPASS]; uint32_t ap_len_r_hall[OMX_FV_NALLPASS]; uint32_t ap_pos_r_hall[OMX_FV_NALLPASS];
+  float *comb_l_hall[OMX_FV_NCOMB];        /**< HALL's left comb lines */
+  uint32_t comb_len_l_hall[OMX_FV_NCOMB];  /**< their lengths, samples */
+  uint32_t comb_pos_l_hall[OMX_FV_NCOMB];  /**< their write positions */
+  float comb_damp_l_hall[OMX_FV_NCOMB];    /**< their damping one-pole states */
+  float *comb_r_hall[OMX_FV_NCOMB];        /**< HALL's right comb lines */
+  uint32_t comb_len_r_hall[OMX_FV_NCOMB];  /**< their lengths, samples */
+  uint32_t comb_pos_r_hall[OMX_FV_NCOMB];  /**< their write positions */
+  float comb_damp_r_hall[OMX_FV_NCOMB];    /**< their damping one-pole states */
+  float *ap_l_hall[OMX_FV_NALLPASS];       /**< HALL's left allpass lines */
+  uint32_t ap_len_l_hall[OMX_FV_NALLPASS]; /**< their lengths, samples */
+  uint32_t ap_pos_l_hall[OMX_FV_NALLPASS]; /**< their write positions */
+  float *ap_r_hall[OMX_FV_NALLPASS];       /**< HALL's right allpass lines */
+  uint32_t ap_len_r_hall[OMX_FV_NALLPASS]; /**< their lengths, samples */
+  uint32_t ap_pos_r_hall[OMX_FV_NALLPASS]; /**< their write positions */
   /* Dattorro plate: input diffusers + the two tank halves (pointers into _pool) + state. */
-  float *plate_diff[4]; uint32_t plate_diff_len[4]; uint32_t plate_diff_pos[4];
-  float *plate_tank[6]; uint32_t plate_tank_len[6]; uint32_t plate_tank_pos[6];
-  float plate_damp1, plate_damp2;
-  float plate_mod_phase;    /* the tank LFO, in turns [0,1) — advanced per sample, never a libm call */
+  float *plate_diff[4];         /**< the plate's four input diffuser lines */
+  uint32_t plate_diff_len[4];   /**< their lengths, samples */
+  uint32_t plate_diff_pos[4];   /**< their write positions */
+  float *plate_tank[6];         /**< the tank's six lines, OMX_REVERB_PLATE_TANK_TUNINGS scaled to `sr` */
+  uint32_t plate_tank_len[6];   /**< their lengths, samples */
+  uint32_t plate_tank_pos[6];   /**< their write positions */
+  float plate_damp1;            /**< the first tank half's damping one-pole state */
+  float plate_damp2;            /**< the second tank half's damping one-pole state */
+  float plate_mod_phase;        /**< the tank LFO, in turns [0,1) — advanced per sample, never a libm call */
   /* REVERSE's mirror rings (one per leg) + the writer and its position inside the current hop.
    * The ring holds 2 x OMX_REVERB_REVERSE_MAX_MS at the laid-out rate, which is every sample the
    * two readers can ask for. */
-  float *rev_l; float *rev_r; uint32_t rev_cap; uint32_t rev_w; uint32_t rev_phase;
+  float *rev_l;       /**< REVERSE's left mirror ring */
+  float *rev_r;       /**< REVERSE's right mirror ring */
+  uint32_t rev_cap;   /**< each mirror ring's length, samples */
+  uint32_t rev_w;     /**< the mirror rings' write position */
+  uint32_t rev_phase; /**< the writer's position inside the current hop, samples */
   /* GATED's envelope: what the wet is multiplied by, and how many samples of hold are left. */
-  float gate_env; uint32_t gate_hold_left;
+  float gate_env;          /**< GATED's envelope, 0..1, what the wet is multiplied by */
+  uint32_t gate_hold_left; /**< GATED's hold left, samples */
   /* The shared pre-delay ring — ONE ring, because the network is fed the mono sum of the legs
    * (`xin` in omx_reverb_process); a second ring would hold the same samples twice and read
    * them never. Wet-path filter state follows. */
-  float *pre; uint32_t pre_cap; uint32_t pre_pos;
-  float lc_l, lc_r, hc_l, hc_r; /* one-pole low/high-cut state per leg */
-  uint32_t next_free;           /* pool cursor used during layout */
+  float *pre;         /**< the pre-delay ring, fed the mono sum */
+  uint32_t pre_cap;   /**< its length, samples */
+  uint32_t pre_pos;   /**< its write position */
+  float lc_l;         /**< the wet low-cut one-pole state, left leg */
+  float lc_r;         /**< the wet low-cut one-pole state, right leg */
+  float hc_l;         /**< the wet high-cut one-pole state, left leg */
+  float hc_r;         /**< the wet high-cut one-pole state, right leg */
+  uint32_t next_free; /**< pool cursor used during layout */
 };
 
 /** The early reflections' tap count, REVERB_EARLY_TAP_MS's. */
@@ -222,21 +280,23 @@ _Static_assert(OMX_REVERB_EARLY_TAP_MS_COUNT == OMX_REVERB_EARLY_TAP_GAINS_COUNT
  * The duck (omx_duck_step on the louder dry leg) and the de-esser (omx_deess_process, split, on the
  * wet legs) come last, after the gate.
  */
+/** The return: early reflections, the tail's level, the wet duck and the wet de-esser, a per-block
+ * snapshot beside the atom (the prose above). */
 struct omx_reverb_return {
-  float early_lin;                        /* the early taps' gain; 0 is no early reflections */
-  float tail_lin;                         /* the network's gain; 1 is the tail as it shipped */
-  float tap_d[OMX_REVERB_EARLY_TAPS];     /* each tap's delay, samples, fractional, inside the line's reach */
-  float tap_g[OMX_REVERB_EARLY_TAPS];     /* each tap's gain, linear */
-  struct omx_duck duck;                   /* the wet duck; a 0 dB depth ducks nothing */
-  const struct omx_deess *deess;          /* the wet de-esser's atom, or NULL for none */
+  float early_lin;                        /**< the early taps' gain; 0 is no early reflections */
+  float tail_lin;                         /**< the network's gain; 1 is the tail as it shipped */
+  float tap_d[OMX_REVERB_EARLY_TAPS];     /**< each tap's delay, samples, fractional, inside the line's reach */
+  float tap_g[OMX_REVERB_EARLY_TAPS];     /**< each tap's gain, linear */
+  struct omx_duck duck;                   /**< the wet duck; a 0 dB depth ducks nothing */
+  const struct omx_deess *deess;          /**< the wet de-esser's atom, or NULL for none */
 };
 
-/* The return's state: the early line (omx_fdelay over the caller's ring, order 3; unarmed is no early
+/** The return's state: the early line (omx_fdelay over the caller's ring, order 3; unarmed is no early
  * reflections), the duck's follower and the de-esser's state. */
 struct omx_reverb_return_state {
-  struct omx_fdelay line;
-  struct omx_duck_state duck;
-  struct omx_deess_state deess;
+  struct omx_fdelay line;       /**< the early reflections' fractional delay line, over the caller's ring */
+  struct omx_duck_state duck;   /**< the wet duck's follower */
+  struct omx_deess_state deess; /**< the wet de-esser's state */
 };
 
 /*
@@ -252,6 +312,7 @@ struct omx_reverb_return_state {
  * gain `damping`, so at damping 0 its loop carries nothing — a plate with no tail — and the knob
  * runs backwards. That defect shipped here and cost a lane.
  */
+/** The damping pole's ceiling at the reference rate: a pole of 1 freezes the filter and kills the loop. */
 #define OMX_REVERB_DAMP_POLE_MAX 0.98f
 
 /*
@@ -274,25 +335,31 @@ struct omx_reverb_return_state {
  * it sits in. Normalising a clamped 0.98 gives 0.98995 at 192 kHz, which is the SAME 308.7 Hz
  * corner and still comfortably below 1.
  */
+/** The rate, Hz, the damping pole is quoted at: the knob's corner is the same at every clock. */
 #define OMX_REVERB_DAMP_REFERENCE_RATE ((float)OMX_DSP_KNOB_REFERENCE_RATE)
 
-/* The damping knob turned into the pole the live rate needs. Called ONCE PER BLOCK — a powf per
+/** @brief The damping knob turned into the pole the live rate needs. Called ONCE PER BLOCK — a powf per
  * sample in a comb bank would be the RT path's most expensive line by an order of magnitude — and
  * the per-sample filter is `omx_onepole_flush` itself, which is what every other recursive
  * low-pass in this file already is.
+ * @param damping The knob, 0..1; clamped to OMX_REVERB_DAMP_POLE_MAX, a NaN is no damping.
+ * @param sr The live rate, Hz.
+ * @return The pole at `sr`, in [0, 1), the same corner as `damping` at OMX_REVERB_DAMP_REFERENCE_RATE.
  * @thread audio */
 static inline float omx_reverb_damp_pole(float damping, float sr) {
   float p = omx_clampf(damping, 0.0f, OMX_REVERB_DAMP_POLE_MAX); /* NaN: no damping */
   return omx_pole_rescale(p, OMX_REVERB_DAMP_REFERENCE_RATE, sr); /* the reference rate is untouched */
 }
 
-/* Carve `len` floats out of the pool; returns the sub-buffer base (or NULL if the pool is
- * exhausted). THE LINE COMES BACK SILENT: a delay line is state, and state handed out dirty
+/** @brief Carve `len` floats out of the pool. THE LINE COMES BACK SILENT: a delay line is state, and state handed out dirty
  * makes a re-layout replay whatever the last layout left in it. The clear lives HERE, in the
  * primitive that hands the memory out, and not in each caller, because a caller that forgets is
  * a reverb that opens playing the old room (test/fx/reverb_math.test.c's re-layout arm bounds the
  * residue). Layout runs on INSERT and on a re-enable edge (omx_reverb_instance_clear, on the audio
  * thread), so the cost is bounded by the pool and paid once per edge.
+ * @param s The state whose pool is carved; `next_free` advances, `_exhausted` is set on refusal.
+ * @param len The line's length, floats.
+ * @return The line's base, `len` zeroed floats, or NULL when the pool cannot hold it.
  * @thread audio */
 static inline float *omx_pool_take(struct omx_reverb_state *s, uint32_t len) {
   if (len > s->pool_len - s->next_free) { /* no unsigned wrap */ s->_exhausted = 1; return NULL; }
@@ -456,17 +523,27 @@ static inline int omx_reverb_state_layout(struct omx_reverb_state *s, float *poo
  * A position that is not inside its line (a stale one past a re-cut line, F7) restarts the line at
  * 0 rather than reading one sample past it.
  */
+/** The frames the network runs per inner pass: a segment never crosses a line's wrap. */
 #define OMX_REVERB_CHUNK 64u
 
 #undef OMX_CONTRACT_STAGE
 #define OMX_CONTRACT_STAGE "reverb/comb"
-/* THE EIGHT COMBS OF ONE LEG over `n` samples: each reads its tail, low-pass filters it
+/** @brief THE EIGHT COMBS OF ONE LEG over `n` samples: each reads its tail, low-pass filters it
  * (`damp_pole` from omx_reverb_damp_pole), stores in+fb*damped, and the eight tails are summed
  * c0..c7 into `acc`. The combs run SAMPLE-MAJOR, all eight inside the sample: each comb's damping
  * filter is a recursion one sample long, and eight independent recursions in flight keep the core
  * busy — comb-major, gathered-vector and time-major-tile orders all measure slower
  * (`reverb-cost-ab.sh`). The segment ends where the first of the eight lines wraps, so the inner
  * loop carries no wrap test.
+ * @param comb The leg's OMX_FV_NCOMB comb lines.
+ * @param comb_len Their lengths, samples.
+ * @param comb_pos Their write positions, advanced `n`.
+ * @param comb_damp Their damping one-pole states.
+ * @param in The network's feed, `n` samples.
+ * @param acc The comb sum, `n` samples, written.
+ * @param n Frames, at most OMX_REVERB_CHUNK.
+ * @param feedback The comb feedback, below 1.
+ * @param damp_pole The damping pole at the live rate, omx_reverb_damp_pole().
  * @thread audio */
 static inline void omx_fv_comb_bank_block(float *const *comb, const uint32_t *comb_len,
                                           uint32_t *comb_pos, float *comb_damp, const float *in,
@@ -515,7 +592,13 @@ static inline void omx_fv_comb_bank_block(float *const *comb, const uint32_t *co
 
 #undef OMX_CONTRACT_STAGE
 #define OMX_CONTRACT_STAGE "reverb/allpass"
-/* One Schroeder allpass (fixed 0.5 coefficient) over `n` samples of `x`, in place.
+/** @brief One Schroeder allpass (fixed 0.5 coefficient) over `n` samples of `x`, in place.
+ * @param buf The allpass line, `len` floats.
+ * @param len The line's length, samples, above 0.
+ * @param pos The line's write position, advanced `n`; one past the line restarts at 0.
+ * @param x The samples, filtered in place.
+ * @param n Frames.
+ * @pre `line-bound`: a line and a positive length.
  * @thread audio */
 static inline void omx_fv_allpass_block(float *buf, uint32_t len, uint32_t *pos, float *x, uint32_t n) {
   OMX_PRE(buf != NULL && len > 0u, "line-bound");
@@ -540,7 +623,14 @@ static inline void omx_fv_allpass_block(float *buf, uint32_t len, uint32_t *pos,
 
 #undef OMX_CONTRACT_STAGE
 #define OMX_CONTRACT_STAGE "reverb/diffuser"
-/* One Dattorro diffuser (allpass with an explicit coefficient) over `n` samples of `x`, in place.
+/** @brief One Dattorro diffuser (allpass with an explicit coefficient) over `n` samples of `x`, in place.
+ * @param buf The diffuser line, `len` floats.
+ * @param len The line's length, samples, above 0.
+ * @param pos The line's write position, advanced `n`.
+ * @param x The samples, diffused in place.
+ * @param n Frames.
+ * @param coef The allpass coefficient, inside (-1, 1).
+ * @pre `line-bound`: a line and a positive length.
  * @thread audio */
 static inline void omx_plate_ap_block(float *buf, uint32_t len, uint32_t *pos, float *x, uint32_t n,
                                       float coef) {
@@ -593,8 +683,8 @@ static inline float omx_reverb_plate_excursion(float depth_pct, float sr, float 
 }
 #undef OMX_CONTRACT_STAGE
 
-/*
- * One Dattorro allpass whose DELAY is modulated, read with LINEAR interpolation.
+/**
+ * @brief One Dattorro allpass whose DELAY is modulated, read with LINEAR interpolation: one sample in, one out.
  *
  * Linear and not allpass interpolation, deliberately: an allpass interpolator carries STATE whose
  * coefficient moves with the delay, and a moving coefficient over a stateful filter is exactly
@@ -605,6 +695,13 @@ static inline float omx_reverb_plate_excursion(float depth_pct, float sr, float 
  *
  * `delay` is in samples and must lie in [1, len]: the caller derives it from the line's own
  * length minus twice the excursion, so the read can never cross the write.
+ * @param buf The allpass line, `len` floats.
+ * @param len The line's length, samples.
+ * @param pos The line's write position, advanced one.
+ * @param in The input sample.
+ * @param coef The allpass coefficient, inside (-1, 1).
+ * @param delay The read delay, samples, in [1, len].
+ * @return The output sample.
  * @thread audio
  */
 static inline float omx_plate_ap_mod(float *buf, uint32_t len, uint32_t *pos, float in, float coef,
@@ -621,8 +718,13 @@ static inline float omx_plate_ap_mod(float *buf, uint32_t len, uint32_t *pos, fl
   return out;
 }
 
-/* A modulated READ off a plain delay line, linear-interpolated, same rule as the allpass above:
- * `delay` in [1, len]. The line's own write is the caller's, unmoved.
+/** @brief A modulated READ off a plain delay line, linear-interpolated, same rule as the allpass above.
+ * The line's own write is the caller's, unmoved.
+ * @param buf The line, `len` floats.
+ * @param len The line's length, samples.
+ * @param pos The line's write position.
+ * @param delay The read delay, samples, in [1, len].
+ * @return The interpolated sample.
  * @thread audio */
 static inline float omx_delay_read_mod(const float *buf, uint32_t len, uint32_t pos, float delay) {
   uint32_t i0 = (uint32_t)delay;
@@ -635,10 +737,24 @@ static inline float omx_delay_read_mod(const float *buf, uint32_t len, uint32_t 
 
 #undef OMX_CONTRACT_STAGE
 #define OMX_CONTRACT_STAGE "reverb/leg"
-/* ONE LEG OF THE FREEVERB NETWORK over a chunk: eight parallel combs summed into `wet`, then four
+/** @brief ONE LEG OF THE FREEVERB NETWORK over a chunk: eight parallel combs summed into `wet`, then four
  * series allpasses, then the Freeverb output scaling. ROOM and HALL are this word over their own
  * lines (REVERSE and GATED are ROOM's), each leg called once — the two legs share no state, so
  * running L's whole network before R's is the same arithmetic as interleaving them.
+ * @param comb The leg's OMX_FV_NCOMB comb lines.
+ * @param comb_len Their lengths, samples.
+ * @param comb_pos Their write positions, advanced `n`.
+ * @param comb_damp Their damping one-pole states.
+ * @param ap The leg's OMX_FV_NALLPASS allpass lines.
+ * @param ap_len Their lengths, samples.
+ * @param ap_pos Their write positions, advanced `n`.
+ * @param fed The network's feed, `n` samples, finite.
+ * @param wet The leg's wet, `n` samples, written.
+ * @param n Frames, at most OMX_REVERB_CHUNK.
+ * @param feedback The comb feedback, below 1.
+ * @param damp_pole The damping pole at the live rate, omx_reverb_damp_pole().
+ * @pre `chunk-bound`, `finite-in`.
+ * @post `finite-out`.
  * @thread audio */
 static inline void omx_fv_leg_block(float *const *comb, const uint32_t *comb_len, uint32_t *comb_pos,
                                     float *comb_damp, float *const *ap, const uint32_t *ap_len,
@@ -654,7 +770,21 @@ static inline void omx_fv_leg_block(float *const *comb, const uint32_t *comb_len
 
 #undef OMX_CONTRACT_STAGE
 #define OMX_CONTRACT_STAGE "reverb"
-/** @thread audio */
+/**
+ * @brief Process one block IN PLACE with the return: the pre-delayed mono sum through the configuration's
+ * network, the output stage REVERSE or GATED adds, the early reflections and the tail at their gains,
+ * the width and the cuts, then the duck and the de-esser, mixed with the dry. A disabled atom, an
+ * unpublished state (a refused layout) or a rate other than the laid-out one is a passthrough.
+ * @param l The left leg, `n` frames, processed in place.
+ * @param r The right leg, `n` frames, processed in place.
+ * @param n Frames in the block.
+ * @param p The reverb's control atom.
+ * @param x The return, or NULL for the neutral one (the reverb as it shipped).
+ * @param xs The return's state, or NULL with `x`.
+ * @param s The caller-owned pool's lines and the RT state, laid out by omx_reverb_state_layout().
+ * @param sr The live rate, Hz; the rate the lines were laid out at.
+ * @thread audio
+ */
 static inline void omx_reverb_process_return(float *l, float *r, uint32_t n, const struct omx_reverb *p,
                                              const struct omx_reverb_return *x, struct omx_reverb_return_state *xs,
                                              struct omx_reverb_state *s, float sr) {
@@ -970,7 +1100,7 @@ static inline void omx_reverb_process_return(float *l, float *r, uint32_t n, con
 #undef OMX_CONTRACT_STAGE
 
 /**
- * Process one block IN PLACE with no return: omx_reverb_process_return with the neutral return,
+ * @brief Process one block IN PLACE with no return: omx_reverb_process_return with the neutral return,
  * the reverb as it shipped.
  *
  * @param l the left leg, `n` frames, processed in place

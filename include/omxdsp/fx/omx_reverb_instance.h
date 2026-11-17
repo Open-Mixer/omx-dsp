@@ -8,9 +8,9 @@
  *
  *   1. POOL. `struct omx_reverb_state` binds a pool; the instance OWNS it, inline
  *      ({@link OMX_REVERB_POOL_FLOATS}, which fits every declared rate), and
- *      {@link omx_reverb_instance_init} lays the five configurations out over it at the instance
+ *      omx_reverb_instance_init() lays the five configurations out over it at the instance
  *      rate, REFUSING a rate the console does not declare. Nothing is allocated, at init or after.
- *   2. RESOLVE. {@link omx_reverb_instance_resolve} takes the kernel's thirteen contract controls
+ *   2. RESOLVE. omx_reverb_instance_resolve() takes the kernel's thirteen contract controls
  *      in their declared order and the row's own units (resolve_fx_reverb, mixer_rt.c, loads them
  *      unconverted) into the atom, every travel clamped through omx_param into its declared range
  *      (REVERB_*_RANGE, omxdsp_definitions.h) and a non-finite word reading as the declared
@@ -91,6 +91,9 @@ typedef struct {
  * Bind an instance to its rate and lay its own pool out. Returns 1 when usable, 0 when not (a
  * refused init leaves `ready` clear and run() is the identity): the rate must be a declared one.
  * Allocates nothing.
+ * @param s The instance; every word of it is written.
+ * @param sr The sample rate, Hz, a declared one, at most OMX_REVERB_MAX_RATE.
+ * @return 1 when usable, 0 when not: a rate the console does not declare (the oracle set, 32 to 192 kHz) is refused, `ready` stays clear and run() is the identity, as is a pool the layout does not fit or an early line that cannot be armed.
  * @thread control
  */
 static inline int omx_reverb_instance_init(OmxReverbInstance *s, float sr) {
@@ -110,10 +113,11 @@ static inline int omx_reverb_instance_init(OmxReverbInstance *s, float sr) {
   return 1;
 }
 
+#define OMX_CONTRACT_STAGE "reverb/instance-clear"
 /** Lay the pool out again — every line handed back silent, every cursor and filter at rest:
  * the re-enable recipe. Bounded work over the instance's own pool, no allocation.
+ * @param s The instance; null or not ready is ignored.
  * @thread audio */
-#define OMX_CONTRACT_STAGE "reverb/instance-clear"
 static inline void omx_reverb_instance_clear(OmxReverbInstance *s) {
   if (!s || !s->ready) return;
   /* Neither call below can refuse here, so their returns are dropped on purpose. `ready` is set only
@@ -251,13 +255,19 @@ static inline void omx_reverb_instance_resolve(OmxReverbInstance *s, int bypass,
 }
 #undef OMX_CONTRACT_STAGE
 
+#define OMX_CONTRACT_STAGE "reverb/instance-run"
 /**
  * THE AUDIO CALLBACK'S WHOLE SHARE: copy in to out where they differ, run the console's kernel
  * in place on out at the instance rate. `in_*` and `out_*` may alias. Not ready, or bypassed, is
  * the identity.
+ * @param s The instance; null, not ready or bypassed leaves `out_*` holding `in_*`.
+ * @param in_l The left input, `n` frames.
+ * @param in_r The right input, `n` frames.
+ * @param out_l The left output, `n` frames, may be `in_l`.
+ * @param out_r The right output, `n` frames, may be `in_r`.
+ * @param n The block length, frames; a null port or 0 touches nothing.
  * @thread audio
  */
-#define OMX_CONTRACT_STAGE "reverb/instance-run"
 static inline void omx_reverb_instance_run(OmxReverbInstance *s, const float *in_l,
                                            const float *in_r, float *out_l, float *out_r,
                                            uint32_t n) {
