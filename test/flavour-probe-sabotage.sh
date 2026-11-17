@@ -11,6 +11,7 @@
 #   other      the probe fails some other way       -> NOT RUN, "the TSan probe does not run", with its own words
 #   noaslr     setarch -R allowed: the probe and the consumer run under it, and the probe, which acts out the mapping
 #              fatal unless it runs under setarch -R, passes; the consumer runs
+#   phang      only the TSan probe's compile hangs -> RED, "the TSan probe: the compile timed out after 3 s"
 #   hang       the compiler never returns          -> RED by flavour-check's own bound, naming the compile and the bound
 # Exit 0 when every case reads as it must; each failing case prints `flavour-probe-sabotage: FAIL <case> ...`.
 set -u
@@ -57,6 +58,7 @@ for a in "\$@"; do
   [ "\$prev" = -o ] && out="\$a"; prev="\$a"
 done
 if [ "\$tsan" = 1 ] && [ "\$probe" = 1 ]; then
+  [ "\$FAKE_PROBE" = hang ] && exec sleep 600
   [ "\$FAKE_PROBE" = link ] && { echo "ld: cannot find -ltsan" >&2; exit 1; }
   exec "$REAL_CC" -DSTUB_MODE="\"\$FAKE_PROBE\"" -o "\$out" "$S/stub.c"
 fi
@@ -68,8 +70,8 @@ chmod +x "$S/bin/setarch" "$S/bin/cc"
 # case <name> <FAKE_PROBE> <FAKE_SETARCH> <rc wanted> <line wanted (grep -E)> [<line that must not be there>]
 case_() {
   local name="$1" probe="$2" arch="$3" rcw="$4" want="$5" nope="${6:-}" out rc
-  out="$(PATH="$S/bin:$PATH" FAKE_PROBE="$probe" FAKE_SETARCH="$arch" CC="$S/bin/cc" NM="${NM:-nm}" \
-    bash tools/flavour-check.sh "$S/out-$name" "$FLAGS" "$PLAIN" "$CONTRACTS" "$TSAN" 2>&1)"; rc=$?
+  out="$(FLAVOUR_COMPILE_TIMEOUT=3 PATH="$S/bin:$PATH" FAKE_PROBE="$probe" FAKE_SETARCH="$arch" CC="$S/bin/cc" NM="${NM:-nm}" \
+    timeout 30 bash tools/flavour-check.sh "$S/out-$name" "$FLAGS" "$PLAIN" "$CONTRACTS" "$TSAN" 2>&1)"; rc=$?
   if [ "$rc" != "$rcw" ]; then echo "flavour-probe-sabotage: FAIL $name: exit $rc, wanted $rcw"; printf '%s\n' "$out" | tail -3; fail=1; return; fi
   if ! grep -qE "$want" <<< "$out"; then echo "flavour-probe-sabotage: FAIL $name: no line /$want/"; printf '%s\n' "$out" | grep 'flavour-check:' | tail -3; fail=1; return; fi
   if [ -n "$nope" ] && grep -qE "$nope" <<< "$out"; then echo "flavour-probe-sabotage: FAIL $name: /$nope/ is there"; fail=1; return; fi
@@ -97,5 +99,6 @@ hang_
 case_ link    link    allow  0 '^flavour-check: NOT RUN — the TSan probe does not link'                  'TSan consumer reads'
 case_ mapping mapping refuse 0 '^flavour-check: NOT RUN — the TSan probe: FATAL: ThreadSanitizer: unexpected memory mapping.*setarch -R is not allowed' 'TSan consumer reads'
 case_ other   other   allow  0 '^flavour-check: NOT RUN — the TSan probe does not run: stand-in: the probe broke its own way \(exit 3\)' 'TSan consumer reads'
+case_ phang   hang    allow  1 '^flavour-check: FAIL — the TSan probe: the compile timed out after 3 s \(FLAVOUR_COMPILE_TIMEOUT\)' 'TSan consumer reads'
 case_ noaslr  noaslr  allow  0 '^flavour-check: the TSan consumer reads the contracts \(under setarch [^ ]+ -R\)' 'NOT RUN'
 exit "$fail"
