@@ -65,10 +65,10 @@ done
 if [ "\$tsan" = 1 ] && [ "\$probe" = 1 ]; then
   [ "\$FAKE_PROBE" = hang ] && exec sleep 600
   [ "\$FAKE_PROBE" = link ] && { echo "ld: cannot find -ltsan" >&2; exit 1; }
-  exec "$REAL_CC" -DSTUB_MODE="\"\$FAKE_PROBE\"" -o "\$out" "$S/stub.c"
+  PATH="\$REAL_PATH" exec "$REAL_CC" -DSTUB_MODE="\"\$FAKE_PROBE\"" -o "\$out" "$S/stub.c"
 fi
-if [ "\$tsan" = 1 ] && [ "\$consumer" = 1 ]; then exec "$REAL_CC" -DSTUB_MODE='"consumer"' -o "\$out" "$S/stub.c"; fi
-exec "$REAL_CC" "\$@"
+if [ "\$tsan" = 1 ] && [ "\$consumer" = 1 ]; then PATH="\$REAL_PATH" exec "$REAL_CC" -DSTUB_MODE='"consumer"' -o "\$out" "$S/stub.c"; fi
+PATH="\$REAL_PATH" exec "$REAL_CC" "\$@"
 SH
 chmod +x "$S/bin/setarch" "$S/bin/cc"
 
