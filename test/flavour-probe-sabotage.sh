@@ -106,7 +106,7 @@ hang_() {
   fi
   echo "flavour-probe-sabotage: ok   hang: $(grep -E 'timed out' <<< "$out" | head -1)"
 }
-# badbound: a bound that is not a whole number above 0 is refused by name before any compile; the hanging compiler
+# badbound: a bound that is not a whole number from 1 to 3600 is refused by name before any compile; the hanging compiler
 # and the outer bound show that nothing was bounded when it is not refused (timeout 0 never fires).
 badbound_() {
   local v out rc
