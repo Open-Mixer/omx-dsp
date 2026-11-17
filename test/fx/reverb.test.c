@@ -11,6 +11,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/wait.h>
+#include <unistd.h>
 
 #include <omxdsp/fx/omx_reverb.h>
 
@@ -516,14 +518,34 @@ static void test_layout_refuses_a_rate_above_the_ceiling_with_a_fitting_pool(voi
 }
 
 /* Review of #71, gap 2: omx_pool_take called directly, where next_free + len wraps the unsigned
- * range. The summed form accepts the request and hands out a pointer past the pool. */
+ * range. The summed form accepts the request and hands out a pointer past the pool, then zeroes
+ * len floats from it. The take runs in its own child, so a revert is a counted failure of this arm,
+ * not a crash of the oracle, and the length goes through a volatile, so no compiler folds it into a
+ * build-time warning instead (test/fx/reverb-perturb.sh holds both). The child exits 0 when the
+ * take is refused with the cursor unmoved, 1 when it is not. */
+static int take_refuses_wrapping_length(void) {
+  fflush(NULL);
+  pid_t pid = fork();
+  if (pid < 0) return 0;
+  if (pid == 0) {
+    static float pool[100];
+    struct omx_reverb_state st;
+    memset(&st, 0, sizeof st);
+    st._pool = pool; st.pool_len = 100; st.next_free = 50;
+    volatile uint32_t len = 0xFFFFFFF0u; /* 50 + len wraps to 34, which is below pool_len */
+    float *p = omx_pool_take(&st, len);
+    _exit(p == NULL && st._exhausted == 1 && st.next_free == 50 ? 0 : 1);
+  }
+  int status = 0;
+  if (waitpid(pid, &status, 0) != pid) return 0;
+  if (WIFSIGNALED(status)) fprintf(stderr, "pool-take child: killed by signal %d\n", WTERMSIG(status));
+  return WIFEXITED(status) && WEXITSTATUS(status) == 0;
+}
+
 static void test_pool_take_refuses_a_length_that_wraps(void) {
   static float pool[100];
   struct omx_reverb_state st;
-  memset(&st, 0, sizeof st);
-  st._pool = pool; st.pool_len = 100; st.next_free = 50;
-  float *p = omx_pool_take(&st, 0xFFFFFFF0u); /* 50 + len wraps to 34, which is below pool_len */
-  check(p == NULL && st._exhausted == 1 && st.next_free == 50, "a length whose sum wraps is refused, the cursor unmoved");
+  check(take_refuses_wrapping_length(), "a length whose sum wraps is refused, the cursor unmoved");
   memset(&st, 0, sizeof st);
   st._pool = pool; st.pool_len = 100; st.next_free = 50;
   check(omx_pool_take(&st, 50) == pool + 50 && st.next_free == 100 && !st._exhausted, "presence: an exact fit is taken");
