@@ -61,7 +61,8 @@
 #               private-refs-check, from a checkout of it: DOTGITHUB=<dir>)
 #   make docs   the API reference by doxygen (build-time only), over every installed header
 #   make docs-check  doxygen's undocumented-declaration and parameter warnings against
-#               docs/doxygen-baseline.txt, which only shrinks (DOCS_BASELINE_BASE=<file>: the base's copy);
+#               docs/doxygen-baseline.txt, which only shrinks against DOCS_BASE=<remote>/<branch>, fetched
+#               first (origin/main; unset, unreachable, unresolvable or without a baseline is refused by name);
 #               make docs-baseline  the baseline rewritten from the tree, never with a row added;
 #               make docs-sabotage  the gate against sabotaged copies of the tree
 #   make test-tsan  the thread arm under -fsanitize=thread where the toolchain has it
@@ -1132,8 +1133,11 @@ docs: $(HEADERS) $(FX_HEADERS) $(ANALYSIS_HEADERS) $(MIX_HEADERS) | $(BUILD)
 # undocumented public declaration), and every baseline row is still warned, so the baseline only
 # shrinks and a new or changed public declaration must be documented. A row is the header and doxygen's
 # text with the tree's path stripped and a warning's continuation lines (the parameters it lists) joined,
-# so it reads the same in every checkout and names one declaration. With DOCS_BASELINE_BASE=<file>
-# (the baseline at the branch's base, `git show <base>:$(DOCS_BASELINE)`), a row not in that file is red.
+# so it reads the same in every checkout and names one declaration. The base rule: DOCS_BASE names the
+# base as <remote>/<branch> (origin/main); the branch is FETCHED from the remote first (a stale
+# remote-tracking ref is no base), FETCH_HEAD must resolve to a commit, and that commit's baseline is
+# what this tree's may not add a row to. An unset or empty DOCS_BASE, a failed fetch, an unresolvable
+# ref or a base without a baseline is red by name; the check is never skipped and never head-vs-head.
 # What doxygen cannot see is refused by name before it runs: a tracked header under include/omxdsp
 # without a doc-comment @file (doxygen reports nothing about an undocumented file's declarations), a
 # conditional doc command (@cond, @internal, @if) that would hide a declaration, a Doxyfile without the
@@ -1165,9 +1169,15 @@ docs-check: docs
 	  printf '%s\n' "$$new" >&2; echo "docs-check: FAIL — undocumented public declarations not in $(DOCS_BASELINE) (document them)" >&2; exit 1; fi
 	@gone=$$(LC_ALL=C comm -23 $(DOCS_BASELINE) $(DOCS_WARNINGS).sorted); if [ -n "$$gone" ]; then \
 	  printf '%s\n' "$$gone" >&2; echo "docs-check: FAIL — these $(DOCS_BASELINE) rows are documented now: drop them" >&2; exit 1; fi
-	@if [ -n "$(DOCS_BASELINE_BASE)" ]; then grew=$$(LC_ALL=C sort -u $(DOCS_BASELINE_BASE) | LC_ALL=C comm -13 - $(DOCS_BASELINE)); \
-	  if [ -n "$$grew" ]; then printf '%s\n' "$$grew" >&2; echo "docs-check: FAIL — $(DOCS_BASELINE) grew against $(DOCS_BASELINE_BASE); it only shrinks" >&2; exit 1; fi; fi
-	@echo "docs-check: ok — $$(wc -l < $(DOCS_BASELINE)) undocumented public declarations in the baseline, none new"
+	@test -n "$(DOCS_BASE)" || { echo "docs-check: FAIL — DOCS_BASE is unset: name the base as <remote>/<branch> (origin/main) the baseline may not grow against" >&2; exit 1; }
+	@remote=$${DOCS_BASE%%/*}; branch=$${DOCS_BASE#*/}; \
+	  { [ -n "$$remote" ] && [ -n "$$branch" ] && [ "$$remote" != "$(DOCS_BASE)" ]; } || { echo "docs-check: FAIL — DOCS_BASE '$(DOCS_BASE)' is not <remote>/<branch>" >&2; exit 1; }; \
+	  git fetch -q "$$remote" "$$branch" || { echo "docs-check: FAIL — git fetch $$remote $$branch failed: the base must be fetched, a stale remote-tracking ref is no base" >&2; exit 1; }; \
+	  base=$$(git rev-parse -q --verify 'FETCH_HEAD^{commit}') || { echo "docs-check: FAIL — $(DOCS_BASE) fetched nothing that resolves to a commit" >&2; exit 1; }; \
+	  git show "$$base:$(DOCS_BASELINE)" > $(BUILD)/docs/baseline-base.txt 2>/dev/null || { echo "docs-check: FAIL — the base $(DOCS_BASE) ($$base) has no $(DOCS_BASELINE): nothing to shrink from" >&2; exit 1; }; \
+	  grew=$$(LC_ALL=C sort -u $(BUILD)/docs/baseline-base.txt | LC_ALL=C comm -13 - $(DOCS_BASELINE)); \
+	  if [ -n "$$grew" ]; then printf '%s\n' "$$grew" >&2; echo "docs-check: FAIL — $(DOCS_BASELINE) grew against $(DOCS_BASE) ($$base); it only shrinks" >&2; exit 1; fi
+	@echo "docs-check: ok — $$(wc -l < $(DOCS_BASELINE)) undocumented public declarations in the baseline, none new, none added against $(DOCS_BASE)"
 
 # The baseline rewritten from the tree's warnings, only ever lower: a row the tree would ADD is refused by
 # name (document the declaration instead); rows the tree no longer warns are dropped.
@@ -1183,7 +1193,8 @@ docs-baseline: docs
 # public declaration added to a header is red naming it, the same documented is green with no row, its row
 # in the baseline is green, a baseline row swapped for it is red naming the dropped one, a baseline without
 # its last newline is the same set, a duplicated row is red, a row added against the tree's baseline as base
-# is red (it only shrinks), a stale row is red, a missing Doxyfile, baseline or warning log is red by name,
+# is red (it only shrinks), a stale row is red, a base unset, empty, not <remote>/<branch>, unreachable,
+# without the branch or without a baseline is red by name, a missing Doxyfile, baseline or warning log is red by name,
 # a Doxyfile exclusion or a @cond around the declaration is red by name, a header without @file is red by
 # name, an untracked header or a tree that is no git checkout is red by name, and docs-baseline refuses to
 # add a row. The tree is never edited.
