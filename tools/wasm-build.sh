@@ -22,7 +22,7 @@
 # omx-contract's headers are added with -idirafter, never -isystem: where they are installed under /usr/include a -isystem
 # would put the HOST's /usr/include (glibc's math.h) ahead of the wasi-libc sysroot's.
 #
-# Environment: OMX_DSP_ROOT (this tree, default the script's own), CLANG (default clang), WASM_SYSROOT (default /usr/wasm32-wasi when it exists, else /usr),
+# Environment: OMX_DSP_INCLUDE (the headers, default this tree's include/: a sabotage puts a broken copy here), OMX_DSP_ROOT (this tree, default the script's own), CLANG (default clang), WASM_SYSROOT (default /usr/wasm32-wasi when it exists, else /usr),
 #   WASM_CFLAGS (extra), CONTRACT_INC (omx-contract's include directory, default from tools/contract-include.sh),
 #   WASM_STACK (bytes, default 262144), WASM_STRIP (default -Wl,--strip-debug).
 set -eu
@@ -41,7 +41,7 @@ mkdir -p "$(dirname "$out")"
 if [ -d "$SYSROOT/include/wasm32-wasip1" ]; then target=wasm32-wasip1; else target=wasm32-wasi; fi
 # shellcheck disable=SC2086
 "$CLANG" -Wno-deprecated --target=$target --sysroot="$SYSROOT" -std=gnu11 -O2 -Wall -Wextra -Werror -ffp-contract=off -fno-stack-protector \
-  -I"$HERE/include" -idirafter "$CONTRACT_INC" ${WASM_CFLAGS:-} \
+  -I"${OMX_DSP_INCLUDE:-$HERE/include}" -idirafter "$CONTRACT_INC" ${WASM_CFLAGS:-} \
   -nostartfiles -nodefaultlibs -Wl,--no-entry -Wl,--stack-first -Wl,--export=__wasm_call_ctors ${WASM_STRIP--Wl,--strip-debug} \
   -Wl,-z,stack-size="${WASM_STACK:-262144}" -o "$out" "$@" -lm -lc
 echo "wasm-build: $out $(wc -c <"$out") bytes"

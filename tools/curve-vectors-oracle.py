@@ -17,7 +17,7 @@ The laws, each exact in the design's own terms:
   delay stems     echo k at k x time, mix x feedback^(k-1) in dB, the dry tap at 1 - mix, a leg per ping-pong turn.
 Each row carries the tolerance MEASURED against the library (test/curve-vectors.mjs --report) and rounded up: the
 transfer curves and the notch floor are exact (0), the delay's levels differ by 4e-15 dB (a log10 and a pow), a 12 dB/oct
-head filter by 4e-10 dB (the cookbook's formula against the section's coefficients), a 24 dB/oct one by 4e-8 dB (the
+head filter by 4e-10 dB (the cookbook's formula against the section's coefficients), a 24 dB/oct one by 4.4e-8 dB (the
 kernel's seven-digit Butterworth Qs), a bell's centre by 8e-6 dB (the matched pair meets the analogue gain to a part in a
 million). A tolerance is never widened to absorb a second implementation's miss: that is a finding.
 
