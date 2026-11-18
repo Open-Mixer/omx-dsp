@@ -115,5 +115,9 @@ mkdir -p "$S/plant/.github"; cp "$HERE/Makefile" "$S/plant/"; echo "X := \$(shel
 found="$(pins "$HERE")"; [ -z "$found" ] || fail "these files name a pins file: $found"
 [ ! -e "$HERE/.github/pins.txt" ] || fail ".github/pins.txt is back"
 
+# Floors only in the prose too: BUILDING.md names no ceiling on omx-contract (owner rule 2026-11-16).
+prose="$(grep -nE '`< 4`' "$HERE/BUILDING.md" || true)"
+[ -z "$prose" ] || fail "BUILDING.md states a ceiling on omx-contract (floors only): $prose"
+
 [ "$bad" = 0 ] || exit 1
 echo "contract-include-selftest: >= $floor, floors only, agrees in the spec, debian/control and omxdsp.pc.in; floor and newer taken, below the floor and nothing refused naming the package; no download path, no pins file"
