@@ -2,9 +2,10 @@
 // Copyright (C) 2026 Pau Aliagas <linuxnow@gmail.com>
 /**
  * The documents of omx_curve_points_json (curve-io.schema.json) as TypeScript, and the words of the sets they name.
- * Types only: the arithmetic is the C, loaded as WebAssembly by wasm.ts. (A render of the schema by
- * json-schema-to-typescript replaces these hand-typed interfaces when omx-contract's shapes render lands in this
- * package.)
+ * Types only: the arithmetic is the C, loaded as WebAssembly by wasm.ts. The interfaces below MOVED here from
+ * curve.ts; they were not added by this change. Their types are to come from the owner schema as
+ * `FromSchema<typeof schema>` (json-schema-to-ts), not from a rendered .d.ts, per omx-contract's runtime-data spec
+ * (docs/runtime-data.md, merged in PR #104): no render writes this file.
  */
 import { CURVE_DISPLAYS, CURVE_FAMILIES, CURVE_LEGS, CURVE_ORIGINS, CURVE_ROLES, CURVE_SHAPES, CURVE_UNITS, CURVE_CODES } from './definitions.js';
 
