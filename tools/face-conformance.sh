@@ -30,6 +30,10 @@ PENDING=""
 # face does not take yet: "<kernel>:<control>" in C case. An installed contract inside the range may carry them
 # (FreeMixer/omx-dsp#95); the face may omit them, and must take them in order when it does. Every other
 # control still has to be taken, so the list only shrinks as faces catch up.
+# REQUIRED names the kernels whose instance face must exist: a face absent from the tree is named, where the
+# glob below would only skip it. Each is a kernel the console runs per strip or per output whose plugin is
+# generated from the face.
+REQUIRED="align idelay"
 NEWER="gate:hp_hz gate:lp_hz drive:oversample geq:mode"
 
 # controls <kernel.json>: "name kind count" per control, in the declared order; `count` is the
@@ -127,6 +131,9 @@ check() {
     diff <(printf '%s\n' "$want") <(printf '%s\n' "$got") | sed -n 's/^</  contract:/p; s/^>/  face:    /p' >&2 || true
     bad=1
   done
+  for k in $REQUIRED; do
+    [ -f "$fx/omx_${k}_instance.h" ] || { echo "face-conformance: $k: no face omx_${k}_instance.h, and the kernel requires one" >&2; bad=1; }
+  done
   [ "$ok" -gt 0 ] || { echo "face-conformance: no face conforms; the check would prove nothing" >&2; return 2; }
   [ "$bad" = 0 ] && echo "face-conformance: $ok faces take their kernel's contract controls, by name, order and kind"
   return "$bad"
@@ -157,7 +164,11 @@ if [ "${1:-}" = --self-test ]; then
   sed -i 's/^      "name": "depth",$/      "name": "depthPct",/' "$scratch/own/tremolo.json"
   out="$(check "$HERE/include/omxdsp/fx" "$scratch/own" 2>&1)" && { echo "face-conformance self-test: a tremolo control renamed in this tree's kernel file passed" >&2; exit 1; }
   grep -q 'contract: *float depth_pct$' <<<"$out" || { echo "face-conformance self-test: a tremolo control renamed in this tree's kernel file was NOT named" >&2; exit 1; }
-  echo "face-conformance self-test: a renamed and a dropped argument, a band array of no contract count and a control renamed in this tree's kernel file were each named"
+  # A required face removed: the align face absent must be named.
+  rm -f "$scratch/omx_align_instance.h"
+  out="$(check "$scratch" "$OWN" 2>&1)" && { echo "face-conformance self-test: a required face removed passed" >&2; exit 1; }
+  grep -q 'align: no face omx_align_instance.h' <<<"$out" || { echo "face-conformance self-test: a required face removed was NOT named" >&2; exit 1; }
+  echo "face-conformance self-test: a renamed and a dropped argument, a band array of no contract count and a control renamed in this tree's kernel file and a required face removed were each named"
   exit 0
 fi
 
