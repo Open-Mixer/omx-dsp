@@ -25,12 +25,14 @@
   "files": [
     "dist/",
     "src/",
-    "oracle/"
+    "oracle/",
+    "wasm/"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "test": "node tools/definitions.mjs --check && tsc -p tsconfig.json && node --test test/*.test.mjs",
-    "prepack": "tsc -p tsconfig.json"
+    "prepack": "tsc -p tsconfig.json && npm run build:wasm",
+    "build:wasm": "make -C .. wasm && mkdir -p wasm && cp ../build/wasm/omx-dsp.wasm wasm/omx-dsp.wasm"
   },
   "devDependencies": {
     "typescript": "^5.6.0"

@@ -37,6 +37,12 @@ omx-dsp (0.32.4) unstable; urgency=medium
     TSan.
   * release: the deb job publishes omx-dsp-contract with libomxdsp-dev, and a
     check refuses a release that omits a binary a sibling depends on.
+  * wasm: make wasm builds omx_curve_points_json to build/wasm/omx-dsp.wasm with the
+    distribution's clang, lld and wasi-libc (tools/wasm-build.sh, one recipe for
+    every module); 91226 bytes, four exports, five stdio WASI imports no call
+    reaches. The noarch package omx-dsp-wasm installs it under
+    /usr/share/omx-dsp/wasm; the npm tarball carries it as wasm/omx-dsp.wasm.
+    Never committed. Added names only.
 
  -- Pau Aliagas <linuxnow@gmail.com>  Tue, 17 Nov 2026 21:30:00 +0100
 

@@ -23,7 +23,9 @@
 #ifndef OMX_CURVE_JSON_H
 #define OMX_CURVE_JSON_H
 
-#include <locale.h>
+#ifndef __wasi__
+#include <locale.h> /* wasi-libc has no locale: its numbers are the C locale's, always */
+#endif
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -62,8 +64,12 @@ struct omx_curve_json_cursor {
  * @thread control
  */
 static inline char omx_curve_json_point(void) {
+#ifdef __wasi__
+  return '.';
+#else
   const struct lconv *lc = localeconv();
   return lc && lc->decimal_point && lc->decimal_point[0] && !lc->decimal_point[1] ? lc->decimal_point[0] : '.';
+#endif
 }
 
 /**
