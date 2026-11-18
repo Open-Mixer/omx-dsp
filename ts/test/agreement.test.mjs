@@ -16,6 +16,7 @@ import {
   EQ_NOTCH_Q_RANGE,
   EQ_Q_RANGE,
   biquadMagnitudeDb,
+  butterworthQs,
   clampEqQFor,
   loadCurve,
   dbToLinearGain,
@@ -259,6 +260,15 @@ describe('gaincompDbShifted and gateKnee agree with omx_gaincomp_db_shifted and 
   it('SABOTAGE: the shift one float step off, and the centred knee for the shifted one: each red', () => {
     assert.ok(against(asked, (r) => [gaincompDbShifted({ mode: 'below', threshDb: r[0], ratio: r[1], kneeDb: r[2], rangeDb: r[3] }, r[4] === 0 ? 0 : nextFloat(r[4]), r[5])], T.gaincompDbShifted).failures.length > 50);
     assert.ok(against(asked, (r) => [gaincompDb({ mode: 'below', threshDb: r[0], ratio: r[1], kneeDb: r[2], rangeDb: r[3] }, r[5])], T.gaincompDbShifted).failures.length > 50);
+  });
+});
+
+describe('butterworthQs agrees with omx_eq_butterworth_qs', () => {
+  it('one section at 12 dB/oct, two at 24, the kernel\'s digits; the 24 dB pair swapped is red', () => {
+    const asked = ask('eq_butterworth_qs', [[0], [1]]);
+    const twin = (r) => { const q = butterworthQs(r[0] === 1); return [q.length, q[0], q[1] ?? 0]; };
+    assert.deepEqual(against(asked, twin, { abs: 0 }).failures, []);
+    assert.ok(against(asked, (r) => { const q = [...butterworthQs(r[0] === 1)].reverse(); return [q.length, q[0], q[1] ?? 0]; }, { abs: 0 }).failures.length > 0);
   });
 });
 

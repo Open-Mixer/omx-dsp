@@ -10,6 +10,7 @@ export {
   biquadMagnitudeDb,
   clampEqQFor,
   lowpassHandover,
+  butterworthQs,
   magnitudeSumDb,
   matchedPair,
   octavesToQ,
