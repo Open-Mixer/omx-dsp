@@ -142,7 +142,7 @@ endif
 export CONTRACT_INC
 endif
 INC      = -Iinclude -isystem $(CONTRACT_INC)
-# The floor the spec declares, rendered into omxdsp.pc's Requires, beside its ceiling, the next major.
+# The floor the spec declares, rendered into omxdsp.pc's Requires, (no ceiling).
 CONTRACT_FLOOR   := $(shell sh tools/contract-include.sh --floor)
 BUILD    = build
 DOCS_BASELINE = docs/doxygen-baseline.txt
