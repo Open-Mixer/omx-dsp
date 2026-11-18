@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2026 Pau Aliagas <linuxnow@gmail.com>
 Name: omx-dsp
-Version: 0.32.4
+Version: 0.33.0
 Release: 1%{?dist}
 License: GPL-3.0-or-later
 Summary: The audio toolbox of the OpenMixer console, as a real-time-safe C library
@@ -176,6 +176,20 @@ Its documentation is on openmixer.org.
 %{_datadir}/omx-contract/contract.d/3/omx-dsp/
 
 %changelog
+* Wed Nov 18 2026 Pau Aliagas <linuxnow@gmail.com> - 0.33.0-1
+- wasm: make wasm builds omx_curve_points_json to build/wasm/omx-dsp.wasm
+  with the distribution's clang, lld and wasi-libc (tools/wasm-build.sh, one
+  recipe for every module), the curve function as C compiled to WebAssembly
+  (#91). Built by the recipe, never committed.
+- ts: @openmixer/omx-dsp loads that module as WebAssembly, and the TypeScript
+  curve twin is deleted. vectors/curve-points.json runs through the
+  WebAssembly door, with the native-against-wasm report (#92, #93).
+- The noarch package omx-dsp-wasm installs the module beside its JavaScript
+  loader under /usr/share/omx-dsp/wasm (#101).
+- Packaging: dependency floors only. omx-contract keeps its floor (3.18.0);
+  BUILDING.md names no ceiling, and the contract-include self-test refuses a
+  ceiling planted in packaging/deps.txt (#100).
+
 * Tue Nov 17 2026 Pau Aliagas <linuxnow@gmail.com> - 0.32.4-1
 - curve: the drive family, a drive's transfer curve sample in to sample
   out through the drive kernel's own control mapping and biased shaper;

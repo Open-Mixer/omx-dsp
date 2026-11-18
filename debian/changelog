@@ -1,3 +1,20 @@
+omx-dsp (0.33.0) unstable; urgency=medium
+
+  * wasm: make wasm builds omx_curve_points_json to build/wasm/omx-dsp.wasm
+    with the distribution's clang, lld and wasi-libc (tools/wasm-build.sh, one
+    recipe for every module), the curve function as C compiled to WebAssembly
+    (#91). Built by the recipe, never committed.
+  * ts: @openmixer/omx-dsp loads that module as WebAssembly, and the TypeScript
+    curve twin is deleted. vectors/curve-points.json runs through the
+    WebAssembly door, with the native-against-wasm report (#92, #93).
+  * The noarch package omx-dsp-wasm installs the module beside its JavaScript
+    loader under /usr/share/omx-dsp/wasm (#101).
+  * Packaging: dependency floors only. omx-contract keeps its floor (3.18.0);
+    BUILDING.md names no ceiling, and the contract-include self-test refuses a
+    ceiling planted in packaging/deps.txt (#100).
+
+ -- Pau Aliagas <linuxnow@gmail.com>  Wed, 18 Nov 2026 23:12:00 +0100
+
 omx-dsp (0.32.4) unstable; urgency=medium
 
   * curve: the drive family, a drive's transfer curve sample in to sample
