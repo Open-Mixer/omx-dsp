@@ -107,6 +107,10 @@ jobs:
         id: handback-release-arm-gate
         run: tools/release-arm-gate-selftest.sh && tools/release-arm-gate-selftest.sh --sabotage
 
+      - name: The picker chooses the newest published omx-contract below the floor (self-test, sabotage held)
+        id: handback-below-floor-picker
+        run: sh tools/below-floor-version-selftest.sh
+
       # the parallel jobs from the job's CPU quota and the runner's declared CPUs, never the host's nproc
       - name: The parallel jobs this runner may run
         uses: Open-Mixer/.github/.github/actions/jobs@openmixer-v1
