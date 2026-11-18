@@ -175,6 +175,11 @@ jobs:
           set -euo pipefail
           make wasm wasm-check wasm-sabotage 2>&1 | tee /tmp/wasm.log
           wc -c build/wasm/omx-dsp.wasm
+      - name: make wasm-loader-check and wasm-loader-sabotage (the install of the npm package tree, through its loader)
+        run: |
+          set -euo pipefail
+          (cd ts && npm ci)
+          make wasm-loader-check wasm-loader-sabotage 2>&1 | tee /tmp/wasm-loader.log
 
   # The TypeScript twins against the kernels (ts/: npm test), on the library this tree builds; the publish workflow runs
   # the same before it publishes, so a twin that disagrees is red here first.

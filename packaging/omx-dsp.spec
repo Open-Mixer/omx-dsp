@@ -27,6 +27,10 @@ BuildRequires: omx-contract-devel >= 3.18.0
 # only: no package of this spec requires jack2 (omx-rta-read needs libjack.so.0, which either provides).
 BuildRequires: pkgconfig(jack)
 BuildRequires: jack-audio-connection-kit
+# the npm package's module tree (make npm-stage): npm pack runs the package's prepack, which compiles ts/ with tsc
+BuildRequires: nodejs
+BuildRequires: npm
+BuildRequires: typescript
 
 # Headers and a static archive only: nothing of this package is loaded at run time.
 %global debug_package %{nil}
@@ -85,16 +89,18 @@ BuildArch: noarch
 Requires: omx-contract-data >= 3.18.0
 
 %package -n omx-dsp-wasm
-Summary: omx-dsp's curve function as a WebAssembly module, for JavaScript runtimes
+Summary: omx-dsp's curve function as a WebAssembly module, with its JavaScript loader
 BuildArch: noarch
 
 %description -n omx-dsp-wasm
 The curve function of omx-dsp (the points of an EQ or transfer curve from a
 panel description's terms) compiled to one WebAssembly module,
-/usr/share/omx-dsp/wasm/omx-dsp.wasm. A Node program or a browser loads it with
-the built-in WebAssembly and gets the arithmetic the console and the plugins run,
-not a second implementation of it. It is also the module of the npm package
-@openmixer/omx-dsp.
+/usr/share/omx-dsp/wasm/omx-dsp.wasm, and the loader that loads it, beside it
+under /usr/share/omx-dsp/: dist/index.js, the files the npm package
+@openmixer/omx-dsp publishes (package.json, dist/, src/, oracle/, wasm/), the
+same files. A Node program imports /usr/share/omx-dsp/dist/index.js and calls
+loadCurve on the module; a browser bundles the same files. The arithmetic is the
+console's and the plugins', not a second implementation of it.
 Its documentation is on openmixer.org.
 
 %description contract
@@ -159,6 +165,10 @@ Its documentation is on openmixer.org.
 
 %files -n omx-dsp-wasm
 %license LICENSE
+%{_datadir}/omx-dsp/package.json
+%{_datadir}/omx-dsp/dist/
+%{_datadir}/omx-dsp/src/
+%{_datadir}/omx-dsp/oracle/
 %{_datadir}/omx-dsp/wasm/
 
 %files contract

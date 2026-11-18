@@ -45,7 +45,7 @@
 #   make curve-vectors  vectors/curve-points.json through the native door: needs python3 and node;
 #               make curve-vectors-write rewrites it, make curve-vectors-sabotage breaks the library nine ways
 #   make wasm  build/wasm/omx-dsp.wasm, the curve function as WebAssembly (clang, lld, wasi-libc; tools/wasm-build.sh);
-#               make wasm-check holds it to the loader's contract (node), make install-wasm installs it, make wasm-sabotage breaks it four ways
+#               make wasm-check holds it to the loader's contract (node), make install-wasm installs the npm package tree (npm-stage) with the loader, make wasm-loader-check proves the installed loader loads the module, make wasm-sabotage and wasm-loader-sabotage break them
 #   make curve-golden  test/kernels/fixtures/curve_golden.h rewritten from omx_curve_points() (tools/curve-golden.c)
 #   make meter-view-sabotage  the meter view arm (mix/omx_meter_view.h) fails against seven sabotages
 #   make meter-view-golden  vectors/meter-view.json rewritten from the meter view law (tools/meter-view-golden.c)
@@ -202,7 +202,7 @@ VERSION    := $(shell sed -n 's/^\#define OMXDSP_VERSION_\(MAJOR\|MINOR\|PATCH\)
 
 
 
-.PHONY: curve-vectors-wasm wasm wasm-check wasm-sabotage install-wasm fuzz fuzz-run fuzz-sabotage fuzz-records fuzz-coverage fuzz-corpus all lib test lint docs docs-check docs-baseline docs-sabotage clean contract-dir definitions definitions-check contract-proof contract-tests test-tsan suite negative consumer gen-once perturb fdelay-sabotage doppler-sabotage onepole-sabotage threads threads-sabotage checks cost-prel test-fx test-analysis install version golden-write flavours bench-mixmatrix bench-gate bench-drive bench-flanger check-log10f strip-input-identity analysis-engine-identity test-mix mix-engine-identity test-engine-kernels engine-kernels-identity magnitude-sabotage eq-sabotage curve-golden curve-sabotage curve-json-sabotage curve-vectors curve-vectors-write curve-vectors-sabotage meter-view-golden rta-bands-golden meter-view-sabotage rta-bands-sabotage geq-true-sabotage delay-taps-sabotage align-fdelay-sabotage pitch-rates-sabotage instance-rates-sabotage bandwidth-q-table bandwidth-q-sabotage eq-default-bands eq-defaults-table room-ts-golden public-sources private-refs deps deps-check cost-deesser note-map-sabotage exports copy-check eq-q-range-sabotage
+.PHONY: curve-vectors-wasm wasm wasm-check wasm-sabotage install-wasm npm-stage wasm-loader-check wasm-loader-sabotage fuzz fuzz-run fuzz-sabotage fuzz-records fuzz-coverage fuzz-corpus all lib test lint docs docs-check docs-baseline docs-sabotage clean contract-dir definitions definitions-check contract-proof contract-tests test-tsan suite negative consumer gen-once perturb fdelay-sabotage doppler-sabotage onepole-sabotage threads threads-sabotage checks cost-prel test-fx test-analysis install version golden-write flavours bench-mixmatrix bench-gate bench-drive bench-flanger check-log10f strip-input-identity analysis-engine-identity test-mix mix-engine-identity test-engine-kernels engine-kernels-identity magnitude-sabotage eq-sabotage curve-golden curve-sabotage curve-json-sabotage curve-vectors curve-vectors-write curve-vectors-sabotage meter-view-golden rta-bands-golden meter-view-sabotage rta-bands-sabotage geq-true-sabotage delay-taps-sabotage align-fdelay-sabotage pitch-rates-sabotage instance-rates-sabotage bandwidth-q-table bandwidth-q-sabotage eq-default-bands eq-defaults-table room-ts-golden public-sources private-refs deps deps-check cost-deesser note-map-sabotage exports copy-check eq-q-range-sabotage
 
 all: lib
 
@@ -431,9 +431,29 @@ wasm-check: $(BUILD)/wasm/omx-dsp.wasm
 wasm-sabotage: wasm/omx_curve_wasm.c test/wasm-sabotage.sh tools/wasm-check.mjs tools/wasm-build.sh
 	bash test/wasm-sabotage.sh $(BUILD)/wasm-sabotage
 
-install-wasm: $(BUILD)/wasm/omx-dsp.wasm
-	install -d $(DESTDIR)$(DATADIR)/omx-dsp/wasm
-	install -m 0644 $< $(DESTDIR)$(DATADIR)/omx-dsp/wasm/omx-dsp.wasm
+# The npm package's module tree, as npm publishes it: `npm pack` in ts/ runs the package's prepack (tsc into dist/, make wasm
+# into wasm/) and packs exactly its "files" list; the tarball is unpacked as build/npm-stage/package. install-wasm installs
+# THAT tree under DATADIR/omx-dsp/ (package.json, dist/ the loader, src/, oracle/, wasm/omx-dsp.wasm), so the noarch
+# omx-dsp-wasm package and the npm twin carry one set of files, never a copy written by hand.
+NPM_STAGE = $(BUILD)/npm-stage
+npm-stage: $(BUILD)/wasm/omx-dsp.wasm ts/package.json $(wildcard ts/src/*.ts)
+	rm -rf $(NPM_STAGE) && mkdir -p $(NPM_STAGE)
+	cd ts && npm_config_cache=$(abspath $(BUILD))/npm-cache npm pack --pack-destination $(abspath $(NPM_STAGE)) >/dev/null
+	tar -xzf $(NPM_STAGE)/*.tgz -C $(NPM_STAGE) && rm -f $(NPM_STAGE)/*.tgz
+
+install-wasm: npm-stage
+	find $(NPM_STAGE)/package -type f | while read -r f; do rel=$${f#$(NPM_STAGE)/package/}; install -D -m 0644 "$$f" "$(DESTDIR)$(DATADIR)/omx-dsp/$$rel" || exit 1; done
+
+# The install check (tools/wasm-loader-check.mjs): the tree installed into a clean root, the loader imported from it, the module
+# loaded through it, one curve call answered and one refusal; and the installed files are the files npm publishes from ts/, the
+# same bytes. wasm-loader-sabotage breaks that install four ways and must go red for each.
+wasm-loader-check: npm-stage
+	rm -rf $(BUILD)/wasm-loader-root
+	$(MAKE) --no-print-directory install-wasm DESTDIR=$(abspath $(BUILD))/wasm-loader-root PREFIX=/usr
+	node tools/wasm-loader-check.mjs $(abspath $(BUILD))/wasm-loader-root/usr/share/omx-dsp ts
+
+wasm-loader-sabotage: wasm-loader-check test/wasm-loader-sabotage.sh tools/wasm-loader-check.mjs
+	bash test/wasm-loader-sabotage.sh $(abspath $(BUILD))/wasm-loader-root/usr/share/omx-dsp $(abspath $(BUILD))/wasm-loader-sabotage
 
 eq-defaults-table:
 	node tools/eq-defaults-golden.mjs --check
