@@ -115,8 +115,8 @@ mkdir -p "$S/plant/.github"; cp "$HERE/Makefile" "$S/plant/"; echo "X := \$(shel
 found="$(pins "$HERE")"; [ -z "$found" ] || fail "these files name a pins file: $found"
 [ ! -e "$HERE/.github/pins.txt" ] || fail ".github/pins.txt is back"
 
-# Floors only in the prose too: BUILDING.md names no ceiling on omx-contract (owner rule 2026-11-16).
-prose="$(grep -nE '`< 4`' "$HERE/BUILDING.md" || true)"
+# Floors only in the prose too: BUILDING.md names no ceiling in any form (`< 5`, `<< 4~`, `<= 4`) (owner rule 2026-11-16).
+prose="$(grep -nE '`<{1,2}=? *[0-9]' "$HERE/BUILDING.md" || true)"
 [ -z "$prose" ] || fail "BUILDING.md states a ceiling on omx-contract (floors only): $prose"
 
 # packaging/deps.txt declares the floor with no ceiling column (owner rule 2026-11-16): a ceiling planted there is seen.
