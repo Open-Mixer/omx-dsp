@@ -21,3 +21,21 @@ doors are put against each other the doubles are not always the same: the differ
   `ts/test/tolerances.mjs`, which are the bounds the TypeScript twin was held to; none was changed.
 
 A change of the toolchain that moves these numbers is a finding to read here, not a tolerance to widen.
+
+## What it costs, against the TypeScript twin it replaced
+
+`tools/curve-bench.sh` builds the twin from the commit before its deletion and puts the shared vectors' 22 requests to each
+door 1000 times, every door in its own process (Node 22, one core, Fedora 44, the module built in a debian trixie container):
+
+| | median per call | p99 per call | load | peak resident set over a bare Node's |
+|---|---|---|---|---|
+| WebAssembly `curvePoints` (JSON in, JSON out) | 4.2 us | 22.5 us | 0.15 ms (first 1.0 ms), 92 080 bytes | +30.5 MB |
+| WebAssembly `pointsJson` (the C call on text) | 2.3 us | 25.9 us | | |
+| the TypeScript twin | 0.41 us | 16.3 us | 6.7 ms (first import) | +21.4 MB |
+
+The module answers a curve about ten times slower at the median than the twin did, and costs about 9 MB more of resident
+memory: each call is a JSON document in and out, and the twin was a JIT-compiled loop. A curve is drawn on a control change,
+a few microseconds against a frame of 16 ms; it loads in a fifth of the time. Against the twin its answers are 21.7 ulp of
+max(|v|, 1) apart at the largest, 3.6e-12 dB absolute, over 488 numbers (the twin's own bounds are in
+`ts/test/tolerances.mjs`). Run to run the medians move by a few percent. `node tools/curve-bench.mjs --json` prints the
+same as data.
