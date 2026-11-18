@@ -283,7 +283,8 @@ jobs:
           set -euo pipefail
           floor="$(sh tools/contract-include.sh --floor)"
           if command -v dnf >/dev/null; then
-            dnf list --showduplicates omx-contract-devel > avail.txt
+            # -y takes the FreeREAC key the add-openmixer step enabled (the list stops at its prompt otherwise); the signature check stays on
+            dnf -y list --showduplicates omx-contract-devel > avail.txt
             awk '$1 ~ /^omx-contract-devel\./ {print $2}' avail.txt > versions.txt
             pkg="$(sh tools/below-floor-version.sh "$floor" < versions.txt)"
           else
@@ -296,7 +297,8 @@ jobs:
           if command -v dnf >/dev/null; then
             dnf install -y --setopt=tsflags=nodocs "omx-contract-devel-$pkg"
           else
-            apt-get -o Dpkg::Options::=--force-unsafe-io install -y --no-install-recommends "libomx-contract-dev=$pkg"
+            # the data package is pinned to the same version: the devel depends on it at that version, and apt otherwise picks the newest (3.20.0)
+            apt-get -o Dpkg::Options::=--force-unsafe-io install -y --no-install-recommends "libomx-contract-dev=$pkg" "omx-contract-data=$pkg"
           fi
           test "$(pkg-config --modversion omx-contract)" = "$old"
           echo "OLD=$old" >> "$GITHUB_ENV"
