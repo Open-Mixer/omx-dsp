@@ -282,3 +282,9 @@ export function magnitudeSumDb(bands: readonly BiquadBand[], f: number, fs: numb
   for (const b of bands) db += biquadMagnitudeDb(b, f, fs, floorDb);
   return db;
 }
+
+/** The Q of each section of a Butterworth head filter (omx_eq_butterworth_qs): 12 dB/oct one at 1/sqrt(2), 24 dB/oct
+ *  two whose product is maximally flat, the kernel's own digits. */
+export function butterworthQs(slope24: boolean): readonly number[] {
+  return slope24 ? [0.5411961, 1.306563] : [Math.SQRT1_2];
+}
