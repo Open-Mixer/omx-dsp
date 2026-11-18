@@ -119,5 +119,12 @@ found="$(pins "$HERE")"; [ -z "$found" ] || fail "these files name a pins file: 
 prose="$(grep -nE '`< 4`' "$HERE/BUILDING.md" || true)"
 [ -z "$prose" ] || fail "BUILDING.md states a ceiling on omx-contract (floors only): $prose"
 
+# packaging/deps.txt declares the floor with no ceiling column (owner rule 2026-11-16): a ceiling planted there is seen.
+deps_ceiling() { awk '/^omx-contract/ && $4 ~ /^[0-9]/' "$1/packaging/deps.txt"; }
+mkdir -p "$S/dep/packaging"; cp "$HERE/packaging/deps.txt" "$S/dep/packaging/"
+[ -z "$(deps_ceiling "$HERE")" ] || fail "packaging/deps.txt declares a ceiling on omx-contract (floors only): $(deps_ceiling "$HERE")"
+sed -i -E "/^omx-contract-devel/ s/($floor)/\1 4/" "$S/dep/packaging/deps.txt"
+[ -n "$(deps_ceiling "$S/dep")" ] || fail "the scan does not see a deps.txt ceiling planted; it would prove nothing"
+
 [ "$bad" = 0 ] || exit 1
 echo "contract-include-selftest: >= $floor, floors only, agrees in the spec, debian/control and omxdsp.pc.in; floor and newer taken, below the floor and nothing refused naming the package; no download path, no pins file"
