@@ -94,7 +94,7 @@ static inline float omx_divider_step(struct omx_divider *d, float v, float h) {
  * @note `n` steps, no call outside this header. Thread-safe on distinct state.
  * @thread audio
  */
-static inline void omx_divider_block(struct omx_divider *d, const float *in, float *out, uint32_t n,
+static inline __attribute__((nonblocking)) void omx_divider_block(struct omx_divider *d, const float *in, float *out, uint32_t n,
                                      float h) {
   OMX_PRE(h >= 0.0f, "hysteresis-non-negative");
   for (uint32_t i = 0; i < n; i++) out[i] = omx_divider_step(d, in[i], h);

@@ -162,7 +162,7 @@ static inline enum omx_xover_status omx_xover_design(struct omx_xover *c, uint32
  *       state's denormals are covered by the thread's FTZ mode. Thread-safe on distinct state.
  * @thread audio
  */
-static inline void omx_xover_process(const float *x, float *lo, float *hi, uint32_t n,
+static inline __attribute__((nonblocking)) void omx_xover_process(const float *x, float *lo, float *hi, uint32_t n,
                                      const struct omx_xover *c, struct omx_xover_state *s) {
   OMX_PRE(omx_block_finite(x, n), "finite-in");
 #ifdef OMX_CONTRACTS

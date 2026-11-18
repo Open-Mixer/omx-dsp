@@ -95,7 +95,7 @@ static inline float omx_duck_step(const struct omx_duck *d, struct omx_duck_stat
  *       at once: no sample and no state word moves.
  * @thread audio
  */
-static inline void omx_duck_run(const struct omx_duck *d, struct omx_duck_state *st, const float *key, float *wl,
+static inline __attribute__((nonblocking)) void omx_duck_run(const struct omx_duck *d, struct omx_duck_state *st, const float *key, float *wl,
                                 float *wr, uint32_t n) {
   OMX_PRE(d->depth_db <= 0.0f, "depth-not-positive");
   OMX_PRE(d->attack >= 0.0f && d->attack < 1.0f && d->release >= 0.0f && d->release < 1.0f, "poles-in-unit-interval");

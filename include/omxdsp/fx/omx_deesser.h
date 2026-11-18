@@ -184,7 +184,7 @@ static inline float omx_deess_gain_db(const struct omx_deess *p, float level) {
  */
 #undef OMX_CONTRACT_STAGE
 #define OMX_CONTRACT_STAGE "deesser"
-static inline void omx_deess_process(float *l, float *r, uint32_t n, const struct omx_deess *p,
+static inline __attribute__((nonblocking)) void omx_deess_process(float *l, float *r, uint32_t n, const struct omx_deess *p,
                                      struct omx_deess_state *st) {
   /* The config preconditions sit BEHIND the enable gate for the reason R-056 found on the drive
    * and the dynamics: a disabled slot's atom holds whatever the struct held before. */

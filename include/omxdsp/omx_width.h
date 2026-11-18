@@ -117,7 +117,7 @@ static inline void omx_width_design(struct omx_width *p, float w, int pseudo, ui
  *       all-pass; no allocation. Thread-safe on distinct state.
  * @thread audio
  */
-static inline void omx_width_process(float *l, float *r, uint32_t n, const struct omx_width *p, struct omx_width_state *st) {
+static inline __attribute__((nonblocking)) void omx_width_process(float *l, float *r, uint32_t n, const struct omx_width *p, struct omx_width_state *st) {
   if (!p->active || n == 0u) return;
   OMX_PRE(omx_block_pair_finite(l, r, n), "finite-in");
   const uint32_t mask = OMX_WIDTH_RING - 1u;

@@ -482,7 +482,7 @@ static inline void omx_hrp_lv2_restart(OmxHrpLv2 *s) {
  * @thread audio
  */
 #define OMX_CONTRACT_STAGE "hrp/lv2-run"
-static inline void omx_hrp_lv2_run(OmxHrpLv2 *s, const float *in, float *out, uint32_t n) {
+static inline __attribute__((nonblocking)) void omx_hrp_lv2_run(OmxHrpLv2 *s, const float *in, float *out, uint32_t n) {
   if (!in || !out || n == 0u) return;
   if (!s || !s->ready) {
     omx_live_pass_through(in, out, n);

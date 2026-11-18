@@ -186,7 +186,7 @@ static inline void omx_plosive_instance_resolve(OmxPlosiveInstance *s, int bypas
  * @param n The block length, frames; a null port or 0 touches nothing.
  * @thread audio
  */
-static inline void omx_plosive_instance_run(OmxPlosiveInstance *s, const float *in_l, const float *in_r, float *out_l,
+static inline __attribute__((nonblocking)) void omx_plosive_instance_run(OmxPlosiveInstance *s, const float *in_l, const float *in_r, float *out_l,
                                             float *out_r, uint32_t n) {
   if (!omx_instance_through_engaged(in_l, in_r, out_l, out_r, n, s && s->ready && s->enabled)) return;
   OMX_PRE(omx_block_pair_finite(out_l, out_r, n), "finite-in");

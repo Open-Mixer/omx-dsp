@@ -293,7 +293,7 @@ static inline float omx_comp_instance_latency(const OmxCompInstance *s) {
  *       distinct instances.
  * @thread audio
  */
-static inline void omx_comp_instance_run(OmxCompInstance *s, const float *in_l,
+static inline __attribute__((nonblocking)) void omx_comp_instance_run(OmxCompInstance *s, const float *in_l,
                                              const float *in_r, float *out_l, float *out_r,
                                              uint32_t n) {
   OMX_INSTANCE_RUN_IN_PLACE(s, in_l, in_r, out_l, out_r, n, omx_dynamics(out_l, out_r, n, &s->atom, &s->st));
@@ -366,7 +366,7 @@ static inline void omx_comp_instance_key(OmxCompInstance *s, const float *kl, co
  *       for bit. Thread-safe on distinct instances.
  * @thread audio
  */
-static inline void omx_comp_instance_run_keyed(OmxCompInstance *s, const float *key_l, const float *key_r,
+static inline __attribute__((nonblocking)) void omx_comp_instance_run_keyed(OmxCompInstance *s, const float *key_l, const float *key_r,
                                                const float *in_l, const float *in_r, float *out_l, float *out_r,
                                                uint32_t n) {
   if (!omx_instance_block_ok(in_l, in_r, out_l, out_r, n)) return;

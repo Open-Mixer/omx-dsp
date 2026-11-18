@@ -503,7 +503,7 @@ static inline void omx_fdelay_tick_pair(struct omx_fdelay *a, struct omx_fdelay 
  *       distinct state.
  * @thread audio
  */
-static inline void omx_fdelay_process(float *buf, uint32_t n, struct omx_fdelay *l, float delay) {
+static inline __attribute__((nonblocking)) void omx_fdelay_process(float *buf, uint32_t n, struct omx_fdelay *l, float delay) {
   OMX_PRE(omx_block_finite(buf, n), "finite-in");
   OMX_PRE(l->order != 0 && l->ring != 0, "line-is-armed");
   if (buf == 0 || n == 0u || l->order == 0 || l->ring == 0 || l->cap == 0u) return;

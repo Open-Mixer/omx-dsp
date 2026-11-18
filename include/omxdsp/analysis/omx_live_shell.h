@@ -93,7 +93,7 @@ static inline int omx_live_take(OmxLiveFeed *f, float *out, uint32_t n, uint32_t
  * @return 1 when the caller processes the block, 0 when it is done with it.
  * @thread audio
  */
-static inline int omx_live_block(int ready, const float *in, float *out, uint32_t n) {
+static inline __attribute__((nonblocking)) int omx_live_block(int ready, const float *in, float *out, uint32_t n) {
   if (!in || !out || n == 0u) return 0;
   if (ready) return 1;
   omx_live_pass_through(in, out, n);

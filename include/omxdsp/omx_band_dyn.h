@@ -306,7 +306,7 @@ static inline void omx_band_dyn_flush(struct omx_band_dyn_state *st) {
  *       per sample.
  * @thread audio
  */
-static inline void omx_band_dyn_run(float *l, float *r, uint32_t n, const struct omx_dyn *dyn, const float c[5],
+static inline __attribute__((nonblocking)) void omx_band_dyn_run(float *l, float *r, uint32_t n, const struct omx_dyn *dyn, const float c[5],
                                     struct omx_band_dyn_state *st, int wideband, int enabled) {
   OMX_PRE(omx_block_finite(l, n), "finite-in-l");
   OMX_PRE(omx_block_finite(r, n), "finite-in-r");
@@ -347,7 +347,7 @@ static inline void omx_band_dyn_run(float *l, float *r, uint32_t n, const struct
  * @note Disabled: no sample and no state word moves.
  * @thread audio
  */
-static inline void omx_band_dyn_process(float *l, float *r, uint32_t n, const struct omx_band_dyn *p,
+static inline __attribute__((nonblocking)) void omx_band_dyn_process(float *l, float *r, uint32_t n, const struct omx_band_dyn *p,
                                         struct omx_band_dyn_state *st) {
   OMX_PRE(!p->enabled || p->dyn.gc.mode == OMX_DYN_ABOVE || p->dyn.gc.mode == OMX_DYN_BELOW, "mode-is-a-member");
   omx_band_dyn_run(l, r, n, &p->dyn, p->b_c, st, 0, p->enabled);

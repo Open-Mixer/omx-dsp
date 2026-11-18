@@ -402,7 +402,7 @@ static inline OMX_FM_ALWAYS float omx_drive_sample(int curve, float u, const str
  * @note No allocation, no state. Thread-safe on distinct blocks.
  * @thread audio
  */
-static inline void omx_drive_shape_block(int curve, const struct omx_drive_bias *s, float drive, float *x,
+static inline __attribute__((nonblocking)) void omx_drive_shape_block(int curve, const struct omx_drive_bias *s, float drive, float *x,
                                          uint32_t n) {
   switch (curve) {
     case OMX_DRIVE_TAPE:
@@ -683,7 +683,7 @@ static inline float omx_drive_auto_gain(struct omx_drive_ag *ag, const struct om
  * @param s The state, built by omx_drive_state_init() for `p->os_factor`; NULL is a passthrough.
  * @thread audio
  */
-static inline void omx_drive_process(float *l, float *r, uint32_t n, const struct omx_drive *p,
+static inline __attribute__((nonblocking)) void omx_drive_process(float *l, float *r, uint32_t n, const struct omx_drive *p,
                                      struct omx_drive_state *s) {
   /* CONTRACT (omx_contract.h). The one NONLINEAR stage on the strip, and the only one whose
    * error budget is about ALIASING rather than about level. Its declared laws:

@@ -240,7 +240,7 @@ static inline void omx_pitch_frame(const struct omx_pitch *p, struct omx_pitch_s
  *       state.
  * @thread audio
  */
-static inline void omx_pitch_process(float *l, float *r, uint32_t n, const struct omx_pitch *p,
+static inline __attribute__((nonblocking)) void omx_pitch_process(float *l, float *r, uint32_t n, const struct omx_pitch *p,
                                      struct omx_pitch_state *s) {
   OMX_PRE(omx_block_pair_finite(l, r, n), "finite-in");
   OMX_PRE(p->mix >= 0.0f && p->mix <= 1.0f, "mix-in-unit-range");

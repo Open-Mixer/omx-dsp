@@ -319,7 +319,7 @@ static inline void omx_hrp_render_reset_report(OmxHrpRender *r) {
  * detect->track->attribute is how the two passes would come to disagree about what a window
  * contains.
  * @thread worker */
-static inline void omx_hrp_render_window(OmxHrpRender *r, int pass) {
+static inline __attribute__((nonblocking)) void omx_hrp_render_window(OmxHrpRender *r, int pass) {
   const int do_learn = (pass != OMX_HRP_RENDER_MEASURE);
   const int do_measure = (pass != OMX_HRP_RENDER_LEARN);
   const uint32_t nbins = r->cfg.fft_size / 2u;

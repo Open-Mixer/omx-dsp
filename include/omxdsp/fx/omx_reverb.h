@@ -545,7 +545,7 @@ static inline int omx_reverb_state_layout(struct omx_reverb_state *s, float *poo
  * @param feedback The comb feedback, below 1.
  * @param damp_pole The damping pole at the live rate, omx_reverb_damp_pole().
  * @thread audio */
-static inline void omx_fv_comb_bank_block(float *const *comb, const uint32_t *comb_len,
+static inline __attribute__((nonblocking)) void omx_fv_comb_bank_block(float *const *comb, const uint32_t *comb_len,
                                           uint32_t *comb_pos, float *comb_damp, const float *in,
                                           float *acc, uint32_t n, float feedback, float damp_pole) {
   OMX_PRE(n <= OMX_REVERB_CHUNK, "chunk-bound");
@@ -600,7 +600,7 @@ static inline void omx_fv_comb_bank_block(float *const *comb, const uint32_t *co
  * @param n Frames.
  * @pre `line-bound`: a line and a positive length.
  * @thread audio */
-static inline void omx_fv_allpass_block(float *buf, uint32_t len, uint32_t *pos, float *x, uint32_t n) {
+static inline __attribute__((nonblocking)) void omx_fv_allpass_block(float *buf, uint32_t len, uint32_t *pos, float *x, uint32_t n) {
   OMX_PRE(buf != NULL && len > 0u, "line-bound");
   OMX_PRE(n <= OMX_REVERB_CHUNK, "chunk-bound");
   uint32_t p = *pos < len ? *pos : 0u;
@@ -632,7 +632,7 @@ static inline void omx_fv_allpass_block(float *buf, uint32_t len, uint32_t *pos,
  * @param coef The allpass coefficient, inside (-1, 1).
  * @pre `line-bound`: a line and a positive length.
  * @thread audio */
-static inline void omx_plate_ap_block(float *buf, uint32_t len, uint32_t *pos, float *x, uint32_t n,
+static inline __attribute__((nonblocking)) void omx_plate_ap_block(float *buf, uint32_t len, uint32_t *pos, float *x, uint32_t n,
                                       float coef) {
   OMX_PRE(buf != NULL && len > 0u, "line-bound");
   OMX_PRE(n <= OMX_REVERB_CHUNK, "chunk-bound");
@@ -756,7 +756,7 @@ static inline float omx_delay_read_mod(const float *buf, uint32_t len, uint32_t 
  * @pre `chunk-bound`, `finite-in`.
  * @post `finite-out`.
  * @thread audio */
-static inline void omx_fv_leg_block(float *const *comb, const uint32_t *comb_len, uint32_t *comb_pos,
+static inline __attribute__((nonblocking)) void omx_fv_leg_block(float *const *comb, const uint32_t *comb_len, uint32_t *comb_pos,
                                     float *comb_damp, float *const *ap, const uint32_t *ap_len,
                                     uint32_t *ap_pos, const float *fed, float *wet, uint32_t n,
                                     float feedback, float damp_pole) {
@@ -785,7 +785,7 @@ static inline void omx_fv_leg_block(float *const *comb, const uint32_t *comb_len
  * @param sr The live rate, Hz; the rate the lines were laid out at.
  * @thread audio
  */
-static inline void omx_reverb_process_return(float *l, float *r, uint32_t n, const struct omx_reverb *p,
+static inline __attribute__((nonblocking)) void omx_reverb_process_return(float *l, float *r, uint32_t n, const struct omx_reverb *p,
                                              const struct omx_reverb_return *x, struct omx_reverb_return_state *xs,
                                              struct omx_reverb_state *s, float sr) {
   /* CONTRACT (omx_contract.h). A reverb is a bank of RECURSIVE networks — combs with feedback,
@@ -1111,7 +1111,7 @@ static inline void omx_reverb_process_return(float *l, float *r, uint32_t n, con
  * @param sr the live rate, Hz; the rate the lines were laid out at
  * @thread audio
  */
-static inline void omx_reverb_process(float *l, float *r, uint32_t n, const struct omx_reverb *p,
+static inline __attribute__((nonblocking)) void omx_reverb_process(float *l, float *r, uint32_t n, const struct omx_reverb *p,
                                       struct omx_reverb_state *s, float sr) {
   /* The neutral return (no early taps, the tail at 1, no duck, no de-esser), which leaves out every
    * step of the return as a NULL one does, handed by address so no NULL reaches the inlined body. */

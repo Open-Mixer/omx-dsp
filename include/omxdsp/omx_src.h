@@ -339,7 +339,7 @@ static inline uint32_t omx_src_drain(struct omx_src *s, float *out, uint32_t out
  * @note O(in_n * taps) plus a memmove per input. Thread-safe on distinct states.
  * @thread control
  */
-static inline uint32_t omx_src_run(struct omx_src *s, const float *in, uint32_t in_n, float *out,
+static inline __attribute__((nonblocking)) uint32_t omx_src_run(struct omx_src *s, const float *in, uint32_t in_n, float *out,
                                    uint32_t out_cap, int flush) {
   uint32_t written = 0u;
   for (uint32_t i = 0; i < in_n; i++) {

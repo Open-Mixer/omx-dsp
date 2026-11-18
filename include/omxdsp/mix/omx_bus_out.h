@@ -103,7 +103,7 @@ static inline void omx_bus_out_apply(float *restrict busL, float *restrict busR,
  * @note Two passes over the block, no allocation. Thread-safe on disjoint buses.
  * @thread audio
  */
-static inline void omx_bus_out_run(float *busL, float *busR, uint32_t n, int channels,
+static inline __attribute__((nonblocking)) void omx_bus_out_run(float *busL, float *busR, uint32_t n, int channels,
                                    float fader, int mute, float balance, float *curL,
                                    float *curR, float *peakL, float *peakR) {
   OMX_PRE(balance >= -1.0f && balance <= 1.0f, "balance-within-declared-range");

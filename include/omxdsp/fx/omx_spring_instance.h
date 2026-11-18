@@ -160,7 +160,7 @@ static inline float omx_spring_leg_tick(struct omx_spring_leg *l, float x, float
  * @param n The block length, frames; a null port or 0 touches nothing.
  * @thread audio
  */
-static inline void omx_spring_instance_run(OmxSpringInstance *s, const float *in_l, const float *in_r, float *out_l,
+static inline __attribute__((nonblocking)) void omx_spring_instance_run(OmxSpringInstance *s, const float *in_l, const float *in_r, float *out_l,
                                            float *out_r, uint32_t n) {
   if (!omx_instance_copy_through(in_l, in_r, out_l, out_r, n)) return;
   if (!s || !s->ready || !s->enabled) return;

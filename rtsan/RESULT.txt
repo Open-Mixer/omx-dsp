@@ -1,0 +1,6 @@
+fx-oracles exit=0 rtsan-reports=0
+mix-golden exit=0 rtsan-reports=0
+analysis-oracles exit=0 rtsan-reports=0
+engine-kernels-golden exit=0 rtsan-reports=0
+suite exit=2 rtsan-reports=0
+consumer exit=0 rtsan-reports=0

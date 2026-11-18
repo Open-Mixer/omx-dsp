@@ -206,7 +206,7 @@ static inline float omx_flanger_delay(const struct omx_flanger *p, const struct 
  * @param s The state armed by omx_flanger_state_init().
  * @thread audio
  */
-static inline void omx_flanger_process(float *l, float *r, uint32_t n, const struct omx_flanger *p,
+static inline __attribute__((nonblocking)) void omx_flanger_process(float *l, float *r, uint32_t n, const struct omx_flanger *p,
                                        struct omx_flanger_state *s) {
   /* CONTRACT (omx_contract.h). A flanger is a feedback comb whose loop gain is strictly below one
    * — that bound is the whole reason the ring decays instead of running away, and it is a claim

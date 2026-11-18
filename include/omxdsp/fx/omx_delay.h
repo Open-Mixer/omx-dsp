@@ -362,7 +362,7 @@ static inline uint32_t omx_fxdelay_longest_tap(uint32_t d0, const uint32_t *d, u
  * @param sr the live rate, Hz
  * @thread audio
  */
-static inline void omx_fx_delay_process_color(float *l, float *r, uint32_t n, const struct omx_fx_delay *p,
+static inline __attribute__((nonblocking)) void omx_fx_delay_process_color(float *l, float *r, uint32_t n, const struct omx_fx_delay *p,
                                               const struct omx_fx_delay_taps *t, const struct omx_fx_delay_color *c,
                                               struct omx_fx_delay_color_state *cs, struct omx_fx_delay_state *s,
                                               float sr) {
@@ -517,7 +517,7 @@ static inline void omx_fx_delay_process_color(float *l, float *r, uint32_t n, co
  * @param sr the live rate, Hz
  * @thread audio
  */
-static inline void omx_fx_delay_process_taps(float *l, float *r, uint32_t n, const struct omx_fx_delay *p,
+static inline __attribute__((nonblocking)) void omx_fx_delay_process_taps(float *l, float *r, uint32_t n, const struct omx_fx_delay *p,
                                              const struct omx_fx_delay_taps *t, struct omx_fx_delay_state *s,
                                              float sr) {
   omx_fx_delay_process_color(l, r, n, p, t, NULL, NULL, s, sr);
@@ -536,7 +536,7 @@ static inline void omx_fx_delay_process_taps(float *l, float *r, uint32_t n, con
  * @param sr the live rate, Hz
  * @thread audio
  */
-static inline void omx_fx_delay_process(float *l, float *r, uint32_t n,
+static inline __attribute__((nonblocking)) void omx_fx_delay_process(float *l, float *r, uint32_t n,
                                         const struct omx_fx_delay *p, struct omx_fx_delay_state *s,
                                         float sr) {
   omx_fx_delay_process_taps(l, r, n, p, NULL, s, sr);

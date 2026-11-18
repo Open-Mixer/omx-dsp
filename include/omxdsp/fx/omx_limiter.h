@@ -176,7 +176,7 @@ static inline float omx_limiter_request(const struct omx_gaincomp_params *gc, fl
  *       on distinct state.
  * @thread audio
  */
-static inline void omx_limiter_process(float *l, float *r, uint32_t n, const struct omx_limiter *p,
+static inline __attribute__((nonblocking)) void omx_limiter_process(float *l, float *r, uint32_t n, const struct omx_limiter *p,
                                        struct omx_limiter_state *st) {
   OMX_PRE(omx_block_finite(l, n), "finite-in-l");
   OMX_PRE(omx_block_finite(r, n), "finite-in-r");

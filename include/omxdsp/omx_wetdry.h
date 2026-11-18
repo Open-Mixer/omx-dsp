@@ -77,7 +77,7 @@ static inline void omx_wetdry_loop(float *l, float *r, float *fl, float *fr, flo
  * @note One multiply-add per sample, no state, no call. Reentrant.
  * @thread audio
  */
-static inline void omx_wetdry_xfade_block(float *dst, const float *from, const float *to, uint32_t n) {
+static inline __attribute__((nonblocking)) void omx_wetdry_xfade_block(float *dst, const float *from, const float *to, uint32_t n) {
   const float step = 1.0f / (float)n;
   for (uint32_t i = 0; i < n; i++) dst[i] = from[i] + (to[i] - from[i]) * (step * (float)i);
 }

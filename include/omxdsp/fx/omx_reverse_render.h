@@ -94,7 +94,7 @@ struct omx_reverse_render_scratch {
  * @note Thread-safe: arithmetic.
  * @thread audio
  */
-static inline uint32_t omx_reverse_render_window(float reverse_ms, float sr) {
+static inline __attribute__((nonblocking)) uint32_t omx_reverse_render_window(float reverse_ms, float sr) {
   float ms = reverse_ms;
   if (!(ms >= (float)OMX_REVERSE_RENDER_MIN_MS)) ms = (float)OMX_REVERSE_RENDER_MIN_MS;
   if (ms > (float)OMX_REVERSE_RENDER_MAX_MS) ms = (float)OMX_REVERSE_RENDER_MAX_MS;
@@ -112,7 +112,7 @@ static inline uint32_t omx_reverse_render_window(float reverse_ms, float sr) {
  * @note Thread-safe: arithmetic.
  * @thread audio
  */
-static inline int omx_reverse_render_network(int algorithm) {
+static inline __attribute__((nonblocking)) int omx_reverse_render_network(int algorithm) {
   if (algorithm == OMX_REVERB_PLATE) return OMX_REVERB_PLATE;
   if (algorithm == OMX_REVERB_HALL) return OMX_REVERB_HALL;
   return OMX_REVERB_ROOM;
@@ -137,7 +137,7 @@ static inline int omx_reverse_render_network(int algorithm) {
  * @note NOT RT: a worker over a whole region. No allocation. Thread-safe on distinct buffers.
  * @thread control
  */
-static inline int omx_reverse_render(float *l, float *r, uint32_t n, const struct omx_reverb *p,
+static inline __attribute__((nonblocking)) int omx_reverse_render(float *l, float *r, uint32_t n, const struct omx_reverb *p,
                                      float sr, struct omx_reverse_render_scratch *sc) {
   if (!l || !r || !p || !sc || !sc->st || !sc->pool || !sc->tmp_l || !sc->tmp_r) return -1;
   if (!sc->wet_l || !sc->wet_r) return -1;

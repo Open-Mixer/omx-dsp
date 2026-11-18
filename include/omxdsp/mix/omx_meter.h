@@ -147,7 +147,7 @@ static inline void omx_meter_leg_peaks(const float *inL, const float *inR, uint3
  * @note One pass, no allocation. Thread-safe: reads only.
  * @thread audio
  */
-static inline bool omx_meter_clip_run(const float *a, const float *b, uint32_t n, float scale,
+static inline __attribute__((nonblocking)) bool omx_meter_clip_run(const float *a, const float *b, uint32_t n, float scale,
                                       float thresh, uint32_t need) {
   uint32_t run_a = 0, run_b = 0;
   for (uint32_t i = 0; i < n; i++) {

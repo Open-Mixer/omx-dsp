@@ -230,7 +230,7 @@ static inline int omx_fbs_lv2_mode(const OmxFbsLv2 *s) { return s ? s->mode : OM
  * @thread audio
  */
 #define OMX_CONTRACT_STAGE "fbs/lv2-run"
-static inline void omx_fbs_lv2_run(OmxFbsLv2 *s, const float *in, float *out, uint32_t n) {
+static inline __attribute__((nonblocking)) void omx_fbs_lv2_run(OmxFbsLv2 *s, const float *in, float *out, uint32_t n) {
   if (!omx_live_block(s && s->ready, in, out, n)) return;
   omx_live_feed(&s->feed.ring, &s->feed.written, in, n);
   omx_live_out(&s->live, s->mode == OMX_FBS_LV2_REPORT, in, out, n);

@@ -99,7 +99,7 @@ static inline void omx_tremolo_gains(const struct omx_tremolo *p, float s, float
  * @note One oscillator read and two multiplies per frame, no allocation, no libm.
  * @thread audio
  */
-static inline void omx_tremolo_process(float *l, float *r, uint32_t n, const struct omx_tremolo *p,
+static inline __attribute__((nonblocking)) void omx_tremolo_process(float *l, float *r, uint32_t n, const struct omx_tremolo *p,
                                        struct omx_tremolo_state *s) {
   OMX_PRE(omx_block_pair_finite(l, r, n), "finite-in");
   OMX_PRE(p->depth >= 0.0f && p->depth <= 1.0f, "depth-in-unit-range");

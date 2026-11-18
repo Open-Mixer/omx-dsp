@@ -163,7 +163,7 @@ static inline double omx_tone_instance_magnitude(const OmxToneInstance *s, doubl
  * @param n The block length, frames; a null port or 0 touches nothing.
  * @thread audio
  */
-static inline void omx_tone_instance_run(OmxToneInstance *s, const float *in_l, const float *in_r, float *out_l,
+static inline __attribute__((nonblocking)) void omx_tone_instance_run(OmxToneInstance *s, const float *in_l, const float *in_r, float *out_l,
                                          float *out_r, uint32_t n) {
   if (!omx_instance_copy_through(in_l, in_r, out_l, out_r, n)) return;
   if (!s || !s->ready || !s->enabled || !(s->tilt_on || s->filter_on)) return;

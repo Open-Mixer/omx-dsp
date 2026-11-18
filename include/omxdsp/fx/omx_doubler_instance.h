@@ -215,7 +215,7 @@ static inline void omx_doubler_instance_resolve(OmxDoublerInstance *s, int bypas
  * @param n The block length, frames; a null port or 0 touches nothing.
  * @thread audio
  */
-static inline void omx_doubler_instance_run(OmxDoublerInstance *s, const float *in_l, const float *in_r, float *out_l,
+static inline __attribute__((nonblocking)) void omx_doubler_instance_run(OmxDoublerInstance *s, const float *in_l, const float *in_r, float *out_l,
                                             float *out_r, uint32_t n) {
   if (!omx_instance_through_engaged(in_l, in_r, out_l, out_r, n, s && s->ready && s->enabled && s->mix > 0.0f))
     return;

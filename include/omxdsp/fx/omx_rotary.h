@@ -131,7 +131,7 @@ static inline void omx_rotary_resolve(struct omx_rotary *p, const struct omx_rot
  *       Thread-safe on distinct state.
  * @thread audio
  */
-static inline void omx_rotary_process(float *l, float *r, uint32_t n, const struct omx_rotary *p,
+static inline __attribute__((nonblocking)) void omx_rotary_process(float *l, float *r, uint32_t n, const struct omx_rotary *p,
                                       struct omx_rotary_state *s) {
   if (!p->enabled || n == 0u) return;
   OMX_PRE(omx_block_pair_finite(l, r, n), "finite-in");

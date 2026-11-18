@@ -244,7 +244,7 @@ static inline void omx_mbcomp_split(const float *x, float band[][OMX_DYN_OVS_CHU
  *       floats on the stack whatever `n`. Thread-safe on distinct state.
  * @thread audio
  */
-static inline void omx_mbcomp_process(float *l, float *r, uint32_t n, const struct omx_mbcomp *m,
+static inline __attribute__((nonblocking)) void omx_mbcomp_process(float *l, float *r, uint32_t n, const struct omx_mbcomp *m,
                                       struct omx_mbcomp_state *st) {
   OMX_PRE_LEGS_FINITE(l, r, n);
   if (!m->enabled || n == 0) return;

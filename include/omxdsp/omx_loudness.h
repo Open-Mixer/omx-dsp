@@ -287,7 +287,7 @@ static inline void omx_loudness_close_sub(struct omx_loudness *s) {
  *       O(channels·n). Thread-safe on distinct state.
  * @thread audio
  */
-static inline void omx_loudness_process(struct omx_loudness *s, const float *const *in, uint32_t n) {
+static inline __attribute__((nonblocking)) void omx_loudness_process(struct omx_loudness *s, const float *const *in, uint32_t n) {
   for (uint32_t c = 0; c < s->channels; c++) OMX_PRE(in[c] == NULL || omx_block_finite(in[c], n), "finite-in");
   float pk[OMX_TRUEPEAK_CHUNK];
   for (uint32_t c = 0; c < s->channels; c++) {

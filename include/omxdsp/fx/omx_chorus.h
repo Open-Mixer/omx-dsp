@@ -237,7 +237,7 @@ static inline float omx_chorus_longest_delay(const struct omx_chorus *p) {
  * @param s The state armed by omx_chorus_state_init().
  * @thread audio
  */
-static inline void omx_chorus_process(float *l, float *r, uint32_t n, const struct omx_chorus *p,
+static inline __attribute__((nonblocking)) void omx_chorus_process(float *l, float *r, uint32_t n, const struct omx_chorus *p,
                                       struct omx_chorus_state *s) {
   /* CONTRACT (omx_contract.h). A chorus is a CONVEX combination of the dry signal and the mean of
    * N fractional reads of its own past: there is no gain element in it, and the only overshoot is

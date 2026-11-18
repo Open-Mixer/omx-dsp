@@ -171,7 +171,7 @@ static inline void omx_balancer_tick(OmxBalancerInstance *s) {
  * @param n The block length, frames; a null port or 0 touches nothing.
  * @thread audio
  */
-static inline void omx_balancer_instance_run(OmxBalancerInstance *s, const float *in_l, const float *in_r, float *out_l,
+static inline __attribute__((nonblocking)) void omx_balancer_instance_run(OmxBalancerInstance *s, const float *in_l, const float *in_r, float *out_l,
                                              float *out_r, uint32_t n) {
   uint32_t o = 0u;
   if (!omx_instance_copy_through(in_l, in_r, out_l, out_r, n)) return;

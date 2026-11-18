@@ -270,7 +270,7 @@ static inline int omx_drive_instance_init(OmxDriveInstance *s, float sr) {
  * @post Finite in, finite out, on both legs.
  * @thread audio
  */
-static inline void omx_drive_instance_run(OmxDriveInstance *s, const float *in_l, const float *in_r, float *out_l,
+static inline __attribute__((nonblocking)) void omx_drive_instance_run(OmxDriveInstance *s, const float *in_l, const float *in_r, float *out_l,
                                           float *out_r, uint32_t n) {
   /* CONTRACT (omx_contract.h). Finite in, finite out, on both legs — the kernel's own law,
    * restated at the host boundary because the copy is this function's. */

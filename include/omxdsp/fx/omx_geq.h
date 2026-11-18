@@ -144,7 +144,7 @@ static inline void omx_geq_settle(const uint8_t live[OMX_GEQ_BANDS], double s[OM
  *       block to settle; no allocation, no lock. Thread-safe on distinct state; reentrant.
  * @thread audio
  */
-static inline void omx_geq_process(float *l, float *r, uint32_t n, const struct omx_geq *p,
+static inline __attribute__((nonblocking)) void omx_geq_process(float *l, float *r, uint32_t n, const struct omx_geq *p,
                                    struct omx_geq_state *st) {
   OMX_PRE(omx_lane_finite(l, r ? r : l, n), "finite-in");
   if (!p->enabled || n == 0u) return;

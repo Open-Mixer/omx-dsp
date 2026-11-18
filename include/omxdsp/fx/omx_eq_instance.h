@@ -401,7 +401,7 @@ static inline void omx_eq_lv2_publish(struct omx_eq_lv2 *e) {
  * @post `buf` and the cascade's state are finite.
  * @thread audio
  */
-static inline void omx_eq_lv2_process(struct omx_eq_lv2 *e, float *buf, uint32_t n) {
+static inline __attribute__((nonblocking)) void omx_eq_lv2_process(struct omx_eq_lv2 *e, float *buf, uint32_t n) {
   OMX_PRE(omx_block_finite(buf, n), "finite-in");
   omx_eq_lv2_publish(e);
   OMX_PRE(e->count <= OMX_EQ_LV2_SECTIONS, "bank-within-capacity");
@@ -424,7 +424,7 @@ static inline void omx_eq_lv2_process(struct omx_eq_lv2 *e, float *buf, uint32_t
  * @pre Both ports are connected (non-null).
  * @post `out` is finite.
  * @thread audio */
-static inline void omx_eq_lv2_run(struct omx_eq_lv2 *e, const float *in, float *out, uint32_t n) {
+static inline __attribute__((nonblocking)) void omx_eq_lv2_run(struct omx_eq_lv2 *e, const float *in, float *out, uint32_t n) {
   OMX_PRE(in != NULL && out != NULL, "ports-connected");
   if (out != in) memmove(out, in, n * sizeof(float));
   omx_eq_lv2_process(e, out, n);
@@ -648,7 +648,7 @@ static inline void omx_eq_instance_resolve(OmxEqInstance *s, int bypass, int hpf
  * @param out_r The right output, `n` samples, may be `in_r`.
  * @param n The block length, samples; a null port or 0 touches nothing.
  * @thread audio */
-static inline void omx_eq_instance_run(OmxEqInstance *s, const float *in_l, const float *in_r, float *out_l,
+static inline __attribute__((nonblocking)) void omx_eq_instance_run(OmxEqInstance *s, const float *in_l, const float *in_r, float *out_l,
                                        float *out_r, uint32_t n) {
   if (!omx_instance_block_ok(in_l, in_r, out_l, out_r, n)) return;
   if (!s || !s->ready) {

@@ -126,7 +126,7 @@ static inline void omx_transient_resolve(struct omx_transient *t, int bypass, fl
  *       on distinct state.
  * @thread audio
  */
-static inline void omx_transient_process(float *l, float *r, uint32_t n, const struct omx_transient *t,
+static inline __attribute__((nonblocking)) void omx_transient_process(float *l, float *r, uint32_t n, const struct omx_transient *t,
                                          struct omx_transient_state *st) {
   if (!t->enabled) return;
   OMX_PRE(omx_block_pair_finite(l, r, n), "finite-in");

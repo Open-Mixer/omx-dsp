@@ -582,7 +582,7 @@ static inline OMX_FM_ALWAYS float omx_dyn_flat_gain(const struct omx_dyn_flat *f
  * @note No allocation, no state. Thread-safe on distinct blocks.
  * @thread audio
  */
-static inline void omx_dyn_flat_gain_block(const struct omx_dyn_flat *f, const struct omx_dyn *p, const float *in,
+static inline __attribute__((nonblocking)) void omx_dyn_flat_gain_block(const struct omx_dyn_flat *f, const struct omx_dyn *p, const float *in,
                                            float *out, uint32_t n) {
   /* quiet compares (islessequal, not <=): the same answer, NaN included, and no FP exception for the compiler
    * to keep, so it runs these two loops as selects rather than branches under the trapping-math default */

@@ -237,7 +237,7 @@ static inline int omx_gate_key_active(const struct omx_gate_key *k) {
  * @note O(n), no allocation, no call but omx_biquad_d(). Thread-safe on distinct filters.
  * @thread audio
  */
-static inline void omx_gate_key_run(struct omx_gate_key *k, float *buf, uint32_t n) {
+static inline __attribute__((nonblocking)) void omx_gate_key_run(struct omx_gate_key *k, float *buf, uint32_t n) {
   OMX_PRE(omx_block_finite(buf, n), "finite-key");
   if (k->hp_hz > 0.0f)
     for (uint32_t i = 0; i < n; i++) buf[i] = omx_biquad_d(buf[i], k->hp_c, k->hp_s);
@@ -346,7 +346,7 @@ static inline float omx_gate_latency(const struct omx_dyn *p) {
  * @note No allocation, no lock. Thread-safe on distinct instances.
  * @thread audio
  */
-static inline void omx_gate_run(struct omx_gate *g, const struct omx_dyn *p, const float *key,
+static inline __attribute__((nonblocking)) void omx_gate_run(struct omx_gate *g, const struct omx_dyn *p, const float *key,
                                 const float *key_external, const float *in_l, const float *in_r,
                                 float *out_l, float *out_r, uint32_t n) {
   const int keyed = key && omx_gate_clampf(key_external, 0.0f, 1.0f, 1.0f) >= 0.5f;

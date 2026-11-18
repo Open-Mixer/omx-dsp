@@ -86,7 +86,7 @@ static inline int omx_phaser_stages_legal(int n) {
  *       enforcement half, so an odd count never reaches the chain.
  * @thread audio
  */
-static inline int omx_phaser_stages_run(int n) {
+static inline __attribute__((nonblocking)) int omx_phaser_stages_run(int n) {
   const int c = n < 2 ? 2 : n > OMX_PHASER_MAX_STAGES ? OMX_PHASER_MAX_STAGES : n;
   return c & ~1;
 }
@@ -177,7 +177,7 @@ static inline float omx_phaser_level_bound(const struct omx_phaser *p) {
  *       `stages` change zeroes every section from the smaller count up.
  * @thread audio
  */
-static inline void omx_phaser_process(float *l, float *r, uint32_t n, const struct omx_phaser *p,
+static inline __attribute__((nonblocking)) void omx_phaser_process(float *l, float *r, uint32_t n, const struct omx_phaser *p,
                                       struct omx_phaser_state *s, float sr) {
   if (!p->enabled || p->mix == 0.0f) return;
   OMX_PRE(p->mix > 0.0f && p->mix <= 1.0f, "a-mix-is-inside-unity");

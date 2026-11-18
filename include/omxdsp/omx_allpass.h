@@ -130,7 +130,7 @@ static inline float omx_allpass1_cascade(struct omx_allpass1 *st, uint32_t n, fl
  * @note One multiply per sample. Thread-safe on distinct state.
  * @thread audio
  */
-static inline void omx_allpass1_block(struct omx_allpass1 *st, float *buf, uint32_t n, float a) {
+static inline __attribute__((nonblocking)) void omx_allpass1_block(struct omx_allpass1 *st, float *buf, uint32_t n, float a) {
   OMX_PRE(a > -1.0f && a < 1.0f, "coefficient-inside-unity");
 #ifdef OMX_CONTRACTS
   const double c = (1.0 - (double)a) / (1.0 + (double)a);

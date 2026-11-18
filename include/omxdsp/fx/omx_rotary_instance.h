@@ -131,7 +131,7 @@ static inline void omx_rotary_instance_resolve(OmxRotaryInstance *s, int bypass,
  * @param n The block length, frames; a null port or 0 touches nothing.
  * @thread audio
  */
-static inline void omx_rotary_instance_run(OmxRotaryInstance *s, const float *in_l, const float *in_r,
+static inline __attribute__((nonblocking)) void omx_rotary_instance_run(OmxRotaryInstance *s, const float *in_l, const float *in_r,
                                            float *out_l, float *out_r, uint32_t n) {
   OMX_INSTANCE_RUN_IN_PLACE(s, in_l, in_r, out_l, out_r, n, omx_rotary_process(out_l, out_r, n, &s->atom, &s->state));
 }
