@@ -17,6 +17,8 @@
 # a call to the C runtime's constructors (stdio, locale and stack-protector set-up, which reach WASI's random_get). The module still imports five WASI functions of wasi-libc's stdio (snprintf's FILE machinery); no call reaches them, and
 # tools/wasm-check.mjs runs it with stand-ins that throw.
 #
+# The stack is placed FIRST (--stack-first): an overflow runs off the bottom of memory and traps, where lld before LLVM 21 would put it after the data, and an overflow would silently overwrite the data (the debian cell found it).
+#
 # omx-contract's headers are added with -idirafter, never -isystem: where they are installed under /usr/include a -isystem
 # would put the HOST's /usr/include (glibc's math.h) ahead of the wasi-libc sysroot's.
 #
@@ -40,6 +42,6 @@ if [ -d "$SYSROOT/include/wasm32-wasip1" ]; then target=wasm32-wasip1; else targ
 # shellcheck disable=SC2086
 "$CLANG" -Wno-deprecated --target=$target --sysroot="$SYSROOT" -std=gnu11 -O2 -Wall -Wextra -Werror -ffp-contract=off -fno-stack-protector \
   -I"$HERE/include" -idirafter "$CONTRACT_INC" ${WASM_CFLAGS:-} \
-  -nostartfiles -nodefaultlibs -Wl,--no-entry -Wl,--export=__wasm_call_ctors ${WASM_STRIP--Wl,--strip-debug} \
+  -nostartfiles -nodefaultlibs -Wl,--no-entry -Wl,--stack-first -Wl,--export=__wasm_call_ctors ${WASM_STRIP--Wl,--strip-debug} \
   -Wl,-z,stack-size="${WASM_STACK:-262144}" -o "$out" "$@" -lm -lc
 echo "wasm-build: $out $(wc -c <"$out") bytes"
