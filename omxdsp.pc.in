@@ -16,6 +16,6 @@ rtadeltavectors=${datadir}/omxdsp/rta-delta-vectors.json
 Name: @NAME@
 Description: DSP primitives and effect kernels of OpenMixer, linked statically (@FLAVOUR@)
 Version: @VERSION@
-Requires: omx-contract >= @CONTRACTFLOOR@, omx-contract < 4
+Requires: omx-contract >= @CONTRACTFLOOR@
 Cflags: -I${includedir} @FPFLAGS@@CFLAGS@
 Libs: -L${libdir} -l@NAME@@LIBS@ -lm

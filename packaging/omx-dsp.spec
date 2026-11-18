@@ -21,7 +21,6 @@ BuildRequires: wasi-libc-devel
 BuildRequires: wasi-libc-static
 BuildRequires: pkgconfig
 BuildRequires: omx-contract-devel >= 3.18.0
-BuildRequires: omx-contract-devel < 4
 # The JACK headers by pkgconfig(jack), so a host with PipeWire's JACK (the build image preinstalls its devel package)
 # builds this; and jack2's RUNTIME by name, jackd and its libjack, which check-package's omx-rt-gate host-buffer arm
 # starts and loads, failing by name on PipeWire's. It installs beside PipeWire's JACK libraries. A build requirement
@@ -48,7 +47,6 @@ Its documentation is on openmixer.org.
 Summary: Headers and static library to build on the OpenMixer audio toolbox
 Provides: %{name}-static = %{version}-%{release}
 Requires: omx-contract-devel >= 3.18.0
-Requires: omx-contract-devel < 4
 Requires: %{name}-contract = %{version}-%{release}
 
 %package -n omx-rt-gate
@@ -85,7 +83,6 @@ Summary: omx-dsp's kernel and instance declarations, for programs that read them
 BuildArch: noarch
 # the declarations live in omx-contract's contract directory and are read against its schema; a floor only
 Requires: omx-contract-data >= 3.18.0
-Requires: omx-contract-data < 4
 
 %package -n omx-dsp-wasm
 Summary: omx-dsp's curve function as a WebAssembly module, for JavaScript runtimes
@@ -170,14 +167,44 @@ Its documentation is on openmixer.org.
 %{_datadir}/omx-contract/contract.d/3/omx-dsp/
 
 %changelog
-* Sun Nov 15 2026 Pau Aliagas <linuxnow@gmail.com> - 0.32.4-1
-- curve: the drive family, a drive's transfer curve sample in to sample out
-  through the drive kernel's own control mapping and biased shaper; roles
-  drive, tone, model, mix and output, the unit pc, the sample extents. The
-  TypeScript twin draws it too. Added names only; the three moved curve
-  counts are proven in tools/patch-count-proofs.txt.
-- patch-names-check: a count or size macro whose value moves in a patch
-  needs its proof line.
+* Tue Nov 17 2026 Pau Aliagas <linuxnow@gmail.com> - 0.32.4-1
+- curve: the drive family, a drive's transfer curve sample in to sample
+  out through the drive kernel's own control mapping and biased shaper;
+  roles drive, tone, model, mix and output, the unit pc, the sample
+  extents. It reads dB in to dB out on the one level axis (default grid
+  -60..0 dB). The TypeScript twin draws it too. Added names only; the
+  moved curve counts are proven in tools/patch-count-proofs.txt.
+- curve: time_response, the delay's taps (stems: time, level, shade, leg)
+  and the reverb's decay envelope, against the kernels; the reverb's
+  decay loops are declared once as data; the TypeScript twin draws both.
+- curve: omx_curve_points_json (omx_curve_json.h), the curve function with
+  JSON text on both sides, and curve-io.schema.json (shapes/), the shape of
+  its two documents; vectors/curve-points.json, 22 rows written from closed
+  forms, never by the library. Numbers are locale-proof (a comma-decimal
+  locale touches no separator) and a repeated key is refused.
+- The EQ Q range moves the kernel and its TypeScript twin together
+  (eq-q-range-sabotage), and a stale twin goes red.
+- reverb: the layout refuses a rate or a pool that does not fit, and the
+  hrp render init refuses a track config the tracker refuses; omx_pool_take
+  refuses a length whose sum wraps.
+- install: the contract directory installs under PREFIX, never the
+  system's, and install-confined checks that make install stays inside
+  DESTDIR+PREFIX.
+- docs: the API reference by doxygen, with docs-check holding the
+  undocumented-declaration count against a baseline that only shrinks; the
+  drive, reverb, delay, chorus, flanger and every instance face are
+  documented in full.
+- Packaging: dependency floors only. omx-contract keeps its floor
+  (3.18.0) and loses its ceiling, in the spec, debian/control and omxdsp.pc;
+  omx-dsp-contract no longer declares Breaks or Replaces.
+- The old-release machinery (the v0.1.3 round-trip, the patch-release API
+  gate) is removed. Tests and checks: make check-package runs make test's
+  own list; flavour-check bounds every compile it starts; fuzz_laws holds
+  each sample of a ramp to its rule; the compressor detector oracles O5, O8
+  and O9 at the nine oracle rates; the TSan probe says why it cannot read
+  TSan.
+- release: the deb job publishes omx-dsp-contract with libomxdsp-dev, and a
+  check refuses a release that omits a binary a sibling depends on.
 
 * Sun Nov 15 2026 Pau Aliagas <linuxnow@gmail.com> - 0.32.3-1
 - packaging: the JACK headers by pkgconfig(jack) again, so the build image's

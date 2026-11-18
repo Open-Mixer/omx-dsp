@@ -3,23 +3,48 @@ omx-dsp (0.32.4) unstable; urgency=medium
   * curve: the drive family, a drive's transfer curve sample in to sample
     out through the drive kernel's own control mapping and biased shaper;
     roles drive, tone, model, mix and output, the unit pc, the sample
-    extents. The TypeScript twin draws it too. Added names only; the three
+    extents. It reads dB in to dB out on the one level axis (default grid
+    -60..0 dB). The TypeScript twin draws it too. Added names only; the
     moved curve counts are proven in tools/patch-count-proofs.txt.
-  * curve: omx_curve_points_json (omx_curve_json.h), the curve function with JSON
-    text on both sides, and curve-io.schema.json (shapes/), the shape of its
-    two documents; vectors/curve-points.json, 22 rows written by
-    tools/curve-vectors-oracle.py from closed forms, never by the library, held
-    through the native door. Added names only. omx_curve_json.h is 461 lines.
+  * curve: time_response, the delay's taps (stems: time, level, shade, leg)
+    and the reverb's decay envelope, against the kernels; the reverb's
+    decay loops are declared once as data; the TypeScript twin draws both.
+  * curve: omx_curve_points_json (omx_curve_json.h), the curve function with
+    JSON text on both sides, and curve-io.schema.json (shapes/), the shape of
+    its two documents; vectors/curve-points.json, 22 rows written from closed
+    forms, never by the library. Numbers are locale-proof (a comma-decimal
+    locale touches no separator) and a repeated key is refused.
+  * The EQ Q range moves the kernel and its TypeScript twin together
+    (eq-q-range-sabotage), and a stale twin goes red.
+  * reverb: the layout refuses a rate or a pool that does not fit, and the
+    hrp render init refuses a track config the tracker refuses; omx_pool_take
+    refuses a length whose sum wraps.
+  * install: the contract directory installs under PREFIX, never the
+    system's, and install-confined checks that make install stays inside
+    DESTDIR+PREFIX.
+  * docs: the API reference by doxygen, with docs-check holding the
+    undocumented-declaration count against a baseline that only shrinks; the
+    drive, reverb, delay, chorus, flanger and every instance face are
+    documented in full.
+  * Packaging: dependency floors only. omx-contract keeps its floor
+    (3.18.0) and loses its ceiling, in the spec, debian/control and omxdsp.pc;
+    omx-dsp-contract no longer declares Breaks or Replaces.
+  * The old-release machinery (the v0.1.3 round-trip, the patch-release API
+    gate) is removed. Tests and checks: make check-package runs make test's
+    own list; flavour-check bounds every compile it starts; fuzz_laws holds
+    each sample of a ramp to its rule; the compressor detector oracles O5, O8
+    and O9 at the nine oracle rates; the TSan probe says why it cannot read
+    TSan.
+  * release: the deb job publishes omx-dsp-contract with libomxdsp-dev, and a
+    check refuses a release that omits a binary a sibling depends on.
   * wasm: make wasm builds omx_curve_points_json to build/wasm/omx-dsp.wasm with the
     distribution's clang, lld and wasi-libc (tools/wasm-build.sh, one recipe for
     every module); 91226 bytes, four exports, five stdio WASI imports no call
     reaches. The noarch package omx-dsp-wasm installs it under
     /usr/share/omx-dsp/wasm; the npm tarball carries it as wasm/omx-dsp.wasm.
     Never committed. Added names only.
-  * patch-names-check: a count or size macro whose value moves in a patch
-    needs its proof line.
 
- -- Pau Aliagas <linuxnow@gmail.com>  Sun, 15 Nov 2026 20:55:00 +0100
+ -- Pau Aliagas <linuxnow@gmail.com>  Tue, 17 Nov 2026 21:30:00 +0100
 
 omx-dsp (0.32.3) unstable; urgency=medium
 

@@ -7,7 +7,7 @@
 #   ctors       __wasm_call_ctors not exported, so the linker wraps every export in the C runtime's constructors, which
 #               call WASI random_get (the stand-in throws);
 #   capacity    the capacity export answering half the buffer;
-#   stack       the stack cut to 4 kB, which the curve function overruns;
+#   stack       the stack cut to 16 bytes, which any call frame of the curve function overruns (a distribution's compiler may keep a 4 kB stack enough);
 #   export      the answer buffer's export renamed.
 # The control (the real source) must go green. Needs the wasm toolchain (tools/wasm-build.sh) and node.
 # Usage: CONTRACT_INC=… NODE=… wasm-sabotage.sh <scratch-dir>
@@ -44,6 +44,6 @@ run() { # $1 = name, $2 = sed expression on the source ('' keeps it), $3 = WASM_
 
 run ctors '' '' 's| -Wl,--export=__wasm_call_ctors||'
 run capacity 's|return OMX_CURVE_JSON_OUT_MAX; }|return OMX_CURVE_JSON_OUT_MAX / 2u; }|' ''
-run stack "" 4096
+run stack "" 16
 run export 's|OMX_WASM_EXPORT(omx_curve_wasm_answer)|OMX_WASM_EXPORT(omx_curve_wasm_reply)|' ''
 echo "wasm-sabotage: all four sabotages are caught"
