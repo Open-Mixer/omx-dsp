@@ -10,9 +10,11 @@ const bytes = readFileSync(new URL('../wasm/omx-dsp.wasm', import.meta.url));
 const DYN = { kind: 'transfer_curve', family: 'dynamics', sampleRate: 48000, points: 3, extents: { min: -40, max: 0 }, terms: [{ role: 'threshold', value: -20, unit: 'db' }, { role: 'ratio', value: 4, unit: 'ratio' }] };
 
 describe('the curve module', () => {
-  it('imports exactly the five stdio WASI functions the loader stands in for', async () => {
+  it('imports only stdio WASI functions the loader stands in for (a build links the subset its wasi-libc needs: three on debian trixie, five on fedora)', async () => {
     const imports = WebAssembly.Module.imports(new WebAssembly.Module(bytes));
-    assert.deepEqual(imports.map((i) => `${i.module}.${i.name}`).sort(), WASI_IMPORTS.map((n) => `wasi_snapshot_preview1.${n}`).sort());
+    assert.ok(imports.length > 0, 'a module with no import would leave the stand-ins unproven');
+    for (const i of imports) assert.ok(WASI_IMPORTS.includes(i.name) && i.module === 'wasi_snapshot_preview1', `${i.module}.${i.name}`);
+    assert.equal(WASI_IMPORTS.length, 5);
   });
   it('answers with the twin\'s signature, and every refusal and malformed request without calling a stand-in', async () => {
     const curve = await loadCurve(bytes);
