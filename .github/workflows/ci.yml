@@ -454,6 +454,10 @@ jobs:
           # the contract directory is read at run time: it is omx-dsp-contract's, never the devel package's (omx-contract#150)
           ! grep -q '^/usr/share/omx-contract/' listing.txt
           rpm -qpR "$rpm" | grep -q '^omx-dsp-contract = '
+          rpm -qlp "$(ls rpms/omx-dsp-wasm-[0-9]*.noarch.rpm)" > listing.txt
+          # the packaged loader ships beside the module it loads (tools/wasm-loader-check.mjs)
+          grep -q '^/usr/share/omx-dsp/dist/index.js$' listing.txt
+          grep -q '^/usr/share/omx-dsp/wasm/omx-dsp.wasm$' listing.txt
           contract=$(ls rpms/omx-dsp-contract-[0-9]*.noarch.rpm)
           rpm -qlp "$contract" > contract.txt
           grep -q '^/usr/share/omx-contract/contract.d/3/omx-dsp/MANIFEST.json$' contract.txt
@@ -474,6 +478,12 @@ jobs:
           /tmp/golden-reverb test/golden/reverb.sha256
           gcc $(pkg-config --cflags omxdsp-contracts) -O2 -o /tmp/flavour test/omxdsp_flavour.c $(pkg-config --libs omxdsp-contracts)
           /tmp/flavour
+
+      - name: The packaged loader loads the packaged module, in a clean root
+        run: |
+          set -euo pipefail
+          dnf install -y --setopt=tsflags=nodocs --setopt=install_weak_deps=False nodejs rpms/omx-dsp-wasm-[0-9]*.noarch.rpm
+          node tools/wasm-loader-check.mjs /usr/share/omx-dsp
 
       - uses: actions/upload-artifact@v4
         with:
@@ -544,6 +554,15 @@ jobs:
           /tmp/golden-reverb test/golden/reverb.sha256
           gcc $(pkg-config --cflags omxdsp-contracts) -O2 -o /tmp/flavour test/omxdsp_flavour.c $(pkg-config --libs omxdsp-contracts)
           /tmp/flavour
+
+      - name: The packaged loader loads the packaged module, in a clean root
+        run: |
+          set -euo pipefail
+          apt-get -o Dpkg::Options::=--force-unsafe-io install -y --no-install-recommends ./debs/omx-dsp-wasm_*.deb nodejs
+          dpkg -L omx-dsp-wasm > listing.txt
+          grep -q '^/usr/share/omx-dsp/dist/index.js$' listing.txt
+          grep -q '^/usr/share/omx-dsp/wasm/omx-dsp.wasm$' listing.txt
+          node tools/wasm-loader-check.mjs /usr/share/omx-dsp
 
   release-dry-run:
     name: release workflow, dry run
