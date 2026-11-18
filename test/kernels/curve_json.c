@@ -56,6 +56,8 @@ static void arm_curve_json(void) {
      "a shape no table holds: kindUnknown", 0, 0);
   ok(cj_is("{\"kind\":\"transfer_curve\",\"family\":\"dynamics\",\"sampleRate\":0,\"points\":3,\"terms\":[]}",
            "{\"code\":\"valueNotFinite\"}"), "a rate of zero: valueNotFinite", 0, 0);
+  ok(cj_is("{\"kind\":\"transfer_curve\",\"family\":\"dynamics\",\"sampleRate\":1e999,\"points\":3,\"terms\":[]}",
+           "{\"code\":\"valueNotFinite\"}"), "a number that overflows a double (1e999) is infinity: valueNotFinite", 0, 0);
   ok(cj_is("{\"kind\":\"transfer_curve\",\"family\":\"dynamics\",\"sampleRate\":48000,\"points\":257,\"terms\":[]}",
            "{\"code\":\"pointsRange\"}"), "257 grid points: pointsRange", 0, 0);
 

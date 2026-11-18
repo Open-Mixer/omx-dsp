@@ -10,6 +10,7 @@ export {
   biquadMagnitudeDb,
   clampEqQFor,
   lowpassHandover,
+  butterworthQs,
   magnitudeSumDb,
   matchedPair,
   octavesToQ,
@@ -75,19 +76,7 @@ export {
   type SpectrumTierInput,
 } from './rta.js';
 export { gaincompDb, gaincompDbShifted, gateKnee, type GaincompMode, type GaincompParams } from './gaincomp.js';
-export {
-  CURVE_WORDS,
-  butterworthQs,
-  curvePoints,
-  reverbDecayLoop,
-  type CurveAnswer,
-  type CurveCode,
-  type CurveMark,
-  type CurvePoint,
-  type CurveStem,
-  type CurveRequest,
-  type CurveTerm,
-} from './curve.js';
+export { CURVE_WORDS, WASI_IMPORTS, loadCurve, wasiStandIns, type CurveAnswer, type CurveCode, type CurveMark, type CurveModule, type CurvePoint, type CurveRequest, type CurveStem, type CurveTerm } from './wasm.js';
 export {
   FBS_ACTIONS,
   FBS_HOLD_NEVER,

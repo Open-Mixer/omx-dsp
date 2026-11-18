@@ -39,10 +39,10 @@ export OMXDSP_CFLAGS="$CFLAGS -ffp-contract=off -I$HDR -I$PKG/include"
 export OMXDSP_LIBS="$LIB -lm"
 
 # two scratch copies of the pieces ts/test needs: moved the same way as the header, and left as
-# committed (the real ts/ is never edited or built by this script)
+# committed (the real ts/ is never edited or built by this script); ts/wasm is the curve module the agreement test loads (npm run build:wasm)
 copy_ts() { # $1 = dest
   mkdir -p "$1"
-  cp -r "$PKG/ts/src" "$PKG/ts/test" "$PKG/ts/oracle" "$PKG/ts/tsconfig.json" "$PKG/ts/package.json" "$1/"
+  cp -r "$PKG/ts/src" "$PKG/ts/test" "$PKG/ts/oracle" "$PKG/ts/wasm" "$PKG/ts/tsconfig.json" "$PKG/ts/package.json" "$1/"
   ln -s "$PKG/ts/node_modules" "$1/node_modules"
 }
 TS_MOVED="$OUT/ts-moved"

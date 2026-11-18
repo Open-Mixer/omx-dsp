@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Pau Aliagas <linuxnow@gmail.com>
 /**
- * EVERY TWIN AGREES WITH ITS KERNEL: the twin (dist/, the published code) and the omx-dsp kernel
+ * EVERY TWIN AGREES WITH ITS KERNEL: the twin (dist/, the published code; the curve function is the C as WebAssembly) and the omx-dsp kernel
  * (oracle/ts-twin-oracle.c) run one grid and must agree inside the tolerance test/tolerances.mjs states. A twin
  * whose SABOTAGE arm stays green would be decoration, so each has one. Moved here from the console with the twins.
  */
@@ -18,7 +18,7 @@ import {
   biquadMagnitudeDb,
   butterworthQs,
   clampEqQFor,
-  curvePoints,
+  loadCurve,
   dbToLinearGain,
   fftSizeForRate,
   gaincompDb,
@@ -30,7 +30,12 @@ import {
   octavesToQ,
   rbjSection,
 } from '../dist/index.js';
+import { readFileSync } from 'node:fs';
 import { TOLERANCES as T } from './tolerances.mjs';
+
+/** curvePoints is the C's own, as WebAssembly (ts/wasm/omx-dsp.wasm, built by `npm run build:wasm`): this file asks the
+ *  module and the native oracle the same questions, and a difference is a finding about the toolchain, not a twin's drift. */
+const { curvePoints } = await loadCurve(readFileSync(new URL('../wasm/omx-dsp.wasm', import.meta.url)));
 
 const red = (asked, twin, tol) => against(asked, twin, tol).failures.length > 0;
 
