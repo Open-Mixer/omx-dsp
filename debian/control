@@ -4,7 +4,7 @@ Source: omx-dsp
 Section: libdevel
 Priority: optional
 Maintainer: Pau Aliagas <linuxnow@gmail.com>
-Build-Depends: debhelper-compat (= 13), libomx-contract-dev (>= 3.18.0~), pkgconf, libjack-jackd2-dev, jackd2, clang, lld, wasi-libc
+Build-Depends: debhelper-compat (= 13), libomx-contract-dev (>= 3.18.0~), pkgconf, libjack-jackd2-dev, jackd2, clang, lld, wasi-libc, nodejs, npm
 Standards-Version: 4.6.2
 Homepage: https://github.com/Open-Mixer/omx-dsp
 Rules-Requires-Root: no
@@ -79,13 +79,14 @@ Package: omx-dsp-wasm
 Architecture: all
 Multi-Arch: foreign
 Depends: ${misc:Depends}
-Description: omx-dsp's curve function as a WebAssembly module, for JavaScript runtimes
+Description: omx-dsp's curve function as a WebAssembly module, with its JavaScript loader
  The curve function of omx-dsp (the points of an EQ or transfer curve from a
  panel description's terms) compiled to one WebAssembly module,
- /usr/share/omx-dsp/wasm/omx-dsp.wasm. A Node program or a browser loads it
- with the built-in WebAssembly and gets the arithmetic the console and the
- plugins run, not a second implementation of it. It is also the module of the
- npm package
- @openmixer/omx-dsp.
+ /usr/share/omx-dsp/wasm/omx-dsp.wasm, and the loader that loads it, beside it
+ under /usr/share/omx-dsp/: dist/index.js, the files the npm package
+ @openmixer/omx-dsp publishes (package.json, dist/, src/, oracle/, wasm/), the
+ same files. A Node program imports /usr/share/omx-dsp/dist/index.js and calls
+ loadCurve on the module; a browser bundles the same files. The arithmetic is
+ the console's and the plugins', not a second implementation of it.
  .
  Its documentation is on openmixer.org.
