@@ -184,8 +184,10 @@ Its documentation is on openmixer.org.
 - ts: @openmixer/omx-dsp loads that module as WebAssembly, and the TypeScript
   curve twin is deleted. vectors/curve-points.json runs through the
   WebAssembly door, with the native-against-wasm report (#92, #93).
-- The noarch package omx-dsp-wasm installs the module beside its JavaScript
-  loader under /usr/share/omx-dsp/wasm (#101).
+- The noarch package omx-dsp-wasm installs the npm tree under /usr/share/omx-dsp/:
+  the loader at dist/index.js, the module at wasm/omx-dsp.wasm, with
+  package.json, src/ and oracle/; the loader is built by the package's own
+  pinned TypeScript (#101).
 - Packaging: dependency floors only. omx-contract keeps its floor (3.18.0);
   BUILDING.md names no ceiling, and the contract-include self-test refuses a
   ceiling planted in packaging/deps.txt (#100).
