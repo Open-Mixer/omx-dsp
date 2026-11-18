@@ -435,8 +435,12 @@ wasm-sabotage: wasm/omx_curve_wasm.c test/wasm-sabotage.sh tools/wasm-check.mjs 
 # into wasm/) and packs exactly its "files" list; the tarball is unpacked as build/npm-stage/package. install-wasm installs
 # THAT tree under DATADIR/omx-dsp/ (package.json, dist/ the loader, src/, oracle/, wasm/omx-dsp.wasm), so the noarch
 # omx-dsp-wasm package and the npm twin carry one set of files, never a copy written by hand.
+# The compiler is the package's own pinned TypeScript: `npm ci` in ts/ from its package-lock.json puts it in ts/node_modules/.bin,
+# which the prepack finds on PATH, so the rpm and the deb build the loader the same way and never with a system tsc.
 NPM_STAGE = $(BUILD)/npm-stage
-npm-stage: $(BUILD)/wasm/omx-dsp.wasm ts/package.json $(wildcard ts/src/*.ts)
+ts/node_modules/.package-lock.json: ts/package.json ts/package-lock.json
+	cd ts && npm ci
+npm-stage: $(BUILD)/wasm/omx-dsp.wasm ts/package.json $(wildcard ts/src/*.ts) ts/node_modules/.package-lock.json
 	rm -rf $(NPM_STAGE) && mkdir -p $(NPM_STAGE)
 	cd ts && npm_config_cache=$(abspath $(BUILD))/npm-cache npm pack --pack-destination $(abspath $(NPM_STAGE)) >/dev/null
 	tar -xzf $(NPM_STAGE)/*.tgz -C $(NPM_STAGE) && rm -f $(NPM_STAGE)/*.tgz

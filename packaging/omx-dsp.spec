@@ -27,10 +27,9 @@ BuildRequires: omx-contract-devel >= 3.18.0
 # only: no package of this spec requires jack2 (omx-rta-read needs libjack.so.0, which either provides).
 BuildRequires: pkgconfig(jack)
 BuildRequires: jack-audio-connection-kit
-# the npm package's module tree (make npm-stage): npm pack runs the package's prepack, which compiles ts/ with tsc
+# the npm package's module tree (make npm-stage): npm ci fetches the package's pinned TypeScript in ts/, and npm pack's prepack compiles ts/ with it
 BuildRequires: nodejs
 BuildRequires: npm
-BuildRequires: typescript
 
 # Headers and a static archive only: nothing of this package is loaded at run time.
 %global debug_package %{nil}

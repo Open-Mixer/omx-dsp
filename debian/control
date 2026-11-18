@@ -4,7 +4,7 @@ Source: omx-dsp
 Section: libdevel
 Priority: optional
 Maintainer: Pau Aliagas <linuxnow@gmail.com>
-Build-Depends: debhelper-compat (= 13), libomx-contract-dev (>= 3.18.0~), pkgconf, libjack-jackd2-dev, jackd2, clang, lld, wasi-libc, nodejs, npm, node-typescript
+Build-Depends: debhelper-compat (= 13), libomx-contract-dev (>= 3.18.0~), pkgconf, libjack-jackd2-dev, jackd2, clang, lld, wasi-libc, nodejs, npm
 Standards-Version: 4.6.2
 Homepage: https://github.com/Open-Mixer/omx-dsp
 Rules-Requires-Root: no
