@@ -24,7 +24,8 @@ A change of the toolchain that moves these numbers is a finding to read here, no
 
 ## What it costs, against the TypeScript twin it replaced
 
-`tools/curve-bench.sh` builds the twin from the commit before its deletion and puts the shared vectors' 22 requests to each
+Run as `tools/curve-bench.sh --reps 1000` (the `--reps` default of `tools/curve-bench.mjs` is 300; the wrapper passes the
+flag through). It builds the twin from the commit before its deletion and puts the shared vectors' 22 requests to each
 door 1000 times, every door in its own process (Node 22, one core, Fedora 44, the module built in a debian trixie container):
 
 | | median per call | p99 per call | load | peak resident set over a bare Node's |
