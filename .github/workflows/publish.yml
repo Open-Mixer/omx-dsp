@@ -37,7 +37,7 @@ jobs:
           wave: ${{ vars.OMX_RELEASE_MATRIX }}
           deb-releases: '["trixie"]'
           deb-arches: '["arm64"]'
-          x86-runner: ${{ vars.OMX_RUNNER || 'ubuntu-latest' }}
+          x86-runner: ${{ github.event.pull_request.head.repo.fork && 'ubuntu-latest' || vars.OMX_RUNNER || 'ubuntu-latest' }}
 
   publish:
     if: github.repository == 'Open-Mixer/omx-dsp' && needs.checks.outputs.deb-count != '0'
