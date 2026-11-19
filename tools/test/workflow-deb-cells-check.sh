@@ -4,7 +4,7 @@
 # Refuses a Debian CI job that picks its own runner or its own architectures: the jobs ci.yml test, deb, contract-floor
 # and twins, and publish.yml publish, take their cell (image, architecture and runner) from the check-matrix action,
 # so each says `runs-on: ${{ matrix.cell.runner }}`, needs the checks job, reads its cell from that job's outputs and
-# writes no amd64 of its own: while the release matrix is quick the action renders no amd64 deb cell, and a job that
+# writes no amd64, matrix include or ubuntu: image of its own: while the release matrix is quick the action renders no amd64 deb cell, and a job that
 # names amd64 would bring one back. The workflow also calls the action with the x86 runner it already used.
 # Usage: workflow-deb-cells-check.sh [repo-root] (default: .), or --self-test, which runs this check on planted trees.
 # Exit 0 clean, 1 a hit (each line named), 2 no workflow to check.
@@ -37,6 +37,7 @@ check() {
 				{ echo "$f: job $j does not need the checks job" >&2; bad=1; }
 			grep -qE 'cell: \$\{\{ fromJSON\(needs\.checks\.outputs\.[a-z-]+\) \}\}' <<< "$block" ||
 				{ echo "$f: job $j reads no cell from the checks job's outputs" >&2; bad=1; }
+			if grep -nE '^        include:|ubuntu:' <<< "$block" | sed "s|^|$f: job $j has an include or an ubuntu: image outside the check-matrix cells: |" | grep . >&2; then bad=1; fi
 			if grep -n 'amd64' <<< "$block" | sed "s|^|$f: job $j names amd64: |" | grep . >&2; then bad=1; fi
 		done
 	done
@@ -77,6 +78,8 @@ if [ "${1:-}" = "--self-test" ]; then
 	tree clean "$good_runs" '' "$act" "$x86"; expect clean 0
 	tree hand 'ubuntu-latest' '' "$act" "$x86"; expect hand 1
 	tree var "\${{ vars.OMX_RUNNER || 'ubuntu-latest' }}" '' "$act" "$x86"; expect var 1
+	tree include "$good_runs" '        include:\n          - cell: x' "$act" "$x86"; expect include 1
+	tree ubuntu "$good_runs" '    container: ubuntu:24.04' "$act" "$x86"; expect ubuntu 1
 	tree amd64 "$good_runs" '        arch: [amd64]' "$act" "$x86"; expect amd64 1
 	tree noaction "$good_runs" '' 'actions/checkout@v4' "$x86"; expect noaction 1
 	tree nox86 "$good_runs" '' "$act" 'wave: x'; expect nox86 1
