@@ -213,9 +213,17 @@ static void arm_combination(void) {
     for (uint32_t i = 0; i < BLK; i++, ph += inc) l[i] = r[i] = (float)sin(ph);
     if (done == 0u) l[0] = r[0] = 1.0f; /* a full-scale first sample, before the loop has heard anything */
     comp_run(c, l, r, BLK);
-    for (uint32_t i = 0; i < BLK; i++) worst_c = fmax(worst_c, fmax(fabs((double)l[i]), fabs((double)r[i])));
+    for (uint32_t i = 0; i < BLK; i++) {
+      const double al = fabs((double)l[i]), ar = fabs((double)r[i]);
+      if (al > worst_c) worst_c = al;
+      if (ar > worst_c) worst_c = ar;
+    }
     drive_run(d, l, r, BLK);
-    for (uint32_t i = 0; i < BLK; i++) worst = fmax(worst, fmax(fabs((double)l[i]), fabs((double)r[i])));
+    for (uint32_t i = 0; i < BLK; i++) {
+      const double al = fabs((double)l[i]), ar = fabs((double)r[i]);
+      if (al > worst) worst = al;
+      if (ar > worst) worst = ar;
+    }
   }
   /* The compressor alone: the full-scale first sample is heard by no loop yet, so it leaves at exactly the make-up (the probe
    * reaches the bound's edge) and nothing after it leaves louder. */
@@ -230,7 +238,11 @@ static void arm_combination(void) {
   for (uint32_t done = 0; done < total; done += BLK) {
     for (uint32_t i = 0; i < BLK; i++) l[i] = r[i] = (done + i) % 997u == 0u ? 1.0f : 0.0f; /* full-scale impulses */
     chain(c, d, l, r);
-    for (uint32_t i = 0; i < BLK; i++) worst = fmax(worst, fmax(fabs((double)l[i]), fabs((double)r[i])));
+    for (uint32_t i = 0; i < BLK; i++) {
+      const double al = fabs((double)l[i]), ar = fabs((double)r[i]);
+      if (al > worst) worst = al;
+      if (ar > worst) worst = ar;
+    }
   }
   ok(worst > 0.0 && worst <= bound, "O9: a 0 dBFS impulse train never exceeds make-up + trim + 0.01 dB", worst, bound);
   arm_clean();
