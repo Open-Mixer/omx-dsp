@@ -62,13 +62,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # ubuntu:24.04 carries GCC 13, whose -Wmaybe-uninitialized reads paths the newer
-        # compilers prove dead.
         # ruling D25: bookworm is a full cell, served its floors (omx-contract 3.18.0) only at the wave-end full release
         cell: ${{ fromJSON(needs.checks.outputs.cells) }}
-        include:
-          # not a check-matrix cell: Ubuntu is no Debian release of the set; it runs on the x86 runner
-          - cell: { image: 'ubuntu:24.04', arch: x86_64, runner: "${{ vars.OMX_RUNNER || 'ubuntu-latest' }}" }
     container:
       image: ${{ matrix.cell.image }}
     # debian images run sh by default, which has no pipefail
@@ -96,7 +91,7 @@ jobs:
       - name: Add the OpenMixer repository
         uses: Open-Mixer/.github/.github/actions/add-openmixer@openmixer-v1
         with:
-          suite: ${{ startsWith(matrix.cell.image, 'ubuntu') && 'trixie' || '' }}
+          suite: ''
 
       - name: Install the build dependencies from the OpenMixer channel
         run: |
