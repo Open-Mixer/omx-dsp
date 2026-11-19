@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2026 Pau Aliagas <linuxnow@gmail.com>
 Name: omx-dsp
-Version: 0.33.0
+Version: 0.33.1
 Release: 1%{?dist}
 License: GPL-3.0-or-later
 Summary: The audio toolbox of the OpenMixer console, as a real-time-safe C library
@@ -176,6 +176,15 @@ Its documentation is on openmixer.org.
 %{_datadir}/omx-contract/contract.d/3/omx-dsp/
 
 %changelog
+* Thu Nov 19 2026 Pau Aliagas <linuxnow@gmail.com> - 0.33.1-1
+- ts: the TypeScript twins no Open-Mixer repository consumes are deleted
+  (hrp-place and fbs-place, the gaincomp, gate, meter and eq helpers named in
+  #105) with their agreement arms; the C kernels are the one source, each held
+  by its vectors and oracle. The HRP placement's vectors are installed as
+  omxdsp/hrp-place-vectors (omxdsp.pc hrpplacevectors) (#105).
+- CI: the below-floor job installs the newest published omx-contract below the
+  floor (#103).
+
 * Wed Nov 18 2026 Pau Aliagas <linuxnow@gmail.com> - 0.33.0-1
 - wasm: make wasm builds omx_curve_points_json to build/wasm/omx-dsp.wasm
   with the distribution's clang, lld and wasi-libc (tools/wasm-build.sh, one

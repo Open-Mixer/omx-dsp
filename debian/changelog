@@ -1,3 +1,15 @@
+omx-dsp (0.33.1) unstable; urgency=medium
+
+  * ts: the TypeScript twins no Open-Mixer repository consumes are deleted
+    (hrp-place and fbs-place, the gaincomp, gate, meter and eq helpers named
+    in #105) with their agreement arms; the C kernels are the one source, each
+    held by its vectors and oracle. The HRP placement's vectors are installed
+    as omxdsp/hrp-place-vectors (omxdsp.pc hrpplacevectors) (#105).
+  * CI: the below-floor job installs the newest published omx-contract below
+    the floor (#103).
+
+ -- Pau Aliagas <linuxnow@gmail.com>  Thu, 19 Nov 2026 17:00:00 +0100
+
 omx-dsp (0.33.0) unstable; urgency=medium
 
   * wasm: make wasm builds omx_curve_points_json to build/wasm/omx-dsp.wasm
