@@ -29,6 +29,8 @@
  */
 #define _GNU_SOURCE
 #include <math.h>
+#include <pthread.h>
+#include <sched.h>
 #include <semaphore.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -88,6 +90,7 @@ static long case_memcpy(void) { for (int i = 0; i < N; i++) memcpy(a, b, (size_t
 static long case_memmove(void) { for (int i = 0; i < N; i++) memmove(a + 1, a, (size_t)(i % 4095)); return N; }
 static long case_memset(void) { for (int i = 0; i < N; i++) memset(a, i, (size_t)(i % 4096)); return N; }
 static long case_memcmp(void) { for (int i = 0; i < N; i++) sinkl = memcmp(a, b, (size_t)(i % 4096)); return N; }
+static long case_strnlen(void) { for (int i = 0; i < N; i++) sinkl = (long)strnlen(i % 2 ? a : (char *)b, (size_t)(i % 4096)); return N; }
 
 static sem_t sem;
 static long case_sem_post(void) {
@@ -103,6 +106,22 @@ static long case_clock_gettime(void) {
   }
   return N;
 }
+/* thread-identity: the calling thread's own identity, read from its descriptor. pthread_gettid_np exists from glibc
+ * 2.42; on an older glibc the case reads pthread_self instead, as no caller there can name the symbol. */
+static pthread_t self0;
+static volatile pid_t sinkt;
+static long case_pthread_self(void) { for (int i = 0; i < N; i++) sinkl = (long)pthread_self(); return N; }
+static long case_pthread_equal(void) { for (int i = 0; i < N; i++) sinkl = pthread_equal(self0, pthread_self()); return N; }
+static long case_pthread_gettid_np(void) {
+#if defined(__GLIBC__) && __GLIBC_PREREQ(2, 42)
+  for (int i = 0; i < N; i++) sinkt = pthread_gettid_np(pthread_self());
+#else
+  for (int i = 0; i < N; i++) sinkl = (long)pthread_self();
+#endif
+  return N;
+}
+/* cpu-identity: the CPU this thread runs on, through rseq or the vDSO */
+static long case_sched_getcpu(void) { for (int i = 0; i < N; i++) sinkl = sched_getcpu(); return N; }
 /* libgcc's outline atomics: the calls gcc emits for an atomic add on aarch64 (-moutline-atomics). The arm calls
  * each helper by its name there. The helpers exist only on aarch64; on another target the case runs the same
  * add, which that compiler emits inline, so the row's case is always measured and is the real symbol where the
@@ -291,7 +310,8 @@ static const struct arm_case CASES[] = {
     C(ceilf), C(powf), C(fminf), C(fmaxf), C(nextafterf), C(lrintf), C(lroundf),
     C(sin), C(cos), C(tan), C(sinh), C(exp), C(log), C(log2), C(log10), C(sqrt), C(floor), C(ceil), C(pow),
     C(hypot), C(atan2), C(fmin), C(fmax), C(copysign), C(lrint), C(lround), C(llround), C(ldexp),
-    C(memcpy), C(memmove), C(memset), C(memcmp), C(sem_post), C(clock_gettime),
+    C(memcpy), C(memmove), C(memset), C(memcmp), C(strnlen), C(sem_post), C(clock_gettime),
+    C(pthread_self), C(pthread_equal), C(pthread_gettid_np), C(sched_getcpu),
     C(__aarch64_ldadd4_relax), C(__aarch64_ldadd4_rel), C(__aarch64_ldadd8_rel),
 };
 
@@ -308,6 +328,7 @@ static int measure(const struct arm_case *c) {
 
 int main(int argc, char **argv) {
   sem_init(&sem, 0, 0);
+  self0 = pthread_self();
   memset(b, 1, sizeof b);
 #ifdef OMX_RT_GATE_ARM_JACK
   if (argc == 2 && !strcmp(argv[1], "--sabotage-jack")) {

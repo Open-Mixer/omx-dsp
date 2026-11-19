@@ -15,6 +15,8 @@
 #   maths         libm: arithmetic on the arguments, no allocation, no lock. Domain errors set errno
 #                 (a thread-local word) and return a value; nothing waits.
 #   bulk-memory   memcpy, memmove, memset, memcmp: a bounded pass over caller-owned bytes.
+#                 strnlen joins them: it reads at most its bound, as memcmp reads at most its
+#                 length, and stops sooner at a NUL. strlen has no bound and no row.
 #   word-atomic   an atomic read-modify-write on one machine word, lock-free on the target. At -O0
 #                 the compiler emits lock-free atomics inline on x86_64; on aarch64 gcc's default
 #                 -moutline-atomics emits a call to libgcc's __aarch64_<op><size>_<order> helper
@@ -37,6 +39,27 @@
 #                 omx-rt-gate.c), today one, jack_port_get_buffer (ruled 2026-11-15). Any other host call, JACK's
 #                 included, is refused at load in this class and enters it only by a ruling, with its own arm case.
 #                 Where JACK is absent the arm cannot call it: its case is skipped and named, never passed.
+#                 syscall has no row (it is forbidden); the gate itself reads one of its operations
+#                 as a wake: syscall(SYS_futex, <word>, FUTEX_WAKE or FUTEX_WAKE_PRIVATE, ...), both
+#                 spelled at the call. Any other operation, one in a variable, or one the call's
+#                 text does not show stays RT-BLOCK.
+#   thread-identity  the calling thread's own identity, read from its descriptor: pthread_self
+#                 (the thread pointer register: %fs on x86_64, TPIDR_EL0 on aarch64), pthread_equal
+#                 (a comparison of two such values) and pthread_gettid_np (glibc 2.42 and later:
+#                 the kernel id cached in the descriptor, no system call). Callable on any thread,
+#                 the audio thread among them: no system call, no allocation, no lock. A thread
+#                 pool needs it to know whether the audio thread that asks is the one it follows.
+#                 The narrowest kind: the gate names the three symbols it may hold
+#                 (THREAD_IDENTITY_RULED) and refuses at load a row of the class for any other;
+#                 pthread_getattr_np, pthread_getname_np and the like allocate or read /proc and
+#                 never enter it.
+#   cpu-identity  the CPU the calling thread runs on: sched_getcpu, which glibc reads from the
+#                 thread's rseq area (registered by glibc 2.35 and later) or, on x86_64, from the
+#                 vDSO getcpu: no system call, no allocation, no lock, on any thread. A thread pool
+#                 needs it so a helper never claims a task on the CPU of the audio thread that waits
+#                 for it (omx-clap-core's pool, ruling A, 2026-11-15). Closed to sched_getcpu
+#                 (CPU_IDENTITY_RULED); getcpu() and sched_getaffinity, which enter the kernel, never
+#                 enter it.
 #
 # The arm: externals-arm (tools/rt-gate/externals-arm.c, make rt-gate) calls each symbol over a
 # spread of arguments with the process's allocator interposed and requires zero allocations; every
@@ -87,10 +110,15 @@ memcpy bulk-memory externals-arm:memcpy a bounded pass over caller-owned bytes
 memmove bulk-memory externals-arm:memmove a bounded pass over caller-owned bytes
 memset bulk-memory externals-arm:memset a bounded pass over caller-owned bytes
 memcmp bulk-memory externals-arm:memcmp a bounded pass over caller-owned bytes
+strnlen bulk-memory externals-arm:strnlen a pass over caller-owned bytes, bounded by its length argument
 
 clock_gettime clock externals-arm:clock_gettime CLOCK_MONOTONIC through the vDSO: no system call
 
 sem_post wake externals-arm:sem_post an atomic increment; a futex wake only when a waiter sleeps
+pthread_self thread-identity externals-arm:pthread_self the thread pointer register, read
+pthread_equal thread-identity externals-arm:pthread_equal two thread descriptors compared
+pthread_gettid_np thread-identity externals-arm:pthread_gettid_np the kernel id cached in the thread's descriptor (glibc 2.42 and later), no system call
+sched_getcpu cpu-identity externals-arm:sched_getcpu the CPU read from the rseq area or the vDSO, no system call
 
 __aarch64_ldadd4_relax word-atomic externals-arm:__aarch64_ldadd4_relax libgcc's outline atomic add, 4 bytes, relaxed: LSE ldadd or an exclusive loop, lock-free
 __aarch64_ldadd4_rel word-atomic externals-arm:__aarch64_ldadd4_rel libgcc's outline atomic add, 4 bytes, release: LSE ldaddl or an exclusive loop, lock-free

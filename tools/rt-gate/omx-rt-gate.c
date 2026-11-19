@@ -182,10 +182,15 @@ static int role_of(const char *s) {
 static const char *FORBIDDEN_CODES[] = {"RT-ALLOC", "RT-LOCK", "RT-BLOCK", "RT-IO", "RT-LOG", NULL};
 /* the classes a classification row may carry: nothing else, so no waiver, no known red, no
  * "cannot prove" */
-static const char *CLASSES[] = {"maths", "bulk-memory", "word-atomic", "clock", "ftz-register", "wake", "host-buffer", NULL};
+static const char *CLASSES[] = {"maths", "bulk-memory", "word-atomic", "clock", "ftz-register", "wake", "host-buffer", "thread-identity", "cpu-identity", NULL};
 /* host-buffer is the narrowest class: the symbols it may hold are named here, each by a ruling (classes.tbl). A row of
  * that class for any other symbol is refused at load, so no other host call enters it by a table edit alone. */
 static const char *HOST_BUFFER_RULED[] = {"jack_port_get_buffer", NULL};
+/* thread-identity is a narrow class: the symbols it may hold are named here, each by a ruling (classes.tbl). A row of
+ * that class for any other symbol is refused at load, so no other pthread call enters it by a table edit alone. */
+static const char *THREAD_IDENTITY_RULED[] = {"pthread_self", "pthread_equal", "pthread_gettid_np", NULL};
+/* cpu-identity, as narrow: the one symbol a ruling named */
+static const char *CPU_IDENTITY_RULED[] = {"sched_getcpu", NULL};
 
 static int in_set(const char *s, const char **set) {
   for (int i = 0; set[i]; i++)
@@ -310,9 +315,17 @@ static void load_classes(const char *path) {
     if (k < 3 || !rest) { refuse(where, "a classification row is `<symbol> <class> <arm>:<case> <reason>`: no reason or no arm"); continue; }
     const char *shape = waiver_shape(w[0]);
     if (shape) { refuse(where, "`%s` names %s, a row names a symbol: a waiver is refused", w[0], shape); continue; }
-    if (!in_set(w[1], CLASSES)) { refuse(where, "`%s` is not a class (maths bulk-memory word-atomic clock ftz-register wake host-buffer)", w[1]); continue; }
+    if (!in_set(w[1], CLASSES)) { refuse(where, "`%s` is not a class (maths bulk-memory word-atomic clock ftz-register wake host-buffer thread-identity cpu-identity)", w[1]); continue; }
     if (!strcmp(w[1], "host-buffer") && !in_set(w[0], HOST_BUFFER_RULED)) {
       refuse(where, "`%s` is no ruled host-buffer symbol (jack_port_get_buffer): another host call enters the class only by a ruling", w[0]);
+      continue;
+    }
+    if (!strcmp(w[1], "thread-identity") && !in_set(w[0], THREAD_IDENTITY_RULED)) {
+      refuse(where, "`%s` is no ruled thread-identity symbol (pthread_self pthread_equal pthread_gettid_np): another call enters the class only by a ruling", w[0]);
+      continue;
+    }
+    if (!strcmp(w[1], "cpu-identity") && !in_set(w[0], CPU_IDENTITY_RULED)) {
+      refuse(where, "`%s` is no ruled cpu-identity symbol (sched_getcpu): another call enters the class only by a ruling", w[0]);
       continue;
     }
     if (!arm_shape(w[2])) { refuse(where, "`%s` names no arm that measured it (`<arm>:<case>`)", w[2]); continue; }
@@ -1601,10 +1614,58 @@ static int callable_role(const char *field) {
 
 static void visit(int n);
 
+/* a futex wake through syscall, its operation spelled at the call: `syscall(SYS_futex, <word>,
+ * FUTEX_WAKE[_PRIVATE], ...)`, the first and third arguments read from the site's text (up to four
+ * lines from the column). The class `wake`, as sem_post is: it never waits. Any other operation,
+ * FUTEX_WAKE_OP among them, an operation held in a variable or one the text does not show reads
+ * red, as syscall is forbidden (forbidden.tbl). */
+static int syscall_is_futex_wake(const char *site) {
+  char *file;
+  int line, col;
+  if (!site_split(site, &file, &line, &col)) return 0;
+  struct srcfile *f = source(file);
+  free(file);
+  if (line < 1 || line > f->n || (size_t)col - 1 > strlen(f->lines[line - 1])) return 0;
+  char text[1024];
+  size_t have = 0;
+  for (int l = line; l <= f->n && l < line + 4; l++) {
+    const char *s = f->lines[l - 1] + (l == line ? col - 1 : 0);
+    for (; *s && have + 2 < sizeof text; s++) text[have++] = *s;
+    text[have++] = ' ';
+  }
+  text[have] = 0;
+  const char *p = text;
+  if (strncmp(p, "syscall", 7) || isalnum((unsigned char)p[7]) || p[7] == '_') return 0;
+  p += 7;
+  while (*p == ' ' || *p == '\t') p++;
+  if (*p++ != '(') return 0;
+  /* the top-level arguments, each trimmed */
+  char arg[3][64];
+  int na = 0, depth = 0;
+  size_t an = 0;
+  for (; *p && na < 3; p++) {
+    if (depth == 0 && (*p == ',' || *p == ')')) {
+      while (an && arg[na][an - 1] == ' ') an--;
+      arg[na][an] = 0;
+      na++;
+      an = 0;
+      if (*p == ')') break;
+      continue;
+    }
+    if (*p == '(' || *p == '[') depth++;
+    else if (*p == ')' || *p == ']') depth--;
+    if (na < 3 && (an || (*p != ' ' && *p != '\t')) && an + 1 < sizeof arg[0]) arg[na][an++] = *p == '\t' ? ' ' : *p;
+  }
+  if (na < 3) return 0;
+  if (strcmp(arg[0], "SYS_futex") && strcmp(arg[0], "__NR_futex")) return 0;
+  return !strcmp(arg[2], "FUTEX_WAKE") || !strcmp(arg[2], "FUTEX_WAKE_PRIVATE");
+}
+
 static void call_to(int tgt_raw, const char *site) {
   const struct root *r = CUR_ROOT;
   int tgt = resolve(tgt_raw);
   const char *name = N[tgt].name;
+  if (!strcmp(name, "syscall") && syscall_is_futex_wake(site)) return;   /* the class wake */
   int fi = map_get(&FORB_MAP, name);
   if (fi >= 0) {
     red(FORB[fi].code, name, site, r);
