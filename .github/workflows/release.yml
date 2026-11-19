@@ -2,12 +2,12 @@
 # Copyright (C) 2026 Pau Aliagas <linuxnow@gmail.com>
 name: release
 
-# A version tag builds omx-dsp-devel (RPM, x86_64 and aarch64) and libomxdsp-dev (DEB, bookworm and
+# A version tag builds omx-dsp-devel (RPM, fc45 x86_64; Fedora 45 aarch64 is not built, owner ruling 2026-11-19) and libomxdsp-dev (DEB, bookworm and
 # trixie, amd64 and arm64), signs them, publishes them into the rpm/ and deb/ trees of the OpenMixer
 # Pages repository and attaches the RPMs to the GitHub release. Anything else builds unsigned trees and
 # publishes nothing. Everything is in Open-Mixer/.github; the secrets are the organisation's.
 
-# A manual run with staged on (never a tag) builds fc44 x86_64 and trixie amd64 only, against the staging channel, and
+# A manual run with staged on (never a tag) builds fc45 x86_64 and trixie amd64 only, against the staging channel, and
 # publishes them, signed, to the staging channel (staging/rpm and staging/deb of the channel repository), where the
 # next layer of the release chain finds them by adding the staging channel beside the real one. Nothing reaches the
 # real channel, and the real release still publishes once from the v<version> tag (Open-Mixer/.github build-rpm.yml
@@ -23,11 +23,11 @@ on:
         type: boolean
         default: false
       arm:
-        description: 'Build the arm64/aarch64 packages too (a dispatched release needs them, as a tag push does)'
+        description: 'Build the arm64 DEBs too (a dispatched release needs them, as a tag push does); no Fedora aarch64 RPM is built'
         type: boolean
         default: true
       staged:
-        description: 'Build fc44 x86_64 and trixie amd64 only and publish them to the staging channel for the next layer; publishes nothing to the real channel'
+        description: 'Build fc45 x86_64 and trixie amd64 only and publish them to the staging channel for the next layer; publishes nothing to the real channel'
         type: boolean
         default: false
   workflow_call:
@@ -42,7 +42,7 @@ on:
       arm:
         type: boolean
         default: true
-        description: "Build the arm64/aarch64 packages too; the pull-request dry run passes false (arm builds run at release only)"
+        description: "Build the arm64 DEBs too; the pull-request dry run passes false (arm builds run at release only); no Fedora aarch64 RPM is built"
       staged:
         type: boolean
         default: false
@@ -62,7 +62,8 @@ jobs:
       publish: ${{ github.event_name == 'push' || inputs.publish == true }}
       needs-mod-host: false
       runner: ${{ inputs.runner || 'ubuntu-latest' }}
-      arch-matrix: ${{ (github.event_name != 'push' && inputs.arm == false) && '["x86_64"]' || '["x86_64", "aarch64"]' }}
+      # x86_64 only: the owner ruling of 2026-11-19 stops building Fedora 45 aarch64 (the deb arm64 cells stay)
+      arch-matrix: '["x86_64"]'
       channel-deps: true
     secrets: inherit
 

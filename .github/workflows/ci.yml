@@ -42,7 +42,7 @@ jobs:
         # ubuntu:24.04 carries GCC 13, whose -Wmaybe-uninitialized reads paths the newer
         # compilers prove dead.
         # ruling D25: bookworm is a full cell, served its floors (omx-contract 3.18.0) only at the wave-end full release
-        image: ${{ fromJSON(vars.OMX_RELEASE_MATRIX == 'full' && '["fedora:44", "debian:bookworm", "debian:trixie", "ubuntu:24.04"]' || '["fedora:44", "debian:trixie", "ubuntu:24.04"]') }}
+        image: ${{ fromJSON(vars.OMX_RELEASE_MATRIX == 'full' && '["fedora:45", "debian:bookworm", "debian:trixie", "ubuntu:24.04"]' || '["fedora:45", "debian:trixie", "ubuntu:24.04"]') }}
         arch: [amd64]  # arm64 builds run at release only (release.yml)
     container:
       image: ${{ matrix.image }}
@@ -144,7 +144,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        image: ["fedora:44", "debian:trixie"]
+        image: ["fedora:45", "debian:trixie"]
     container:
       image: ${{ matrix.image }}
     defaults:
@@ -251,7 +251,7 @@ jobs:
       fail-fast: false
       matrix:
         # ruling D25: the release set's cells; bookworm (a full cell) only when OMX_RELEASE_MATRIX is full
-        image: ${{ fromJSON(vars.OMX_RELEASE_MATRIX == 'full' && '["fedora:44", "debian:bookworm"]' || '["fedora:44", "debian:trixie"]') }}
+        image: ${{ fromJSON(vars.OMX_RELEASE_MATRIX == 'full' && '["fedora:45", "debian:bookworm"]' || '["fedora:45", "debian:trixie"]') }}
     container:
       image: ${{ matrix.image }}
     defaults:
@@ -419,7 +419,7 @@ jobs:
           if-no-files-found: ignore
 
   rpm:
-    name: omx-dsp-devel (fc44, ${{ matrix.arch }})
+    name: omx-dsp-devel (fc45, ${{ matrix.arch }})
     if: github.event_name == 'workflow_dispatch'
     runs-on: ${{ github.event.pull_request.head.repo.fork && 'ubuntu-latest' || vars.OMX_RUNNER || 'ubuntu-latest' }}
     # %check runs make check-package, as the deb job's build does
@@ -427,9 +427,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        arch: [x86_64]  # aarch64 builds run at release only (release.yml)
+        arch: [x86_64]  # x86_64 only: Fedora 45 aarch64 is not built (owner ruling 2026-11-19)
     container:
-      image: fedora:44
+      image: fedora:45
     steps:
       - name: Install the build tools
         run: |
@@ -506,12 +506,13 @@ jobs:
       - name: The packaged loader loads the packaged module, in a clean root
         run: |
           set -euo pipefail
-          dnf install -y --setopt=tsflags=nodocs --setopt=install_weak_deps=False nodejs rpms/omx-dsp-wasm-[0-9]*.noarch.rpm
+          # fedora:45: an earlier step may have installed node as nodejs22-bin, which conflicts with the nodejs package
+          dnf install -y --setopt=tsflags=nodocs --setopt=install_weak_deps=False $(command -v node >/dev/null || echo nodejs) rpms/omx-dsp-wasm-[0-9]*.noarch.rpm
           node tools/wasm-loader-check.mjs /usr/share/omx-dsp
 
       - uses: actions/upload-artifact@v4
         with:
-          name: omx-dsp-rpms-fc44-${{ matrix.arch }}
+          name: omx-dsp-rpms-fc45-${{ matrix.arch }}
           path: rpms/*.rpm
           if-no-files-found: error
           retention-days: 7
