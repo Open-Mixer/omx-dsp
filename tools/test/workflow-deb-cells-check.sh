@@ -26,8 +26,8 @@ check() {
 	for f in ci.yml publish.yml; do
 		grep -qF 'Open-Mixer/.github/.github/actions/check-matrix@openmixer-v1' "$wf/$f" ||
 			{ echo "$f: no check-matrix step" >&2; bad=1; }
-		grep -qF "x86-runner: \${{ vars.OMX_RUNNER || 'ubuntu-latest' }}" "$wf/$f" ||
-			{ echo "$f: check-matrix is not given the x86 runner (x86-runner: vars.OMX_RUNNER || 'ubuntu-latest')" >&2; bad=1; }
+		grep -qF "x86-runner: \${{ github.event.pull_request.head.repo.fork && 'ubuntu-latest' || vars.OMX_RUNNER || 'ubuntu-latest' }}" "$wf/$f" ||
+			{ echo "$f: check-matrix is not given the fork-guarded x86 runner (x86-runner: github.event.pull_request.head.repo.fork && 'ubuntu-latest' || vars.OMX_RUNNER || 'ubuntu-latest'): a fork's pull request must not run on the OMX_RUNNER pool" >&2; bad=1; }
 		for j in $(jobs_of "$f"); do
 			block=$(awk -v j="$j" '$0 ~ "^  " j ":[[:space:]]*$" { on = 1; next } on && /^  [A-Za-z0-9_-]+:[[:space:]]*$/ { exit } on' "$wf/$f")
 			if [ -z "$block" ]; then echo "$f: job $j not found" >&2; bad=1; continue; fi
@@ -53,7 +53,7 @@ if [ "${1:-}" = "--self-test" ]; then
 	trap 'rm -rf "$t"' EXIT
 	fails=0
 	act='Open-Mixer/.github/.github/actions/check-matrix@openmixer-v1'
-	x86="x86-runner: \${{ vars.OMX_RUNNER || 'ubuntu-latest' }}"
+	x86="x86-runner: \${{ github.event.pull_request.head.repo.fork && 'ubuntu-latest' || vars.OMX_RUNNER || 'ubuntu-latest' }}"
 	job() { # <name> <runs-on> <extra matrix line>
 		printf '  %s:\n    needs: checks\n    runs-on: %s\n    strategy:\n      matrix:\n        cell: ${{ fromJSON(needs.checks.outputs.deb) }}\n%s\n' "$1" "$2" "$3"
 	}
@@ -83,6 +83,7 @@ if [ "${1:-}" = "--self-test" ]; then
 	tree amd64 "$good_runs" '        arch: [amd64]' "$act" "$x86"; expect amd64 1
 	tree noaction "$good_runs" '' 'actions/checkout@v4' "$x86"; expect noaction 1
 	tree nox86 "$good_runs" '' "$act" 'wave: x'; expect nox86 1
+	tree noguard "$good_runs" '' "$act" "x86-runner: \${{ vars.OMX_RUNNER || 'ubuntu-latest' }}"; expect noguard 1
 	mkdir -p "$t/empty"; expect empty 2
 	[ "$fails" = 0 ] || exit 1
 	echo "workflow-deb-cells-check: self-test ok"
