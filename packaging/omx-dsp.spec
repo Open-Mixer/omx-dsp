@@ -195,6 +195,11 @@ Its documentation is on openmixer.org.
 - CI and release: Fedora 45 only (fc45, RPM on x86_64); the arm gate covers the
   DEBs; tools/test/workflow-fedora-check.sh refuses Fedora 44 in the workflows
   (#112).
+- install: the devel package ships the test support and the TSan gate a
+  consumer's native tests read; tools/support-install-check.sh holds the file
+  list (#107).
+- comp feedback: the bus preset's O7, O8 and O9 oracles, with five sabotages;
+  the peak scans written as comparisons (#108).
 
 * Wed Nov 18 2026 Pau Aliagas <linuxnow@gmail.com> - 0.33.0-1
 - wasm: make wasm builds omx_curve_points_json to build/wasm/omx-dsp.wasm
