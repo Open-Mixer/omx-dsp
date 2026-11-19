@@ -1,4 +1,4 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2026 Pau Aliagas <linuxnow@gmail.com>
 # The image tools/install-confined.sh and its self-test run in: the first line that is not a comment.
-registry.fedoraproject.org/fedora:44@sha256:98b558564d3510363f0f706a44b1ee9de461b030373d741c5729ae3f24d8cb26
+registry.fedoraproject.org/fedora:45@sha256:be6b79cced86b08794d25024513eaea7e621f3d5dc3c4ca2c4371a5889229706
