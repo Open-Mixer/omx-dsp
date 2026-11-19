@@ -5,7 +5,7 @@
 # install-confined.sh — make install writes and removes nothing outside $(DESTDIR)$(PREFIX) (#75).
 #
 #   tools/install-confined.sh            the check, in a throwaway podman container (OMX_INSTALL_CONFINED_IMAGE, default
-#                                        tools/install-confined.image: fedora:44 pinned by digest), so a red run never touches the host
+#                                        tools/install-confined.image: fedora:45 pinned by digest), so a red run never touches the host
 #   OMX_INSTALL_CONFINED_INNER=1 tools/install-confined.sh
 #                                        the check itself, on THIS file system. Only an explicit opt-in, set by the CI job
 #                                        whose container is thrown away and by the podman call above: a container marker
