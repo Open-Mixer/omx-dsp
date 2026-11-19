@@ -2,8 +2,8 @@
 # Copyright (C) 2026 Pau Aliagas <linuxnow@gmail.com>
 #
 # hrp_place.vectors: the harmonic resonance processor's placement and stepping by value.
-# One file, read by the C placement's test (test/analysis/hrp_place.test.c) and by its TypeScript twin's
-# (ts/test/hrp-place.test.mjs): both are held to the values below, so they are held to each other. THE CONSOLE IS
+# One file, read by the C placement's test (test/analysis/hrp_place.test.c) and installed as omxdsp/hrp-place-vectors
+# (omxdsp.pc hrpplacevectors) for a consumer's binding of the kernel; there is no TypeScript twin. THE CONSOLE IS
 # THE ORACLE: every value after => and every step result is what the console's own harmonicBands and its HRP
 # planter's stepToward (HRP_GAIN_STEP_DB 2) returned when run over the inputs on the same line, and all 44 lines
 # were compared number for number with those returns before this file was kept. A new line is derived the same way,

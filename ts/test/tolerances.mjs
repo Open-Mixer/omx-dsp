@@ -17,7 +17,6 @@ export const TOLERANCES = {
   // |db| <= 120) and powf within an ulp: 1e-6 relative.
   dbToLinearGain: { rel: 1e-6 },
   // sqrt(t)/(t-1) with t = 2^bw in double on both sides; libm pow against V8's is a few ulp.
-  octavesToQ: { rel: 1e-12 },
   // The answer is a power of two.
   fftSizeForRate: { abs: 0 },
   // The same closed forms in double, -ffp-contract=off on the C side; libm against V8 is a few ulp, amplified
@@ -34,8 +33,6 @@ export const TOLERANCES = {
   // The gain computer is float arithmetic and one sqrtf, -ffp-contract=off; the twin rounds each step with
   // Math.fround, and one rounding of the double result is the float result of +, -, *, / and sqrt: bit for bit.
   gaincompDb: { abs: 0 },
-  gaincompDbShifted: { abs: 0 },
-  gateKnee: { abs: 0 },
   // A transfer curve is x + that gain (+ make-up) in double on both sides: bit for bit.
   curvePointsTransfer: { abs: 0 },
   // A drive curve is a steady level through the float shaper on both sides, read back in dB. tanhf against Math.tanh
@@ -65,5 +62,4 @@ export const TOLERANCES = {
   // The gain-reduction reading is float arithmetic: powf and log10f against V8's pow and log10 rounded to float differ by
   // a float step of the dB value, and the recovery carries it from read to read; measured below 2e-6 dB, and a hold one
   // read off is a whole dB.
-  meterGr: { abs: 1e-4 },
 };

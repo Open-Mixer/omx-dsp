@@ -2,7 +2,7 @@
  * Copyright (C) 2026 Pau Aliagas <linuxnow@gmail.com>
  *
  * omx_fbs_place.c — the feedback corrector's placement (omx_fbs_place.h): the console's FbsCorrector rules
- * over fixed slots. Each rule below names the console's method it ports; ts/src/fbs-place.ts is the twin and test/analysis/fixtures/fbs_place.vectors holds both.
+ * over fixed slots. Each rule below names the console's method it ports; there is no TypeScript twin, and test/analysis/fixtures/fbs_place.vectors holds this one.
  */
 #include <omxdsp/analysis/omx_fbs_place.h>
 

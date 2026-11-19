@@ -7,8 +7,7 @@
  * the console's by a twin test. This is the port of the console's feedback corrector rules (with its
  * clamps and the strip store's per-origin gain bound), without the store writes and the rows: a fixed
  * set of slots instead of an EQ list.
- * ts/src/fbs-place.ts is its TypeScript twin, and test/analysis/fixtures/fbs_place.vectors is the
- * one vector file the C test and the twin test both read.
+ * It has no TypeScript twin: test/analysis/fixtures/fbs_place.vectors is the one vector file the C test reads.
  *
  * The rules, each the console's:
  *  - THE EDGE FIRST: a ring outside [FBS_RING_HZ_MIN, FBS_RING_HZ_MAX] is refused (rejected-edge),

@@ -8,8 +8,8 @@
  * this is that placement in C, which the console's server calls through its native addon. This library's HRP
  * insert (omx_hrp_lv2.h) keeps its own pass for now: it works in float cut magnitudes over omx_hrp_select's
  * candidates, and it has no range drop, so moving it onto this placement changes what the insert cuts.
- * ts/src/hrp-place.ts is its TypeScript twin, and test/analysis/fixtures/hrp_place.vectors is the one vector
- * file the C test and the twin test both read.
+ * It has no TypeScript twin: test/analysis/fixtures/hrp_place.vectors is the one vector file, read by the C test and
+ * installed (omxdsp.pc hrpplacevectors) for a consumer that holds its binding to the kernel.
  *
  * The rules, each the console's:
  *  - REFUSED WHOLE: an f0 that is not finite or not above zero, a Q that is not finite, a cut or boost bound that
