@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2026 Pau Aliagas <linuxnow@gmail.com>
 Name: omx-dsp
-Version: 0.33.0
+Version: 0.33.1
 Release: 1%{?dist}
 License: GPL-3.0-or-later
 Summary: The audio toolbox of the OpenMixer console, as a real-time-safe C library
@@ -176,6 +176,31 @@ Its documentation is on openmixer.org.
 %{_datadir}/omx-contract/contract.d/3/omx-dsp/
 
 %changelog
+* Thu Nov 19 2026 Pau Aliagas <linuxnow@gmail.com> - 0.33.1-1
+- ts: the TypeScript twins no Open-Mixer repository consumes are deleted
+  (hrp-place and fbs-place, the gaincomp, gate, meter and eq helpers named in
+  #105) with their agreement arms; the C kernels are the one source, each held
+  by its vectors and oracle. The HRP placement's vectors are installed as
+  omxdsp/hrp-place-vectors (omxdsp.pc hrpplacevectors) (#105).
+- CI: the below-floor job installs the newest published omx-contract below the
+  floor (#103).
+- comp key: the key never reaching the audio and the N-thread identity are
+  oracles (test/fx/comp_key_isolation), with a perturbation that turns them red
+  (#109).
+- omx-rt-gate: syscall stays forbidden, but a FUTEX_WAKE spelled at the call is
+  a wake; the thread-identity class (pthread_self, pthread_equal,
+  pthread_gettid_np) and the cpu-identity class (sched_getcpu), each closed to
+  its symbols; strnlen joins bulk-memory; omx-clap-core.abi, the embedder's
+  audio-thread callbacks (#111).
+- CI and release: Fedora 45 only (fc45, RPM on x86_64); the arm gate covers the
+  DEBs; tools/test/workflow-fedora-check.sh refuses Fedora 44 in the workflows
+  (#112).
+- install: the devel package ships the test support and the TSan gate a
+  consumer's native tests read; tools/support-install-check.sh holds the file
+  list (#107).
+- comp feedback: the bus preset's O7, O8 and O9 oracles, with five sabotages;
+  the peak scans written as comparisons (#108).
+
 * Wed Nov 18 2026 Pau Aliagas <linuxnow@gmail.com> - 0.33.0-1
 - wasm: make wasm builds omx_curve_points_json to build/wasm/omx-dsp.wasm
   with the distribution's clang, lld and wasi-libc (tools/wasm-build.sh, one
