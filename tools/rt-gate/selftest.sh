@@ -11,7 +11,7 @@
 # -fstack-protector-strong (the gate takes the optimisation, the fortification and the stack
 # protector's guard call out of its input). Each fixtures/*.c names what it binds and what the
 # gate must say about it:
-#   // abi: lv2|clap|...          the --abi it binds
+#   // abi: lv2|clap|... [...]    the --abi it binds, one word each (lv2 omx-clap-core binds both)
 #   // tags: <file>               a thread-tag file the run reads
 #   // needs: graphs              judged only when --graphs is given (omx-dsp's shipped graphs)
 #   // expect: 0|1                the gate's exit code
@@ -49,7 +49,8 @@ judge() { # judge <fixture> <graphs?> <want-exit> <want-reds-file> <label>
   local f="$1" g="$2" want="$3" reds="$4" label="$5" abi tags out rc args=()
   abi=$(meta abi "$HERE/$f")
   tags=$(meta tags "$HERE/$f")
-  args=(--tables "$TABLES" --abi "$abi" --work "$SCRATCH/work.$cases")
+  args=(--tables "$TABLES" --work "$SCRATCH/work.$cases")
+  for a in $abi; do args+=(--abi "$a"); done
   [ -n "$tags" ] && args+=(--tags "$tags")
   if [ "$g" = yes ]; then args+=(--graphs "$GRAPHS" --tags "$TAGS"); fi
   out="$SCRATCH/out.$cases"
@@ -115,6 +116,8 @@ refused "a row without the arm that measured it" classes.tbl "cosf maths"
 refused "a duplicate row" classes.tbl "$(grep -m1 '^[a-z_]* maths ' "$TABLES/classes.tbl")"
 refused "a row for a forbidden symbol" classes.tbl "malloc bulk-memory externals-arm:malloc planted"
 refused "a host-buffer row for an unruled host call" classes.tbl "jack_port_register host-buffer externals-arm:jack_port_register planted"
+refused "a thread-identity row for an unruled pthread call" classes.tbl "pthread_getattr_np thread-identity externals-arm:pthread_getattr_np planted"
+refused "a cpu-identity row for an unruled call" classes.tbl "sched_getaffinity cpu-identity externals-arm:sched_getaffinity planted"
 refused "a forbidden row outside the closed codes" forbidden.tbl "snprintf RT-MAYBE planted"
 refused "an empty forbidden list" forbidden.tbl EMPTY
 refused "a per-consumer list" consumer.tbl "snprintf maths externals-arm:snprintf a consumer's own"
