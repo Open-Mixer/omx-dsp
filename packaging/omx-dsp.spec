@@ -184,6 +184,17 @@ Its documentation is on openmixer.org.
   omxdsp/hrp-place-vectors (omxdsp.pc hrpplacevectors) (#105).
 - CI: the below-floor job installs the newest published omx-contract below the
   floor (#103).
+- comp key: the key never reaching the audio and the N-thread identity are
+  oracles (test/fx/comp_key_isolation), with a perturbation that turns them red
+  (#109).
+- omx-rt-gate: syscall stays forbidden, but a FUTEX_WAKE spelled at the call is
+  a wake; the thread-identity class (pthread_self, pthread_equal,
+  pthread_gettid_np) and the cpu-identity class (sched_getcpu), each closed to
+  its symbols; strnlen joins bulk-memory; omx-clap-core.abi, the embedder's
+  audio-thread callbacks (#111).
+- CI and release: Fedora 45 only (fc45, RPM on x86_64); the arm gate covers the
+  DEBs; tools/test/workflow-fedora-check.sh refuses Fedora 44 in the workflows
+  (#112).
 
 * Wed Nov 18 2026 Pau Aliagas <linuxnow@gmail.com> - 0.33.0-1
 - wasm: make wasm builds omx_curve_points_json to build/wasm/omx-dsp.wasm
