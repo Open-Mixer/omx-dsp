@@ -10,13 +10,6 @@ import { linearToDbFloored } from './units.js';
 
 const clamp = (x: number, lo: number, hi: number): number => (x < lo ? lo : x > hi ? hi : x);
 
-/** Bandwidth in octaves → Q (the cookbook relation). The twin of omx_eq_octaves_q. */
-export function octavesToQ(octaves: number): number {
-  const bw = Math.max(octaves, 0.05);
-  const t = Math.pow(2, bw);
-  return Math.sqrt(t) / (t - 1);
-}
-
 /**
  * A band's Q clamped into the extent its shape allows: a notch may go ultra-narrow ({@link EQ_NOTCH_Q_RANGE}),
  * every other shape keeps {@link EQ_Q_RANGE}. The twin of omx_eq_lv2_clamp_q, which clamps a float.
@@ -83,7 +76,7 @@ export function lowpassHandover(q: number): readonly [number, number] {
  * @param wn The pair's centre, `2 pi f / fs`.
  * @param zeta The damping, `1/(2Q)` for a plain resonator.
  */
-export function matchedPair(wn: number, zeta: number): { p1: number; p2: number; dc: number } {
+function matchedPair(wn: number, zeta: number): { p1: number; p2: number; dc: number } {
   const w = wn > Math.PI ? Math.PI : wn;
   const e = Math.exp(-zeta * w);
   if (zeta < 1) {
@@ -223,7 +216,7 @@ export function rbjSection(kind: BiquadKind, freqHz: number, q: number, gainDb: 
  * @param fs Sample rate, Hz.
  * @param floorDb The floor of a null, dB.
  */
-export function sectionMagnitudeDb(section: BiquadSection, freq: number, fs: number, floorDb: number): number {
+function sectionMagnitudeDb(section: BiquadSection, freq: number, fs: number, floorDb: number): number {
   if (!(freq > 0) || !(fs > 0) || freq >= fs / 2) return 0;
   const { b0, b1, b2, a0, a1, a2 } = section;
   const w = (2 * Math.PI * freq) / fs;

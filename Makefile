@@ -773,10 +773,10 @@ golden-write: $(foreach k,$(FX_KERNELS),$(BUILD)/fx_$(k)_golden) $(foreach k,$(F
 # test/analysis/sabotage.sh breaks one line of each kernel (fbs, rta, render, live) in a scratch copy
 # and requires the golden digests of that kernel to move.
 # fbs_place holds the feedback corrector's placement (omx_fbs_place.h) to the shared vector file
-# test/analysis/fixtures/fbs_place.vectors, which ts/test/fbs-place.test.mjs holds the twin to;
+# test/analysis/fixtures/fbs_place.vectors, (no TypeScript twin: the vectors and the C are the one source);
 # test/analysis/fbs-place-sabotage.sh breaks each placement rule once and requires its vector to fail.
 # hrp_place holds the harmonic resonance processor's placement and stepping (omx_hrp_place.h) to the shared vector
-# file test/analysis/fixtures/hrp_place.vectors, which ts/test/hrp-place.test.mjs holds the twin to;
+# file test/analysis/fixtures/hrp_place.vectors, which the console's addon is held to as well (omxdsp.pc hrpplacevectors);
 # test/analysis/hrp-place-sabotage.sh breaks each rule once and requires its line to fail.
 # live_shells holds both correctors' live-shell cores (omx_fbs_lv2.h, omx_hrp_lv2.h) by value: a host with no
 # worker, the mode word, report bit-exact against cut, omx-fbs's staged fade at the nine rates and its quanta,
@@ -1179,6 +1179,7 @@ install: $(LIBS_ALL) $(PC_ALL) $(EXPORTS) install-rt-gate install-rta-read
 	install -m 0644 vectors/meter-view.json $(DESTDIR)$(DATADIR)/omxdsp/meter-view-vectors.json
 	install -m 0644 vectors/rta-bands.json $(DESTDIR)$(DATADIR)/omxdsp/rta-bands-vectors.json
 	install -m 0644 vectors/rta-delta.json $(DESTDIR)$(DATADIR)/omxdsp/rta-delta-vectors.json
+	install -m 0644 test/analysis/fixtures/hrp_place.vectors $(DESTDIR)$(DATADIR)/omxdsp/hrp-place-vectors
 	install -m 0755 tools/omx-dsp-copy-check.sh $(DESTDIR)$(BINDIR)/omx-dsp-copy-check
 	install -m 0644 omx-dsp-copy-check.1 $(DESTDIR)$(MANDIR)/man1/
 

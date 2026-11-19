@@ -2,8 +2,7 @@
  * Copyright (C) 2026 Pau Aliagas <linuxnow@gmail.com>
  *
  * hrp_place.test.c — the HRP placement and stepping in C (omx_hrp_place.h) held to the shared vector file,
- * test/analysis/fixtures/hrp_place.vectors, which the TypeScript twin's test (ts/test/hrp-place.test.mjs) reads
- * too. Every value is judged exactly; test/analysis/hrp-place-sabotage.sh breaks
+ * test/analysis/fixtures/hrp_place.vectors, which is its one source and which a consumer's binding is held to. Every value is judged exactly; test/analysis/hrp-place-sabotage.sh breaks
  * each rule once in a copy of src/omx_hrp_place.c and requires this program to fail on that rule's line.
  *
  *   build/analysis_hrp_place [<vectors>]
