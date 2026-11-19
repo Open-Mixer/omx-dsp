@@ -630,9 +630,9 @@ check-log10f: tools/log10f-check.c test/support/log10f_cr.h | $(BUILD)
 #   test/fx/<k>_golden.test.c  the golden digests, compared with test/golden/<k>.sha256
 FX_KERNELS = delay geq pitch transient drive chorus flanger phaser reverb tremolo rotor rotary transient_instance geq_instance eq_instance limiter dynamics_keyed dynamics gate gate_instance gate_knee gate_keyfilter comp_instance band_dyn deesser dyn_controls trim_instance align reverse_render dynamics_feedback idelay loudness mbcomp dyneq_instance mbcomp_instance doubler_instance tone_instance leveler_instance plosive_instance width_instance suboct_instance clipper_instance upward_instance glue_instance loudlevel_instance spring_instance balancer_instance
 # Oracles that read the contract ledger themselves build with contracts and threads.
-FX_CONTRACT_ORACLES = delay_taps geq pitch transient chorus flanger phaser tremolo rotor rotary transient_instance geq_instance eq_instance limiter dynamics_keyed dynamics gate gate_instance gate_knee gate_keyfilter comp_instance band_dyn dyn_controls trim_instance align_fdelay dynamics_feedback idelay loudness mbcomp geq_true dyneq_instance comp_key mbcomp_instance delay_color gate_key reverb_return doubler_instance tone_instance dyn_upward leveler_instance comp_release comp_models comp_key_isolation plosive_instance transient_readouts width_instance suboct_instance clipper_instance upward_instance glue_instance loudlevel_instance spring_instance balancer_instance $(addsuffix _instance,$(FX_INSTANCES))
+FX_CONTRACT_ORACLES = delay_taps geq pitch transient chorus flanger phaser tremolo rotor rotary transient_instance geq_instance eq_instance limiter dynamics_keyed dynamics gate gate_instance gate_knee gate_keyfilter comp_instance band_dyn dyn_controls trim_instance align_fdelay dynamics_feedback idelay loudness mbcomp geq_true dyneq_instance comp_key mbcomp_instance delay_color gate_key reverb_return doubler_instance tone_instance dyn_upward leveler_instance comp_release comp_models comp_key_isolation comp_feedback plosive_instance transient_readouts width_instance suboct_instance clipper_instance upward_instance glue_instance loudlevel_instance spring_instance balancer_instance $(addsuffix _instance,$(FX_INSTANCES))
 # Further oracles of a kernel in FX_KERNELS, each test/fx/<o>.test.c, built by the same rule.
-FX_ORACLES = align_fdelay delay_taps dyn_flat gaincomp_fpflags geq_true band_dyn_poly comp_key delay_color gate_key reverb_return dyn_upward comp_release comp_models transient_readouts comp_key_isolation
+FX_ORACLES = align_fdelay delay_taps dyn_flat gaincomp_fpflags geq_true band_dyn_poly comp_key delay_color gate_key reverb_return dyn_upward comp_release comp_models transient_readouts comp_key_isolation comp_feedback
 # The effects that carry a host-agnostic instance core, include/omxdsp/fx/omx_<k>_instance.h: each
 # adds test/fx/<k>_instance.test.c, its oracle at every declared rate, contracts compiled in.
 FX_INSTANCES = chorus flanger drive reverb tremolo phaser pitch rotary limiter deesser delay
@@ -1180,6 +1180,9 @@ install: $(LIBS_ALL) $(PC_ALL) $(EXPORTS) install-rt-gate install-rta-read
 	install -m 0644 vectors/rta-bands.json $(DESTDIR)$(DATADIR)/omxdsp/rta-bands-vectors.json
 	install -m 0644 vectors/rta-delta.json $(DESTDIR)$(DATADIR)/omxdsp/rta-delta-vectors.json
 	install -m 0644 test/analysis/fixtures/hrp_place.vectors $(DESTDIR)$(DATADIR)/omxdsp/hrp-place-vectors
+	install -d $(DESTDIR)$(DATADIR)/omxdsp/test-support
+	install -m 0644 test/support/*.h $(DESTDIR)$(DATADIR)/omxdsp/test-support/
+	install -m 0755 tools/tsan-gate.sh $(DESTDIR)$(DATADIR)/omxdsp/tsan-gate.sh
 	install -m 0755 tools/omx-dsp-copy-check.sh $(DESTDIR)$(BINDIR)/omx-dsp-copy-check
 	install -m 0644 omx-dsp-copy-check.1 $(DESTDIR)$(MANDIR)/man1/
 
@@ -1190,6 +1193,13 @@ install: $(LIBS_ALL) $(PC_ALL) $(EXPORTS) install-rt-gate install-rta-read
 install-confined: tools/install-confined.sh tools/install-confined-selftest.sh
 	@if command -v podman >/dev/null 2>&1; then bash tools/install-confined-selftest.sh; else echo "install-confined: the marker arm needs podman: not run here"; fi
 	bash tools/install-confined.sh
+
+# the test support the devel package ships (omxdsp.pc testsupportdir, tsangate), read back from a scratch install
+test-support-install:
+	rm -rf $(BUILD)/support-install
+	$(MAKE) --no-print-directory install PREFIX=$(abspath $(BUILD))/support-install CONTRACTDIR=$(abspath $(BUILD))/support-install/share/omx-contract/contract.d
+	sh tools/support-install-check.sh $(abspath $(BUILD))/support-install
+.PHONY: test-support-install
 
 # §4.3 (e): UNJUDGED (exit 0, never a pass) where the toolchain has no TSan; where it has, the
 # thread arm must be report-free and its shared-state sabotage must race. The gate's own report
