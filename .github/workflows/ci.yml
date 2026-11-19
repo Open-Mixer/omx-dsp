@@ -4,7 +4,7 @@ name: ci
 
 # By workflow_dispatch (on a pull request's head before it is merged: gh workflow run ci.yml --ref <branch>): the whole suite (make test) on Fedora, and the package check (make check-package: every oracle and golden digest,
 # not the sabotage and perturbation arms, which run once) on both Debian releases and Ubuntu 24.04,
-# on both architectures; on workflow_dispatch the packages built, their file lists checked and a consumer outside the tree built
+# on the cells check-matrix names (the quick set's while the release matrix is quick); on workflow_dispatch the packages built, their file lists checked and a consumer outside the tree built
 # against each; omx-contract installed from the OpenMixer channel at the floor the packaging
 # declares, and refused below its floor. The packages and the release workflow as a dry run only on workflow_dispatch
 # (fast-release dispatches it on a release head). The fast checks, the documentation check among them, run on every
@@ -28,9 +28,32 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  # The cells the Debian and Fedora jobs below run on: the quick set's alone while OMX_RELEASE_MATRIX is quick, the whole
+  # matrix when it is full (check-matrix; each cell carries its image, architecture and runner).
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      cells: ${{ steps.m.outputs.cells }}
+      deb: ${{ steps.m.outputs.deb }}
+      count: ${{ steps.m.outputs.count }}
+      deb-count: ${{ steps.m.outputs.deb-count }}
+    steps:
+      - id: m
+        uses: Open-Mixer/.github/.github/actions/check-matrix@openmixer-v1
+        with:
+          wave: ${{ vars.OMX_RELEASE_MATRIX }}
+          rpm-releases: '["45"]'
+          rpm-arches: '["x86_64"]'
+          deb-releases: ${{ vars.OMX_RELEASE_MATRIX == 'full' && '["bookworm", "trixie"]' || '["trixie"]' }}
+          deb-arches: '["amd64", "arm64"]'
+          x86-runner: ${{ github.event.pull_request.head.repo.fork && 'ubuntu-latest' || vars.OMX_RUNNER || 'ubuntu-latest' }}
+
   test:
-    name: make test (${{ matrix.image }}, ${{ matrix.arch }})
-    runs-on: ${{ github.event.pull_request.head.repo.fork && 'ubuntu-latest' || vars.OMX_RUNNER || 'ubuntu-latest' }}
+    name: make test (${{ matrix.cell.image }}, ${{ matrix.cell.arch }})
+    runs-on: ${{ matrix.cell.runner }}
+    needs: checks
+    if: needs.checks.outputs.count != '0'
     # Run one make job per CPU (BUILDING.md: make -jN test is supported, and make gen-once holds the
     # one generation under -j8): serially the suite reached 39 to 43 minutes of this 60-minute limit
     # once the remaining-FX wave's oracles and perturbation scripts joined it, and one trixie run went
@@ -39,13 +62,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # ubuntu:24.04 carries GCC 13, whose -Wmaybe-uninitialized reads paths the newer
-        # compilers prove dead.
         # ruling D25: bookworm is a full cell, served its floors (omx-contract 3.18.0) only at the wave-end full release
-        image: ${{ fromJSON(vars.OMX_RELEASE_MATRIX == 'full' && '["fedora:45", "debian:bookworm", "debian:trixie", "ubuntu:24.04"]' || '["fedora:45", "debian:trixie", "ubuntu:24.04"]') }}
-        arch: [amd64]  # arm64 builds run at release only (release.yml)
+        cell: ${{ fromJSON(needs.checks.outputs.cells) }}
     container:
-      image: ${{ matrix.image }}
+      image: ${{ matrix.cell.image }}
     # debian images run sh by default, which has no pipefail
     defaults:
       run:
@@ -71,7 +91,7 @@ jobs:
       - name: Add the OpenMixer repository
         uses: Open-Mixer/.github/.github/actions/add-openmixer@openmixer-v1
         with:
-          suite: ${{ startsWith(matrix.image, 'ubuntu') && 'trixie' || '' }}
+          suite: ''
 
       - name: Install the build dependencies from the OpenMixer channel
         run: |
@@ -121,7 +141,7 @@ jobs:
       # (make check-package): every oracle and golden digest at every declared rate on their own toolchain.
       - name: make test
         id: handback-test
-        if: startsWith(matrix.image, 'fedora')
+        if: startsWith(matrix.cell.image, 'fedora')
         # this job's container is thrown away after the job: the one place install-confined runs its check in place (#75)
         env:
           OMX_INSTALL_CONFINED_INNER: '1'
@@ -129,7 +149,7 @@ jobs:
 
       - name: make check-package
         id: handback-check-package
-        if: ${{ !startsWith(matrix.image, 'fedora') }}
+        if: ${{ !startsWith(matrix.cell.image, 'fedora') }}
         run: make -j"$OMX_JOBS" check-package
 
   # The sabotage of the range: the newest published omx-contract below the floor the spec declares, picked
@@ -188,11 +208,17 @@ jobs:
   # The TypeScript twins against the kernels (ts/: npm test), on the library this tree builds; the publish workflow runs
   # the same before it publishes, so a twin that disagrees is red here first.
   twins:
-    name: The TypeScript twins agree with the kernels
-    runs-on: ubuntu-latest
+    name: The TypeScript twins agree with the kernels (${{ matrix.cell.suite }}, ${{ matrix.cell.arch }})
+    runs-on: ${{ matrix.cell.runner }}
+    needs: checks
+    if: needs.checks.outputs.deb-count != '0'
     timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        cell: ${{ fromJSON(needs.checks.outputs.deb) }}
     container:
-      image: debian:trixie
+      image: ${{ matrix.cell.image }}
     defaults:
       run:
         shell: bash
@@ -244,16 +270,17 @@ jobs:
         run: make -j"$OMX_JOBS" eq-q-range-sabotage
 
   contract-floor:
-    name: below the omx-contract floor the build refuses (${{ matrix.image }})
-    runs-on: ${{ github.event.pull_request.head.repo.fork && 'ubuntu-latest' || vars.OMX_RUNNER || 'ubuntu-latest' }}
+    name: below the omx-contract floor the build refuses (${{ matrix.cell.image }}, ${{ matrix.cell.arch }})
+    runs-on: ${{ matrix.cell.runner }}
+    needs: checks
+    if: needs.checks.outputs.count != '0'
     timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
-        # ruling D25: the release set's cells; bookworm (a full cell) only when OMX_RELEASE_MATRIX is full
-        image: ${{ fromJSON(vars.OMX_RELEASE_MATRIX == 'full' && '["fedora:45", "debian:bookworm"]' || '["fedora:45", "debian:trixie"]') }}
+        cell: ${{ fromJSON(needs.checks.outputs.cells) }}
     container:
-      image: ${{ matrix.image }}
+      image: ${{ matrix.cell.image }}
     defaults:
       run:
         shell: bash
@@ -523,20 +550,20 @@ jobs:
           retention-days: 7
 
   deb:
-    name: libomxdsp-dev (${{ matrix.suite }}, ${{ matrix.arch }})
-    if: github.event_name == 'workflow_dispatch'
-    runs-on: ${{ github.event.pull_request.head.repo.fork && 'ubuntu-latest' || vars.OMX_RUNNER || 'ubuntu-latest' }}
+    name: libomxdsp-dev (${{ matrix.cell.suite }}, ${{ matrix.cell.arch }})
+    if: github.event_name == 'workflow_dispatch' && needs.checks.outputs.deb-count != '0'
+    runs-on: ${{ matrix.cell.runner }}
+    needs: checks
     # the package build runs make check-package (dh_auto_test), which takes under 15 minutes on a hosted
     # runner; make test, with the sabotage and perturbation arms, ran here until it no longer fit 60
     timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
-        # ruling D25: the release set's suites, bookworm only when OMX_RELEASE_MATRIX is full
-        suite: ${{ fromJSON(vars.OMX_RELEASE_MATRIX == 'full' && '["bookworm", "trixie"]' || '["trixie"]') }}
-        arch: [amd64]  # arm64 builds run at release only (release.yml)
+        # the quick set's deb cells (trixie arm64), the whole matrix when OMX_RELEASE_MATRIX is full
+        cell: ${{ fromJSON(needs.checks.outputs.deb) }}
     container:
-      image: debian:${{ matrix.suite }}
+      image: ${{ matrix.cell.image }}
     defaults:
       run:
         shell: bash
