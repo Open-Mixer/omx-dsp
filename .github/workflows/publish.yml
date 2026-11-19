@@ -23,11 +23,31 @@ permissions:
   contents: read
 
 jobs:
-  publish:
-    if: github.repository == 'Open-Mixer/omx-dsp'
+  # The one cell the publish builds on: trixie arm64, the quick set's deb cell (check-matrix gives it its image and runner)
+  checks:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      deb: ${{ steps.m.outputs.deb }}
+      deb-count: ${{ steps.m.outputs.deb-count }}
+    steps:
+      - id: m
+        uses: Open-Mixer/.github/.github/actions/check-matrix@openmixer-v1
+        with:
+          wave: ${{ vars.OMX_RELEASE_MATRIX }}
+          deb-releases: '["trixie"]'
+          deb-arches: '["arm64"]'
+          x86-runner: ${{ vars.OMX_RUNNER || 'ubuntu-latest' }}
+
+  publish:
+    if: github.repository == 'Open-Mixer/omx-dsp' && needs.checks.outputs.deb-count != '0'
+    needs: checks
+    runs-on: ${{ matrix.cell.runner }}
+    strategy:
+      matrix:
+        cell: ${{ fromJSON(needs.checks.outputs.deb) }}
     container:
-      image: debian:trixie
+      image: ${{ matrix.cell.image }}
     defaults:
       run:
         shell: bash
