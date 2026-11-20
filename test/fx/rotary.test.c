@@ -158,6 +158,14 @@ static void arm_h(double sr) {
   }
   ok(omx_rotary_latency(sr) == (uint32_t)lrint(OMX_ROTARY_BASE_MS * 1e-3 * sr),
      "arm H: latency is the sweep's shortest read, rounded", sr, omx_rotary_latency(sr), 0);
+  /* ROTARY_LONGEST_MS is the declared far end of the sweep (a host's descriptor refers to it): the kernel's
+   * longest read, base plus the horn's whole travel, at every rate */
+  ok(fabs(omx_rotary_longest_delay((float)sr) - OMX_ROTARY_LONGEST_MS * 1e-3 * sr) <= 1e-3 * sr * 1e-4,
+     "arm H: ROTARY_LONGEST_MS is the kernel's longest read", sr, omx_rotary_longest_delay((float)sr),
+     OMX_ROTARY_LONGEST_MS * 1e-3 * sr);
+  ok(fabs(omx_rotary_shortest_delay((float)sr) - OMX_ROTARY_BASE_MS * 1e-3 * sr) <= 1e-3 * sr * 1e-4,
+     "arm H: ROTARY_BASE_MS is the kernel's shortest read", sr, omx_rotary_shortest_delay((float)sr),
+     OMX_ROTARY_BASE_MS * 1e-3 * sr);
   drain_violations("arm H: no contract violation", sr);
 }
 
