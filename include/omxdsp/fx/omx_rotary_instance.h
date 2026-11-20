@@ -39,7 +39,6 @@
 #include <omxdsp/omx_param.h>
 
 #define OMX_ROTARY_INSTANCE_CHANNELS 2
-#define OMX_ROTARY_INSTANCE_LATENCY_FRAMES 0.0f
 
 /** Port defaults: the declaration's (ROTARY_*_RANGE.default). The speed set declares no default;
  * the stage comes up at `slow`. */
