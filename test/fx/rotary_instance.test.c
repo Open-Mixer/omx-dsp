@@ -16,7 +16,9 @@
  *   G  an instance run between two others leaves each the instance alone (no shared state);
  *   H  engaged at full mix, the published latency is where an impulse peaks with both rotors held
  *      at the sweep's shortest phase: the always-present delay of a modulated read. With a dry
- *      share (mix under 100 %) or bypassed, the dry path is direct and the latency is zero.
+ *      share (mix under 100 %) or bypassed, the dry path is direct and the latency is zero;
+ *   I  the published sweep holds every lag: an impulse fed at nine start times into a rotary
+ *      spinning at slow peaks inside [shortest, longest], and the shortest is the latency.
  *   make test-fx
  */
 #include <math.h>
@@ -265,6 +267,28 @@ static void arm_latency(void) {
   drain_violations("H: no contract broken");
 }
 
+static void arm_sweep(void) {
+  OmxRotaryInstance *s = inst();
+  omx_rotary_instance_init(s, g_sr);
+  omx_rotary_instance_resolve(s, 0, NAN, NAN, NAN, NAN, NAN, NAN, 100.0f, OMX_ROTARY_SLOW);
+  uint32_t lo = 0, hi = 0;
+  omx_rotary_instance_sweep(s, &lo, &hi);
+  ok(lo == omx_rotary_instance_latency(s) && hi > lo, "I: the sweep starts at the latency and has a far end");
+  /* the nine start times, 48 kHz frames at the rate: the rotors at as many places in their turns */
+  static const long PRE48[9] = {2400, 12000, 21600, 24000, 30000, 36000, 43200, 60000, 72000};
+  int inside = 1;
+  for (int k = 0; k < 9; k++) {
+    const long lag = peak_lag((long)((double)PRE48[k] * g_sr / 48000.0), OMX_ROTARY_SLOW, 0, 100.0f);
+    if (lag < (long)lo || lag > (long)hi) {
+      inside = 0;
+      printf("  %.0f Hz: start %ld peaks at %ld, outside [%u, %u]\n", (double)g_sr, PRE48[k], lag, lo, hi);
+    }
+  }
+  ok(inside, "I: every measured lag lies inside the published sweep");
+  free(s);
+  drain_violations("I: no contract broken");
+}
+
 int main(void) {
   omx_fx_require_rate_floor();
   omx_fx_require_full_rates_cover_declared();
@@ -277,6 +301,7 @@ int main(void) {
     arm_reengage_rearms();
     arm_alias_and_independence();
     arm_latency();
+    arm_sweep();
   }
   return finish("rotary_instance");
 }
