@@ -30,6 +30,12 @@
 
 #include "instance_harness.h"
 
+/* One latency figure: omx_rotary_instance_latency(). A constant beside it would be a second figure,
+ * and a face reading the constant would report 0 where the instance reports the sweep's shortest read. */
+#ifdef OMX_ROTARY_INSTANCE_LATENCY_FRAMES
+#error "omx_rotary_instance.h defines OMX_ROTARY_INSTANCE_LATENCY_FRAMES beside omx_rotary_instance_latency()"
+#endif
+
 /* Outside the console's declaration each call below records its kernels' `rate-is-declared`; the ledger is taken after every call. */
 #define omx_rotary_instance_run(...) OMX_FX_CHECKPOINTED(omx_rotary_instance_run, __VA_ARGS__)
 #define omx_rotary_instance_init(...) OMX_FX_CHECKPOINTED_INT(omx_rotary_instance_init, __VA_ARGS__)
