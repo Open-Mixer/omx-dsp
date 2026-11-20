@@ -155,13 +155,17 @@ static inline uint32_t omx_rotary_instance_latency(const OmxRotaryInstance *s) {
  * @param s The instance.
  * @param shortest Written: the shortest read, the latency when engaged at full mix.
  * @param longest Written: the longest read.
+ * @pre `outs-present`: both pointers name a word.
  * @thread audio */
+#define OMX_CONTRACT_STAGE "rotary/instance-sweep"
 static inline void omx_rotary_instance_sweep(const OmxRotaryInstance *s, uint32_t *shortest, uint32_t *longest) {
+  OMX_PRE(shortest != NULL && longest != NULL, "outs-present");
   if (!s || !s->ready) {
     *shortest = *longest = 0u;
     return;
   }
   omx_rotary_sweep(s->sr, shortest, longest);
 }
+#undef OMX_CONTRACT_STAGE
 
 #endif /* OMX_ROTARY_INSTANCE_H */

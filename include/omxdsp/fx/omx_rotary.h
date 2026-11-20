@@ -15,6 +15,7 @@
 #ifndef OMX_MIX_ROTARY_H
 #define OMX_MIX_ROTARY_H
 
+#include <stddef.h>
 #include <stdint.h>
 
 #include <omxdsp/omx_balance_law.h>
@@ -206,12 +207,16 @@ static inline uint32_t omx_rotary_latency(float sr) { return (uint32_t)(omx_rota
  * @param sr The live rate, Hz, positive.
  * @param shortest Written: `round(omx_rotary_shortest_delay(sr))`.
  * @param longest Written: `round(omx_rotary_longest_delay(sr))`.
+ * @pre `outs-present`: both pointers name a word.
  * @note Thread-safe: arithmetic, no libm.
  * @thread audio
  */
+#define OMX_CONTRACT_STAGE "rotary/sweep"
 static inline void omx_rotary_sweep(float sr, uint32_t *shortest, uint32_t *longest) {
+  OMX_PRE(shortest != NULL && longest != NULL, "outs-present");
   *shortest = omx_rotary_latency(sr);
   *longest = (uint32_t)(omx_rotary_longest_delay(sr) + 0.5f);
 }
+#undef OMX_CONTRACT_STAGE
 
 #endif /* OMX_MIX_ROTARY_H */
