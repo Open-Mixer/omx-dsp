@@ -11,7 +11,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { test } from 'node:test';
 import { loadData, validateData } from './oc.mjs';
-import { DATA, HERE, RENDERS, UNION, editData, relOf, scratchData } from './helpers.mjs';
+import { DATA, HERE, UNION, editData, relOf, scratchData } from './helpers.mjs';
 
 const GOLDEN = JSON.parse(readFileSync(join(HERE, 'test/contract/golden/curve-vocabulary.json'), 'utf8'));
 const problems = (dir) => validateData(loadData(dir)).map((p) => `${p.rule}: ${p.message}`);
@@ -37,10 +37,14 @@ test('every kind names two axes of CURVE_AXES, and every axis unit is a standard
 });
 
 test('the rendered header carries the axes and the kinds', () => {
-  const h = readFileSync(join(RENDERS, 'include/omxdsp/omxdsp_definitions.h'), 'utf8');
-  assert.match(h, /OMX_CURVE_AXES_/);
-  assert.match(h, /OMX_CURVE_KINDS_/);
-  assert.equal(h, readFileSync(join(HERE, 'include/omxdsp/omxdsp_definitions.h'), 'utf8'));
+  // the committed header is held equal to the render by `make definitions-check` (tools/definitions-render.sh)
+  const h = readFileSync(join(HERE, 'include/omxdsp/omx_dsp_vocabulary.h'), 'utf8');
+  for (const item of ['CURVE_AXES', 'CURVE_KINDS']) {
+    for (const [key, w] of Object.entries(GOLDEN[item].words)) {
+      const macro = `OMX_${item}_${key.replace(/([A-Z])/g, '_$1').toUpperCase()}`;
+      assert.ok(h.includes(`#define ${macro} "${w.word}"`), macro);
+    }
+  }
 });
 
 test('sabotage: a union whose CURVE_AXES lacks the frequency axis is refused', () => {
