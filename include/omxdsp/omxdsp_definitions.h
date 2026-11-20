@@ -3048,6 +3048,16 @@
 /** A band centred below this samples the LOW (decimated) tier when the reading carries one; at or above it, the HIGH tier. Where the high tier's ~5.86 Hz bins still give ~51 bins per octave, above the finest panel's density. (Hz) */
 #define OMX_RTA_TIER_CROSSOVER_HZ 300
 /**
+ * @name RT_HARD_TARGET
+ * THE declaration: 192 kHz at quantum 128.
+ */
+/// @{
+/** The `quantum` of RT_HARD_TARGET. */
+#define OMX_RT_HARD_TARGET_QUANTUM 128
+/** The `rate` of RT_HARD_TARGET. */
+#define OMX_RT_HARD_TARGET_RATE 192000
+/// @}
+/**
  * @name SPRING_DAMP_HZ_RANGE
  * The loop's low-pass corner, Hz: the tail darkens as it falls.
  */
@@ -3629,6 +3639,14 @@
 #define OMX_MBC_CROSSOVER_DEFAULTS_5_COUNT 4u
 /** The come-up crossover corners of a 5-band multiband stage, Hz, ascending: two octaves apart. The values in declaration order, an initialiser. (Hz) */
 #define OMX_MBC_CROSSOVER_DEFAULTS_5_INIT { 100, 400, 1600, 6400 }
+/** The number of values of ORACLE_FLOOR_RATES, the length of OMX_ORACLE_FLOOR_RATES_INIT. */
+#define OMX_ORACLE_FLOOR_RATES_COUNT 4u
+/** The four rates every kernel oracle runs at, whatever STANDARD_SAMPLE_RATES says: a declared list missing one of them stops a suite instead of testing less (omx-dsp, omx-plugins and omx-clap-host run their oracles at these). The values in declaration order, an initialiser. (Hz; since 1.3.0) */
+#define OMX_ORACLE_FLOOR_RATES_INIT { 44100, 48000, 96000, 192000 }
+/** The number of values of ORACLE_FULL_RATES, the length of OMX_ORACLE_FULL_RATES_INIT. */
+#define OMX_ORACLE_FULL_RATES_COUNT 9u
+/** The full grid of rates a professional interface can clock at, nine of them from 32 to 192 kHz: where ORACLE_FLOOR_RATES is the four rates every kernel oracle must run at, this is the whole grid an oracle runs at when it runs at all of them. STANDARD_SAMPLE_RATES is a subset of it; an oracle that runs here also covers 32, 64 and 128 kHz, where a kernel still has to meet its closed form even though the console never asks for them. The values in declaration order, an initialiser. (Hz; since 1.3.0) */
+#define OMX_ORACLE_FULL_RATES_INIT { 32000, 44100, 48000, 64000, 88200, 96000, 128000, 176400, 192000 }
 /** The number of values of REVERB_EARLY_TAP_GAINS, the length of OMX_REVERB_EARLY_TAP_GAINS_INIT. */
 #define OMX_REVERB_EARLY_TAP_GAINS_COUNT 8u
 /** The early reflections' gains, linear, one per REVERB_EARLY_TAP_MS entry, falling with the time. The values in declaration order, an initialiser. (unitless) */

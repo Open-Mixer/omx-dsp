@@ -52,9 +52,8 @@ int main(void) {
   assert.equal(out, want);
 });
 
-test('the committed header is the render of the union (the defines of the three items are in it)', () => {
+test('the committed header (held equal to the render by `make definitions-check`) carries the defines of the three items', () => {
   const h = readFileSync(join(HERE, 'include/omxdsp/omxdsp_definitions.h'), 'utf8');
-  assert.equal(h, DEFS(UNION));
   for (const m of ['OMX_RT_HARD_TARGET_RATE', 'OMX_RT_HARD_TARGET_QUANTUM', 'OMX_ORACLE_FLOOR_RATES_INIT', 'OMX_ORACLE_FULL_RATES_INIT']) assert.ok(h.includes(`#define ${m} `), m);
 });
 
