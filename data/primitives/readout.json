@@ -1,0 +1,13 @@
+{
+  "$schema": "../../schema/omx-contract.schema.json",
+  "requires": {
+    "omx-contract-schema": ">= 3.0.0"
+  },
+  "READOUT_RATE_HZ": {
+    "kind": "scalar",
+    "since": "2.4.0",
+    "doc": "How often a readout's value is published: 50 Hz, one value every 20 ms, the rate a host sends a moving meter at. Every readout reads it as its `rateHz` (docs/readouts.md).",
+    "unit": "Hz",
+    "value": 50
+  }
+}

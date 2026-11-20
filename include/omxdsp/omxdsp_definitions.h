@@ -2505,6 +2505,8 @@
 /// @}
 /** Minimum PSHR (`omx_fbs_pshr`) (dB) for a candidate frame to count as sub-harmonic-CLEAN. Evidence-set on the #116 corpus, margin on both sides: the four live false positives (musical overtones at 1 869.1 / 832.0 / 263.7 / 228.5 Hz) read PSHR between −10.2 and +8.8 dB across their windows — never a 5-frame sub-clean stretch, and the single closest approach (+8.8) is isolated between frames at ≈ −1 and −10 — while the committed #106 injected ramp reads ≥ +12.2 dB from its second frame on (its frame 0 sits at +9.4, costing exactly one frame of confirm latency, pinned in the corpus test). A static program line at f/2 of REAL feedback also clears this fast: the runaway gains several dB per hop on anything static, so the deferral is transient. (dB) */
 #define OMX_PSHR_MIN_DB 10
+/** How often a readout's value is published: 50 Hz, one value every 20 ms, the rate a host sends a moving meter at. Every readout reads it as its `rateHz` (docs/readouts.md). (Hz; since 2.4.0) */
+#define OMX_READOUT_RATE_HZ 50
 /**
  * @name REVERB_DAMPING_RANGE
  * The reverb's DAMPING — a NORMALIZED_RANGE instance with its own come-up value, matching `DEFAULT_REVERB_STATE`. Declared with SIZE and WIDTH (see REVERB_SIZE_RANGE for why each is a named constant rather than a default on the shared 0..1 shape).

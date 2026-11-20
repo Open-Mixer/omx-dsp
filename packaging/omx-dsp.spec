@@ -174,7 +174,6 @@ Its documentation is on openmixer.org.
 %license LICENSE
 %doc README.md
 %{_datadir}/omx-contract/contract.d/3/omx-dsp/
-%{_datadir}/omx-contract/contract.d/readout/
 %{_datadir}/omx-dsp/catalogs/
 
 %changelog
