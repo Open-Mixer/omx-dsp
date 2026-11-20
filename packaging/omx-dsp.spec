@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2026 Pau Aliagas <linuxnow@gmail.com>
 Name: omx-dsp
-Version: 0.33.1
+Version: 0.34.0
 Release: 1%{?dist}
 License: GPL-3.0-or-later
 Summary: The audio toolbox of the OpenMixer console, as a real-time-safe C library
@@ -177,6 +177,13 @@ Its documentation is on openmixer.org.
 %{_datadir}/omx-dsp/catalogs/
 
 %changelog
+* Sat Nov 21 2026 Pau Aliagas <linuxnow@gmail.com> - 0.34.0-1
+- Sorting pass: RT_HARD_TARGET, ORACLE_FLOOR_RATES and ORACLE_FULL_RATES (V25),
+  CURVE_AXES and CURVE_KINDS with their translations (V26 and its
+  catalogs, installed in /usr/share/omx-dsp/catalogs) and READOUT_RATE_HZ
+  (V22) are this library's data, rendered into omxdsp_definitions.h and
+  omx_dsp_vocabulary.h; the install no longer excludes codes.json (V20
+  follow-up). The floors on omx-contract rise to 3.21.0.
 * Thu Nov 19 2026 Pau Aliagas <linuxnow@gmail.com> - 0.33.1-1
 - ts: the TypeScript twins no Open-Mixer repository consumes are deleted
   (hrp-place and fbs-place, the gaincomp, gate, meter and eq helpers named in
