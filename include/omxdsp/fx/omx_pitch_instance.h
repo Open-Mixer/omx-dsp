@@ -10,10 +10,10 @@
  *      the window at the highest rate it accepts (OMX_PITCH_INSTANCE_RING_FLOATS per leg), and
  *      arms the kernel over the first omx_pitch_cap_for(sr) floats of each. Nothing is allocated,
  *      at init or after. It accepts the contract's nine full-oracle rates, 32 to 192 kHz
- *      ({@link omx_pitch_instance_rate_ok}): the console's six declared rates and 32, 64 and
+ *      (omx_pitch_instance_rate_ok()): the console's six declared rates and 32, 64 and
  *      128 kHz, where a host may run it although the console never does. Any other rate, and one
  *      the inline rings cannot serve, is refused at init.
- *   2. RESOLVE. {@link omx_pitch_instance_resolve} takes the kernel's contract controls in their
+ *   2. RESOLVE. omx_pitch_instance_resolve() takes the kernel's contract controls in their
  *      declared order and user units (semitones, cents, percent), clamps each into its declared
  *      travel (OMX_PITCH_*, omxdsp_definitions.h; a non-finite word reads as the declared
  *      default) and hands them to the kernel's own omx_pitch_resolve(). That resolve is `exp2f`
@@ -24,7 +24,7 @@
  * Re-engaging from bypass CLEARS the rings and restarts the ramp, so a re-enabled shifter does not
  * replay audio buffered before the bypass.
  *
- * LATENCY IS PUBLISHED: {@link omx_pitch_instance_latency} answers d_min + W/2 frames (the centre
+ * LATENCY IS PUBLISHED: omx_pitch_instance_latency() answers d_min + W/2 frames (the centre
  * of the window's taps, W = OMX_PITCH_WINDOW_MS at the instance rate) while engaged at 100 % mix,
  * where the output is the pre-filtered input delayed by that much; and 0 below 100 % (the dry path
  * is frame-aligned with the input, the window's delay is the effect), while bypassed and when not
@@ -34,6 +34,10 @@
  * No mutable globals: every word of state is in the caller's {@link OmxPitchInstance}. The state
  * points into the instance's own rings, so an instance is initialised where it lives and is never
  * copied after init.
+ */
+/**
+ * @file omx_pitch_instance.h
+ * @brief the native pitch shifter as a plugin instance: the shell's core, with no format in it. The same shape as omx_chorus_instance.h (one C core, N shells): the core is `omx_pitch.h`'s `omx_pitch_process`, THE SAME INLINE the console's pitch stage runs, and this file adds no DSP to it.
  */
 #ifndef OMX_PITCH_INSTANCE_H
 #define OMX_PITCH_INSTANCE_H
@@ -76,7 +80,7 @@ static inline uint32_t omx_pitch_instance_cap_for(float sr) { return omx_pitch_c
 /**
  * @brief Whether the instance runs at `sr`: one of omx-contract's nine full-oracle rates, 32 to
  *        192 kHz (they hold every declared rate), so 32, 64 and 128 kHz too. The rule
- *        {@link omx_pitch_instance_init} applies.
+ *        omx_pitch_instance_init() applies.
  * @param sr The sample rate, Hz.
  * @return 1 when accepted, 0 when not.
  * @note Thread-safe: a read of a constant table.
@@ -88,8 +92,11 @@ static inline int omx_pitch_instance_rate_ok(float sr) {
 
 /**
  * Bind an instance to its rate, over its own rings. Returns 1 when usable, 0 when not (a refused
- * init leaves `ready` clear and run() is the identity). A rate {@link omx_pitch_instance_rate_ok}
+ * init leaves `ready` clear and run() is the identity). A rate omx_pitch_instance_rate_ok()
  * refuses, or whose window the inline rings cannot hold, is refused. Allocates nothing.
+ * @param s The instance; every word of it is written.
+ * @param sr The sample rate, Hz, one omx_pitch_instance_rate_ok() accepts.
+ * @return 1 when usable, 0 when not: a rate the console does not declare (the oracle set, 32 to 192 kHz) is refused, `ready` stays clear and run() is the identity, as is a rate whose window the inline rings cannot hold or a line that cannot be armed.
  * @thread control
  */
 static inline int omx_pitch_instance_init(OmxPitchInstance *s, float sr) {
@@ -102,10 +109,11 @@ static inline int omx_pitch_instance_init(OmxPitchInstance *s, float sr) {
   return s->ready;
 }
 
+#define OMX_CONTRACT_STAGE "pitch/instance-clear"
 /** Clear the rings and restart the ramp — the re-enable recipe. A bounded memset over the
  * instance's own rings, no allocation.
+ * @param s The instance; null or not ready is ignored.
  * @thread audio */
-#define OMX_CONTRACT_STAGE "pitch/instance-clear"
 static inline void omx_pitch_instance_clear(OmxPitchInstance *s) {
   if (!s || !s->ready) return;
   omx_instance_rings_clear(s->ring_l, s->ring_r, s->cap);
@@ -150,13 +158,19 @@ static inline void omx_pitch_instance_resolve(OmxPitchInstance *s, int bypass, f
 }
 #undef OMX_CONTRACT_STAGE
 
+#define OMX_CONTRACT_STAGE "pitch/instance-run"
 /**
  * THE AUDIO CALLBACK'S WHOLE SHARE: copy in to out where they differ, run the console's kernel
  * in place on out. `in_*` and `out_*` may alias; `out_l` and `out_r` are distinct. Not ready, or
  * bypassed, is the identity.
+ * @param s The instance; null, not ready or bypassed leaves `out_*` holding `in_*`.
+ * @param in_l The left input, `n` frames.
+ * @param in_r The right input, `n` frames.
+ * @param out_l The left output, `n` frames, may be `in_l`.
+ * @param out_r The right output, `n` frames, may be `in_r`.
+ * @param n The block length, frames; a null port or 0 touches nothing.
  * @thread audio
  */
-#define OMX_CONTRACT_STAGE "pitch/instance-run"
 static inline void omx_pitch_instance_run(OmxPitchInstance *s, const float *in_l, const float *in_r,
                                           float *out_l, float *out_r, uint32_t n) {
   OMX_INSTANCE_RUN_IN_PLACE(s, in_l, in_r, out_l, out_r, n, omx_pitch_process(out_l, out_r, n, &s->atom, &s->state));
@@ -165,6 +179,8 @@ static inline void omx_pitch_instance_run(OmxPitchInstance *s, const float *in_l
 
 /** The frames of latency the instance publishes now: d_min + W/2, rounded, while engaged at 100 %
  * mix; 0 below 100 %, while bypassed or not ready (see the header note).
+ * @param s The instance.
+ * @return d_min + W/2, rounded, while engaged at 100 % mix; 0 below 100 %, while bypassed, not ready or null.
  * @thread audio */
 static inline uint32_t omx_pitch_instance_latency(const OmxPitchInstance *s) {
   if (!s || !s->ready || !s->atom.enabled || s->atom.mix < 1.0f) return 0u;

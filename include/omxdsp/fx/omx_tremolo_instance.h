@@ -7,7 +7,7 @@
  * and this file adds no DSP to it. It adds what a host's port model needs and the atom does not
  * carry:
  *
- *   1. RESOLVE. {@link omx_tremolo_instance_resolve} turns the operator's units (a mode index, Hz,
+ *   1. RESOLVE. omx_tremolo_instance_resolve() turns the operator's units (a mode index, Hz,
  *      percent) into the atom: `lfo_inc = omx_lfo_inc(rate_hz, sr)`, depth and mix over 100, every
  *      knob clamped through omx_param into the declared travel (TREMOLO_*_RANGE,
  *      omxdsp_definitions.h): a foreign host's port is not the console's codec, and a non-finite
@@ -22,6 +22,10 @@
  * caller-owned.
  *
  * No mutable globals: every word of state is in the caller's {@link OmxTremoloInstance}.
+ */
+/**
+ * @file omx_tremolo_instance.h
+ * @brief the native tremolo / auto-pan as a plugin instance: the shell's core, with no format in it. The same shape as omx_flanger_instance.h (one C core, N shells): the core is `omx_tremolo.h`'s `omx_tremolo_process`, THE SAME INLINE the console's tremolo stage runs, and this file adds no DSP to it.
  */
 #ifndef OMX_TREMOLO_INSTANCE_H
 #define OMX_TREMOLO_INSTANCE_H
@@ -56,6 +60,9 @@ typedef struct {
  * Bind an instance to its rate. Returns 1 when usable, 0 when not (a refused init leaves `ready`
  * clear and run() is the identity). The rate must be positive, finite and high enough that the
  * declared top rate stays under the oscillator's half-turn bound.
+ * @param s The instance; every word of it is written.
+ * @param sr The sample rate, Hz, positive and finite, above twice OMX_TREMOLO_RATE_RANGE_MAX.
+ * @return 1 when usable, 0 when not: a null instance or a rate that is not positive and finite, or not above twice the declared top rate, leaves `ready` clear and run() the identity.
  * @thread control
  */
 static inline int omx_tremolo_instance_init(OmxTremoloInstance *s, float sr) {
@@ -105,12 +112,18 @@ static inline void omx_tremolo_instance_resolve(OmxTremoloInstance *s, int bypas
 }
 #undef OMX_CONTRACT_STAGE
 
+#define OMX_CONTRACT_STAGE "tremolo/instance-run"
 /**
  * THE AUDIO CALLBACK'S WHOLE SHARE: copy in to out where they differ, run the console's kernel
  * in place on out. `in_*` and `out_*` may alias. Not ready, or bypassed, is the identity.
+ * @param s The instance; null, not ready or bypassed leaves `out_*` holding `in_*`.
+ * @param in_l The left input, `n` frames.
+ * @param in_r The right input, `n` frames.
+ * @param out_l The left output, `n` frames, may be `in_l`.
+ * @param out_r The right output, `n` frames, may be `in_r`.
+ * @param n The block length, frames; a null port or 0 touches nothing.
  * @thread audio
  */
-#define OMX_CONTRACT_STAGE "tremolo/instance-run"
 static inline void omx_tremolo_instance_run(OmxTremoloInstance *s, const float *in_l,
                                             const float *in_r, float *out_l, float *out_r,
                                             uint32_t n) {
@@ -120,6 +133,8 @@ static inline void omx_tremolo_instance_run(OmxTremoloInstance *s, const float *
 
 /** The frames of latency the instance introduces: none, at every rate (the gain is applied to the
  * frame it is computed for).
+ * @param s The instance.
+ * @return 0.
  * @thread audio */
 static inline uint32_t omx_tremolo_instance_latency(const OmxTremoloInstance *s) {
   (void)s;

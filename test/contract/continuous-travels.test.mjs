@@ -3,11 +3,9 @@
 // The plugin faces' travels in data/primitives.json hold plain numbers, because omx-plugins reads the
 // data as written; these tests hold each number to the travel it restates.
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { test } from 'node:test';
 import { loadData, resolveData } from './oc.mjs';
-import { ROOT, UNION, editData, relOf, scratchData, atCommit } from './helpers.mjs';
+import { UNION, editData, relOf, scratchData } from './helpers.mjs';
 
 /** Each continuous field that is not its source's field with step 0, as a sentence. */
 function continuousProblems(resolved) {
@@ -37,15 +35,4 @@ test('a source moved without its continuous form, or a continuous form given a s
   const stepped = scratchData();
   editData(stepped, relOf('COMP_CONTINUOUS_TRAVELS').slice('data/'.length), (d) => { d.COMP_CONTINUOUS_TRAVELS.fields.releaseMs.step = 10; });
   assert.deepEqual(continuousProblems(resolveData(loadData(stepped))), ['COMP_CONTINUOUS_TRAVELS.releaseMs is not COMP_LIMITS.releaseMs with step 0']);
-});
-
-// TRIM_TRAVELS, the table this read the travel through, was retired in dfbc289: the travel is read as TRIM_RANGE.
-test('the trim travel is the TRIM_RANGE omx-dsp\'s 4108494 header spells, coming up at 0 dB', () => {
-  const header = atCommit('4108494', 'include/omxdsp/omx_contract_limits.h');
-  const define = (name) => Number(new RegExp(`^#define ${name} (\\S+?)f?$`, 'm').exec(header)[1]);
-  const t = resolveData(loadData(UNION)).get('TRIM_RANGE').value;
-  assert.deepEqual(t, {
-    min: define('OMX_TRIM_RANGE_MIN_DB'), max: define('OMX_TRIM_RANGE_MAX_DB'), step: define('OMX_TRIM_RANGE_STEP_DB'),
-    unit: 'dB', default: 0, defaultFrom: 'desk',
-  });
 });

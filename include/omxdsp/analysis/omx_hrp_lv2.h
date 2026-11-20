@@ -16,7 +16,7 @@
  * against closed-form oracles with a plain `cc`, and it keeps the LV2 boilerplate in
  * `hrp_lv2.c` down to what it actually is — a descriptor, six ports and two worker callbacks.
  *
- * NO BUFFER IS OWNED HERE either. {@link omx_hrp_lv2_init} takes the caller's arrays, so the
+ * NO BUFFER IS OWNED HERE either. omx_hrp_lv2_init() takes the caller's arrays, so the
  * host's own pool, a malloc in `instantiate`, or a test's stack frame all work.
  *
  * ## §2 IS THE WHOLE ARCHITECTURE: analysis never runs in the audio callback
@@ -25,19 +25,19 @@
  * statement, it is a statement about audio callbacks, and an LV2 `run()` is one. So the split
  * here is exactly the console's:
  *
- *     run()  (RT)   {@link omx_hrp_lv2_run}      memcpy into the ring, run the biquad cascade
+ *     run()  (RT)   omx_hrp_lv2_run()      memcpy into the ring, run the biquad cascade
  *                                                with the coefficients already published. No
  *                                                FFT, no detector, no design, no branch that
  *                                                depends on what the audio contains.
- *     work() (worker) {@link omx_hrp_lv2_analyse}  the whole chain — omx_rta_spectrum,
+ *     work() (worker) omx_hrp_lv2_analyse()  the whole chain — omx_rta_spectrum,
  *                                                omx_hrp_detect, omx_hrp_track_update,
  *                                                omx_hrp_attribute, omx_hrp_baseline_learn —
  *                                                then §29/§30's ranking and the curve design.
- *     work_response() (RT) {@link omx_hrp_lv2_adopt}  a fixed-size struct copy. Nothing else.
+ *     work_response() (RT) omx_hrp_lv2_adopt()  a fixed-size struct copy. Nothing else.
  *
  * The host provides the thread (LV2's `lv2:worker` extension), so this plugin starts no thread
  * of its own. A host with no worker gets a plugin that passes audio and never analyses — see
- * {@link omx_hrp_lv2_due}'s note. That is an honest absence, not a silent fallback into
+ * omx_hrp_lv2_due()'s note. That is an honest absence, not a silent fallback into
  * analysing on the RT thread, which §2 forbids outright.
  *
  * §1's "do not create a second RT ring" is obeyed by using the existing one: `struct omx_ring`
@@ -47,7 +47,7 @@
  *
  *   1. THE RIPENING DELAY IS NOT LIFTED. The offline render reads the file twice so the take's
  *      opening can be measured against a model the whole performance taught. Live there is no
- *      second read, so {@link omx_hrp_lv2_analyse} feeds ONE pass with `learn = 1` and a note's
+ *      second read, so omx_hrp_lv2_analyse() feeds ONE pass with `learn = 1` and a note's
  *      first seconds go uncorrected, exactly as §15/§22 say they must. A live corrector that
  *      cut a note it had heard once would be guessing.
  *
@@ -70,6 +70,10 @@
  * metadata. That is the strongest refusal an LV2 plugin can make: a bus has no mono insert
  * point to rack it at, so the shape of the plugin refuses the use rather than a runtime check
  * hoping to detect it. {@link OMX_HRP_LV2_CHANNELS} is the number, and it is 1 for that reason.
+ */
+/**
+ * @file omx_hrp_lv2.h
+ * @brief HRP+ AS A LIVE INSERT: the third shell's core, with no LV2 in it.
  */
 #ifndef OMX_HRP_LV2_H
 #define OMX_HRP_LV2_H
@@ -147,15 +151,15 @@ _Static_assert(OMX_HRP_BANDS_RANGE_DEFAULT >= OMX_HRP_BANDS_RANGE_MIN &&
  *
  * Fixed size, trivially copyable, no pointers. An LV2 face sends it as its worker message; a CLAP
  * face leaves it in a slot its analysis thread reads once `asked` has moved. Only the worker
- * applies it ({@link omx_hrp_lv2_install_ask}), so the analysis configuration has one writer.
- * Built by {@link omx_hrp_lv2_ask_of}.
+ * applies it (omx_hrp_lv2_install_ask()), so the analysis configuration has one writer.
+ * Built by omx_hrp_lv2_ask_of().
  */
 typedef struct {
   /** 1 when the pass runs bypassed (its bands walk out), else 0. */
   int bypass;
   /** An {@link OmxHrpFamily}, already inside the declared travel. */
   int family;
-  /** The amount as the host wrote it; the worker clamps it ({@link omx_hrp_lv2_set_amount}). */
+  /** The amount as the host wrote it; the worker clamps it (omx_hrp_lv2_set_amount()). */
   float amount;
   /** The band budget, already inside the declared travel. */
   uint32_t max_bands;
@@ -195,7 +199,7 @@ typedef struct {
   float applied_db;
 } OmxHrpLv2Slot;
 
-/** One instance. No buffer here is owned; {@link omx_hrp_lv2_init} is given all of them. */
+/** One instance. No buffer here is owned; omx_hrp_lv2_init() is given all of them. */
 typedef struct {
   uint32_t rate;
   /** {@link OmxHrpFamily}, or {@link OMX_HRP_FAMILY_NONE} for the console's wide default. */
@@ -227,17 +231,17 @@ typedef struct {
   _Atomic uint64_t consumed;
 
   /** Passes asked for by the audio thread, and passes whose answer has been handed back. Each is
-   *  advanced by one thread only ({@link omx_hrp_lv2_mark_asked} on the audio thread after a
-   *  successful ask, {@link omx_hrp_lv2_mark_answered} on the worker once the set is where the
+   *  advanced by one thread only (omx_hrp_lv2_mark_asked() on the audio thread after a
+   *  successful ask, omx_hrp_lv2_mark_answered() on the worker once the set is where the
    *  audio thread will adopt it), so `asked != answered` reads "a pass is in flight" to any
    *  observer, whichever face produced it. Both wrap at 2^32 together. */
   _Atomic uint32_t asked;
   _Atomic uint32_t answered;
 
   /** The cascade the audio thread runs. Its STATE is never reset by an adopt — see
-   *  {@link omx_hrp_lv2_adopt}. */
+   *  omx_hrp_lv2_adopt(). */
   OmxHrpCascade live;
-  /** The audio side's mode ({@link omx_hrp_lv2_set_mode}), the report as last adopted, and whether a worker has
+  /** The audio side's mode (omx_hrp_lv2_set_mode()), the report as last adopted, and whether a worker has
    *  ever answered (the read-only `analysing` control). */
   int mode;
   int analysing;
@@ -261,8 +265,8 @@ static inline uint32_t omx_hrp_lv2_hop(const OmxHrpLv2 *s) {
  * Bind an instance to its rate and the caller's six buffers. Returns 1 when usable, 0 when not.
  *
  * `carry`, `work_re`, `work_im` and `hop` hold `fft_size` floats; `mags` and `residual` hold
- * `fft_size / 2`. The window length is the RTA's own for this rate ({@link
- * omx_rta_fft_size_for}), because §45 forbids hard-coding bin frequencies for one rate and
+ * `fft_size / 2`. The window length is the RTA's own for this rate (omx_rta_fft_size_for()
+ *), because §45 forbids hard-coding bin frequencies for one rate and
  * deriving the length is how every other tier already obeys it.
  *
  * A refused init leaves `ready` clear, and every entry below is a no-op on an instance that is
@@ -294,12 +298,12 @@ static inline int omx_hrp_lv2_init(OmxHrpLv2 *s, uint32_t rate, float *carry, fl
 }
 
 /**
- * @brief Floats the analysis buffers of {@link omx_hrp_lv2_init} take at `rate`, as ONE block.
+ * @brief Floats the analysis buffers of omx_hrp_lv2_init() take at `rate`, as ONE block.
  * @param rate The sample rate the instance will run at, in Hz.
  * @return Four windows (`carry`, `work_re`, `work_im`, `hop`) and two half-windows (`mags`,
  *         `residual`) of the RTA window for `rate`: `4 * fft + 2 * (fft / 2)`, so `5 * fft`.
  * @note A face sizes its allocation with it; it allocates nothing and is constant time.
- *       Pair it with {@link omx_hrp_lv2_init_block}.
+ *       Pair it with omx_hrp_lv2_init_block().
  * @thread control
  */
 static inline uint32_t omx_hrp_lv2_block_floats(uint32_t rate) {
@@ -308,7 +312,7 @@ static inline uint32_t omx_hrp_lv2_block_floats(uint32_t rate) {
 }
 
 /**
- * @brief {@link omx_hrp_lv2_init} over one block of {@link omx_hrp_lv2_block_floats} floats.
+ * @brief omx_hrp_lv2_init() over one block of omx_hrp_lv2_block_floats() floats.
  * @param s The instance.
  * @param rate The sample rate, in Hz.
  * @param block The caller's block of `omx_hrp_lv2_block_floats(rate)` floats, or NULL.
@@ -347,7 +351,7 @@ static inline void omx_hrp_lv2_set_family(OmxHrpLv2 *s, int family) {
  * @param amount The strength, held inside OMX_HRP_AMOUNT_RANGE_*; a NaN reads as its minimum.
  * @param max_bands The band budget, held inside OMX_HRP_BANDS_RANGE_MIN and the answer set's size.
  * @note It writes what a pass reads. A face calls it through
- *       {@link omx_hrp_lv2_install_ask}.
+ *       omx_hrp_lv2_install_ask().
  * @thread worker
  */
 static inline void omx_hrp_lv2_set_amount(OmxHrpLv2 *s, float amount, uint32_t max_bands) {
@@ -370,7 +374,7 @@ static inline void omx_hrp_lv2_set_amount(OmxHrpLv2 *s, float amount, uint32_t m
  *         rounded half away from zero by omx_port_int(), a non-finite word reading as the
  *         declared default.
  * @note Constant time, no state read or written. The amount's clamp is the
- *       worker's, in {@link omx_hrp_lv2_install_ask}, so a pass sees exactly what the host wrote.
+ *       worker's, in omx_hrp_lv2_install_ask(), so a pass sees exactly what the host wrote.
  * @thread audio
  */
 static inline OmxHrpLv2Ask omx_hrp_lv2_ask_of(float bypass, float family, float amount, float bands) {
@@ -435,7 +439,7 @@ static inline int omx_hrp_lv2_in_flight(const OmxHrpLv2 *s) {
 /**
  * @brief Drop every correction in force at once: the cascade empty and its state zero.
  * @param s The instance; NULL is a no-op.
- * @note Constant time. The half of {@link omx_hrp_lv2_restart} that may run while a
+ * @note Constant time. The half of omx_hrp_lv2_restart() that may run while a
  *       pass is in flight, since the worker never touches the live cascade. The worker's slots
  *       still hold their depths, so a pass answered after a clear plants them again.
  * @thread audio
@@ -451,7 +455,7 @@ static inline void omx_hrp_lv2_clear(OmxHrpLv2 *s) {
  * @note No correction in force, every band slot free, and both ring cursors back at zero, so no
  *       pass ever analyses a hop that straddles a stop. The baseline, the current report, the
  *       pass counter and the asked/answered counters are kept: a transport stop is not a new
- *       instrument. Never while a pass is in flight ({@link omx_hrp_lv2_in_flight}): the caller
+ *       instrument. Never while a pass is in flight (omx_hrp_lv2_in_flight()): the caller
  *       holds the worker idle (LV2: activate is in the instantiation class; CLAP: only when no
  *       pass is in flight). Constant time, no allocation.
  * @thread control
@@ -699,7 +703,7 @@ static inline void omx_hrp_lv2_analyse(OmxHrpLv2 *s, int bypass, OmxHrpLv2Set *o
  * @brief Is a pass due under the controls a snapshot holds?
  * @param s The instance.
  * @param a The snapshot; NULL is never due.
- * @return {@link omx_hrp_lv2_due} with the snapshot's bypass.
+ * @return omx_hrp_lv2_due() with the snapshot's bypass.
  * @note Constant time. A face asks with the snapshot it will send, never reaching
  *       into it.
  * @thread audio

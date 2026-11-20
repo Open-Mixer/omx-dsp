@@ -7,7 +7,7 @@
  * band-dynamics word, omx_band_dyn.h, with the detector on the band), and this file adds no DSP to
  * it. It adds what a host's port model needs and the atom does not carry:
  *
- *   1. RESOLVE. {@link omx_deesser_instance_resolve} takes the kernel's contract controls in their
+ *   1. RESOLVE. omx_deesser_instance_resolve() takes the kernel's contract controls in their
  *      declared order and user units (Hz, octaves, dB, a ratio, dB, ms, ms, the DEESS_MODES
  *      index), clamps each into its declared travel (DEESS_*_RANGE, omxdsp_definitions.h; a
  *      non-finite word reads as the declared default) and fills the atom as the console's
@@ -26,6 +26,10 @@
  * (omx_deess_latency). The state is plain inline floats; nothing is caller-owned or allocated.
  *
  * No mutable globals: every word of state is in the caller's {@link OmxDeesserInstance}.
+ */
+/**
+ * @file omx_deesser_instance.h
+ * @brief the native de-esser as a plugin instance: the shell's core, with no format in it.
  */
 #ifndef OMX_DEESSER_INSTANCE_H
 #define OMX_DEESSER_INSTANCE_H
@@ -68,6 +72,9 @@ typedef struct {
 /**
  * Bind an instance to its rate. Returns 1 when usable, 0 when not (a refused init leaves `ready`
  * clear and run() is the identity): the rate must be a declared one. Allocates nothing.
+ * @param s The instance; every word of it is written.
+ * @param sr The sample rate, Hz, a declared one.
+ * @return 1 when usable, 0 when not: a rate the console does not declare (the oracle set, 32 to 192 kHz) is refused, `ready` stays clear and run() is the identity.
  * @thread control
  */
 static inline int omx_deesser_instance_init(OmxDeesserInstance *s, float sr) {
@@ -141,12 +148,18 @@ static inline void omx_deesser_instance_resolve(OmxDeesserInstance *s, int bypas
 }
 #undef OMX_CONTRACT_STAGE
 
+#define OMX_CONTRACT_STAGE "deesser/instance-run"
 /**
  * THE AUDIO CALLBACK'S WHOLE SHARE: copy in to out where they differ, run the console's kernel
  * in place on out. `in_*` and `out_*` may alias. Not ready, or bypassed, is the identity.
+ * @param s The instance; null, not ready or bypassed leaves `out_*` holding `in_*`.
+ * @param in_l The left input, `n` frames.
+ * @param in_r The right input, `n` frames.
+ * @param out_l The left output, `n` frames, may be `in_l`.
+ * @param out_r The right output, `n` frames, may be `in_r`.
+ * @param n The block length, frames; a null port or 0 touches nothing.
  * @thread audio
  */
-#define OMX_CONTRACT_STAGE "deesser/instance-run"
 static inline void omx_deesser_instance_run(OmxDeesserInstance *s, const float *in_l, const float *in_r,
                                             float *out_l, float *out_r, uint32_t n) {
   OMX_INSTANCE_RUN_IN_PLACE(s, in_l, in_r, out_l, out_r, n, omx_deess_process(out_l, out_r, n, &s->atom, &s->state));
@@ -154,6 +167,8 @@ static inline void omx_deesser_instance_run(OmxDeesserInstance *s, const float *
 #undef OMX_CONTRACT_STAGE
 
 /** The frames of latency the instance introduces: the kernel's, zero at every rate.
+ * @param s The instance.
+ * @return omx_deess_latency() of the atom, 0 at every rate; 0 for a null instance.
  * @thread audio */
 static inline uint32_t omx_deesser_instance_latency(const OmxDeesserInstance *s) {
   return s ? (uint32_t)omx_deess_latency(&s->atom) : 0u;

@@ -27,8 +27,8 @@
  *      pass gave it (a band whose first-pass gain is 0 keeps the prototype column) and solves again;
  *      a section gain past OMX_GEQ_DESIGN_GAIN_MAX_DB clamps and the design says so (`clamped`).
  *      The solve is ~1900 magnitude evaluations and two 31 x 31 eliminations, so it is a CONTROL
- *      thread step, {@link omx_geq_instance_design}, never called from the audio callback; the
- *      callback only publishes the finished design, {@link omx_geq_instance_apply} (31 x 5 copies).
+ *      thread step, omx_geq_instance_design(), never called from the audio callback; the
+ *      callback only publishes the finished design, omx_geq_instance_apply() (31 x 5 copies).
  *      A zero target is exact zeros in both modes (`B·0 = 0`), so flat stays the identity.
  *   4. IN -> OUT. The kernel works IN PLACE on the two legs; a host connects separate input and
  *      output buffers (and may connect them to the same memory). run() copies in to out when they
@@ -39,6 +39,10 @@
  *
  * LATENCY IS ZERO, AND PUBLISHED (omx_geq_latency()): a biquad cascade has group delay and no
  * delay line, and a host cannot tell "zero" from "never said".
+ */
+/**
+ * @file omx_geq_instance.h
+ * @brief the native 31-band graphic EQ as a plugin instance: the shell's core, with no format in it.
  */
 #ifndef OMX_GEQ_INSTANCE_H
 #define OMX_GEQ_INSTANCE_H
@@ -74,8 +78,8 @@ enum omx_geq_mode {
   OMX_GEQ_MODE_TRUE = OMX_GEQ_MODES_TRUE          /**< The section gains solve the band interaction. */
 };
 
-/** @brief One finished design: what {@link omx_geq_instance_design} computes on the control thread
- *         and {@link omx_geq_instance_apply} publishes to the kernel. Plain inline data, no pointer. */
+/** @brief One finished design: what omx_geq_instance_design() computes on the control thread
+ *         and omx_geq_instance_apply() publishes to the kernel. Plain inline data, no pointer. */
 typedef struct {
   int ok;                              /**< 1 when designed; 0 when refused (apply ignores it). */
   int mode;                            /**< The mode it was designed in, an enum omx_geq_mode. */
@@ -89,7 +93,7 @@ typedef struct {
 /**
  * @brief Whether a rate can carry the 31 sections: positive, finite and with the top ISO centre
  *        below Nyquist (below it, the top two centres clamp onto one frequency and the
- *        interaction matrix is singular). The rule {@link omx_geq_instance_init} applies.
+ *        interaction matrix is singular). The rule omx_geq_instance_init() applies.
  * @param sr The sample rate, Hz.
  * @return 1 when usable, 0 when not.
  * @note Thread-safe: pure.
@@ -116,7 +120,10 @@ typedef struct {
 /**
  * Bind an instance to its rate. Returns 1 when usable, 0 when not (a rate that is not positive and
  * finite, or one whose Nyquist does not clear the top centre); a refused init leaves `ready` clear
- * and {@link omx_geq_instance_run} is then the identity: absence is a wire, not a crash.
+ * and omx_geq_instance_run() is then the identity: absence is a wire, not a crash.
+ * @param s The instance; every word of it is written.
+ * @param sr The sample rate, Hz, positive and finite, its Nyquist clearing the top centre.
+ * @return 1 when usable, 0 when not: a null instance or a rate omx_geq_instance_rate_ok() refuses leaves `ready` clear and run() the identity.
  * @thread control
  */
 static inline int omx_geq_instance_init(OmxGeqInstance *s, double sr) {
@@ -129,10 +136,11 @@ static inline int omx_geq_instance_init(OmxGeqInstance *s, double sr) {
   return 1;
 }
 
+#define OMX_CONTRACT_STAGE "geq/instance-clear"
 /** The engage-edge clear: every section's history on both legs back to silence. RT-safe: one
  * memset over the inline state.
+ * @param s The instance; null or not ready is ignored.
  * @thread audio */
-#define OMX_CONTRACT_STAGE "geq/instance-clear"
 static inline void omx_geq_instance_clear(OmxGeqInstance *s) {
   if (!s || !s->ready) return;
   omx_geq_state_init(&s->state);
@@ -272,7 +280,7 @@ static inline int omx_geq_instance_solve_pass(const double at_db[OMX_GEQ_BANDS],
  * @param sr The sample rate, Hz.
  * @param gains_db The section gains, dB; all zero when refused.
  * @param clamped Set to 1 when a gain hit the ceiling, else 0; may be NULL.
- * @return 1 when solved; 0 when refused (a rate {@link omx_geq_instance_rate_ok} refuses, a
+ * @return 1 when solved; 0 when refused (a rate omx_geq_instance_rate_ok() refuses, a
  *         non-finite target, a singular pass).
  * @post `gains-inside-the-ceiling`.
  * @note Two passes of omx_geq_instance_solve_pass(); never on the audio
@@ -310,12 +318,12 @@ static inline int omx_geq_true_gains(const double target_db[OMX_GEQ_BANDS], doub
 #define OMX_CONTRACT_STAGE "geq/instance-design"
 /**
  * @brief Design one instance's sections in a mode, on the CONTROL thread, into a design the audio
- *        callback publishes with {@link omx_geq_instance_apply}.
+ *        callback publishes with omx_geq_instance_apply().
  *
  * Each band word is clamped into the declared travel as resolve clamps it (a non-finite word is
  * the default, 0 dB). `standard`: the section gains are those faders, designed term for term as
  * resolve designs them, so applying a standard design is bit-identical to resolving the same words.
- * `true`: {@link omx_geq_true_gains} on the clamped faders.
+ * `true`: omx_geq_true_gains() on the clamped faders.
  * @param s The instance, ready (its rate is read; nothing in it is written).
  * @param mode An enum omx_geq_mode; any other value is `standard`.
  * @param band The host's band words, dB, ISO centre order.
@@ -368,12 +376,12 @@ static inline int omx_geq_instance_design(const OmxGeqInstance *s, int mode, con
  * @brief Publish a finished design to the kernel for one cycle: the audio callback's share of a
  *        designed mode.
  *
- * `bypass` and the engage edge behave as in {@link omx_geq_instance_resolve}. A refused design
+ * `bypass` and the engage edge behave as in omx_geq_instance_resolve(). A refused design
  * (`ok` 0) changes no section. After an apply, the next resolve redesigns every section from its
  * own words.
  * @param s The instance.
  * @param bypass Non-zero to bypass the stage this cycle.
- * @param d The design, from {@link omx_geq_instance_design} at this instance's rate.
+ * @param d The design, from omx_geq_instance_design() at this instance's rate.
  * @note OMX_GEQ_BANDS x 5 copies and omx_geq_set(); no libm design call, no allocation,
  *       no lock. Not thread-safe on one instance; `d` must not be written while this reads it.
  * @thread audio
@@ -391,13 +399,19 @@ static inline void omx_geq_instance_apply(OmxGeqInstance *s, int bypass, const O
 }
 #undef OMX_CONTRACT_STAGE
 
+#define OMX_CONTRACT_STAGE "geq/instance-run"
 /**
  * THE AUDIO CALLBACK'S WHOLE SHARE: copy in to out where they differ, run the console's kernel in
  * place on out. `in_*` and `out_*` may alias. Not ready, bypassed or flat is the identity byte for
  * byte.
+ * @param s The instance; null, not ready or bypassed leaves `out_*` holding `in_*`.
+ * @param in_l The left input, `n` frames.
+ * @param in_r The right input, `n` frames.
+ * @param out_l The left output, `n` frames, may be `in_l`.
+ * @param out_r The right output, `n` frames, may be `in_r`.
+ * @param n The block length, frames; a null port or 0 touches nothing.
  * @thread audio
  */
-#define OMX_CONTRACT_STAGE "geq/instance-run"
 static inline void omx_geq_instance_run(OmxGeqInstance *s, const float *in_l, const float *in_r, float *out_l,
                                         float *out_r, uint32_t n) {
   OMX_INSTANCE_RUN_IN_PLACE(s, in_l, in_r, out_l, out_r, n, omx_geq_process(out_l, out_r, n, &s->atom, &s->state));

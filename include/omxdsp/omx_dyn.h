@@ -97,13 +97,13 @@ struct omx_dyn {
   /** HOLD, frames at the graph's own rate. BELOW mode: the gate stays open this long after its level
    * falls below the close point, with the detector frozen, before the release runs. ABOVE mode: the
    * detector is frozen this long after it last rose, so the reduction holds before the release
-   * runs ({@link omx_dyn_hold_chain}). 0 is no hold. The derivation from milliseconds is
-   * {@link omx_dyn_hold_frames}. */
+   * runs (omx_dyn_hold_chain()). 0 is no hold. The derivation from milliseconds is
+   * omx_dyn_hold_frames(). */
   uint32_t hold_frames;
   /** HYSTERESIS (BELOW mode only), dB, not negative: the gate opens when its level reaches
    * `gc.thresh_db` and closes only when it falls below `gc.thresh_db - hyst_db`. 0 is none. */
   float hyst_db;
-  /** The DRY share of the output, in [0, 1]: `1 - mixPct / 100`, from {@link omx_dyn_dry_share}.
+  /** The DRY share of the output, in [0, 1]: `1 - mixPct / 100`, from omx_dyn_dry_share().
    * 0 (mix 100 %) is the fully processed output; 1 is the input, delay-compensated. */
   float dry;
   /** The KNEE RANGE (BELOW mode only), dB: the knee's centre sits this far from `gc.thresh_db`,
@@ -686,7 +686,7 @@ static inline float omx_gr_block_db(float min_gain) {
  * attack/release shape the gain response for BOTH comp (level up → more reduction) and gate
  * (level up → gate opens); plus the rate changers and the compensation delay the 4× control
  * path needs. The detector LEVEL the gain computer reads is the cascade's LAST stage
- * ({@link omx_env_level}), which is also what the GR meter publishes — one derivation, one
+ * (omx_env_level()), which is also what the GR meter publishes — one derivation, one
  * reader. A disabled slot is a no-op that leaves the signal AND the state untouched.
  * RT-safe: O(n), no allocation, bounded scratch whatever the quantum.
  *

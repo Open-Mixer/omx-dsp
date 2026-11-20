@@ -8,14 +8,16 @@ Needs a C11 compiler, GNU make, binutils, awk, sed, grep and diffutils.
 |---|---|
 | `make` | `build/libomxdsp.a`, `build/libomxdsp-contracts.a` and `build/libomxdsp-tsan.a` |
 | `make test` | the whole suite: every primitive's and kernel's oracle at every declared rate with contracts on, the negative, perturbation and thread arms, the writable-data and doc checks, and the golden digests |
-| `make check-package` | what the deb's and the RPM's check run: the suite, the negative, consumer and thread arms, every oracle and golden digest, the flavours and the libmvec oracles; the sabotage and perturbation arms and the source checks run in `make test` (`tools/check-package-check.sh`, part of `make checks`, holds the two lists together) |
+| `make check-package` | what the deb's and the RPM's check run: the suite, the negative, consumer and thread arms, every oracle and golden digest, the flavours and the libmvec oracles; the sabotage and perturbation arms and the source checks run in `make test` (`make check-package` is derived from `make test`'s list in the Makefile, held by `tools/check-package-derived.sh`, part of `make checks`) |
 | `make test-fx` | the effect kernels' oracles and golden digests alone |
 | `make consumer` | the stateful stages built the way a consumer builds them (release flags, `-Werror`, states on the stack that only their init or settle writes) and run |
 | `make test-analysis` | the feedback detector's, the RTA ring and spectrum's and HRP's oracles (the HRP render and live core among them) at the nine oracle rates (32 to 192 kHz), their no-allocation arm, golden digests and one sabotage per kernel; the room analysis, Farina sweep and alignment fit against closed forms at the nine rates and against core's TypeScript (the parity table), and one sabotage per kernel that both must catch; alone |
 | `make test-engine-kernels` | the golden digests of the sample-rate converter, the generators and the analyser's readings at the nine oracle rates, which the engine's own copies wrote, and a break in each that must move its own digests and no other's |
 | `make install PREFIX=/usr LIBDIR=/usr/lib64 DESTDIR=…` | headers, the three archives and `omxdsp.pc`, `omxdsp-contracts.pc`, `omxdsp-tsan.pc` |
 | `make flavours` | each archive carries its flavour, and a contracts consumer reads a violation raised inside the compiled code only through the contracts archive |
-| `make docs` | the API reference with doxygen |
+| `make docs` | the API reference with doxygen, over every installed header (`include/omxdsp` and its `fx/`, `mix/` and `analysis/`) |
+| `make docs-check` | the documentation gate (run on every pull request): doxygen's undocumented-declaration and undocumented-parameter warnings against `docs/doxygen-baseline.txt`, one row per public declaration still undocumented, compared as a set, which only shrinks: a warning not in it is red, a row no longer warned is red, a row the branch added against `DOCS_BASE=<remote>/<branch>` (required; the branch is fetched from the remote first, and an unset base, a failed fetch, an unresolvable ref or a base without a baseline is red by name — never a stale remote-tracking ref, never the head's own copy) is red, and what doxygen cannot see is red by name before it runs: a missing Doxyfile, baseline or warning log, a Doxyfile without the gate's lines or with a filter, a header without a doc-comment `@file`, a `@cond`/`@internal`/`@if`, an untracked header under `include/omxdsp`, a tree that is no git checkout, a baseline not sorted and unique; `make docs-baseline` rewrites the baseline from the tree and refuses to add a row; `make docs-sabotage` proves each red on a copy of the tree. The CI runner's doxygen (ubuntu-24.04, 1.9.8, pinned) is the authority; another doxygen may add doc-error rows |
+| `make test-support-install` | the test support `make install` puts in `$(DATADIR)/omxdsp/` (`test-support/`: `log10f_cr.h`, `log10f_subst.h`; `tsan-gate.sh`), named by `omxdsp.pc` (`testsupportdir`, `tsangate`) for a consumer's native tests, read back from a scratch install |
 | `make exports` | `build/omx-dsp-exports.json`: every public function and macro with its signature, its body as normalised tokens, its distinctive literals, maths calls, inline kernels and `@twin` names; `make install` puts it in `$(DATADIR)/omxdsp/` beside `omx-dsp-copy-check` in `$(BINDIR)` |
 | `make copy-check` | `tools/omx-dsp-copy-check.sh --self-test`: planted copies in a scratch consumer (an exact copy, a renamed one, a TypeScript twin, a literal copy, inline kernels) must be found, a legitimate caller, boilerplate, tests and fakes must pass, and a stale or reasonless allowlist entry must fail; then each rule is broken in turn and the self-test must go red (part of `make test`, which runs it alone before everything else, so no parallel job runs beside it) |
 | `make lint` | the doc check, the source scan, the log10f guard, tools/contract-single-source.sh (no name omx-contract defines is defined again here), tools/face-conformance.sh (every instance face's resolve takes its kernel's contract controls by name, order and kind), tools/travel-grid-check.sh (a travel's step reaches its maximum and default, a choice names its ids) and tools/clone-check.sh (a second copy of a body inside the library goes red); each checks its own sabotage |
@@ -298,15 +300,16 @@ code reads them through `<omxdsp/omxdsp_definitions.h>`, rendered from `data/` b
 (`make definitions OMX_CONTRACT=<checkout>`, which runs `omx-contract render --target c --package
 omx-dsp`) and committed, so a build needs no node. Never edit the header: change the definition and
 render again; `make definitions-check` fails while the two differ, and `tools/contract-single-source.sh`
-fails on a second definition of any of its names. `make install` installs `data/` into omx-contract's
-contract directory as the package `omx-dsp`, with a `MANIFEST.json`, where the other packages read
-it.
+fails on a second definition of any of its names. `make install` installs `data/` into the contract directory
+under its own prefix (`$(DATADIR)/omx-contract/contract.d`, the installed omx-contract's directory at `PREFIX=/usr`)
+as the package `omx-dsp`, with a `MANIFEST.json`, where the other packages read it. Nothing is written or
+removed outside `$(DESTDIR)$(PREFIX)` (`make install-confined`, in a throwaway container).
 
 The facts no single package implements (the declared sample rates, the parameter scales) stay in
 Open-Mixer/omx-contract, read through `<omxcontract/omx_contract_limits.h>`, which the definitions
 header includes. That dependency is declared once, in the packaging: `packaging/omx-dsp.spec`
 (`BuildRequires`, `Requires`) and `debian/control` (`Build-Depends`, `Depends`) carry the same floor
-and the same ceiling, the next major (`>= 3.18.0` and `< 4`), and `omxdsp.pc` requires the same range. Install
+and the same floor (`>= 3.18.0`, no ceiling: floors only), and `omxdsp.pc` requires that floor. Install
 it from the OpenMixer channel with the rest of the build dependencies:
 
     dnf builddep packaging/omx-dsp.spec     # Fedora, with the OpenMixer repository added
@@ -317,7 +320,7 @@ floor the spec declares, it prints the package's include directory; otherwise th
 the package, the floor and the version installed. The script reads the floor; the ceiling is held by the package managers and pkg-config.
 Nothing is downloaded and no version is pinned anywhere else. `tools/contract-include-selftest.sh`
 (`make checks`) holds the script to that floor, and the spec, `debian/control` and `omxdsp.pc.in` to the same
-floor and the ceiling `< 4`; a ceiling missing from any of them is red.
+floor; a ceiling written on any of them is red.
 
 `OMX_CONTRACT_INC=<dir>` names another include directory (one that holds `omxcontract/`) and skips the
 version check. The perturbation arms use it, and so can you: render a contract with one value moved

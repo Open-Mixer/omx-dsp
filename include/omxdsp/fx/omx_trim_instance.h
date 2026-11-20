@@ -33,6 +33,10 @@
  * LATENCY IS ZERO. No allocation, no lock; every word of state is in the caller's
  * {@link OmxTrimInstance}.
  */
+/**
+ * @file omx_trim_instance.h
+ * @brief the console's input trim as a plugin instance: the lane's head gain, a de-zippered ramp from the gain the last block ended on to the one resolved now, both legs from the same start. No format in it.
+ */
 #ifndef OMX_TRIM_INSTANCE_H
 #define OMX_TRIM_INSTANCE_H
 
@@ -61,6 +65,9 @@ typedef struct {
 /** Bind an instance to its rate: unity gain, engaged. Returns 1 when usable, 0 when the rate is
  * not positive and finite (run() is then the identity). The gain does not depend on the rate; the
  * rate is checked so a host's refused instance behaves as every other face's. Allocates nothing.
+ * @param s The instance; every word of it is written.
+ * @param sr The sample rate, Hz, positive and finite; the gain does not depend on it.
+ * @return 1 when usable, 0 when not: a null instance or a rate that is not positive and finite is refused, `ready` stays clear and run() is the identity.
  * @thread control */
 static inline int omx_trim_instance_init(OmxTrimInstance *s, float sr) {
   if (!s) return 0;
@@ -91,6 +98,12 @@ static inline void omx_trim_instance_resolve(OmxTrimInstance *s, int bypass, flo
  * THE AUDIO CALLBACK'S WHOLE SHARE: copy in to out where they differ, then ramp both legs from
  * the same start gain to the resolved one, in place on out. `in_*` and `out_*` may alias. Not
  * ready, or bypassed, is the identity.
+ * @param s The instance; null, not ready or bypassed leaves `out_*` holding `in_*`.
+ * @param in_l The left input, `n` frames.
+ * @param in_r The right input, `n` frames.
+ * @param out_l The left output, `n` frames, may be `in_l`.
+ * @param out_r The right output, `n` frames, may be `in_r`.
+ * @param n The block length, frames; a null port or 0 touches nothing.
  * @thread audio
  */
 static inline void omx_trim_instance_run(OmxTrimInstance *s, const float *in_l, const float *in_r, float *out_l,
@@ -103,6 +116,8 @@ static inline void omx_trim_instance_run(OmxTrimInstance *s, const float *in_l, 
 }
 
 /** The frames of latency the instance introduces: none (a gain has no delay line).
+ * @param s The instance.
+ * @return 0.
  * @thread audio */
 static inline uint32_t omx_trim_instance_latency(const OmxTrimInstance *s) {
   (void)s;

@@ -6,8 +6,8 @@
  *        scales, `y = u + (g − 1)·B(u)` — the dynamic EQ band, and the de-esser's split form.
  *
  * Composed from the
- * library words only: {@link omx_biquad} runs `B`, {@link omx_env_step} is the detector,
- * {@link omx_gaincomp_db} is the characteristic in either mode. `B` is designed on the control
+ * library words only: omx_biquad() runs `B`, omx_env_step() is the detector,
+ * omx_gaincomp_db() is the characteristic in either mode. `B` is designed on the control
  * thread and is power-complementary to `1 − B` (bell: the cookbook bandpass; shelves: `½(1 ± A₁)`),
  * so a cut never exceeds its input at any frequency and a boost never exceeds `range_db` (§4 L4).
  *

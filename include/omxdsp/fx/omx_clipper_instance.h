@@ -63,6 +63,9 @@ static inline void omx_clipper_instance_resolve(OmxClipperInstance *s, int bypas
 
 /** Bind an instance to its rate. Returns 1 when usable, 0 when not: the rate must be one of the oracle
  * set. It comes up at its declared defaults. Allocates nothing.
+ * @param s The instance; every word of it is written.
+ * @param sr The sample rate, Hz, one of the oracle set.
+ * @return 1 when usable, 0 when not: a rate the console does not declare (the oracle set, 32 to 192 kHz) is refused, `ready` stays clear and run() is the identity.
  * @thread control */
 static inline int omx_clipper_instance_init(OmxClipperInstance *s, float sr) {
   if (!omx_instance_bind(s, sizeof(*s), sr)) return 0;
@@ -97,12 +100,18 @@ static inline void omx_clipper_instance_resolve(OmxClipperInstance *s, int bypas
 }
 #undef OMX_CONTRACT_STAGE
 
+#define OMX_CONTRACT_STAGE "clipper/instance-run"
 /**
  * THE AUDIO CALLBACK'S WHOLE SHARE: the clip over both legs, in to out. `in_*` and `out_*` may alias.
  * Not ready or bypassed is the identity.
+ * @param s The instance; null, not ready or bypassed leaves `out_*` holding `in_*`.
+ * @param in_l The left input, `n` frames.
+ * @param in_r The right input, `n` frames.
+ * @param out_l The left output, `n` frames, may be `in_l`.
+ * @param out_r The right output, `n` frames, may be `in_r`.
+ * @param n The block length, frames; a null port or 0 touches nothing.
  * @thread audio
  */
-#define OMX_CONTRACT_STAGE "clipper/instance-run"
 static inline void omx_clipper_instance_run(OmxClipperInstance *s, const float *in_l, const float *in_r, float *out_l,
                                             float *out_r, uint32_t n) {
   if (!omx_instance_copy_through(in_l, in_r, out_l, out_r, n)) return;
@@ -132,6 +141,8 @@ static inline void omx_clipper_instance_run(OmxClipperInstance *s, const float *
 static inline float omx_clipper_instance_gain_reduction_db(const OmxClipperInstance *s) { return s ? s->gr_db : 0.0f; }
 
 /** The frames of latency the instance introduces: none.
+ * @param s The instance.
+ * @return 0.
  * @thread audio */
 static inline uint32_t omx_clipper_instance_latency(const OmxClipperInstance *s) {
   (void)s;

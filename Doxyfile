@@ -1,7 +1,13 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2026 Pau Aliagas <linuxnow@gmail.com>
-# libomxdsp API reference.
+# libomxdsp API reference: every installed header (include/omxdsp and its fx/, mix/ and analysis/).
 # Build-time only: `make docs`; never a runtime dependency of the console.
+# The documentation gate is `make docs-check`: doxygen's own undocumented-member and parameter warnings
+# (WARN_IF_UNDOCUMENTED, WARN_NO_PARAMDOC) are written to WARN_LOGFILE and compared with
+# docs/doxygen-baseline.txt, the undocumented public declarations the tree still carries. A warning not
+# in the baseline is red; a baseline row no longer warned is red (drop it); a baseline that grew against
+# its base is red. WARN_FORMAT carries no $line, so a row names the header and the declaration only, and
+# docs-check strips the tree's own path from it, so a row reads the same in every checkout.
 PROJECT_NAME           = libomxdsp
 PROJECT_BRIEF          = "openmixer's DSP primitives: one header per building block"
 OUTPUT_DIRECTORY       = build/docs
@@ -9,7 +15,7 @@ INPUT                  = include/omxdsp
 # rendered from data/, where every define is documented (its definition); the banner says so
 EXCLUDE                = include/omxdsp/omxdsp_definitions.h
 FILE_PATTERNS          = *.h
-RECURSIVE              = NO
+RECURSIVE              = YES
 OPTIMIZE_OUTPUT_FOR_C  = YES
 EXTRACT_ALL            = NO
 EXTRACT_STATIC         = YES
@@ -17,7 +23,9 @@ HIDE_UNDOC_MEMBERS     = NO
 WARN_IF_UNDOCUMENTED   = YES
 WARN_IF_DOC_ERROR      = YES
 WARN_NO_PARAMDOC       = YES
-WARN_AS_ERROR          = FAIL_ON_WARNINGS
+WARN_AS_ERROR          = NO
+WARN_FORMAT            = "$file: $text"
+WARN_LOGFILE           = build/docs/warnings.txt
 QUIET                  = YES
 GENERATE_HTML          = YES
 GENERATE_MAN           = YES

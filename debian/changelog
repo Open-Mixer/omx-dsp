@@ -1,14 +1,97 @@
+omx-dsp (0.33.1) unstable; urgency=medium
+
+  * ts: the TypeScript twins no Open-Mixer repository consumes are deleted
+    (hrp-place and fbs-place, the gaincomp, gate, meter and eq helpers named
+    in #105) with their agreement arms; the C kernels are the one source, each
+    held by its vectors and oracle. The HRP placement's vectors are installed
+    as omxdsp/hrp-place-vectors (omxdsp.pc hrpplacevectors) (#105).
+  * CI: the below-floor job installs the newest published omx-contract below
+    the floor (#103).
+  * comp key: the key never reaching the audio and the N-thread identity are
+    oracles (test/fx/comp_key_isolation), with a perturbation that turns them
+    red (#109).
+  * omx-rt-gate: syscall stays forbidden, but a FUTEX_WAKE spelled at the call
+    is a wake; the thread-identity class (pthread_self, pthread_equal,
+    pthread_gettid_np) and the cpu-identity class (sched_getcpu), each closed
+    to its symbols; strnlen joins bulk-memory; omx-clap-core.abi, the
+    embedder's audio-thread callbacks (#111).
+  * CI and release: Fedora 45 only (fc45, RPM on x86_64); the arm gate covers
+    the DEBs; tools/test/workflow-fedora-check.sh refuses Fedora 44 in the
+    workflows (#112).
+  * install: the devel package ships the test support and the TSan gate a
+    consumer's native tests read; tools/support-install-check.sh holds the file
+    list (#107).
+  * comp feedback: the bus preset's O7, O8 and O9 oracles, with five sabotages;
+    the peak scans written as comparisons (#108).
+
+ -- Pau Aliagas <linuxnow@gmail.com>  Thu, 19 Nov 2026 17:00:00 +0100
+
+omx-dsp (0.33.0) unstable; urgency=medium
+
+  * wasm: make wasm builds omx_curve_points_json to build/wasm/omx-dsp.wasm
+    with the distribution's clang, lld and wasi-libc (tools/wasm-build.sh, one
+    recipe for every module), the curve function as C compiled to WebAssembly
+    (#91). Built by the recipe, never committed.
+  * ts: @openmixer/omx-dsp loads that module as WebAssembly, and the TypeScript
+    curve twin is deleted. vectors/curve-points.json runs through the
+    WebAssembly door, with the native-against-wasm report (#92, #93).
+  * The noarch package omx-dsp-wasm installs the npm tree under
+    /usr/share/omx-dsp/: the loader at dist/index.js, the module at
+    wasm/omx-dsp.wasm, with package.json, src/ and oracle/; the loader is
+    built by the package's own pinned TypeScript (#101).
+  * Packaging: dependency floors only. omx-contract keeps its floor (3.18.0);
+    BUILDING.md names no ceiling, and the contract-include self-test refuses a
+    ceiling planted in packaging/deps.txt (#100).
+
+ -- Pau Aliagas <linuxnow@gmail.com>  Wed, 18 Nov 2026 23:12:00 +0100
+
 omx-dsp (0.32.4) unstable; urgency=medium
 
   * curve: the drive family, a drive's transfer curve sample in to sample
     out through the drive kernel's own control mapping and biased shaper;
     roles drive, tone, model, mix and output, the unit pc, the sample
-    extents. The TypeScript twin draws it too. Added names only; the three
+    extents. It reads dB in to dB out on the one level axis (default grid
+    -60..0 dB). The TypeScript twin draws it too. Added names only; the
     moved curve counts are proven in tools/patch-count-proofs.txt.
-  * patch-names-check: a count or size macro whose value moves in a patch
-    needs its proof line.
+  * curve: time_response, the delay's taps (stems: time, level, shade, leg)
+    and the reverb's decay envelope, against the kernels; the reverb's
+    decay loops are declared once as data; the TypeScript twin draws both.
+  * curve: omx_curve_points_json (omx_curve_json.h), the curve function with
+    JSON text on both sides, and curve-io.schema.json (shapes/), the shape of
+    its two documents; vectors/curve-points.json, 22 rows written from closed
+    forms, never by the library. Numbers are locale-proof (a comma-decimal
+    locale touches no separator) and a repeated key is refused.
+  * The EQ Q range moves the kernel and its TypeScript twin together
+    (eq-q-range-sabotage), and a stale twin goes red.
+  * reverb: the layout refuses a rate or a pool that does not fit, and the
+    hrp render init refuses a track config the tracker refuses; omx_pool_take
+    refuses a length whose sum wraps.
+  * install: the contract directory installs under PREFIX, never the
+    system's, and install-confined checks that make install stays inside
+    DESTDIR+PREFIX.
+  * docs: the API reference by doxygen, with docs-check holding the
+    undocumented-declaration count against a baseline that only shrinks; the
+    drive, reverb, delay, chorus, flanger and every instance face are
+    documented in full.
+  * Packaging: dependency floors only. omx-contract keeps its floor
+    (3.18.0) and loses its ceiling, in the spec, debian/control and omxdsp.pc;
+    omx-dsp-contract no longer declares Breaks or Replaces.
+  * The old-release machinery (the v0.1.3 round-trip, the patch-release API
+    gate) is removed. Tests and checks: make check-package runs make test's
+    own list; flavour-check bounds every compile it starts; fuzz_laws holds
+    each sample of a ramp to its rule; the compressor detector oracles O5, O8
+    and O9 at the nine oracle rates; the TSan probe says why it cannot read
+    TSan.
+  * release: the deb job publishes omx-dsp-contract with libomxdsp-dev, and a
+    check refuses a release that omits a binary a sibling depends on.
+  * wasm: make wasm builds omx_curve_points_json to build/wasm/omx-dsp.wasm with the
+    distribution's clang, lld and wasi-libc (tools/wasm-build.sh, one recipe for
+    every module); 91226 bytes, four exports, five stdio WASI imports no call
+    reaches. The noarch package omx-dsp-wasm installs it under
+    /usr/share/omx-dsp/wasm; the npm tarball carries it as wasm/omx-dsp.wasm.
+    Never committed. Added names only.
 
- -- Pau Aliagas <linuxnow@gmail.com>  Sun, 15 Nov 2026 20:55:00 +0100
+ -- Pau Aliagas <linuxnow@gmail.com>  Tue, 17 Nov 2026 21:30:00 +0100
 
 omx-dsp (0.32.3) unstable; urgency=medium
 

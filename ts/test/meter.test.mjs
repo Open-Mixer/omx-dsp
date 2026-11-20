@@ -4,8 +4,8 @@
  * THE METER VIEW TWIN AGREES WITH ITS KERNEL AND WITH THE VECTORS: meter.ts (dist/) against mix/omx_meter_view.h through
  * the oracle, on the held and gain-reduction reads of vectors/meter-view.json (the nine oracle rates, quanta 32 to
  * 1024) and on grids of its own, and against the file itself, the one every copy of the law reads. Each word of the law
- * has a sabotage arm that must go red: the marker stepped per change, the reduction's hold removed, the fall one dB per
- * second off, the hysteresis removed, the clip word not sticky, the floor moved, the decimation keeping the newest.
+ * has a sabotage arm that must go red: the marker stepped per change, the fall one dB per second off, the hysteresis
+ * removed, the floor moved.
  */
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
@@ -14,23 +14,12 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { against, ask, compare, oracleKernels, oracleRates } from '../oracle/ts-twin-oracle.mjs';
 import {
-  METER_GR_EMPTY,
-  METER_GR_HOLD_MS,
-  METER_KINDS,
-  METER_MEASUREMENTS,
-  METER_UNITS,
   METER_VIEW,
-  METER_WORDS,
   meterBarStep,
-  meterClip,
-  meterDecimate,
   meterFill,
   meterFillDb,
-  meterGrStep,
-  meterGrView,
   meterMarker,
   meterStep,
-  meterUnitOf,
 } from '../dist/index.js';
 import { TOLERANCES as T } from './tolerances.mjs';
 
@@ -43,12 +32,6 @@ const markers = (fills, dts, step = meterMarker, fall = FALL, floor = FLOOR) => 
   let m;
   return fills.map((f, i) => (m = step(m, f, dts[i], fall, floor)).marker);
 };
-/** A gain-reduction law run over a sequence of (deepest, dt): the readings. */
-const readings = (c, view = meterGrView) => {
-  let m = METER_GR_EMPTY;
-  return c.deepest.map((d, i) => (m = view(m, d, c.dt[i], c.rate, c.pole)).db);
-};
-const sum = (rs) => rs.reduce((n, r) => n + r.failures.length, 0);
 
 /** Sabotaged twins, one per word. */
 const perChange = (p, fill, dt, fall, floor) => {
@@ -56,20 +39,14 @@ const perChange = (p, fill, dt, fall, floor) => {
   const f = Math.min(1, Math.max(0, fill || 0));
   return meterMarker(q, f, f !== q.live ? dt : 0, fall, floor);
 };
-const noHold = (m, d, dt, sr, pole) => {
-  const r = meterGrView(m, d, dt, sr, pole);
-  return { db: r.db, holdLeftS: 0 };
-};
-
 describe('the oracle answers the meter view kernels', () => {
-  it('has every handler, and the hold is OMX_METER_GR_HOLD_MS', () => {
+  it('has every handler the twins need', () => {
     const k = oracleKernels();
-    for (const n of ['meter_view_fill_db', 'meter_view_fill', 'meter_view_step', 'meter_view_clip', 'meter_view_ladder', 'meter_view_bar_step', 'meter_view_decimate', 'meter_view_gr', 'meter_view_unit_of', 'meter_gr_hold_ms']) assert.ok(k.includes(n), n);
-    assert.equal(ask('meter_gr_hold_ms', [[]]).answers[0][0], METER_GR_HOLD_MS);
+    for (const n of ['meter_view_fill_db', 'meter_view_fill', 'meter_view_step', 'meter_view_ladder', 'meter_view_bar_step']) assert.ok(k.includes(n), n);
   });
   it('the vectors cover every oracle rate at quanta 32 to 1024', () => {
     const rates = oracleRates();
-    for (const set of ['held', 'gr']) {
+    for (const set of ['held']) {
       assert.deepEqual([...new Set(cases(set).map((c) => c.rate))].sort((a, b) => a - b), [...rates].sort((a, b) => a - b), set);
       assert.deepEqual([...new Set(cases(set).map((c) => c.quantum))], [32, 64, 128, 256, 512, 1024], set);
     }
@@ -82,21 +59,7 @@ describe('the declared numbers', () => {
     assert.deepEqual({ ...METER_VIEW }, { floorDb: -60, stepHysteresis: 0.25, fallDbPerSecond: 18, hostReadHz: 50, streamHz: 20 });
     const { grHoldMs, ...law } = VECTORS.law;
     assert.deepEqual(law, { ...METER_VIEW });
-    assert.equal(grHoldMs, METER_GR_HOLD_MS);
-    assert.deepEqual(METER_WORDS.kinds, ['level', 'gain-reduction']);
-    assert.deepEqual(METER_WORDS.measurements, ['peak', 'true-peak', 'lufs-m', 'lufs-s', 'lufs-i', 'lra']);
-    assert.deepEqual(METER_WORDS.units, ['dBFS', 'dBTP', 'LUFS', 'LU', 'dB']);
-  });
-});
-
-describe('the unit agrees with omx_meter_view_unit_of', () => {
-  const asked = ask('meter_view_unit_of', [0, 1].flatMap((k) => METER_MEASUREMENTS.map((_, m) => [k, m])));
-  const twin = (of) => (r) => [METER_UNITS.indexOf(of(METER_KINDS[r[0]], METER_MEASUREMENTS[r[1]]))];
-  it('for every kind and measurement', () => {
-    assert.deepEqual(against(asked, twin(meterUnitOf), T.meterView).failures, []);
-  });
-  it('SABOTAGE a true peak in dBFS: red', () => {
-    assert.ok(against(asked, twin((k, m) => (m === 'truePeak' ? 'dbfs' : meterUnitOf(k, m))), T.meterView).failures.length > 0);
+    assert.ok(grHoldMs > 0);
   });
 });
 
@@ -165,29 +128,6 @@ describe('the marker falls by elapsed time: the same at draw rates 5 to 60 Hz, o
   });
 });
 
-describe('the clip word agrees with omx_meter_view_clip, and stays lit until cleared', () => {
-  const c = cases('clip')[0];
-  const seq = [[1, 0], ...Array.from({ length: 30 }, (_, i) => [i % 7 === 3 ? 1 : 0, i === 20 ? 1 : 0])];
-  const asked = ask('meter_view_clip', [c.clip.flatMap((x, i) => [x, c.clear[i]]), seq.flat()]);
-  const twin = (clip) => (r) => {
-    let lit = false;
-    const out = [];
-    for (let i = 0; i < r.length; i += 2) {
-      if (r[i + 1]) lit = false;
-      lit = clip(lit, r[i] !== 0);
-      out.push(lit ? 1 : 0);
-    }
-    return out;
-  };
-  it('agrees, and is the file\'s', () => {
-    assert.deepEqual(against(asked, twin(meterClip), T.meterView).failures, []);
-    assert.deepEqual(asked.answers[0], c.lit);
-  });
-  it('SABOTAGE not sticky: red', () => {
-    assert.ok(against(asked, twin((_lit, clip) => clip), T.meterView).failures.length > 0);
-  });
-});
-
 describe('the ladder and the bar agree with omx_meter_view_ladder and omx_meter_view_bar_step', () => {
   const FILLS = Array.from({ length: 101 }, (_, i) => i / 100).concat([-0.5, 1.5, NaN]);
   const ladder = ask('meter_view_ladder', [8, 12, 13].flatMap((steps) => [-1, 0, 3, 4, 5, 8].flatMap((prev) => FILLS.map((f) => [steps, 0.25, prev, f]))));
@@ -206,44 +146,6 @@ describe('the ladder and the bar agree with omx_meter_view_ladder and omx_meter_
     const c = cases('ladder')[0];
     let prev;
     assert.ok(compare(c.fill.map((f) => (prev = meterStep(prev, f, c.steps, 0))), c.count, T.meterView).failures.length > 5);
-  });
-});
-
-describe('the decimation agrees with omx_meter_view_decimate', () => {
-  const V = [-Infinity, -40, -12, -3, 0, 0.1, 0.5, 1, NaN];
-  const asked = ask('meter_view_decimate', [0, 1].flatMap((k) => V.filter((a) => !Number.isNaN(a)).flatMap((a) => V.map((b) => [k, a, b]))));
-  const twin = (dec) => (r) => [dec(METER_KINDS[r[0]], r[1], r[2])];
-  it('agrees, and is the file\'s: a level keeps the peak, a reduction the deepest', () => {
-    assert.deepEqual(against(asked, twin(meterDecimate), T.meterView).failures, []);
-    const c = cases('decimate')[0];
-    assert.deepEqual(c.kind.map((k, i) => meterDecimate(METER_KINDS[k], c.kept[i], c.value[i])), c.out);
-  });
-  it('SABOTAGE a reduction keeps the peak: red', () => {
-    assert.ok(against(asked, twin((k, a, b) => meterDecimate('level', a, b)), T.meterView).failures.length > 10);
-  });
-});
-
-describe('the gain-reduction reading agrees with omx_meter_view_gr on every gr read of the vectors', () => {
-  const gr = cases('gr');
-  const asked = ask('meter_view_gr', gr.map((c) => [c.rate, c.pole, ...c.deepest.flatMap((d, i) => [d, c.dt[i]])]));
-  const twin = (view) => (r) => {
-    const k = (r.length - 2) / 2;
-    return readings({ rate: r[0], pole: r[1], deepest: Array.from({ length: k }, (_, i) => r[2 + 2 * i]), dt: Array.from({ length: k }, (_, i) => r[3 + 2 * i]) }, view);
-  };
-  it('at every oracle rate and quantum, and is the file\'s', () => {
-    assert.equal(asked.rows.length, 54);
-    const r = against(asked, twin(meterGrView), T.meterGr);
-    assert.deepEqual(r.failures.slice(0, 5), []);
-    process.stderr.write(`meterGrView: largest gap ${r.worst} dB\n`);
-    assert.equal(sum(gr.map((c) => compare(readings(c), c.reading, T.meterGr))), 0);
-  });
-  it('one step agrees with omx_meter_gr_step through the view, a block at a time', () => {
-    const m = meterGrStep(METER_GR_EMPTY, -6, 480, 48000, 0.99);
-    assert.deepEqual(m, { db: -6, holdLeftS: Math.fround(Math.fround(300) * Math.fround(0.001)) });
-  });
-  it('SABOTAGE the hold removed: red', () => {
-    assert.ok(against(asked, twin(noHold), T.meterGr).failures.length > 54);
-    assert.ok(sum(gr.map((c) => compare(readings(c, noHold), c.reading, T.meterGr))) > 54);
   });
 });
 

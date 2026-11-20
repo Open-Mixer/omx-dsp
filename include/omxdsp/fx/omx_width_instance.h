@@ -4,7 +4,7 @@
  * omx_width_instance.h — stereo width and pseudo-stereo as a plugin instance (FX-11): a mono keyboard
  * or playback made wide on the PA, a monitor mix narrowed. It adds no DSP to the omx_width word.
  *
- *   RESOLVE. {@link omx_width_instance_resolve} takes the width kernel's contract controls in their
+ *   RESOLVE. omx_width_instance_resolve() takes the width kernel's contract controls in their
  *   declared order (data/kernels/width.json), a travel clamped into its range and a non-finite word
  *   reading as its default, a choice outside its set reading as its default. widthPct/100 scales the
  *   side; pseudoMs becomes the delay in samples (omx_width_delay); bassMonoHz is the LR4 corner.
@@ -15,6 +15,10 @@
  *
  * LATENCY IS ZERO: the Haas delay and the comb are the effect, the dry mid is frame-aligned.
  * Nothing is allocated: the word's ring is inline in {@link OmxWidthInstance}.
+ */
+/**
+ * @file omx_width_instance.h
+ * @brief stereo width and pseudo-stereo as a plugin instance (FX-11): a mono keyboard or playback made wide on the PA, a monitor mix narrowed. It adds no DSP to the omx_width word.
  */
 #ifndef OMX_WIDTH_INSTANCE_H
 #define OMX_WIDTH_INSTANCE_H
@@ -47,6 +51,9 @@ static inline void omx_width_instance_resolve(OmxWidthInstance *s, int bypass, f
 
 /** Bind an instance to its rate. Returns 1 when usable, 0 when not: the rate must be one of the oracle
  * set. The face comes up at its declared defaults, the identity. Allocates nothing.
+ * @param s The instance; every word of it is written.
+ * @param sr The sample rate, Hz, one of the oracle set.
+ * @return 1 when usable, 0 when not: a rate the console does not declare (the oracle set, 32 to 192 kHz) is refused, `ready` stays clear and run() is the identity.
  * @thread control */
 static inline int omx_width_instance_init(OmxWidthInstance *s, float sr) {
   if (!omx_instance_bind(s, sizeof(*s), sr)) return 0;
@@ -101,6 +108,12 @@ static inline void omx_width_instance_resolve(OmxWidthInstance *s, int bypass, f
 /**
  * THE AUDIO CALLBACK'S WHOLE SHARE: the word over both legs, in to out. `in_*` and `out_*` may alias.
  * Not ready, bypassed or at the come-up values is the identity and moves no state.
+ * @param s The instance; null, not ready or bypassed leaves `out_*` holding `in_*`.
+ * @param in_l The left input, `n` frames.
+ * @param in_r The right input, `n` frames.
+ * @param out_l The left output, `n` frames, may be `in_l`.
+ * @param out_r The right output, `n` frames, may be `in_r`.
+ * @param n The block length, frames; a null port or 0 touches nothing.
  * @thread audio
  */
 static inline void omx_width_instance_run(OmxWidthInstance *s, const float *in_l, const float *in_r, float *out_l,
@@ -111,6 +124,8 @@ static inline void omx_width_instance_run(OmxWidthInstance *s, const float *in_l
 }
 
 /** The frames of latency the instance introduces: none.
+ * @param s The instance.
+ * @return 0.
  * @thread audio */
 static inline uint32_t omx_width_instance_latency(const OmxWidthInstance *s) {
   (void)s;

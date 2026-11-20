@@ -2,8 +2,9 @@
 # Copyright (C) 2026 Pau Aliagas <linuxnow@gmail.com>
 name: ci
 
-# By workflow_dispatch (on a pull request's head before it is merged: gh workflow run ci.yml --ref <branch>): the whole suite on Fedora, both Debian releases and Ubuntu 24.04,
-# on both architectures; on workflow_dispatch the packages built, their file lists checked and a consumer outside the tree built
+# By workflow_dispatch (on a pull request's head before it is merged: gh workflow run ci.yml --ref <branch>): the whole suite (make test) on Fedora, and the package check (make check-package: every oracle and golden digest,
+# not the sabotage and perturbation arms, which run once) on both Debian releases and Ubuntu 24.04,
+# on the cells check-matrix names (the quick set's while the release matrix is quick); on workflow_dispatch the packages built, their file lists checked and a consumer outside the tree built
 # against each; omx-contract installed from the OpenMixer channel at the floor the packaging
 # declares, and refused below its floor. The packages and the release workflow as a dry run only on workflow_dispatch
 # (fast-release dispatches it on a release head). The fast checks, the documentation check among them, run on every
@@ -27,9 +28,32 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  # The cells the Debian and Fedora jobs below run on: the quick set's alone while OMX_RELEASE_MATRIX is quick, the whole
+  # matrix when it is full (check-matrix; each cell carries its image, architecture and runner).
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      cells: ${{ steps.m.outputs.cells }}
+      deb: ${{ steps.m.outputs.deb }}
+      count: ${{ steps.m.outputs.count }}
+      deb-count: ${{ steps.m.outputs.deb-count }}
+    steps:
+      - id: m
+        uses: Open-Mixer/.github/.github/actions/check-matrix@openmixer-v1
+        with:
+          wave: ${{ vars.OMX_RELEASE_MATRIX }}
+          rpm-releases: '["45"]'
+          rpm-arches: '["x86_64"]'
+          deb-releases: ${{ vars.OMX_RELEASE_MATRIX == 'full' && '["bookworm", "trixie"]' || '["trixie"]' }}
+          deb-arches: '["amd64", "arm64"]'
+          x86-runner: ${{ github.event.pull_request.head.repo.fork && 'ubuntu-latest' || vars.OMX_RUNNER || 'ubuntu-latest' }}
+
   test:
-    name: make test (${{ matrix.image }}, ${{ matrix.arch }})
-    runs-on: ${{ github.event.pull_request.head.repo.fork && 'ubuntu-latest' || vars.OMX_RUNNER || 'ubuntu-latest' }}
+    name: make test (${{ matrix.cell.image }}, ${{ matrix.cell.arch }})
+    runs-on: ${{ matrix.cell.runner }}
+    needs: checks
+    if: needs.checks.outputs.count != '0'
     # Run one make job per CPU (BUILDING.md: make -jN test is supported, and make gen-once holds the
     # one generation under -j8): serially the suite reached 39 to 43 minutes of this 60-minute limit
     # once the remaining-FX wave's oracles and perturbation scripts joined it, and one trixie run went
@@ -38,13 +62,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # ubuntu:24.04 carries GCC 13, whose -Wmaybe-uninitialized reads paths the newer
-        # compilers prove dead.
         # ruling D25: bookworm is a full cell, served its floors (omx-contract 3.18.0) only at the wave-end full release
-        image: ${{ fromJSON(vars.OMX_RELEASE_MATRIX == 'full' && '["fedora:44", "debian:bookworm", "debian:trixie", "ubuntu:24.04"]' || '["fedora:44", "debian:trixie", "ubuntu:24.04"]') }}
-        arch: [amd64]  # arm64 builds run at release only (release.yml)
+        cell: ${{ fromJSON(needs.checks.outputs.cells) }}
     container:
-      image: ${{ matrix.image }}
+      image: ${{ matrix.cell.image }}
     # debian images run sh by default, which has no pipefail
     defaults:
       run:
@@ -70,7 +91,7 @@ jobs:
       - name: Add the OpenMixer repository
         uses: Open-Mixer/.github/.github/actions/add-openmixer@openmixer-v1
         with:
-          suite: ${{ startsWith(matrix.image, 'ubuntu') && 'trixie' || '' }}
+          suite: ''
 
       - name: Install the build dependencies from the OpenMixer channel
         run: |
@@ -106,26 +127,98 @@ jobs:
         id: handback-release-arm-gate
         run: tools/release-arm-gate-selftest.sh && tools/release-arm-gate-selftest.sh --sabotage
 
+      - name: The picker chooses the newest published omx-contract below the floor (self-test, sabotage held)
+        id: handback-below-floor-picker
+        run: sh tools/below-floor-version-selftest.sh
+
       # the parallel jobs from the job's CPU quota and the runner's declared CPUs, never the host's nproc
       - name: The parallel jobs this runner may run
         uses: Open-Mixer/.github/.github/actions/jobs@openmixer-v1
         with:
           max: ${{ vars.OMX_RUNNER_CPUS || '3' }}
+      # The sabotage and perturbation arms prove the tests and the source checks read text: neither depends on
+      # the distro, so they run once, in the Fedora cell. The other cells run what the package builds run
+      # (make check-package): every oracle and golden digest at every declared rate on their own toolchain.
       - name: make test
         id: handback-test
+        if: startsWith(matrix.cell.image, 'fedora')
+        # this job's container is thrown away after the job: the one place install-confined runs its check in place (#75)
+        env:
+          OMX_INSTALL_CONFINED_INNER: '1'
         run: make -j"$OMX_JOBS" test
 
-  # The sabotage of the range: omx-contract 2.6.0, which the channel still serves and which is below
-  # the floor the spec declares, must stop the build at once with a message that names the
-  # dependency, the floor and the version installed.
+      - name: make check-package
+        id: handback-check-package
+        if: ${{ !startsWith(matrix.cell.image, 'fedora') }}
+        run: make -j"$OMX_JOBS" check-package
+
+  # The sabotage of the range: the newest published omx-contract below the floor the spec declares, picked
+  # by tools/below-floor-version.sh from the channel's own versions and installed with its signature checked,
+  # must stop the build at once with a message that names the dependency, the floor and the version installed.
+  # The curve function as WebAssembly (make wasm, tools/wasm-build.sh): the distribution's own clang, lld and wasi-libc,
+  # nothing downloaded. Fedora is the reference; Debian trixie's package names are what this cell confirms or refutes.
+  wasm:
+    name: The WebAssembly build (${{ matrix.image }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        image: ["fedora:45", "debian:trixie"]
+    container:
+      image: ${{ matrix.image }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Install the toolchain
+        run: |
+          if command -v dnf >/dev/null; then
+            dnf install -y --setopt=tsflags=nodocs --setopt=install_weak_deps=False make gcc git curl tar gzip pkgconf-pkg-config clang lld wasi-libc-devel wasi-libc-static dnf5-plugins
+          else
+            apt-get update -qq
+            apt-get -o Dpkg::Options::=--force-unsafe-io install -y --no-install-recommends make gcc git ca-certificates curl pkgconf dpkg-dev clang lld wasi-libc
+          fi
+      - uses: actions/checkout@v4
+      - name: The checkout is a git directory this job may read
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+      - name: Add the OpenMixer repository
+        uses: Open-Mixer/.github/.github/actions/add-openmixer@openmixer-v1
+        with:
+          suite: ${{ startsWith(matrix.image, 'ubuntu') && 'trixie' || '' }}
+      - name: Install omx-contract at the floor
+        run: |
+          set -euo pipefail
+          if command -v dnf >/dev/null; then dnf install -y --setopt=tsflags=nodocs --setopt=install_weak_deps=False omx-contract-devel; else apt-get -o Dpkg::Options::=--force-unsafe-io install -y --no-install-recommends libomx-contract-dev; fi
+          sh tools/contract-include.sh
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: make wasm, wasm-check and wasm-sabotage
+        run: |
+          set -euo pipefail
+          make wasm wasm-check wasm-sabotage 2>&1 | tee /tmp/wasm.log
+          wc -c build/wasm/omx-dsp.wasm
+      - name: make wasm-loader-check and wasm-loader-sabotage (the install of the npm package tree, through its loader)
+        run: |
+          set -euo pipefail
+          (cd ts && npm ci)
+          make wasm-loader-check wasm-loader-sabotage 2>&1 | tee /tmp/wasm-loader.log
+
   # The TypeScript twins against the kernels (ts/: npm test), on the library this tree builds; the publish workflow runs
   # the same before it publishes, so a twin that disagrees is red here first.
   twins:
-    name: The TypeScript twins agree with the kernels
-    runs-on: ubuntu-latest
+    name: The TypeScript twins agree with the kernels (${{ matrix.cell.suite }}, ${{ matrix.cell.arch }})
+    runs-on: ${{ matrix.cell.runner }}
+    needs: checks
+    if: needs.checks.outputs.deb-count != '0'
     timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        cell: ${{ fromJSON(needs.checks.outputs.deb) }}
     container:
-      image: debian:trixie
+      image: ${{ matrix.cell.image }}
     defaults:
       run:
         shell: bash
@@ -152,6 +245,15 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: The shared curve vectors, native
+        run: |
+          apt-get -o Dpkg::Options::=--force-unsafe-io install -y --no-install-recommends python3
+          make -j"$OMX_JOBS" curve-vectors curve-vectors-sabotage
+      - name: The shared curve vectors, through the native door and the WebAssembly door
+        run: |
+          set -euo pipefail
+          (cd ts && npm ci && npm run build)
+          make -j"$OMX_JOBS" curve-vectors-wasm curve-vectors-sabotage
       - name: npm test
         working-directory: ts
         run: |
@@ -168,21 +270,20 @@ jobs:
         run: make -j"$OMX_JOBS" eq-q-range-sabotage
 
   contract-floor:
-    name: below the omx-contract floor the build refuses (${{ matrix.image }})
-    runs-on: ${{ github.event.pull_request.head.repo.fork && 'ubuntu-latest' || vars.OMX_RUNNER || 'ubuntu-latest' }}
+    name: below the omx-contract floor the build refuses (${{ matrix.cell.image }}, ${{ matrix.cell.arch }})
+    runs-on: ${{ matrix.cell.runner }}
+    needs: checks
+    if: needs.checks.outputs.count != '0'
     timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
-        # ruling D25: the release set's cells; bookworm (a full cell) only when OMX_RELEASE_MATRIX is full
-        image: ${{ fromJSON(vars.OMX_RELEASE_MATRIX == 'full' && '["fedora:44", "debian:bookworm"]' || '["fedora:44", "debian:trixie"]') }}
+        cell: ${{ fromJSON(needs.checks.outputs.cells) }}
     container:
-      image: ${{ matrix.image }}
+      image: ${{ matrix.cell.image }}
     defaults:
       run:
         shell: bash
-    env:
-      OLD: 2.6.0
     steps:
       - name: Install the build tools
         run: |
@@ -197,22 +298,39 @@ jobs:
       - name: Add the OpenMixer repository
         uses: Open-Mixer/.github/.github/actions/add-openmixer@openmixer-v1
 
-      - name: Install omx-contract ${{ env.OLD }}
-        run: |
-          set -euo pipefail
-          if command -v dnf >/dev/null; then
-            dnf install -y --setopt=tsflags=nodocs "omx-contract-devel-$OLD"
-          else
-            apt-get -o Dpkg::Options::=--force-unsafe-io install -y --no-install-recommends "libomx-contract-dev=$OLD"
-          fi
-          test "$(pkg-config --modversion omx-contract)" = "$OLD"
-
       - uses: actions/checkout@v4
 
       - name: The checkout is a git directory this job may read
         run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
-      - name: make lib fails, naming omx-contract, the floor and ${{ env.OLD }}
+      # The newest published version strictly below the floor, read from the channel itself (the signature check stays on:
+      # no --nogpgcheck), never a version typed here. Refused by name when the channel publishes none below the floor.
+      - name: Install the newest published omx-contract below the floor, its signature checked
+        run: |
+          set -euo pipefail
+          floor="$(sh tools/contract-include.sh --floor)"
+          if command -v dnf >/dev/null; then
+            # -y takes the FreeREAC key the add-openmixer step enabled (the list stops at its prompt otherwise); the signature check stays on
+            dnf -y list --showduplicates omx-contract-devel > avail.txt
+            awk '$1 ~ /^omx-contract-devel\./ {print $2}' avail.txt > versions.txt
+            pkg="$(sh tools/below-floor-version.sh "$floor" < versions.txt)"
+          else
+            apt-get -o Dpkg::Options::=--force-unsafe-io update -qq
+            apt-cache madison libomx-contract-dev | awk -F'|' '{n=$1; v=$2; gsub(/ /,"",n); gsub(/ /,"",v); if (n=="libomx-contract-dev") print v}' > versions.txt
+            pkg="$(sh tools/below-floor-version.sh --deb "$floor" < versions.txt)"
+          fi
+          old="$(printf '%s' "$pkg" | sed 's/-[^-]*$//')"
+          echo "below-floor: the newest published omx-contract below the floor $floor is $pkg (omx-contract $old)"
+          if command -v dnf >/dev/null; then
+            dnf install -y --setopt=tsflags=nodocs "omx-contract-devel-$pkg"
+          else
+            # the data package is pinned to the same version: the devel depends on it at that version, and apt otherwise picks the newest (3.20.0)
+            apt-get -o Dpkg::Options::=--force-unsafe-io install -y --no-install-recommends "libomx-contract-dev=$pkg" "omx-contract-data=$pkg"
+          fi
+          test "$(pkg-config --modversion omx-contract)" = "$old"
+          echo "OLD=$old" >> "$GITHUB_ENV"
+
+      - name: make lib fails, naming omx-contract, the floor and the version installed
         run: |
           set +e -uo pipefail
           floor="$(sh tools/contract-include.sh --floor)"
@@ -234,9 +352,6 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-        with:
-          # two declaration tests read this library's own history (atCommit in test/contract/helpers.mjs)
-          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
@@ -263,6 +378,9 @@ jobs:
 
       - name: make contract-dir
         run: make contract-dir OMX_CONTRACT=/tmp/omx-contract
+
+      - name: The devel package ships the test support the consumers read
+        run: make test-support-install
 
       - name: make eq-defaults-table
         run: make eq-defaults-table
@@ -331,7 +449,7 @@ jobs:
           if-no-files-found: ignore
 
   rpm:
-    name: omx-dsp-devel (fc44, ${{ matrix.arch }})
+    name: omx-dsp-devel (fc45, ${{ matrix.arch }})
     if: github.event_name == 'workflow_dispatch'
     runs-on: ${{ github.event.pull_request.head.repo.fork && 'ubuntu-latest' || vars.OMX_RUNNER || 'ubuntu-latest' }}
     # %check runs make check-package, as the deb job's build does
@@ -339,9 +457,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        arch: [x86_64]  # aarch64 builds run at release only (release.yml)
+        arch: [x86_64]  # x86_64 only: Fedora 45 aarch64 is not built (owner ruling 2026-11-19)
     container:
-      image: fedora:44
+      image: fedora:45
     steps:
       - name: Install the build tools
         run: |
@@ -372,7 +490,9 @@ jobs:
             /usr/share/man/man1/omx-dsp-copy-check.1.gz \
             /usr/share/omxdsp/omx-dsp-exports.json /usr/share/omxdsp/hrp_peaking_corpus.h \
             /usr/share/omxdsp/meter-view-vectors.json /usr/share/omxdsp/rta-bands-vectors.json \
-            /usr/share/omxdsp/rta-delta-vectors.json | sort > expected.txt
+            /usr/share/omxdsp/rta-delta-vectors.json /usr/share/omxdsp/hrp-place-vectors \
+            /usr/share/omxdsp/test-support/log10f_cr.h /usr/share/omxdsp/test-support/log10f_subst.h \
+            /usr/share/omxdsp/tsan-gate.sh | sort > expected.txt
           diff -u expected.txt files.txt
           # the listing is read from a file: grep -q stops at its first match, and under pipefail the rpm it
           # cut off (SIGPIPE, exit 141) fails the step once the listing is longer than the pipe holds
@@ -390,6 +510,10 @@ jobs:
           # the contract directory is read at run time: it is omx-dsp-contract's, never the devel package's (omx-contract#150)
           ! grep -q '^/usr/share/omx-contract/' listing.txt
           rpm -qpR "$rpm" | grep -q '^omx-dsp-contract = '
+          rpm -qlp "$(ls rpms/omx-dsp-wasm-[0-9]*.noarch.rpm)" > listing.txt
+          # the packaged loader ships beside the module it loads (tools/wasm-loader-check.mjs)
+          grep -q '^/usr/share/omx-dsp/dist/index.js$' listing.txt
+          grep -q '^/usr/share/omx-dsp/wasm/omx-dsp.wasm$' listing.txt
           contract=$(ls rpms/omx-dsp-contract-[0-9]*.noarch.rpm)
           rpm -qlp "$contract" > contract.txt
           grep -q '^/usr/share/omx-contract/contract.d/3/omx-dsp/MANIFEST.json$' contract.txt
@@ -411,28 +535,35 @@ jobs:
           gcc $(pkg-config --cflags omxdsp-contracts) -O2 -o /tmp/flavour test/omxdsp_flavour.c $(pkg-config --libs omxdsp-contracts)
           /tmp/flavour
 
+      - name: The packaged loader loads the packaged module, in a clean root
+        run: |
+          set -euo pipefail
+          # fedora:45: an earlier step may have installed node as nodejs22-bin, which conflicts with the nodejs package
+          dnf install -y --setopt=tsflags=nodocs --setopt=install_weak_deps=False $(command -v node >/dev/null || echo nodejs) rpms/omx-dsp-wasm-[0-9]*.noarch.rpm
+          node tools/wasm-loader-check.mjs /usr/share/omx-dsp
+
       - uses: actions/upload-artifact@v4
         with:
-          name: omx-dsp-rpms-fc44-${{ matrix.arch }}
+          name: omx-dsp-rpms-fc45-${{ matrix.arch }}
           path: rpms/*.rpm
           if-no-files-found: error
           retention-days: 7
 
   deb:
-    name: libomxdsp-dev (${{ matrix.suite }}, ${{ matrix.arch }})
-    if: github.event_name == 'workflow_dispatch'
-    runs-on: ${{ github.event.pull_request.head.repo.fork && 'ubuntu-latest' || vars.OMX_RUNNER || 'ubuntu-latest' }}
+    name: libomxdsp-dev (${{ matrix.cell.suite }}, ${{ matrix.cell.arch }})
+    if: github.event_name == 'workflow_dispatch' && needs.checks.outputs.deb-count != '0'
+    runs-on: ${{ matrix.cell.runner }}
+    needs: checks
     # the package build runs make check-package (dh_auto_test), which takes under 15 minutes on a hosted
     # runner; make test, with the sabotage and perturbation arms, ran here until it no longer fit 60
     timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
-        # ruling D25: the release set's suites, bookworm only when OMX_RELEASE_MATRIX is full
-        suite: ${{ fromJSON(vars.OMX_RELEASE_MATRIX == 'full' && '["bookworm", "trixie"]' || '["trixie"]') }}
-        arch: [amd64]  # arm64 builds run at release only (release.yml)
+        # the quick set's deb cells (trixie arm64), the whole matrix when OMX_RELEASE_MATRIX is full
+        cell: ${{ fromJSON(needs.checks.outputs.deb) }}
     container:
-      image: debian:${{ matrix.suite }}
+      image: ${{ matrix.cell.image }}
     defaults:
       run:
         shell: bash
@@ -480,6 +611,15 @@ jobs:
           /tmp/golden-reverb test/golden/reverb.sha256
           gcc $(pkg-config --cflags omxdsp-contracts) -O2 -o /tmp/flavour test/omxdsp_flavour.c $(pkg-config --libs omxdsp-contracts)
           /tmp/flavour
+
+      - name: The packaged loader loads the packaged module, in a clean root
+        run: |
+          set -euo pipefail
+          apt-get -o Dpkg::Options::=--force-unsafe-io install -y --no-install-recommends ./debs/omx-dsp-wasm_*.deb nodejs
+          dpkg -L omx-dsp-wasm > listing.txt
+          grep -q '^/usr/share/omx-dsp/dist/index.js$' listing.txt
+          grep -q '^/usr/share/omx-dsp/wasm/omx-dsp.wasm$' listing.txt
+          node tools/wasm-loader-check.mjs /usr/share/omx-dsp
 
   release-dry-run:
     name: release workflow, dry run

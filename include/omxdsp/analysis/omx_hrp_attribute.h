@@ -29,6 +29,10 @@
  *
  * Allocation-free, caller-owned buffers, no globals. Never called from the RT callback.
  */
+/**
+ * @file omx_hrp_attribute.h
+ * @brief HRP spectral attribution: which voice does this energy belong to, and how sure are we?
+ */
 #ifndef OMX_HRP_ATTRIBUTE_H
 #define OMX_HRP_ATTRIBUTE_H
 

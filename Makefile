@@ -10,7 +10,7 @@
 #               writable-data check, the doc check and the effect kernels' oracles and golden
 #               digests — pure C + -lm (+ -pthread), no node
 #   make install   headers, the three archives and their .pc files under PREFIX/LIBDIR/INCLUDEDIR,
-#               and data/ as the package omx-dsp of omx-contract's contract directory, into DESTDIR
+#               and data/ as the package omx-dsp of PREFIX's own contract directory (DATADIR/omx-contract/contract.d), into DESTDIR
 #   make flavours  each archive carries its flavour, and a contracts consumer sees the compiled
 #               unit's contracts only through the contracts archive
 #   make test-fx   the effect kernels' oracles and golden digests alone
@@ -41,6 +41,11 @@
 #               sides together and fails when the twin is left at the old literal (omx-dsp#5)
 #   make eq-sabotage  the EQ bank, head filter and curve arms fail against nine sabotages
 #   make curve-sabotage  the one curve function's arm (omx_curve.h) fails against twelve sabotages
+#   make curve-json-sabotage  the curve-json arm (omx_curve_json.h) fails against nine sabotages
+#   make curve-vectors  vectors/curve-points.json through the native door: needs python3 and node;
+#               make curve-vectors-write rewrites it, make curve-vectors-sabotage breaks the library nine ways
+#   make wasm  build/wasm/omx-dsp.wasm, the curve function as WebAssembly (clang, lld, wasi-libc; tools/wasm-build.sh);
+#               make wasm-check holds it to the loader's contract (node), make install-wasm installs the npm package tree (npm-stage) with the loader, make wasm-loader-check proves the installed loader loads the module, make wasm-sabotage and wasm-loader-sabotage break them
 #   make curve-golden  test/kernels/fixtures/curve_golden.h rewritten from omx_curve_points() (tools/curve-golden.c)
 #   make meter-view-sabotage  the meter view arm (mix/omx_meter_view.h) fails against seven sabotages
 #   make meter-view-golden  vectors/meter-view.json rewritten from the meter view law (tools/meter-view-golden.c)
@@ -59,7 +64,12 @@
 #               (tools/eq-defaults-golden.mjs, node)
 #   make public-sources  no tracked file names a private repository, path or issue (Open-Mixer/.github's
 #               private-refs-check, from a checkout of it: DOTGITHUB=<dir>)
-#   make docs   the API reference by doxygen (build-time only)
+#   make docs   the API reference by doxygen (build-time only), over every installed header
+#   make docs-check  doxygen's undocumented-declaration and parameter warnings against
+#               docs/doxygen-baseline.txt, which only shrinks against DOCS_BASE=<remote>/<branch>, fetched
+#               first (origin/main; unset, unreachable, unresolvable or without a baseline is refused by name);
+#               make docs-baseline  the baseline rewritten from the tree, never with a row added;
+#               make docs-sabotage  the gate against sabotaged copies of the tree
 #   make test-tsan  the thread arm under -fsanitize=thread where the toolchain has it
 #   make rt-gate   omx-rt-gate, the one static real-time gate (tools/rt-gate, omx-rt-gate(1)): its class
 #               table measured by the externals arm, its planted fixtures red and clean twins green, its
@@ -126,7 +136,7 @@ endif
 # at or above the floor packaging/omx-dsp.spec declares, found by pkg-config in tools/contract-include.sh
 # (nothing is downloaded); this tree commits no copy of them. Every sub-script that compiles gets the
 # directory as CONTRACT_INC.
-ifeq ($(filter version clean docs public-sources private-refs exports copy-check deps deps-check,$(MAKECMDGOALS)),)
+ifeq ($(filter install-confined version clean docs docs-check docs-baseline docs-sabotage public-sources private-refs exports copy-check deps deps-check,$(MAKECMDGOALS)),)
 CONTRACT_INC := $(shell sh tools/contract-include.sh)
 ifeq ($(CONTRACT_INC),)
 $(error tools/contract-include.sh found no omx-contract: see its message above)
@@ -134,9 +144,11 @@ endif
 export CONTRACT_INC
 endif
 INC      = -Iinclude -isystem $(CONTRACT_INC)
-# The floor the spec declares, rendered into omxdsp.pc's Requires, beside its ceiling, the next major.
+# The floor the spec declares, rendered into omxdsp.pc's Requires, (no ceiling).
 CONTRACT_FLOOR   := $(shell sh tools/contract-include.sh --floor)
 BUILD    = build
+DOCS_BASELINE = docs/doxygen-baseline.txt
+DOCS_WARNINGS = $(BUILD)/docs/warnings.txt
 LIB      = $(BUILD)/libomxdsp.a
 HEADERS  = $(wildcard include/omxdsp/*.h)
 ANALYSIS_HEADERS = $(wildcard include/omxdsp/analysis/*.h)
@@ -179,7 +191,10 @@ DESTDIR    ?=
 # The definitions this library implements (data/) install as the package omx-dsp of the installed
 # omx-contract's contract directory, <contractdir>/<schema major>/omx-dsp/, with the installer that
 # omx-contract ships beside its schema: plain shell, no node. Read when `make install` runs, only.
-CONTRACTDIR        ?= $(shell pkg-config --variable=contractdir omx-contract 2>/dev/null)
+# The contract directory is PREFIX's own (<DATADIR>/omx-contract/contract.d, where omx-contract.pc puts it at
+# PREFIX=/usr): install writes nowhere outside DESTDIR+PREFIX, so the installed omx-contract's directory is never
+# the target of another prefix (#75). Only the installer and the schema major are read from omx-contract.
+CONTRACTDIR        ?= $(DATADIR)/omx-contract/contract.d
 CONTRACT_DATADIR    = $(shell pkg-config --variable=datadir omx-contract 2>/dev/null)
 CONTRACT_INSTALLER ?= $(CONTRACT_DATADIR)/install-contract-dir.sh
 CONTRACT_MAJOR      = $(shell sed -n 's/^  "x-omx-schema-version": "\([0-9]*\)\..*",$$/\1/p' $(CONTRACT_DATADIR)/omx-contract.schema.json 2>/dev/null)
@@ -187,7 +202,7 @@ VERSION    := $(shell sed -n 's/^\#define OMXDSP_VERSION_\(MAJOR\|MINOR\|PATCH\)
 
 
 
-.PHONY: fuzz fuzz-run fuzz-sabotage fuzz-records fuzz-coverage fuzz-corpus all lib test lint docs clean contract-dir definitions definitions-check contract-proof contract-tests test-tsan suite negative consumer gen-once perturb fdelay-sabotage doppler-sabotage onepole-sabotage threads threads-sabotage checks cost-prel test-fx test-analysis install version golden-write flavours bench-mixmatrix bench-gate bench-drive bench-flanger check-log10f strip-input-identity analysis-engine-identity test-mix mix-engine-identity test-engine-kernels engine-kernels-identity magnitude-sabotage eq-sabotage curve-golden curve-sabotage meter-view-golden rta-bands-golden meter-view-sabotage rta-bands-sabotage geq-true-sabotage delay-taps-sabotage align-fdelay-sabotage pitch-rates-sabotage instance-rates-sabotage bandwidth-q-table bandwidth-q-sabotage eq-default-bands eq-defaults-table room-ts-golden public-sources private-refs deps deps-check cost-deesser note-map-sabotage exports copy-check eq-q-range-sabotage
+.PHONY: curve-vectors-wasm wasm wasm-check wasm-sabotage install-wasm npm-stage wasm-loader-check wasm-loader-sabotage fuzz fuzz-run fuzz-sabotage fuzz-records fuzz-coverage fuzz-corpus all lib test lint docs docs-check docs-baseline docs-sabotage clean contract-dir definitions definitions-check contract-proof contract-tests test-tsan suite negative consumer gen-once perturb fdelay-sabotage doppler-sabotage onepole-sabotage threads threads-sabotage checks cost-prel test-fx test-analysis install version golden-write flavours bench-mixmatrix bench-gate bench-drive bench-flanger check-log10f strip-input-identity analysis-engine-identity test-mix mix-engine-identity test-engine-kernels engine-kernels-identity magnitude-sabotage eq-sabotage curve-golden curve-sabotage curve-json-sabotage curve-vectors curve-vectors-write curve-vectors-sabotage meter-view-golden rta-bands-golden meter-view-sabotage rta-bands-sabotage geq-true-sabotage delay-taps-sabotage align-fdelay-sabotage pitch-rates-sabotage instance-rates-sabotage bandwidth-q-table bandwidth-q-sabotage eq-default-bands eq-defaults-table room-ts-golden public-sources private-refs deps deps-check cost-deesser note-map-sabotage exports copy-check eq-q-range-sabotage
 
 all: lib
 
@@ -373,6 +388,77 @@ meter-view-sabotage: test/omxdsp_suite.c test/meter-view-sabotage.sh $(KERNELS) 
 curve-sabotage: test/omxdsp_suite.c test/curve-sabotage.sh $(KERNELS) $(LIB_CONTRACTS) $(HEADERS) | $(BUILD)
 	CC="$(CC)" CFLAGS="$(CFLAGS)" bash test/curve-sabotage.sh $(BUILD)/curve-sabotage $(LIB_CONTRACTS)
 
+# The curve function with JSON text on both sides (omx_curve_json.h): its arm is in the suite; the sabotages of the
+# header's reader and writer, and the native door of the shared vectors (below), are built here.
+curve-json-sabotage: test/omxdsp_suite.c test/curve-json-sabotage.sh $(KERNELS) $(LIB_CONTRACTS) $(HEADERS) | $(BUILD)
+	CC="$(CC)" CFLAGS="$(CFLAGS)" bash test/curve-json-sabotage.sh $(BUILD)/curve-json-sabotage $(LIB_CONTRACTS)
+
+$(BUILD)/curve_json_cli: tools/curve-json-cli.c $(HEADERS) | $(BUILD)
+	$(CC) $(CFLAGS_PLAIN) $(INC) -o $@ $< -lm
+
+# vectors/curve-points.json is the contract of omx_curve_points_json: tools/curve-vectors-oracle.py writes it from closed
+# forms in decimal arithmetic, never from the library (`make curve-vectors-write` rewrites it); `make curve-vectors` puts
+# every row to the native door and holds each answer to the row's
+# tolerance; `make curve-vectors-sabotage` breaks the library nine ways and requires the vectors to go red. Python and node.
+curve-vectors-write:
+	python3 -I tools/curve-vectors-oracle.py vectors/curve-points.json
+
+curve-vectors: $(BUILD)/curve_json_cli
+	python3 -I tools/curve-vectors-oracle.py --check vectors/curve-points.json
+	node test/curve-vectors.mjs --native $(BUILD)/curve_json_cli
+
+# The same rows through the WebAssembly build: its libm is musl's (wasi-libc), the native one glibc's. A row that misses is a
+# FINDING with its ulps, never a tolerance widened; `make curve-vectors-wasm` needs the module (make wasm) and ts/dist (npm run build).
+curve-vectors-wasm: $(BUILD)/curve_json_cli $(BUILD)/wasm/omx-dsp.wasm
+	cd ts && npm run build >/dev/null
+	node test/curve-vectors.mjs --native $(BUILD)/curve_json_cli --wasm $(BUILD)/wasm/omx-dsp.wasm
+
+curve-vectors-sabotage: test/curve-vectors-sabotage.sh $(HEADERS) | $(BUILD)
+	CC="$(CC)" CFLAGS="$(CFLAGS)" bash test/curve-vectors-sabotage.sh $(BUILD)/curve-vectors-sabotage
+
+# The curve function as one WebAssembly module (wasm/omx_curve_wasm.c), built with the distribution's clang, lld and
+# wasi-libc by tools/wasm-build.sh, the one recipe (omx-panel's module is built by the same script): `make wasm` writes
+# build/wasm/omx-dsp.wasm, `make wasm-check` (node) holds it to the loader's contract (no imports, four exports, a request
+# answered), `make install-wasm` puts it under DATADIR/omx-dsp/wasm/ for the noarch omx-dsp-wasm package. Never committed.
+wasm: $(BUILD)/wasm/omx-dsp.wasm
+
+$(BUILD)/wasm/omx-dsp.wasm: wasm/omx_curve_wasm.c tools/wasm-build.sh $(HEADERS) | $(BUILD)
+	sh tools/wasm-build.sh $@ wasm/omx_curve_wasm.c
+
+wasm-check: $(BUILD)/wasm/omx-dsp.wasm
+	node tools/wasm-check.mjs $<
+
+wasm-sabotage: wasm/omx_curve_wasm.c test/wasm-sabotage.sh tools/wasm-check.mjs tools/wasm-build.sh
+	bash test/wasm-sabotage.sh $(BUILD)/wasm-sabotage
+
+# The npm package's module tree, as npm publishes it: `npm pack` in ts/ runs the package's prepack (tsc into dist/, make wasm
+# into wasm/) and packs exactly its "files" list; the tarball is unpacked as build/npm-stage/package. install-wasm installs
+# THAT tree under DATADIR/omx-dsp/ (package.json, dist/ the loader, src/, oracle/, wasm/omx-dsp.wasm), so the noarch
+# omx-dsp-wasm package and the npm twin carry one set of files, never a copy written by hand.
+# The compiler is the package's own pinned TypeScript: `npm ci` in ts/ from its package-lock.json puts it in ts/node_modules/.bin,
+# which the prepack finds on PATH, so the rpm and the deb build the loader the same way and never with a system tsc.
+NPM_STAGE = $(BUILD)/npm-stage
+ts/node_modules/.package-lock.json: ts/package.json ts/package-lock.json
+	cd ts && npm ci
+npm-stage: $(BUILD)/wasm/omx-dsp.wasm ts/package.json $(wildcard ts/src/*.ts) ts/node_modules/.package-lock.json
+	rm -rf $(NPM_STAGE) && mkdir -p $(NPM_STAGE)
+	cd ts && npm_config_cache=$(abspath $(BUILD))/npm-cache npm pack --pack-destination $(abspath $(NPM_STAGE)) >/dev/null
+	tar -xzf $(NPM_STAGE)/*.tgz -C $(NPM_STAGE) && rm -f $(NPM_STAGE)/*.tgz
+
+install-wasm: npm-stage
+	find $(NPM_STAGE)/package -type f | while read -r f; do rel=$${f#$(NPM_STAGE)/package/}; install -D -m 0644 "$$f" "$(DESTDIR)$(DATADIR)/omx-dsp/$$rel" || exit 1; done
+
+# The install check (tools/wasm-loader-check.mjs): the tree installed into a clean root, the loader imported from it, the module
+# loaded through it, one curve call answered and one refusal; and the installed files are the files npm publishes from ts/, the
+# same bytes. wasm-loader-sabotage breaks that install four ways and must go red for each.
+wasm-loader-check: npm-stage
+	rm -rf $(BUILD)/wasm-loader-root
+	$(MAKE) --no-print-directory install-wasm DESTDIR=$(abspath $(BUILD))/wasm-loader-root PREFIX=/usr
+	node tools/wasm-loader-check.mjs $(abspath $(BUILD))/wasm-loader-root/usr/share/omx-dsp ts
+
+wasm-loader-sabotage: wasm-loader-check test/wasm-loader-sabotage.sh tools/wasm-loader-check.mjs
+	bash test/wasm-loader-sabotage.sh $(abspath $(BUILD))/wasm-loader-root/usr/share/omx-dsp $(abspath $(BUILD))/wasm-loader-sabotage
+
 eq-defaults-table:
 	node tools/eq-defaults-golden.mjs --check
 
@@ -450,8 +536,8 @@ checks:
 	sh tools/no-host-nproc.sh
 	sh tools/ci-install-options.sh --self-test
 	sh tools/ci-install-options.sh
-	bash tools/check-package-check.sh
-	bash tools/check-package-check.sh --self-test
+	bash tools/check-package-derived.sh
+	bash tools/check-package-derived.sh --self-test
 	bash tools/release-binaries-check.sh
 	bash tools/release-binaries-check.sh --self-test
 	CC="$(CC)" TMPDIR="$(abspath $(BUILD))" bash tools/clone-check.sh
@@ -544,9 +630,9 @@ check-log10f: tools/log10f-check.c test/support/log10f_cr.h | $(BUILD)
 #   test/fx/<k>_golden.test.c  the golden digests, compared with test/golden/<k>.sha256
 FX_KERNELS = delay geq pitch transient drive chorus flanger phaser reverb tremolo rotor rotary transient_instance geq_instance eq_instance limiter dynamics_keyed dynamics gate gate_instance gate_knee gate_keyfilter comp_instance band_dyn deesser dyn_controls trim_instance align reverse_render dynamics_feedback idelay loudness mbcomp dyneq_instance mbcomp_instance doubler_instance tone_instance leveler_instance plosive_instance width_instance suboct_instance clipper_instance upward_instance glue_instance loudlevel_instance spring_instance balancer_instance
 # Oracles that read the contract ledger themselves build with contracts and threads.
-FX_CONTRACT_ORACLES = delay_taps geq pitch transient chorus flanger phaser tremolo rotor rotary transient_instance geq_instance eq_instance limiter dynamics_keyed dynamics gate gate_instance gate_knee gate_keyfilter comp_instance band_dyn dyn_controls trim_instance align_fdelay dynamics_feedback idelay loudness mbcomp geq_true dyneq_instance comp_key mbcomp_instance delay_color gate_key reverb_return doubler_instance tone_instance dyn_upward leveler_instance comp_release comp_models plosive_instance transient_readouts width_instance suboct_instance clipper_instance upward_instance glue_instance loudlevel_instance spring_instance balancer_instance $(addsuffix _instance,$(FX_INSTANCES))
+FX_CONTRACT_ORACLES = delay_taps geq pitch transient chorus flanger phaser tremolo rotor rotary transient_instance geq_instance eq_instance limiter dynamics_keyed dynamics gate gate_instance gate_knee gate_keyfilter comp_instance band_dyn dyn_controls trim_instance align_fdelay dynamics_feedback idelay loudness mbcomp geq_true dyneq_instance comp_key mbcomp_instance delay_color gate_key reverb_return doubler_instance tone_instance dyn_upward leveler_instance comp_release comp_models comp_key_isolation comp_feedback plosive_instance transient_readouts width_instance suboct_instance clipper_instance upward_instance glue_instance loudlevel_instance spring_instance balancer_instance $(addsuffix _instance,$(FX_INSTANCES))
 # Further oracles of a kernel in FX_KERNELS, each test/fx/<o>.test.c, built by the same rule.
-FX_ORACLES = align_fdelay delay_taps dyn_flat gaincomp_fpflags geq_true band_dyn_poly comp_key delay_color gate_key reverb_return dyn_upward comp_release comp_models transient_readouts
+FX_ORACLES = align_fdelay delay_taps dyn_flat gaincomp_fpflags geq_true band_dyn_poly comp_key delay_color gate_key reverb_return dyn_upward comp_release comp_models transient_readouts comp_key_isolation comp_feedback
 # The effects that carry a host-agnostic instance core, include/omxdsp/fx/omx_<k>_instance.h: each
 # adds test/fx/<k>_instance.test.c, its oracle at every declared rate, contracts compiled in.
 FX_INSTANCES = chorus flanger drive reverb tremolo phaser pitch rotary limiter deesser delay
@@ -687,10 +773,10 @@ golden-write: $(foreach k,$(FX_KERNELS),$(BUILD)/fx_$(k)_golden) $(foreach k,$(F
 # test/analysis/sabotage.sh breaks one line of each kernel (fbs, rta, render, live) in a scratch copy
 # and requires the golden digests of that kernel to move.
 # fbs_place holds the feedback corrector's placement (omx_fbs_place.h) to the shared vector file
-# test/analysis/fixtures/fbs_place.vectors, which ts/test/fbs-place.test.mjs holds the twin to;
+# test/analysis/fixtures/fbs_place.vectors, (no TypeScript twin: the vectors and the C are the one source);
 # test/analysis/fbs-place-sabotage.sh breaks each placement rule once and requires its vector to fail.
 # hrp_place holds the harmonic resonance processor's placement and stepping (omx_hrp_place.h) to the shared vector
-# file test/analysis/fixtures/hrp_place.vectors, which ts/test/hrp-place.test.mjs holds the twin to;
+# file test/analysis/fixtures/hrp_place.vectors, which the console's addon is held to as well (omxdsp.pc hrpplacevectors);
 # test/analysis/hrp-place-sabotage.sh breaks each rule once and requires its line to fail.
 # live_shells holds both correctors' live-shell cores (omx_fbs_lv2.h, omx_hrp_lv2.h) by value: a host with no
 # worker, the mode word, report bit-exact against cut, omx-fbs's staged fade at the nine rates and its quanta,
@@ -713,7 +799,7 @@ ANALYSIS_LDFLAGS_sweep = -Wl,--wrap=malloc,--wrap=calloc,--wrap=realloc,--wrap=f
 ANALYSIS_LDFLAGS_room = -Wl,--wrap=malloc,--wrap=calloc,--wrap=realloc,--wrap=free
 ANALYSIS_LDFLAGS_align_fit = -Wl,--wrap=malloc,--wrap=calloc,--wrap=realloc,--wrap=free
 ANALYSIS_DEPS = $(LIB) $(HEADERS) $(ANALYSIS_HEADERS) $(wildcard test/analysis/*.h) $(wildcard test/analysis/fixtures/*.h) \
-                test/fx/sha256.h $(SUPPORT_HEADERS) | $(BUILD)
+                test/fx/sha256.h test/fx/child_run.h $(SUPPORT_HEADERS) | $(BUILD)
 
 $(BUILD)/analysis_%: test/analysis/%.test.c $(ANALYSIS_DEPS)
 	$(CC) $(CFLAGS) $(INC) -Isrc -Itest/analysis -Itest/fx $(ANALYSIS_LDFLAGS_$*) -o $@ $< $(LIB) -lm
@@ -813,6 +899,7 @@ flavour-probe-sabotage: $(LIBS_ALL) test/omxdsp_flavour.c tools/flavour-check.sh
 # real one. The rest runs in parallel from a second make, which shares the parent's job slots.
 test:
 	$(MAKE) --no-print-directory copy-check
+	$(MAKE) --no-print-directory install-confined
 	$(MAKE) --no-print-directory test-parallel
 	@echo "omxdsp: make test green"
 
@@ -1000,16 +1087,20 @@ rt-gate-sabotage: $(RT_GATE) $(RT_GATE_ARM) $(RT_GATE_FIXTURES)
 # digest, the flavours and the libmvec oracles). The sabotage and perturbation arms, which prove the
 # tests rather than the library, and the source checks run in CI's make test on every pull request:
 # under make -j4 test the package build went past its 60-minute job on a 4-core runner.
-# tools/check-package-check.sh holds this list to make test's (part of make checks).
-CHECK_PACKAGE = lib suite negative consumer threads bandwidth-q-table eq-default-bands fx-oracles \
-                analysis-oracles engine-kernels-golden mix-golden flavours fastmath fastmath-diff fastmath-partial rt-gate
+# The one list is TEST_TARGETS (make test's); CHECK_PACKAGE is derived from it: everything but PROVE_TESTS, with a
+# target that holds an oracle together with its sabotage (test-fx, test-analysis, ...) replaced by its oracle half.
+# tools/check-package-derived.sh (part of make checks) holds it to this shape.
+TEST_TARGETS = lib checks gen-once suite negative magnitude-sabotage eq-sabotage curve-sabotage curve-json-sabotage meter-view-sabotage rta-bands-sabotage geq-true-sabotage delay-taps-sabotage align-fdelay-sabotage pitch-rates-sabotage instance-rates-sabotage bandwidth-q-table bandwidth-q-sabotage eq-default-bands consumer perturb fdelay-sabotage doppler-sabotage onepole-sabotage note-map-sabotage threads threads-sabotage test-fx test-analysis test-engine-kernels test-mix flavours flavour-probe-sabotage fastmath fastmath-diff fastmath-sabotage fastmath-plain fastmath-partial rt-gate rt-gate-sabotage
+PROVE_TESTS = checks gen-once fastmath-plain perturb $(filter %-sabotage,$(TEST_TARGETS))
+ORACLE_HALVES = test-fx=fx-oracles test-analysis=analysis-oracles test-engine-kernels=engine-kernels-golden test-mix=mix-golden
+CHECK_PACKAGE = $(foreach t,$(filter-out $(PROVE_TESTS),$(TEST_TARGETS)),$(or $(patsubst $(t)=%,%,$(filter $(t)=%,$(ORACLE_HALVES))),$(t)))
 
 .PHONY: check-package fx-oracles analysis-oracles engine-kernels-golden mix-golden
 check-package: $(CHECK_PACKAGE)
 	@echo "omxdsp: make check-package green"
 
 .PHONY: test-parallel
-test-parallel: lib checks gen-once suite negative magnitude-sabotage eq-sabotage curve-sabotage meter-view-sabotage rta-bands-sabotage geq-true-sabotage delay-taps-sabotage align-fdelay-sabotage pitch-rates-sabotage instance-rates-sabotage bandwidth-q-table bandwidth-q-sabotage eq-default-bands consumer perturb fdelay-sabotage doppler-sabotage onepole-sabotage note-map-sabotage threads threads-sabotage test-fx test-analysis test-engine-kernels test-mix flavours flavour-probe-sabotage fastmath fastmath-diff fastmath-sabotage fastmath-plain fastmath-partial rt-gate rt-gate-sabotage
+test-parallel: $(TEST_TARGETS)
 
 # ---- omx-rta-read (tools/omx-rta-read): the spectrum of a JACK signal, read and never fed; built where jack.pc is found
 #   make rta-read           the program
@@ -1088,8 +1179,27 @@ install: $(LIBS_ALL) $(PC_ALL) $(EXPORTS) install-rt-gate install-rta-read
 	install -m 0644 vectors/meter-view.json $(DESTDIR)$(DATADIR)/omxdsp/meter-view-vectors.json
 	install -m 0644 vectors/rta-bands.json $(DESTDIR)$(DATADIR)/omxdsp/rta-bands-vectors.json
 	install -m 0644 vectors/rta-delta.json $(DESTDIR)$(DATADIR)/omxdsp/rta-delta-vectors.json
+	install -m 0644 test/analysis/fixtures/hrp_place.vectors $(DESTDIR)$(DATADIR)/omxdsp/hrp-place-vectors
+	install -d $(DESTDIR)$(DATADIR)/omxdsp/test-support
+	install -m 0644 test/support/*.h $(DESTDIR)$(DATADIR)/omxdsp/test-support/
+	install -m 0755 tools/tsan-gate.sh $(DESTDIR)$(DATADIR)/omxdsp/tsan-gate.sh
 	install -m 0755 tools/omx-dsp-copy-check.sh $(DESTDIR)$(BINDIR)/omx-dsp-copy-check
 	install -m 0644 omx-dsp-copy-check.1 $(DESTDIR)$(MANDIR)/man1/
+
+# make install stays inside DESTDIR+PREFIX (#75), alone before the parallel tests (it lists the whole container file
+# system, which a test writing beside it would disturb; make test only, not check-package): two installs in a throwaway container, the file system compared
+# before and after, a planted system contract directory still there (tools/install-confined.sh).
+.PHONY: install-confined
+install-confined: tools/install-confined.sh tools/install-confined-selftest.sh
+	@if command -v podman >/dev/null 2>&1; then bash tools/install-confined-selftest.sh; else echo "install-confined: the marker arm needs podman: not run here"; fi
+	bash tools/install-confined.sh
+
+# the test support the devel package ships (omxdsp.pc testsupportdir, tsangate), read back from a scratch install
+test-support-install:
+	rm -rf $(BUILD)/support-install
+	$(MAKE) --no-print-directory install PREFIX=$(abspath $(BUILD))/support-install CONTRACTDIR=$(abspath $(BUILD))/support-install/share/omx-contract/contract.d
+	sh tools/support-install-check.sh $(abspath $(BUILD))/support-install
+.PHONY: test-support-install
 
 # §4.3 (e): UNJUDGED (exit 0, never a pass) where the toolchain has no TSan; where it has, the
 # thread arm must be report-free and its shared-state sabotage must race. The gate's own report
@@ -1099,8 +1209,88 @@ test-tsan: test/omxdsp_threads.c tools/tsan-gate.sh tools/tsan-gate-selftest.sh 
 	CC="$(CC)" bash tools/tsan-gate.sh $(BUILD)/tsan omxdsp_threads OMXDSP_THREADS_SABOTAGE_SHARED_STATE \
 	  $(TESTFLAGS) -pthread test/omxdsp_threads.c $(LIB_TSAN) -lm
 
-docs: $(HEADERS) | $(BUILD)
+# The API reference over every installed header; doxygen's undocumented-member and parameter warnings
+# go to $(DOCS_WARNINGS) (Doxyfile: WARN_LOGFILE), gated by docs-check, so the render itself never fails.
+docs: $(HEADERS) $(FX_HEADERS) $(ANALYSIS_HEADERS) $(MIX_HEADERS) | $(BUILD)
+	@test -f Doxyfile || { echo "docs: FAIL — Doxyfile is missing: the API reference has no configuration" >&2; exit 1; }
+	@mkdir -p $(BUILD)/docs
 	doxygen Doxyfile
+
+# The documentation gate: every warning doxygen wrote is in $(DOCS_BASELINE) (sorted, one row per
+# undocumented public declaration), and every baseline row is still warned, so the baseline only
+# shrinks and a new or changed public declaration must be documented. A row is the header and doxygen's
+# text with the tree's path stripped and a warning's continuation lines (the parameters it lists) joined,
+# so it reads the same in every checkout and names one declaration. The base rule: DOCS_BASE names the
+# base as <remote>/<branch> (origin/main); the branch is FETCHED from the remote first (a stale
+# remote-tracking ref is no base), FETCH_HEAD must resolve to a commit, and that commit's baseline is
+# what this tree's may not add a row to. An unset or empty DOCS_BASE, a failed fetch, an unresolvable
+# ref, a remote that is this clone or a path, a base that resolves to HEAD, or a base without a baseline
+# is red by name; the check is never skipped and never head-vs-head. FETCH_HEAD is read right after the
+# fetch; another fetch in the same clone at that moment would race it (one gate per clone at a time).
+# What doxygen cannot see is refused by name before it runs: a tracked header under include/omxdsp
+# without a doc-comment @file (doxygen reports nothing about an undocumented file's declarations), a
+# conditional doc command (@cond, @internal, @if) that would hide a declaration, a Doxyfile without the
+# gate's lines or with a filter line, an untracked header (a scratch file never enters the reference or
+# the baseline), a failed git read, a baseline not sorted and unique, and a missing warning log. The
+# one header outside the guard is the one the Doxyfile excludes, rendered from data/ and documented
+# there. #70 is closed when the baseline is empty.
+docs-check: docs
+	@test -f $(DOCS_BASELINE) || { echo "docs-check: FAIL — $(DOCS_BASELINE) is missing: the baseline of undocumented public declarations" >&2; exit 1; }
+	@test -f $(DOCS_WARNINGS) || { echo "docs-check: FAIL — $(DOCS_WARNINGS) is missing: doxygen wrote no warning log" >&2; exit 1; }
+	@printf '%s\n' 'INPUT                  = include/omxdsp' 'EXCLUDE                = include/omxdsp/omxdsp_definitions.h' \
+	  'FILE_PATTERNS          = *.h' 'RECURSIVE              = YES' 'EXTRACT_ALL            = NO' 'HIDE_UNDOC_MEMBERS     = NO' \
+	  'WARN_IF_UNDOCUMENTED   = YES' 'WARN_IF_DOC_ERROR      = YES' 'WARN_NO_PARAMDOC       = YES' 'WARN_AS_ERROR          = NO' \
+	  'WARN_LOGFILE           = $(DOCS_WARNINGS)' 'EXCLUDE_SYMBOLS        = OMX_CONTRACT_STAGE M_PI' | while read -r line; do \
+	  grep -qxF "$$line" Doxyfile || { echo "docs-check: FAIL — Doxyfile lacks the gate's line: $$line" >&2; exit 1; }; done
+	@filters=$$(grep -nE '^(EXCLUDE_PATTERNS|ENABLED_SECTIONS|INPUT_FILTER|FILTER_PATTERNS)[[:space:]]*=[[:space:]]*[^[:space:]]' Doxyfile); \
+	  if [ -n "$$filters" ]; then printf '%s\n' "$$filters" >&2; echo "docs-check: FAIL — Doxyfile filters what doxygen sees: the gate reads every installed header" >&2; exit 1; fi
+	@tracked=$$(git ls-files include/omxdsp) && [ -n "$$tracked" ] || { echo "docs-check: FAIL — git ls-files failed or lists no header: the tracked-only rule needs a git checkout of this tree" >&2; exit 1; }; \
+	  untracked=$$(git ls-files --others --exclude-standard include/omxdsp); \
+	  if [ -n "$$untracked" ]; then printf '%s\n' "$$untracked" >&2; echo "docs-check: FAIL — untracked headers would enter the API reference: track or remove them" >&2; exit 1; fi; \
+	  nofile=$$(printf '%s\n' "$$tracked" | grep -v '^include/omxdsp/omxdsp_definitions.h$$' | xargs grep -L -E '^[[:space:]]*(/\*\*|\*)[[:space:]]*@file([[:space:]]|$$)'); \
+	  if [ -n "$$nofile" ]; then printf '%s\n' "$$nofile" >&2; echo "docs-check: FAIL — headers without a doc-comment @file: doxygen would report none of their declarations" >&2; exit 1; fi; \
+	  cond=$$(printf '%s\n' "$$tracked" | xargs grep -nE '[@\\](cond|endcond|internal|endinternal|if|ifnot|endif)([[:space:]]|$$)'); \
+	  if [ -n "$$cond" ]; then printf '%s\n' "$$cond" >&2; echo "docs-check: FAIL — a conditional doc command would hide declarations from the gate" >&2; exit 1; fi
+	@LC_ALL=C sort -c -u $(DOCS_BASELINE) 2>/dev/null || { echo "docs-check: FAIL — $(DOCS_BASELINE) is not sorted and unique (LC_ALL=C sort -u)" >&2; exit 1; }
+	@sed "s#$$(pwd -P)/##g" $(DOCS_WARNINGS) | awk '/^[^ \t]/ { if (r != "") print r; r = $$0; next } { r = r " " $$0 } END { if (r != "") print r }' \
+	  | LC_ALL=C sort -u > $(DOCS_WARNINGS).sorted
+	@new=$$(LC_ALL=C comm -13 $(DOCS_BASELINE) $(DOCS_WARNINGS).sorted); if [ -n "$$new" ]; then \
+	  printf '%s\n' "$$new" >&2; echo "docs-check: FAIL — undocumented public declarations not in $(DOCS_BASELINE) (document them)" >&2; exit 1; fi
+	@gone=$$(LC_ALL=C comm -23 $(DOCS_BASELINE) $(DOCS_WARNINGS).sorted); if [ -n "$$gone" ]; then \
+	  printf '%s\n' "$$gone" >&2; echo "docs-check: FAIL — these $(DOCS_BASELINE) rows are documented now: drop them" >&2; exit 1; fi
+	@test -n "$(DOCS_BASE)" || { echo "docs-check: FAIL — DOCS_BASE is unset: name the base as <remote>/<branch> (origin/main) the baseline may not grow against" >&2; exit 1; }
+	@remote=$${DOCS_BASE%%/*}; branch=$${DOCS_BASE#*/}; \
+	  { [ -n "$$remote" ] && [ -n "$$branch" ] && [ "$$remote" != "$(DOCS_BASE)" ]; } || { echo "docs-check: FAIL — DOCS_BASE '$(DOCS_BASE)' is not <remote>/<branch>" >&2; exit 1; }; \
+	  case "$$remote" in .|..|/*|./*|../*) echo "docs-check: FAIL — DOCS_BASE '$(DOCS_BASE)' names this clone or a path as the remote: head-vs-head is no base" >&2; exit 1;; esac; \
+	  git fetch -q "$$remote" "$$branch" || { echo "docs-check: FAIL — git fetch $$remote $$branch failed: the base must be fetched, a stale remote-tracking ref is no base" >&2; exit 1; }; \
+	  base=$$(git rev-parse -q --verify 'FETCH_HEAD^{commit}') || { echo "docs-check: FAIL — $(DOCS_BASE) fetched nothing that resolves to a commit" >&2; exit 1; }; \
+	  [ "$$base" != "$$(git rev-parse -q --verify 'HEAD^{commit}')" ] || { echo "docs-check: FAIL — $(DOCS_BASE) resolves to HEAD ($$base): head-vs-head is no base" >&2; exit 1; }; \
+	  git show "$$base:$(DOCS_BASELINE)" > $(BUILD)/docs/baseline-base.txt 2>/dev/null || { echo "docs-check: FAIL — the base $(DOCS_BASE) ($$base) has no $(DOCS_BASELINE): nothing to shrink from" >&2; exit 1; }; \
+	  grew=$$(LC_ALL=C sort -u $(BUILD)/docs/baseline-base.txt | LC_ALL=C comm -13 - $(DOCS_BASELINE)); \
+	  if [ -n "$$grew" ]; then printf '%s\n' "$$grew" >&2; echo "docs-check: FAIL — $(DOCS_BASELINE) grew against $(DOCS_BASE) ($$base); it only shrinks" >&2; exit 1; fi
+	@echo "docs-check: ok — $$(wc -l < $(DOCS_BASELINE)) undocumented public declarations in the baseline, none new, none added against $(DOCS_BASE)"
+
+# The baseline rewritten from the tree's warnings, only ever lower: a row the tree would ADD is refused by
+# name (document the declaration instead); rows the tree no longer warns are dropped.
+docs-baseline: docs
+	@sed "s#$$(pwd -P)/##g" $(DOCS_WARNINGS) | awk '/^[^ \t]/ { if (r != "") print r; r = $$0; next } { r = r " " $$0 } END { if (r != "") print r }' \
+	  | LC_ALL=C sort -u > $(DOCS_WARNINGS).sorted
+	@new=$$(LC_ALL=C comm -13 $(DOCS_BASELINE) $(DOCS_WARNINGS).sorted); if [ -n "$$new" ]; then \
+	  printf '%s\n' "$$new" >&2; echo "docs-baseline: FAIL — these rows would be added to $(DOCS_BASELINE); it only lowers: document them" >&2; exit 1; fi
+	@cp $(DOCS_WARNINGS).sorted $(DOCS_BASELINE)
+	@echo "docs-baseline: $(DOCS_BASELINE) rewritten, $$(wc -l < $(DOCS_BASELINE)) rows"
+
+# docs-check against sabotaged copies of the tree (test/docs-sabotage.sh, one arm each): an undocumented
+# public declaration added to a header is red naming it, the same documented is green with no row, its row
+# in the baseline is green, a baseline row swapped for it is red naming the dropped one, a baseline without
+# its last newline is the same set, a duplicated row is red, a row added against the tree's baseline as base
+# is red (it only shrinks), a stale row is red, a base unset, empty, not <remote>/<branch>, this clone,
+# resolving to HEAD, unreachable, without the branch or without a baseline is red by name, a missing Doxyfile, baseline or warning log is red by name,
+# a Doxyfile exclusion or a @cond around the declaration is red by name, a header without @file is red by
+# name, an untracked header or a tree that is no git checkout is red by name, and docs-baseline refuses to
+# add a row. The tree is never edited.
+docs-sabotage: Doxyfile Makefile test/docs-sabotage.sh $(DOCS_BASELINE)
+	bash test/docs-sabotage.sh $(BUILD)/docs-sabotage
 
 clean:
 	rm -rf $(BUILD)

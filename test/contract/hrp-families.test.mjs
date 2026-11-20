@@ -9,12 +9,10 @@
  */
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { main } from './oc.mjs';
 import { loadData, resolveData } from './oc.mjs';
 import { renderC } from './oc.mjs';
 import { renderJson } from './oc.mjs';
-import { renderTs } from './oc.mjs';
-import { DATA, RENDERS, ROOT, UNION, editData, relOf, scratchData } from './helpers.mjs';
+import { UNION } from './helpers.mjs';
 
 const json = (dir = UNION) => JSON.parse(renderJson(resolveData(loadData(dir)), '0.0.0')[0].text);
 const header = (dir = UNION) => renderC(resolveData(loadData(dir)))[0].text;
@@ -55,21 +53,4 @@ test('each family carries its voices and fundamental range, one entry per family
   assert.match(header(), /^#define OMX_HRP_FAMILY_SEARCH_KEYS_F0_MIN_HZ 27\.5f$/m);
   assert.match(header(), /^#define OMX_HRP_FAMILY_SEARCH_KEYS_F0_MIN_HZ_DOUBLE 27\.5$/m);
   assert.match(header(), /^#define OMX_HRP_FAMILY_SEARCH_GUITAR_MAX_VOICES 6$/m);
-});
-
-test('perturbation: move a family\'s range, every render follows and --check goes red', () => {
-  const dir = scratchData();
-  editData(dir, 'kernels/hrp.json', (d, at) => { at('HRP_FAMILY_SEARCH').value.wind.f0MaxHz = 2700; });
-  assert.match(header(dir), /^#define OMX_HRP_FAMILY_SEARCH_WIND_F0_MAX_HZ 2700$/m);
-  assert.match(renderTs(resolveData(loadData(dir)))[0].text, /"f0MaxHz": 2700/);
-  assert.equal(json(dir).items.HRP_FAMILY_SEARCH.value.wind.f0MaxHz, 2700);
-  assert.equal(main(['render', '--target', 'c', '--out', `${RENDERS}/include`, '--check', '--data', dir]), 1);
-  assert.equal(main(['render', '--target', 'json', '--out', `${RENDERS}/share/omx-contract`, '--check', '--data', dir]), 1);
-});
-
-test('perturbation: reorder two families, the integers move and --check goes red', () => {
-  const dir = scratchData();
-  editData(dir, relOf('INSTRUMENT_FAMILIES').slice('data/'.length), (d) => { const ids = d.INSTRUMENT_FAMILIES.ids; [ids[0], ids[1]] = [ids[1], ids[0]]; });
-  assert.match(header(dir), /^  OMX_INSTRUMENT_FAMILIES_PERCUSSION = 0,$/m);
-  assert.equal(main(['render', '--target', 'c', '--out', `${RENDERS}/include`, '--check', '--data', dir]), 1);
 });

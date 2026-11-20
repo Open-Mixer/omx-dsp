@@ -8,8 +8,8 @@
  * this is that placement in C, which the console's server calls through its native addon. This library's HRP
  * insert (omx_hrp_lv2.h) keeps its own pass for now: it works in float cut magnitudes over omx_hrp_select's
  * candidates, and it has no range drop, so moving it onto this placement changes what the insert cuts.
- * ts/src/hrp-place.ts is its TypeScript twin, and test/analysis/fixtures/hrp_place.vectors is the one vector
- * file the C test and the twin test both read.
+ * It has no TypeScript twin: test/analysis/fixtures/hrp_place.vectors is the one vector file, read by the C test and
+ * installed (omxdsp.pc hrpplacevectors) for a consumer that holds its binding to the kernel.
  *
  * The rules, each the console's:
  *  - REFUSED WHOLE: an f0 that is not finite or not above zero, a Q that is not finite, a cut or boost bound that
@@ -18,18 +18,22 @@
  *    whether H1 is ever cut (the console's excess law never cuts it); this placement only places.
  *  - DROP, NEVER CLAMP: a band outside EQ_FREQ_RANGE (both bounds kept) is dropped here, because every door
  *    downstream CLAMPS a frequency into range, and a clamped partial is a real cut on a frequency nobody asked
- *    about ({@link omx_hrp_place_in_range}).
+ *    about (omx_hrp_place_in_range()).
  *  - THE BOUNDS: a gain is clamped into [-max_cut_db, max_boost_db]; a gain that is not finite is skipped.
  *  - SPARSE: a zero gain (asked for, or reached by the clamp) is no band.
  *  - THE BELL'S Q: every band is a bell at q clamped into EQ_Q_RANGE, as the console's store clamps it.
  *  - THE CAP: over max_bands, the LARGEST |gain| are kept, ties to the lower harmonic; the kept bands come back
  *    in harmonic order. max_bands is a free-slot count (a number; a fraction keeps its whole part).
- *  - ONE STEP: a band moves toward its depth by at most HRP_GAIN_STEP_DB per move ({@link omx_hrp_step_toward}).
+ *  - ONE STEP: a band moves toward its depth by at most HRP_GAIN_STEP_DB per move (omx_hrp_step_toward()).
  *
  * Doubles throughout, as the console computes: the console's server calls this with its own numbers, and a
  * float here would move a step by a rounding the console never had.
  *
  * Worker thread or the console's server: no allocation, no lock, no I/O, one pass over the gains plus the cap's.
+ */
+/**
+ * @file omx_hrp_place.h
+ * @brief the harmonic resonance processor's PLACEMENT and STEPPING in C: which bands a voice's per-harmonic gains become, and how far one move takes a band toward its depth.
  */
 #ifndef OMX_HRP_PLACE_H
 #define OMX_HRP_PLACE_H

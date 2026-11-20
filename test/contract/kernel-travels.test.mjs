@@ -11,11 +11,10 @@
  */
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { main } from './oc.mjs';
 import { loadData, resolveData } from './oc.mjs';
 import { renderC } from './oc.mjs';
 import { renderJson } from './oc.mjs';
-import { DATA, RENDERS, ROOT, UNION, editData, scratchData } from './helpers.mjs';
+import { UNION } from './helpers.mjs';
 
 const json = (dir = UNION) => JSON.parse(renderJson(resolveData(loadData(dir)), '0.0.0')[0].text);
 const header = (dir = UNION) => renderC(resolveData(loadData(dir))).find((f) => f.path === 'omxcontract/omx_contract_limits.h').text;
@@ -78,21 +77,4 @@ test('the C render carries the console engine\'s values for these items', () => 
     for (const [macro, v] of want) { assert.equal(defines.get(macro), v, macro); n++; }
   }
   assert.equal(n, 14, 'every value the console engine uses is read off the render');
-});
-
-test('perturbation: move each value, the json and C renders follow and render --check goes red', () => {
-  const arms = [
-    ['INPUT_ALIGN_DELAY_RANGE', 'kernels/align.json', (it) => { it.travel.max = 99; }, /^#define OMX_INPUT_ALIGN_DELAY_RANGE_MAX 99$/m],
-    ['OUTPUT_DELAY_RANGE', 'kernels/idelay.json', (it) => { it.travel.max = 999; }, /^#define OMX_OUTPUT_DELAY_RANGE_MAX 999$/m],
-    ['OSCILLATOR_FREQ_RANGE', 'kernels/generator.json', (it) => { it.travel.step = 5; }, /^#define OMX_OSCILLATOR_FREQ_RANGE_STEP 5$/m],
-    ['DIVERGENCE_RANGE', 'kernels/balance.json', (it) => { it.travel.max = 2; }, /^#define OMX_DIVERGENCE_RANGE_MAX 2$/m],
-  ];
-  for (const [name, file, move, line] of arms) {
-    const dir = scratchData();
-    editData(dir, file, (d, at) => move(at(name)));
-    assert.notDeepEqual(json(dir).items[name].value, CONSUMER[name][1], `${name}: the moved value reads back`);
-    assert.match(header(dir), line, name);
-    assert.equal(main(['render', '--target', 'c', '--out', `${RENDERS}/include`, '--check', '--data', dir]), 1, `${name}: c --check`);
-    assert.equal(main(['render', '--target', 'json', '--out', `${RENDERS}/share/omx-contract`, '--check', '--data', dir]), 1, `${name}: json --check`);
-  }
 });

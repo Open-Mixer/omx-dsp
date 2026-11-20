@@ -31,6 +31,10 @@
  *
  * Allocation-free, no globals, caller owns the tracker. Never called from the RT callback.
  */
+/**
+ * @file omx_hrp_track.h
+ * @brief HRP voice tracking: the same singer, frame after frame.
+ */
 #ifndef OMX_HRP_TRACK_H
 #define OMX_HRP_TRACK_H
 
@@ -60,7 +64,7 @@ typedef struct {
   int stable;
   int active;
   /** Consecutive frames the detector reported this note ONE OCTAVE away (see the fold in
-   *  {@link omx_hrp_track_update}), and which side (+1 above / −1 below). Crossing
+   *  omx_hrp_track_update()), and which side (+1 above / −1 below). Crossing
    *  {@link OmxHrpTrackConfig.octave_hold_frames} migrates the track — a real leap. */
   uint32_t octave_frames;
   int octave_dir;
@@ -72,6 +76,8 @@ typedef struct {
   uint32_t next_id;
 } OmxHrpTracker;
 
+/** The tracker's thresholds. Every field is read by omx_hrp_track_update, which refuses a config
+ *  whose `match_cents` or `steady_cents` is not finite and above 0. */
 typedef struct {
   /** How far a voice may move between frames and still be the SAME voice. A fifth by default:
    *  wide enough for a leap or a slide, narrow enough that two separate notes are two voices. */
@@ -89,6 +95,14 @@ typedef struct {
    *  track holds its own octave. */
   uint32_t octave_hold_frames;
 } OmxHrpTrackConfig;
+
+/** 1 when `cfg` is a config omx_hrp_track_update accepts: non-NULL, `match_cents` and `steady_cents`
+ * finite and above 0. A caller that cannot report a refused update mid-stream checks this once up front.
+ * @thread worker */
+static inline int omx_hrp_track_config_valid(const OmxHrpTrackConfig *cfg) {
+  return cfg && isfinite(cfg->match_cents) && cfg->match_cents > 0.0f && isfinite(cfg->steady_cents) &&
+         cfg->steady_cents > 0.0f;
+}
 
 /** @thread worker */
 static inline OmxHrpTrackConfig omx_hrp_track_config_default(void) {
@@ -120,19 +134,30 @@ static inline float omx_hrp_cents_between(float a_hz, float b_hz) {
   return fabsf(1200.0f * log2f(a_hz / b_hz));
 }
 
-/** Advance the tracker by one detected frame.
+/** @brief Advance the tracker by one detected frame.
  *
  * Greedy nearest-match: every detected voice takes the closest unclaimed track within
  * `match_cents`. Greedy is not optimal — a globally best assignment could differ — but with at
  * most four voices a fifth apart the cases where it differs are cases where the answer is
  * ambiguous anyway, and §12 explicitly asks for the simple thing first.
  *
- * @param tracker  caller-owned; carries the identities forward
- * @param frame    what the detector just found
+ * THE DOOR: an update that cannot be followed is refused and leaves the tracker exactly as it
+ * was (no track opened, no identity spent). It never aborts.
+ *
+ * @param tracker  caller-owned; carries the identities forward; non-NULL
+ * @param frame    what the detector just found; non-NULL; at most OMX_HRP_MAX_VOICES voices are read
+ * @param cfg      the thresholds (OmxHrpTrackConfig); non-NULL; `match_cents` and `steady_cents`
+ *                 finite and above 0, the frame counts are unsigned and any value is accepted
+ * @return 1 when the frame was applied; 0 when refused (a NULL pointer, or a `match_cents` or
+ *         `steady_cents` that is NaN, infinite, zero or negative)
+ * @pre `tracker`, `frame`, `cfg` non-NULL and the two thresholds finite and above 0: checked on
+ *      every build and refused through the return
+ * @post on 0 the tracker is unchanged
  * @thread worker
  */
-static inline void omx_hrp_track_update(OmxHrpTracker *tracker, const OmxHrpVoiceSet *frame,
-                                        const OmxHrpTrackConfig *cfg) {
+static inline int omx_hrp_track_update(OmxHrpTracker *tracker, const OmxHrpVoiceSet *frame,
+                                       const OmxHrpTrackConfig *cfg) {
+  if (!tracker || !frame || !omx_hrp_track_config_valid(cfg)) return 0;
   int claimed[OMX_HRP_MAX_TRACKS];
   int matched[OMX_HRP_MAX_VOICES];
   memset(claimed, 0, sizeof(claimed));
@@ -263,6 +288,7 @@ static inline void omx_hrp_track_update(OmxHrpTracker *tracker, const OmxHrpVoic
     t->stable = 0;
     if (t->missing_frames >= cfg->retire_frames) memset(t, 0, sizeof(*t));
   }
+  return 1;
 }
 
 /**

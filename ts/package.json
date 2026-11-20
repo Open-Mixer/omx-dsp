@@ -1,7 +1,7 @@
 {
   "name": "@openmixer/omx-dsp",
-  "version": "0.32.4",
-  "description": "The TypeScript twins of omx-dsp kernels, each pinned to its C kernel by an agreement test, and the oracle that pins them",
+  "version": "0.33.1",
+  "description": "omx-dsp in JavaScript: the curve function as the C compiled to WebAssembly and its loader, the TypeScript twins of the kernels that stay in TypeScript, each pinned to its C kernel by an agreement test",
   "type": "module",
   "license": "GPL-3.0-or-later",
   "author": "Pau Aliagas <linuxnow@gmail.com>",
@@ -25,12 +25,14 @@
   "files": [
     "dist/",
     "src/",
-    "oracle/"
+    "oracle/",
+    "wasm/"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "test": "node tools/definitions.mjs --check && tsc -p tsconfig.json && node --test test/*.test.mjs",
-    "prepack": "tsc -p tsconfig.json"
+    "test": "node tools/definitions.mjs --check && tsc -p tsconfig.json && npm run build:wasm && node --test test/*.test.mjs",
+    "prepack": "tsc -p tsconfig.json && npm run build:wasm",
+    "build:wasm": "make -C .. wasm && mkdir -p wasm && cp ../build/wasm/omx-dsp.wasm wasm/omx-dsp.wasm"
   },
   "devDependencies": {
     "typescript": "^5.6.0"

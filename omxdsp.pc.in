@@ -12,10 +12,16 @@ hrpcorpus=${datadir}/omxdsp/hrp_peaking_corpus.h
 meterviewvectors=${datadir}/omxdsp/meter-view-vectors.json
 rtabandsvectors=${datadir}/omxdsp/rta-bands-vectors.json
 rtadeltavectors=${datadir}/omxdsp/rta-delta-vectors.json
+# the HRP placement's and stepping's vectors (test/analysis/fixtures/hrp_place.vectors), the values a binding of omx_hrp_place is held to
+hrpplacevectors=${datadir}/omxdsp/hrp-place-vectors
+# the correctly rounded log10f the golden builds of a consumer wrap log10f with (test/support: log10f_cr.h, log10f_subst.h)
+testsupportdir=${datadir}/omxdsp/test-support
+# the ThreadSanitizer gate (tools/tsan-gate.sh) a consumer's thread tests run under, with its sabotage arm
+tsangate=${datadir}/omxdsp/tsan-gate.sh
 
 Name: @NAME@
 Description: DSP primitives and effect kernels of OpenMixer, linked statically (@FLAVOUR@)
 Version: @VERSION@
-Requires: omx-contract >= @CONTRACTFLOOR@, omx-contract < 4
+Requires: omx-contract >= @CONTRACTFLOOR@
 Cflags: -I${includedir} @FPFLAGS@@CFLAGS@
 Libs: -L${libdir} -l@NAME@@LIBS@ -lm

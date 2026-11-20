@@ -768,7 +768,6 @@ static inline uint32_t omx_curve_time(const struct omx_curve_request *rq, int ha
  * @return The points written; 0 when `*code` is not OMX_CURVE_OK.
  * @post `ascending`.
  * @note Thread-safe on distinct output, reentrant.
- * @twin curvePoints
  * @thread control
  */
 static inline uint32_t omx_curve_points_marked(const struct omx_curve_request *rq, double *x, double *y,

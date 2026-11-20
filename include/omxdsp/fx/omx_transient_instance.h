@@ -12,7 +12,7 @@
  *   1. STATE. `struct omx_transient_state` is three envelope cascades and a gain word, plain
  *      inline floats, so the instance holds it whole; there is nothing to hand in.
  *   2. RESOLVE. A host publishes control ports as floats in the operator's units (dB, ms).
- *      {@link omx_transient_instance_resolve} clamps every word into the declared travel
+ *      omx_transient_instance_resolve() clamps every word into the declared travel
  *      (omxdsp_definitions.h's OMX_TRANSIENT_*) BEFORE the kernel's own resolve sees it, because
  *      a foreign host's port is not the console's codec and nothing upstream has clamped it: the
  *      three gains read any non-finite word as their declared default, 0 dB (omx_clamp_or — a
@@ -27,11 +27,15 @@
  * designer does not apply a contrast measured before the bypass.
  *
  * THE READOUTS. attackGainDb and sustainGainDb are the two shares of the gain the last sample took
- * ({@link omx_transient_instance_attack_gain_db}, {@link omx_transient_instance_sustain_gain_db}); with
+ * (omx_transient_instance_attack_gain_db(), omx_transient_instance_sustain_gain_db()); with
  * outputDb they sum to it.
  *
  * LATENCY IS ZERO, AND PUBLISHED: the gain is computed from the sample it multiplies
  * (omx_transient_latency()), and a host cannot tell "zero" from "never said".
+ */
+/**
+ * @file omx_transient_instance.h
+ * @brief the native transient designer as a plugin instance: the shell's core, with no format in it.
  */
 #ifndef OMX_TRANSIENT_INSTANCE_H
 #define OMX_TRANSIENT_INSTANCE_H
@@ -66,7 +70,10 @@ typedef struct {
 /**
  * Bind an instance to its rate. Returns 1 when usable, 0 when not: the rate must be one of the
  * oracle set (32 to 192 kHz), so any other rate is refused, `ready` stays clear and
- * {@link omx_transient_instance_run} is then the identity: absence is a wire, not a crash.
+ * omx_transient_instance_run() is then the identity: absence is a wire, not a crash.
+ * @param s The instance; every word of it is written.
+ * @param sr The sample rate, Hz, one of the oracle set.
+ * @return 1 when usable, 0 when not: a rate the console does not declare (the oracle set, 32 to 192 kHz) is refused, `ready` stays clear and run() is the identity.
  * @thread control
  */
 static inline int omx_transient_instance_init(OmxTransientInstance *s, float sr) {
@@ -77,10 +84,11 @@ static inline int omx_transient_instance_init(OmxTransientInstance *s, float sr)
   return 1;
 }
 
+#define OMX_CONTRACT_STAGE "transient/instance-clear"
 /** The engage-edge clear: the three followers back to silence, the gain meter to 0 dB. One
  * memset over a few dozen bytes; RT-safe.
+ * @param s The instance; null or not ready is ignored.
  * @thread audio */
-#define OMX_CONTRACT_STAGE "transient/instance-clear"
 static inline void omx_transient_instance_clear(OmxTransientInstance *s) {
   if (!s || !s->ready) return;
   omx_transient_state_init(&s->state);
@@ -134,13 +142,19 @@ static inline void omx_transient_instance_resolve(OmxTransientInstance *s, int b
 }
 #undef OMX_CONTRACT_STAGE
 
+#define OMX_CONTRACT_STAGE "transient/instance-run"
 /**
  * THE AUDIO CALLBACK'S WHOLE SHARE: copy in to out where they differ, run the console's kernel in
  * place on out. `in_*` and `out_*` may alias. Not ready, or bypassed, is the identity byte for
  * byte.
+ * @param s The instance; null, not ready or bypassed leaves `out_*` holding `in_*`.
+ * @param in_l The left input, `n` frames.
+ * @param in_r The right input, `n` frames.
+ * @param out_l The left output, `n` frames, may be `in_l`.
+ * @param out_r The right output, `n` frames, may be `in_r`.
+ * @param n The block length, frames; a null port or 0 touches nothing.
  * @thread audio
  */
-#define OMX_CONTRACT_STAGE "transient/instance-run"
 static inline void omx_transient_instance_run(OmxTransientInstance *s, const float *in_l, const float *in_r,
                                               float *out_l, float *out_r, uint32_t n) {
   OMX_INSTANCE_RUN_IN_PLACE(s, in_l, in_r, out_l, out_r, n, omx_transient_process(out_l, out_r, n, &s->atom, &s->state));

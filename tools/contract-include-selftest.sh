@@ -5,9 +5,9 @@
 # contract-include-selftest.sh — holds tools/contract-include.sh to the omx-contract range the
 # packaging declares (FreeMixer/omx-dsp#95, #107). It renders a scratch omx-contract package at
 # several versions and runs the script against each: at or above the floor it is taken (the script reads the
-# floor; the ceiling, the next major, is the package managers' and pkg-config's), below the floor and with nothing installed
+# floor; there is no ceiling), below the floor and with nothing installed
 # it is refused, and the refusal names the package, the floor and the version installed. The spec,
-# debian/control and omxdsp.pc.in carry the floor and the ceiling (the next major), and no tracked file may name a
+# debian/control and omxdsp.pc.in carry the floor, and no ceiling, and no tracked file may name a
 # pins file again. No network is used.
 set -eu
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
@@ -18,36 +18,32 @@ fail() { echo "contract-include-selftest: FAIL — $*" >&2; bad=1; }
 floor="$(sh "$HERE/tools/contract-include.sh" --floor)"
 [ -n "$floor" ] || { echo "contract-include-selftest: no floor read from the spec" >&2; exit 1; }
 
-# The spec, debian/control and omxdsp.pc.in say the same floor and the same ceiling, the next major.
+# The spec, debian/control and omxdsp.pc.in say the same floor, and no ceiling.
 for field in Build-Depends Depends; do
   grep -q "^$field: .*libomx-contract-dev (>= $floor~)" "$HERE/debian/control" \
     || fail "debian/control's $field does not carry libomx-contract-dev (>= $floor~), the spec's floor"
 done
 grep -q "^Requires: omx-contract-devel >= $floor\$" "$HERE/packaging/omx-dsp.spec" \
   || fail "the spec's devel Requires is not its BuildRequires floor >= $floor"
-grep -q '^Requires: omx-contract >= @CONTRACTFLOOR@, omx-contract < 4$' "$HERE/omxdsp.pc.in" \
-  || fail "omxdsp.pc.in does not require the spec's floor (@CONTRACTFLOOR@) and the ceiling < 4"
-# The ceiling is the next major (from 1.0 a dependency between our libraries states floor and ceiling).
-missing() {  # tree: every place a dependency on the contract should carry its ceiling and does not
-  grep -q '^BuildRequires: omx-contract-devel < 4$' "$1/packaging/omx-dsp.spec" || echo "spec BuildRequires omx-contract-devel < 4"
-  grep -q '^Requires: omx-contract-devel < 4$' "$1/packaging/omx-dsp.spec" || echo "spec Requires omx-contract-devel < 4"
-  grep -q '^Requires: omx-contract-data < 4$' "$1/packaging/omx-dsp.spec" || echo "spec Requires omx-contract-data < 4"
-  grep -q '^Build-Depends: .*libomx-contract-dev (<< 4~)' "$1/debian/control" || echo "control Build-Depends libomx-contract-dev (<< 4~)"
-  grep -q '^Depends: libomx-contract-dev (>= [0-9.]*~), libomx-contract-dev (<< 4~)' "$1/debian/control" || echo "control Depends libomx-contract-dev (<< 4~)"
-  grep -q '^Depends: omx-contract-data (>= [0-9.]*~), omx-contract-data (<< 4~)' "$1/debian/control" || echo "control Depends omx-contract-data (<< 4~)"
-  grep -q '^Requires: omx-contract >= @CONTRACTFLOOR@, omx-contract < 4$' "$1/omxdsp.pc.in" || echo "omxdsp.pc.in Requires omx-contract < 4"
+grep -q '^Requires: omx-contract >= @CONTRACTFLOOR@$' "$HERE/omxdsp.pc.in" \
+  || fail "omxdsp.pc.in does not require the spec's floor (@CONTRACTFLOOR@) alone"
+# Floors only: no ceiling on a dependency between our libraries (owner rule 2026-11-16).
+missing() {  # tree: every place a ceiling on omx-contract has crept back in
+  grep -nE '^(Build)?Requires: omx-contract-(devel|data) <[^=]' "$1/packaging/omx-dsp.spec" | sed 's/^/spec ceiling: /'
+  grep -nE 'omx-contract(-data)?-?(dev)? \(<< ' "$1/debian/control" | sed 's/^/control ceiling: /'
+  grep -nE 'omx-contract *<' "$1/omxdsp.pc.in" | sed 's/^/omxdsp.pc.in ceiling: /'
 }
-[ -z "$(missing "$HERE")" ] || fail "a ceiling on omx-contract is missing: $(missing "$HERE" | tr '\n' ';')"
-# Positive control: the scan misses each ceiling when it is taken out of its file.
+[ -z "$(missing "$HERE")" ] || fail "a ceiling on omx-contract is back (floors only): $(missing "$HERE" | tr '\n' ';')"
+# Positive control: the scan sees a ceiling put back in each file.
 mkdir -p "$S/ceil/packaging" "$S/ceil/debian"
 cp "$HERE/packaging/omx-dsp.spec" "$S/ceil/packaging/"; cp "$HERE/debian/control" "$S/ceil/debian/"; cp "$HERE/omxdsp.pc.in" "$S/ceil/"
 [ -z "$(missing "$S/ceil")" ] || fail "the scratch copy is not clean before the sabotage"
-sed -i '/^Requires: omx-contract-data < 4$/d' "$S/ceil/packaging/omx-dsp.spec"
-[ -n "$(missing "$S/ceil")" ] || fail "the scan does not see a spec ceiling taken out; it would prove nothing"
-cp "$HERE/packaging/omx-dsp.spec" "$S/ceil/packaging/"; sed -i 's/, libomx-contract-dev (<< 4~)//' "$S/ceil/debian/control"
-[ -n "$(missing "$S/ceil")" ] || fail "the scan does not see a debian/control ceiling taken out; it would prove nothing"
-cp "$HERE/debian/control" "$S/ceil/debian/"; sed -i 's/, omx-contract < 4$//' "$S/ceil/omxdsp.pc.in"
-[ -n "$(missing "$S/ceil")" ] || fail "the scan does not see an omxdsp.pc.in ceiling taken out; it would prove nothing"
+echo 'Requires: omx-contract-data < 4' >> "$S/ceil/packaging/omx-dsp.spec"
+[ -n "$(missing "$S/ceil")" ] || fail "the scan does not see a spec ceiling put in; it would prove nothing"
+cp "$HERE/packaging/omx-dsp.spec" "$S/ceil/packaging/"; sed -i 's/libomx-contract-dev (>= \([0-9.]*~\))/&, libomx-contract-dev (<< 4~)/' "$S/ceil/debian/control"
+[ -n "$(missing "$S/ceil")" ] || fail "the scan does not see a debian/control ceiling put in; it would prove nothing"
+cp "$HERE/debian/control" "$S/ceil/debian/"; sed -i 's/^\(Requires: omx-contract >= @CONTRACTFLOOR@\)$/\1, omx-contract < 4/' "$S/ceil/omxdsp.pc.in"
+[ -n "$(missing "$S/ceil")" ] || fail "the scan does not see an omxdsp.pc.in ceiling put in; it would prove nothing"
 
 # A scratch package. omx-contract.json carries one kernel, pretty-printed as the release ships it.
 mkdir -p "$S/lib/pkgconfig" "$S/include/omxcontract" "$S/share/omx-contract"
@@ -119,5 +115,16 @@ mkdir -p "$S/plant/.github"; cp "$HERE/Makefile" "$S/plant/"; echo "X := \$(shel
 found="$(pins "$HERE")"; [ -z "$found" ] || fail "these files name a pins file: $found"
 [ ! -e "$HERE/.github/pins.txt" ] || fail ".github/pins.txt is back"
 
+# Floors only in the prose too: BUILDING.md names no ceiling in any form (`< 5`, `<< 4~`, `<= 4`) (owner rule 2026-11-16).
+prose="$(grep -nE '`<{1,2}=? *[0-9]' "$HERE/BUILDING.md" || true)"
+[ -z "$prose" ] || fail "BUILDING.md states a ceiling on omx-contract (floors only): $prose"
+
+# packaging/deps.txt declares the floor with no ceiling column (owner rule 2026-11-16): a ceiling planted there is seen.
+deps_ceiling() { awk '/^omx-contract/ && $4 ~ /^[0-9]/' "$1/packaging/deps.txt"; }
+mkdir -p "$S/dep/packaging"; cp "$HERE/packaging/deps.txt" "$S/dep/packaging/"
+[ -z "$(deps_ceiling "$HERE")" ] || fail "packaging/deps.txt declares a ceiling on omx-contract (floors only): $(deps_ceiling "$HERE")"
+sed -i -E "/^omx-contract-devel/ s/($floor)/\1 4/" "$S/dep/packaging/deps.txt"
+[ -n "$(deps_ceiling "$S/dep")" ] || fail "the scan does not see a deps.txt ceiling planted; it would prove nothing"
+
 [ "$bad" = 0 ] || exit 1
-echo "contract-include-selftest: >= $floor and < 4 agree in the spec, debian/control and omxdsp.pc.in; floor and newer taken, below the floor and nothing refused naming the package; no download path, no pins file"
+echo "contract-include-selftest: >= $floor, floors only, agrees in the spec, debian/control and omxdsp.pc.in; floor and newer taken, below the floor and nothing refused naming the package; no download path, no pins file"

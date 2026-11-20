@@ -1,0 +1,347 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://openmixer.org/schema/omx-dsp/v1/shapes/curve-io.schema.json",
+  "title": "CurveIo",
+  "description": "The documents of omx_curve_points_json (omx_curve_json.h): a curve request, and its answer, the points of a panel description's display from its role words, the current values and a rate. The JSON form of struct omx_curve_request and of the reply of plugin-hostd's curve_points verb, so the host, the WebAssembly build and the row all speak one shape.",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/CurveRequest"
+    },
+    {
+      "$ref": "#/$defs/CurveReply"
+    },
+    {
+      "$ref": "#/$defs/CurveRefusal"
+    }
+  ],
+  "$defs": {
+    "CurveRequest": {
+      "type": "object",
+      "title": "CurveRequest",
+      "description": "A curve request: one display of a panel description, already bound to values and a rate (struct omx_curve_request). The request parses no label and reads no descriptor.",
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "eq_response",
+            "transfer_curve",
+            "time_response"
+          ],
+          "description": "The display's kind (CURVE_DISPLAYS)."
+        },
+        "family": {
+          "type": "string",
+          "enum": [
+            "eq",
+            "dynamics",
+            "limiter",
+            "gate",
+            "deesser",
+            "drive",
+            "delay",
+            "reverb"
+          ],
+          "description": "The family that picks the model and, for a transfer curve, the gain computer's mode (CURVE_FAMILIES)."
+        },
+        "sampleRate": {
+          "type": "number",
+          "description": "The instance's rate, Hz; positive and finite."
+        },
+        "points": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "The grid points, 2 to CURVE_POINTS_MAX (an EQ's anchors on top)."
+        },
+        "extents": {
+          "$ref": "#/$defs/CurveExtents"
+        },
+        "terms": {
+          "type": "array",
+          "maxItems": 384,
+          "items": {
+            "$ref": "#/$defs/CurveTerm"
+          },
+          "description": "The terms; a later term of one role and index replaces an earlier."
+        },
+        "userOnly": {
+          "type": "boolean",
+          "description": "Also answer the curve over the user bands alone (and the head filters), at the same x, as userPoints."
+        },
+        "tempoBpm": {
+          "type": "number",
+          "description": "The host's tempo, BPM, for a synced delay; absent when the host hands none (a synced delay is then refused as termMissing)."
+        }
+      },
+      "required": [
+        "kind",
+        "family",
+        "sampleRate",
+        "points",
+        "terms"
+      ],
+      "additionalProperties": false
+    },
+    "CurveExtents": {
+      "type": "object",
+      "title": "CurveExtents",
+      "description": "The x extents: Hz for an EQ, input dB for a transfer curve, ms for a time response; CURVE_EXTENTS when the request gives none.",
+      "properties": {
+        "min": {
+          "type": "number",
+          "description": "The low edge of x."
+        },
+        "max": {
+          "type": "number",
+          "description": "The high edge of x, above min."
+        }
+      },
+      "required": [
+        "min",
+        "max"
+      ],
+      "additionalProperties": false
+    },
+    "CurveTerm": {
+      "type": "object",
+      "title": "CurveTerm",
+      "description": "One bound term of a curve request: a role of the description, its value now, in its unit (struct omx_curve_term).",
+      "properties": {
+        "role": {
+          "type": "string",
+          "enum": [
+            "band_type",
+            "band_freq",
+            "band_gain",
+            "band_q",
+            "band_on",
+            "hpf_freq",
+            "hpf_slope",
+            "hpf_on",
+            "lpf_freq",
+            "lpf_slope",
+            "lpf_on",
+            "threshold",
+            "ratio",
+            "knee",
+            "makeup",
+            "range",
+            "knee_start",
+            "knee_end",
+            "drive",
+            "tone",
+            "model",
+            "mix",
+            "output",
+            "time",
+            "feedback",
+            "pingpong",
+            "sync",
+            "division",
+            "size",
+            "decay",
+            "algorithm",
+            "predelay",
+            "damping",
+            "width",
+            "low_cut",
+            "high_cut"
+          ],
+          "description": "The role word (CURVE_ROLES); a word of none is refused as unitRefused."
+        },
+        "index": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "The band's index for an indexed role (band_*); 0 or absent for any other."
+        },
+        "value": {
+          "type": "number",
+          "description": "The control's plain value."
+        },
+        "unit": {
+          "type": "string",
+          "enum": [
+            "hz",
+            "khz",
+            "db",
+            "dbfs",
+            "dbu",
+            "lufs",
+            "coef",
+            "oct",
+            "none",
+            "ratio",
+            "pc",
+            "ms",
+            "s"
+          ],
+          "description": "The unit the description gives the role (CURVE_UNITS); a role takes only the units omx_curve_unit_accepted names."
+        },
+        "shape": {
+          "type": "string",
+          "pattern": "^(off|bell|lowshelf|highshelf|highpass|lowpass|notch|-|allpass1|allpass2)$",
+          "description": "For band_type, the shape its value selects (CURVE_SHAPES, spelt as the description does, the unshaped one as -); for band_freq, the fixed shape of a band no control selects. A word of none is refused as kindUnknown."
+        },
+        "origin": {
+          "type": "string",
+          "pattern": "^(user|fbs-fixed|fbs-live|hrp|room-mode)$",
+          "description": "Where the band comes from (CURVE_ORIGINS): user, the default, or a planter's; a band's is its band_freq term's."
+        }
+      },
+      "required": [
+        "role",
+        "value",
+        "unit"
+      ],
+      "additionalProperties": false
+    },
+    "CurvePoint": {
+      "type": "object",
+      "title": "CurvePoint",
+      "description": "One point: Hz and dB for an EQ, input dB and output dB for a transfer curve, ms and dB for a reverb's decay.",
+      "properties": {
+        "x": {
+          "type": "number",
+          "description": "The x of the point."
+        },
+        "y": {
+          "type": "number",
+          "description": "The y of the point."
+        }
+      },
+      "required": [
+        "x",
+        "y"
+      ],
+      "additionalProperties": false
+    },
+    "CurveMark": {
+      "type": "object",
+      "title": "CurveMark",
+      "description": "A band of an eq_response whose origin is not user: where a surface marks what a corrector plants (struct omx_curve_mark).",
+      "properties": {
+        "freq": {
+          "type": "number",
+          "description": "The band's centre, Hz."
+        },
+        "depthDb": {
+          "type": "number",
+          "description": "The band's own magnitude at its centre, dB: a bell's gain, a notch's floor."
+        },
+        "q": {
+          "type": "number",
+          "description": "The band's Q."
+        },
+        "origin": {
+          "type": "string",
+          "pattern": "^(fbs-fixed|fbs-live|hrp|room-mode)$",
+          "description": "Its origin, never user."
+        }
+      },
+      "required": [
+        "freq",
+        "depthDb",
+        "q",
+        "origin"
+      ],
+      "additionalProperties": false
+    },
+    "CurveStem": {
+      "type": "object",
+      "title": "CurveStem",
+      "description": "One tap of a delay's time_response: where it lands, how loud, how bright, on which leg (struct omx_curve_stem).",
+      "properties": {
+        "x": {
+          "type": "number",
+          "description": "The tap's time, ms from the impulse."
+        },
+        "y": {
+          "type": "number",
+          "description": "Its level, dB relative to the impulse."
+        },
+        "shade": {
+          "type": "number",
+          "description": "Its brightness, 0..1."
+        },
+        "leg": {
+          "type": "string",
+          "enum": [
+            "both",
+            "left",
+            "right"
+          ],
+          "description": "The leg it lands on (CURVE_LEGS)."
+        }
+      },
+      "required": [
+        "x",
+        "y",
+        "shade",
+        "leg"
+      ],
+      "additionalProperties": false
+    },
+    "CurveReply": {
+      "type": "object",
+      "title": "CurveReply",
+      "description": "A curve: the points ascending in x, the marks of the bands a corrector planted and, when the request asks or the display has them, the user-only curve and a delay's stems.",
+      "properties": {
+        "points": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CurvePoint"
+          },
+          "description": "The points, ascending in x; none for a delay, whose train is the stems."
+        },
+        "marks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CurveMark"
+          },
+          "description": "One per drawn band whose origin is not user, in band order; none for a transfer curve."
+        },
+        "userPoints": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CurvePoint"
+          },
+          "description": "With userOnly: the curve over the user bands and the head filters alone, at the same x."
+        },
+        "stems": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CurveStem"
+          },
+          "description": "A delay's tap train, in time order; absent for every other display."
+        }
+      },
+      "required": [
+        "points",
+        "marks"
+      ],
+      "additionalProperties": false
+    },
+    "CurveRefusal": {
+      "type": "object",
+      "title": "CurveRefusal",
+      "description": "What the answer is when no curve is drawn: the code of CURVE_CODES other than ok. No curve is drawn from a guess.",
+      "properties": {
+        "code": {
+          "type": "string",
+          "enum": [
+            "kindUnknown",
+            "termMissing",
+            "unitRefused",
+            "valueNotFinite",
+            "pointsRange",
+            "room"
+          ],
+          "description": "What is missing or refused: kindUnknown, termMissing, unitRefused, valueNotFinite, pointsRange or room."
+        }
+      },
+      "required": [
+        "code"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

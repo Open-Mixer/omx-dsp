@@ -9,11 +9,11 @@
  * gate slot runs) — and this file adds no DSP to it. What it adds is what a host's port model
  * needs and `omx_gate.h`'s pointer-per-port face does not carry:
  *
- *   1. READY. {@link omx_gate_instance_init} binds the instance to its rate and refuses a rate
- *      that is not positive. A refused instance is the identity in {@link omx_gate_instance_run}
+ *   1. READY. omx_gate_instance_init() binds the instance to its rate and refuses a rate
+ *      that is not positive. A refused instance is the identity in omx_gate_instance_run()
  *      and reports no latency: absence is a wire, not a crash.
  *   2. RESOLVE. A host publishes control ports as floats in the operator's units (dB, ratio, ms,
- *      toggles). {@link omx_gate_instance_resolve} takes them BY VALUE, in the gate kernel's
+ *      toggles). omx_gate_instance_resolve() takes them BY VALUE, in the gate kernel's
  *      contract order (omx-contract 2.7.0), and hands them to `omx_gate_resolve` — the one
  *      resolution, never a second one — so every value lands inside the declared OMX_GATE_*
  *      travel (NaN floored) whatever the host's port held, and `bypass` is the slot's `enabled`
@@ -30,13 +30,17 @@
  *      so any aliasing a host does (an output on its input, the key on an output) is safe.
  *
  * STATE ACROSS BYPASS: the kernel's disabled path leaves the slot's state as it was, and the
- * shell adds no re-arm the console's slot does not have. {@link omx_gate_instance_init} (a host's
+ * shell adds no re-arm the console's slot does not have. omx_gate_instance_init() (a host's
  * instantiate/activate) is the one place the state is cleared.
  *
  * LATENCY IS PUBLISHED: OMX_OVS_LATENCY_4X while the attack engages the 4x control path (the
  * kernel's compensation delay), else 0 — `omx_gate_latency` over the resolved atom, never restated.
  *
  * Everything below is plain C; test/fx/gate_instance.test.c drives it with a plain `cc`.
+ */
+/**
+ * @file omx_gate_instance.h
+ * @brief the strip gate as a plugin instance: the shell's core, with no format in it.
  */
 #ifndef OMX_GATE_INSTANCE_H
 #define OMX_GATE_INSTANCE_H
@@ -53,13 +57,19 @@
 
 /** @brief One instance: the rate, the resolved atom, the key-source control and the gate's state. */
 typedef struct {
-  float sr;
-  struct omx_dyn atom;
+  float sr;             /**< The sample rate the instance is bound to, Hz. */
+  struct omx_dyn atom;  /**< The slot's atom as last resolved: what the kernel runs. */
   /** The key-source control as resolved: 1 listens to the key, 0 is SELF. */
   float key_external;
-  struct omx_gate gate;
-  int ready;
+  struct omx_gate gate; /**< The gate kernel's state: detector, key filter and envelope history. */
+  int ready;            /**< 1 after a successful omx_gate_instance_init(); 0 makes run() the identity. */
 } OmxGateInstance;
+
+static inline void omx_gate_instance_resolve(OmxGateInstance *s, int bypass, int key_source,
+                                             float threshold_db, float range_db, float knee_start_db,
+                                             float knee_end_db, float attack_ms, float hold_ms,
+                                             float release_ms, float hysteresis_db, float ratio, float hp_hz,
+                                             float lp_hz, int key_listen, float key_tilt_db);
 
 /**
  * @brief Bind an instance to its rate (instantiate/activate): the slot's state cleared, base path,
@@ -71,14 +81,8 @@ typedef struct {
  * @return 1 when usable, 0 when not (NULL instance, rate not positive or NaN); a refused instance
  *         is the identity.
  * @note No allocation; clears the whole instance. Thread-safe on distinct instances.
+ * @thread control
  */
-static inline void omx_gate_instance_resolve(OmxGateInstance *s, int bypass, int key_source,
-                                             float threshold_db, float range_db, float knee_start_db,
-                                             float knee_end_db, float attack_ms, float hold_ms,
-                                             float release_ms, float hysteresis_db, float ratio, float hp_hz,
-                                             float lp_hz, int key_listen, float key_tilt_db);
-
-/** @thread control */
 static inline int omx_gate_instance_init(OmxGateInstance *s, float sr) {
   if (!omx_instance_bind_positive(s, sizeof(*s), sr)) return 0;
   s->sr = sr;
@@ -103,7 +107,7 @@ static inline int omx_gate_instance_init(OmxGateInstance *s, float sr) {
  * @param s The instance; a refused one is left untouched.
  * @param bypass Non-zero disables the slot (the identity).
  * @param key_source The contract's keySource, as its index: 1 (sidechain) listens to the key handed to
- *        {@link omx_gate_instance_run}, 0 (self) to the gate's own input; any non-zero is sidechain.
+ *        omx_gate_instance_run(), 0 (self) to the gate's own input; any non-zero is sidechain.
  * @param threshold_db The open point, dB.
  * @param range_db The attenuation floor, dB.
  * @param knee_start_db One edge of the knee range, dB: where the curve leaves the expander's line.

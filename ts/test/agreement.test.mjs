@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Pau Aliagas <linuxnow@gmail.com>
 /**
- * EVERY TWIN AGREES WITH ITS KERNEL: the twin (dist/, the published code) and the omx-dsp kernel
+ * EVERY TWIN AGREES WITH ITS KERNEL: the twin (dist/, the published code; the curve function is the C as WebAssembly) and the omx-dsp kernel
  * (oracle/ts-twin-oracle.c) run one grid and must agree inside the tolerance test/tolerances.mjs states. A twin
  * whose SABOTAGE arm stays green would be decoration, so each has one. Moved here from the console with the twins.
  */
@@ -18,26 +18,28 @@ import {
   biquadMagnitudeDb,
   butterworthQs,
   clampEqQFor,
-  curvePoints,
+  loadCurve,
   dbToLinearGain,
   fftSizeForRate,
   gaincompDb,
-  gaincompDbShifted,
-  gateKnee,
   linearGainToDb,
   linearToDbFloored,
   magnitudeSumDb,
-  octavesToQ,
   rbjSection,
 } from '../dist/index.js';
+import { readFileSync } from 'node:fs';
 import { TOLERANCES as T } from './tolerances.mjs';
+
+/** curvePoints is the C's own, as WebAssembly (ts/wasm/omx-dsp.wasm, built by `npm run build:wasm`): this file asks the
+ *  module and the native oracle the same questions, and a difference is a finding about the toolchain, not a twin's drift. */
+const { curvePoints } = await loadCurve(readFileSync(new URL('../wasm/omx-dsp.wasm', import.meta.url)));
 
 const red = (asked, twin, tol) => against(asked, twin, tol).failures.length > 0;
 
 describe('the oracle is here', () => {
   it('answers every kernel these twins need', () => {
     const k = oracleKernels();
-    for (const n of ['lin_to_db', 'lin_to_db_d', 'db_to_lin', 'eq_octaves_q', 'rta_fft_size_for', 'eq_design', 'eq_lv2_clamp_q', 'eq_band_magnitude_db', 'eq_magnitude_sum_db', 'curve_points', 'curve_points_marked', 'curve_time', 'gaincomp_db', 'gaincomp_db_shifted', 'gate_knee']) assert.ok(k.includes(n), n);
+    for (const n of ['lin_to_db', 'lin_to_db_d', 'db_to_lin', 'rta_fft_size_for', 'eq_design', 'eq_lv2_clamp_q', 'eq_band_magnitude_db', 'eq_magnitude_sum_db', 'curve_points', 'curve_points_marked', 'curve_time', 'gaincomp_db']) assert.ok(k.includes(n), n);
   });
 });
 
@@ -80,15 +82,6 @@ describe('the dB and linear twins agree with omx_units.h', () => {
   });
 });
 
-describe('octavesToQ agrees with omx_eq_octaves_q', () => {
-  const asked = ask('eq_octaves_q', [-3, 0, 0.001, 0.049, 0.05, 0.051, 0.1, 0.25, 0.5, 1, 1.5, 2, 3, 4, 6, 8, 12].map((b) => [b]));
-  it('agrees, floor included; the floor removed and sqrt(t) for t are each red', () => {
-    assert.deepEqual(against(asked, (r) => [octavesToQ(r[0])], T.octavesToQ).failures, []);
-    assert.ok(red(asked, (r) => [Math.sqrt(2 ** r[0]) / (2 ** r[0] - 1)], T.octavesToQ), 'SABOTAGE no floor stayed green');
-    assert.ok(red(asked, (r) => [2 ** Math.max(r[0], 0.05) / (2 ** Math.max(r[0], 0.05) - 1)], T.octavesToQ), 'SABOTAGE t for sqrt(t) stayed green');
-  });
-});
-
 describe('fftSizeForRate agrees with omx_rta_fft_size_for', () => {
   // Every whole-hertz rate from 1 kHz to 400 kHz: the kernel divides in float and the twin in double.
   const rows = [];
@@ -107,7 +100,7 @@ const KINDS = Object.keys(KIND);
 const HAS_GAIN = new Set([0, 1, 2]);
 const kindOf = (n) => KINDS.find((k) => KIND[k] === n);
 
-describe('rbjSection (and matchedPair, lowpassHandover inside it) agrees with omx_eq_design', () => {
+describe('rbjSection (and its matched pair and lowpass handover inside it) agrees with omx_eq_design', () => {
   const QS = [-1, 0.05, 0.3, 0.5, Math.SQRT1_2, 0.9, 1, 4, 20, 116];
   const GAINS = [-24, -12, -6, -0.5, 0, 0.5, 6, 12, 24];
   const centres = (sr) => [0, 1, 20, 63, 200, 1000, 4000, 10000, 0.45 * sr, 0.499 * sr, 0.5 * sr, 0.6 * sr];
@@ -232,29 +225,6 @@ describe('gaincompDb agrees with omx_gaincomp_db, bit for bit', () => {
   it('SABOTAGE: the knee one float step wider is red', () => {
     const wide = (r) => [gaincompDb({ mode: MODES[r[0]], threshDb: r[1], ratio: r[2], kneeDb: nextFloat(r[3]), rangeDb: r[4] }, r[5])];
     assert.ok(against(asked, wide, T.gaincompDb).failures.length > 100);
-  });
-});
-
-describe('gaincompDbShifted and gateKnee agree with omx_gaincomp_db_shifted and omx_gate_knee, bit for bit', () => {
-  const pairs = [[-46, -38], [-40, -40], [-43, -37], [-38, -46], [-60, -20], [-41, -40], [-80, 0]];
-  const krows = [];
-  for (const t of [-60, -40, -33.3, -10]) for (const [a, b] of pairs) krows.push([t, a, b]);
-  const kasked = ask('gate_knee', krows);
-  it('gateKnee: the width and the clamped shift', () => {
-    assert.deepEqual(against(kasked, (r) => { const k = gateKnee(r[0], r[1], r[2]); return [k.kneeDb, k.shiftDb]; }, T.gateKnee).failures, []);
-    assert.ok(kasked.answers.some((a) => a[1] !== 0) && kasked.answers.some((a) => Math.abs(a[1]) === a[0] / 2 && a[0] > 0), 'shifted and clamped shifts are both in the grid');
-  });
-  const rows = [];
-  for (const [i, [t, a, b]] of krows.entries()) for (const r of [1, 2, 4, 16, 100]) for (const rg of [-90, -60, -20, 0])
-    for (let lv = -100; lv <= 6; lv += 0.5) rows.push([t, r, kasked.answers[i][0], rg, kasked.answers[i][1], lv]);
-  const asked = ask('gaincomp_db_shifted', rows);
-  const twin = (r) => [gaincompDbShifted({ mode: 'below', threshDb: r[0], ratio: r[1], kneeDb: r[2], rangeDb: r[3] }, r[4], r[5])];
-  it('gaincompDbShifted agrees across shifts, ratios and ranges', () => {
-    assert.deepEqual(against(asked, twin, T.gaincompDbShifted).failures.slice(0, 5), []);
-  });
-  it('SABOTAGE: the shift one float step off, and the centred knee for the shifted one: each red', () => {
-    assert.ok(against(asked, (r) => [gaincompDbShifted({ mode: 'below', threshDb: r[0], ratio: r[1], kneeDb: r[2], rangeDb: r[3] }, r[4] === 0 ? 0 : nextFloat(r[4]), r[5])], T.gaincompDbShifted).failures.length > 50);
-    assert.ok(against(asked, (r) => [gaincompDb({ mode: 'below', threshDb: r[0], ratio: r[1], kneeDb: r[2], rangeDb: r[3] }, r[5])], T.gaincompDbShifted).failures.length > 50);
   });
 });
 

@@ -24,6 +24,7 @@
 #include <limits.h>
 #include <math.h>
 #include <stdlib.h>
+#include <string.h>
 
 #define OMX_CONTRACT_STORAGE 1
 
@@ -305,6 +306,48 @@ static void arm_no_allocation(void) {
   drain_violations("H: no contract broken");
 }
 
+/* F: the re-enable clear's layout cannot refuse (omx-dsp#72). `ready` is set only by init, after
+ * omx_reverb_state_layout accepted this instance's own pool (OMX_REVERB_POOL_FLOATS floats) at this
+ * same `sr`, and the layout is a function of those three alone: it reads nothing a cycle has
+ * written since. So at every oracle rate a dirty instance's clear leaves the layout published. The
+ * clear states that precondition (`clear-layout-cannot-refuse`); a write past the API that breaks
+ * it is named by the ledger, not passed over in silence. */
+static int took(const char *kind, const char *token) {
+  const uint32_t seen = omx_contract_log.count;
+  const uint32_t kept = seen < OMX_CONTRACT_MAX ? seen : OMX_CONTRACT_MAX;
+  int found = 0;
+  for (uint32_t i = 0; i < kept; i++) {
+    const struct omx_contract_record *r = &omx_contract_log.rec[i];
+    if (omx_contract_record_ready(r) && strcmp(r->kind, kind) == 0 && strcmp(r->token, token) == 0) found = 1;
+  }
+  omx_contract_reset();
+  return found;
+}
+
+static void arm_clear_cannot_refuse(void) {
+  static OmxReverbInstance s;
+  memset(&s, 0, sizeof s);
+  ok(omx_reverb_instance_init(&s, g_sr) == 1, "F: the instance binds at the rate");
+  struct ports p = defaults();
+  p.mix = 1.0f; p.size = 1.0f;
+  float l[BLK], r[BLK];
+  for (int b = 0; b < 2; b++) {
+    programme(l, r, BLK, (uint32_t)b * BLK);
+    resolve(&s, 0, &p);
+    omx_reverb_instance_run(&s, l, r, l, r, BLK);
+  }
+  omx_reverb_instance_clear(&s);
+  ledger_checkpoint();
+  ok(s.state.sr == g_sr && !s.state._exhausted && s.state._pool == s.pool && s.ready,
+     "F: the clear's layout is published at the init rate (it is never refused)");
+  drain_violations("F: no contract broken");
+  /* past the API: the rate the layout was accepted at is gone, so the precondition no longer holds */
+  s.sr = 0.0f;
+  omx_reverb_instance_clear(&s);
+  ok(took("pre", "clear-layout-cannot-refuse"),
+     "F: a clear whose precondition was broken past the API is named (pre clear-layout-cannot-refuse)");
+}
+
 int main(void) {
   omx_fx_require_rate_floor();
   omx_fx_require_full_rates_cover_declared();
@@ -315,6 +358,7 @@ int main(void) {
     arm_is_the_kernel();
     arm_clamps();
     arm_reengage_clears();
+    arm_clear_cannot_refuse();
     arm_alias_and_independence();
     arm_no_allocation();
   }

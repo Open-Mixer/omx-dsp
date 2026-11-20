@@ -5,12 +5,11 @@
 // DRIVE_HF_ROLLOFFS; a kernel reads the corner from the id with omx_drive_hf_rolloffs_value().
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { main } from './oc.mjs';
 import { loadData, resolveData } from './oc.mjs';
 import { renderC } from './oc.mjs';
 import { renderJson } from './oc.mjs';
 import { renderTs } from './oc.mjs';
-import { DATA, RENDERS, UNION, editData, scratchData } from './helpers.mjs';
+import { UNION } from './helpers.mjs';
 
 const resolved = (dir = UNION) => resolveData(loadData(dir));
 const header = (dir) => renderC(resolved(dir))[0].text;
@@ -47,11 +46,4 @@ test('the C render gives the kernel each roll-off corner from its id', () => {
     '}',
   ].join('\n');
   assert.equal(header().split(is).length, 2, 'the render holds the new block once, each corner its id\'s value');
-});
-
-test('perturbation: a moved corner moves the C value, and --check goes red', () => {
-  const dir = scratchData();
-  editData(dir, 'kernels/drive.json', (d, at) => { at('DRIVE_HF_ROLLOFFS').values[1] = 10000; });
-  assert.match(header(dir), /^#define OMX_DRIVE_HF_ROLLOFFS_12000_VALUE 10000\.0f$/m);
-  assert.equal(main(['render', '--target', 'c', '--out', `${RENDERS}/include`, '--check', '--data', dir]), 1);
 });

@@ -10,7 +10,7 @@
  *      the deepest sweep at the highest rate the kernel admits (OMX_FLANGER_CAP per leg), and arms
  *      the kernel over the first omx_flanger_instance_cap_for(sr) floats of each. Nothing is
  *      allocated, at init or after; a rate the console does not declare is refused at init.
- *   2. RESOLVE. {@link omx_flanger_instance_resolve} takes the kernel's contract controls in their
+ *   2. RESOLVE. omx_flanger_instance_resolve() takes the kernel's contract controls in their
  *      declared order and user units (Hz, ms, a signed feedback, percent) and turns them into the
  *      atom, the same conversions resolve_fx_flanger (mixer_rt.c)
  *      makes, with every knob clamped through omx_param into the declared travel
@@ -26,6 +26,10 @@
  * No mutable globals: every word of state is in the caller's {@link OmxFlangerInstance}. The state
  * points into the instance's own rings, so an instance is initialised where it lives and is never
  * copied after init.
+ */
+/**
+ * @file omx_flanger_instance.h
+ * @brief the native flanger as a plugin instance: the shell's core, with no format in it. The same shape as omx-plugins' omx_delay_instance.h (one C core, N shells): the core is `omx_flanger.h`'s `omx_flanger_process`, THE SAME INLINE the console's flanger stage runs, and this file adds no DSP to it.
  */
 #ifndef OMX_FLANGER_INSTANCE_H
 #define OMX_FLANGER_INSTANCE_H
@@ -70,6 +74,9 @@ static inline uint32_t omx_flanger_instance_cap_for(float sr) {
  * Bind an instance to its rate, over its own rings. Returns 1 when usable, 0 when not (a refused
  * init leaves `ready` clear and run() is the identity). A rate that is not declared, or whose
  * sweep the inline rings cannot hold, is refused. Allocates nothing.
+ * @param s The instance; every word of it is written.
+ * @param sr The sample rate, Hz, one of the oracle set.
+ * @return 1 when usable, 0 when not: a rate the console does not declare (the oracle set, 32 to 192 kHz) is refused, `ready` stays clear and run() is the identity, as is a rate whose sweep the inline rings cannot hold or a line that cannot be armed.
  * @thread control
  */
 static inline int omx_flanger_instance_init(OmxFlangerInstance *s, float sr) {
@@ -82,10 +89,11 @@ static inline int omx_flanger_instance_init(OmxFlangerInstance *s, float sr) {
   return s->ready;
 }
 
+#define OMX_CONTRACT_STAGE "flanger/instance-clear"
 /** Clear the rings and restart the oscillator — the re-enable recipe. A bounded memset over the
  * instance's own rings, no allocation.
+ * @param s The instance; null or not ready is ignored.
  * @thread audio */
-#define OMX_CONTRACT_STAGE "flanger/instance-clear"
 static inline void omx_flanger_instance_clear(OmxFlangerInstance *s) {
   if (!s || !s->ready) return;
   omx_instance_rings_clear(s->ring_l, s->ring_r, s->cap);
@@ -138,12 +146,18 @@ static inline void omx_flanger_instance_resolve(OmxFlangerInstance *s, int bypas
 }
 #undef OMX_CONTRACT_STAGE
 
+#define OMX_CONTRACT_STAGE "flanger/instance-run"
 /**
  * THE AUDIO CALLBACK'S WHOLE SHARE: copy in to out where they differ, run the console's kernel
  * in place on out. `in_*` and `out_*` may alias. Not ready, or bypassed, is the identity.
+ * @param s The instance; null, not ready or bypassed leaves `out_*` holding `in_*`.
+ * @param in_l The left input, `n` frames.
+ * @param in_r The right input, `n` frames.
+ * @param out_l The left output, `n` frames, may be `in_l`.
+ * @param out_r The right output, `n` frames, may be `in_r`.
+ * @param n The block length, frames; a null port or 0 touches nothing.
  * @thread audio
  */
-#define OMX_CONTRACT_STAGE "flanger/instance-run"
 static inline void omx_flanger_instance_run(OmxFlangerInstance *s, const float *in_l,
                                            const float *in_r, float *out_l, float *out_r,
                                            uint32_t n) {

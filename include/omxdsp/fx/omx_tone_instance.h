@@ -6,7 +6,7 @@
  * mints no DSP: the tilt is omx_tilt, one first-order complementary shelf pair, and the filter is the
  * EQ's own low-pass or high-pass section (omx_eq_design), both run in double (omx_biquad_d).
  *
- *   1. RESOLVE. {@link omx_tone_instance_resolve} takes the tone kernel's contract controls in their
+ *   1. RESOLVE. omx_tone_instance_resolve() takes the tone kernel's contract controls in their
  *      declared order (data/kernels/tone.json), each clamped into its travel, a non-finite word
  *      reading as its default.
  *      - `tiltDb` is the tilt's SPAN (the decision R3b of omx-dsp#188): `a = 10^(tiltDb/40)`
@@ -14,7 +14,7 @@
  *        `pivotHz`. +6 dB is a +-3 dB pair, about 2 dB per octave at the pivot. One section, never two.
  *      - `filter` below 0 is a low-pass whose corner falls from TONE_FILTER_HIGH_HZ at -0 to
  *        TONE_FILTER_LOW_HZ at -100; above 0 a high-pass whose corner rises from TONE_FILTER_LOW_HZ
- *        to TONE_FILTER_HIGH_HZ; on a log map, {@link omx_tone_filter_hz}. 0 is open. `resonance`
+ *        to TONE_FILTER_HIGH_HZ; on a log map, omx_tone_filter_hz(). 0 is open. `resonance`
  *        is the section's Q: the magnitude at the corner, as the EQ's sections are designed.
  *        A corner past 0.999 of Nyquist is held there by omx_eq_design.
  *   2. RUN. Per leg, the tilt then the filter. A section at its rest value (a span of 0, a filter
@@ -24,6 +24,10 @@
  *
  * LATENCY IS ZERO. Nothing is allocated; every word of state is in {@link OmxToneInstance}. The
  * sections are designed in resolve(), one tan for the tilt and the EQ design for the filter.
+ */
+/**
+ * @file omx_tone_instance.h
+ * @brief the tone face as a plugin instance: a tilt about one pivot and a DJ filter, one knob each, for a monitor mix or an FX return made brighter or darker and a playback swept. It mints no DSP: the tilt is omx_tilt, one first-order complementary shelf pair, and the filter is the EQ's own low-pass or high-pass section (omx_eq_design), both run in double (omx_biquad_d).
  */
 #ifndef OMX_TONE_INSTANCE_H
 #define OMX_TONE_INSTANCE_H
@@ -80,6 +84,9 @@ static inline void omx_tone_instance_resolve(OmxToneInstance *s, int bypass, flo
 
 /** Bind an instance to its rate. Returns 1 when usable, 0 when not: the rate must be one of the oracle
  * set. The face comes up at its declared defaults, flat and open. Allocates nothing.
+ * @param s The instance; every word of it is written.
+ * @param sr The sample rate, Hz, one of the oracle set.
+ * @return 1 when usable, 0 when not: a rate the console does not declare (the oracle set, 32 to 192 kHz) is refused, `ready` stays clear and run() is the identity.
  * @thread control */
 static inline int omx_tone_instance_init(OmxToneInstance *s, float sr) {
   if (!omx_instance_bind(s, sizeof(*s), sr)) return 0;
@@ -144,12 +151,18 @@ static inline double omx_tone_instance_magnitude(const OmxToneInstance *s, doubl
   return m;
 }
 
+#define OMX_CONTRACT_STAGE "tone/instance-run"
 /**
  * THE AUDIO CALLBACK'S WHOLE SHARE: each leg through the tilt then the filter, in to out. `in_*` and
  * `out_*` may alias. Not ready, bypassed, or flat and open is the identity and moves no state.
+ * @param s The instance; null, not ready or bypassed leaves `out_*` holding `in_*`.
+ * @param in_l The left input, `n` frames.
+ * @param in_r The right input, `n` frames.
+ * @param out_l The left output, `n` frames, may be `in_l`.
+ * @param out_r The right output, `n` frames, may be `in_r`.
+ * @param n The block length, frames; a null port or 0 touches nothing.
  * @thread audio
  */
-#define OMX_CONTRACT_STAGE "tone/instance-run"
 static inline void omx_tone_instance_run(OmxToneInstance *s, const float *in_l, const float *in_r, float *out_l,
                                          float *out_r, uint32_t n) {
   if (!omx_instance_copy_through(in_l, in_r, out_l, out_r, n)) return;
@@ -168,6 +181,8 @@ static inline void omx_tone_instance_run(OmxToneInstance *s, const float *in_l, 
 #undef OMX_CONTRACT_STAGE
 
 /** The frames of latency the instance introduces: none.
+ * @param s The instance.
+ * @return 0.
  * @thread audio */
 static inline uint32_t omx_tone_instance_latency(const OmxToneInstance *s) {
   (void)s;

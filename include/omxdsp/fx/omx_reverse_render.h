@@ -72,7 +72,7 @@
  *
  * `pool` + `st` are one ordinary reverb state, re-laid out per block; `tmp_*` hold one window of
  * audio on its way through the network (so they must be at least `W` frames, which
- * {@link omx_reverse_render_window} answers for a given `reverse_ms` and rate); `wet_*` hold the
+ * omx_reverse_render_window() answers for a given `reverse_ms` and rate); `wet_*` hold the
  * accumulated wet for the whole region, in the REVERSED domain, and are mirrored on the way out.
  */
 struct omx_reverse_render_scratch {
@@ -166,8 +166,7 @@ static inline int omx_reverse_render(float *l, float *r, uint32_t n, const struc
      * in, which is what makes the swell's span `reverse_ms` and not the network's RT60. */
     memset(sc->st, 0, sizeof(*sc->st));
     memset(sc->pool, 0, (size_t)sc->pool_len * sizeof(float));
-    omx_reverb_state_layout(sc->st, sc->pool, sc->pool_len, sr);
-    if (sc->st->_exhausted) return -1;
+    if (!omx_reverb_state_layout(sc->st, sc->pool, sc->pool_len, sr)) return -1;
 
     for (uint32_t i = 0; i < w; i++) {
       const int64_t k = start + (int64_t)i;              /* reversed-domain index */

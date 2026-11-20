@@ -6,7 +6,7 @@
  * `omx_rotary.h`'s `omx_rotary_process`, THE SAME INLINE the console's rotary stage runs, and this
  * file adds no DSP to it. It adds what a host's port model needs and the atom does not carry:
  *
- *   1. RESOLVE. {@link omx_rotary_instance_resolve} takes the kernel's contract controls in their
+ *   1. RESOLVE. omx_rotary_instance_resolve() takes the kernel's contract controls in their
  *      declared order and user units (four rotor rates in Hz, an accel scale, a balance and a mix
  *      in percent, the speed as its ROTARY_SPEEDS index), clamps each into its declared travel
  *      (ROTARY_*_RANGE, omxdsp_definitions.h; a non-finite word reads as the declared default),
@@ -21,6 +21,10 @@
  * the effect). The rings are inline in the state; nothing is caller-owned.
  *
  * No mutable globals: every word of state is in the caller's {@link OmxRotaryInstance}.
+ */
+/**
+ * @file omx_rotary_instance.h
+ * @brief the native rotary speaker as a plugin instance: the shell's core, with no format in it. The same shape as omx_tremolo_instance.h (one C core, N shells): the core is `omx_rotary.h`'s `omx_rotary_process`, THE SAME INLINE the console's rotary stage runs, and this file adds no DSP to it.
  */
 #ifndef OMX_ROTARY_INSTANCE_H
 #define OMX_ROTARY_INSTANCE_H
@@ -60,6 +64,9 @@ typedef struct {
  * Bind an instance to its rate. Returns 1 when usable, 0 when not (a refused init leaves `ready`
  * clear and run() is the identity). The kernel's inline rings are sized for the declared rates, so
  * any other rate is refused.
+ * @param s The instance; every word of it is written.
+ * @param sr The sample rate, Hz, one of the oracle set.
+ * @return 1 when usable, 0 when not: a rate the console does not declare (the oracle set, 32 to 192 kHz) is refused, `ready` stays clear and run() is the identity, as is a kernel ring that cannot be armed.
  * @thread control
  */
 static inline int omx_rotary_instance_init(OmxRotaryInstance *s, float sr) {
@@ -112,12 +119,18 @@ static inline void omx_rotary_instance_resolve(OmxRotaryInstance *s, int bypass,
 }
 #undef OMX_CONTRACT_STAGE
 
+#define OMX_CONTRACT_STAGE "rotary/instance-run"
 /**
  * THE AUDIO CALLBACK'S WHOLE SHARE: copy in to out where they differ, run the console's kernel
  * in place on out. `in_*` and `out_*` may alias. Not ready, or bypassed, is the identity.
+ * @param s The instance; null, not ready or bypassed leaves `out_*` holding `in_*`.
+ * @param in_l The left input, `n` frames.
+ * @param in_r The right input, `n` frames.
+ * @param out_l The left output, `n` frames, may be `in_l`.
+ * @param out_r The right output, `n` frames, may be `in_r`.
+ * @param n The block length, frames; a null port or 0 touches nothing.
  * @thread audio
  */
-#define OMX_CONTRACT_STAGE "rotary/instance-run"
 static inline void omx_rotary_instance_run(OmxRotaryInstance *s, const float *in_l, const float *in_r,
                                            float *out_l, float *out_r, uint32_t n) {
   OMX_INSTANCE_RUN_IN_PLACE(s, in_l, in_r, out_l, out_r, n, omx_rotary_process(out_l, out_r, n, &s->atom, &s->state));
@@ -125,6 +138,8 @@ static inline void omx_rotary_instance_run(OmxRotaryInstance *s, const float *in
 #undef OMX_CONTRACT_STAGE
 
 /** The frames of latency the instance introduces: the kernel's, zero at every rate.
+ * @param s The instance.
+ * @return omx_rotary_latency(): the kernel's, 0 at every rate.
  * @thread audio */
 static inline uint32_t omx_rotary_instance_latency(const OmxRotaryInstance *s) {
   (void)s;
