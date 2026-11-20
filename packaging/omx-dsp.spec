@@ -184,6 +184,12 @@ Its documentation is on openmixer.org.
   (V22) are this library's data, rendered into omxdsp_definitions.h and
   omx_dsp_vocabulary.h; the install no longer excludes codes.json (V20
   follow-up). The floors on omx-contract rise to 3.21.0.
+- The rotary reports the sweep's shortest read as its latency at full mix,
+  and 0 below it (#117).
+- OMX_ROTARY_INSTANCE_LATENCY_FRAMES is removed: the latency is the face's
+  latency function, the sweep's shortest read at full mix and 0 below it.
+- The rotary publishes its sweep (omx_rotary_sweep, omx_rotary_instance_sweep)
+  and ROTARY_LONGEST_MS, its far end.
 * Thu Nov 19 2026 Pau Aliagas <linuxnow@gmail.com> - 0.33.1-1
 - ts: the TypeScript twins no Open-Mixer repository consumes are deleted
   (hrp-place and fbs-place, the gaincomp, gate, meter and eq helpers named in
