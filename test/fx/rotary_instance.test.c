@@ -70,6 +70,11 @@ static void arm_refused(void) {
   programme(l, r, BLK, 0);
   omx_rotary_instance_run(s, l, r, ol, or_, BLK);
   ok(same_bytes(l, ol, BLK) && same_bytes(r, or_, BLK), "A: a refused instance is the identity");
+  uint32_t lo = 1, hi = 1;
+  omx_rotary_instance_sweep(s, &lo, &hi);
+  ok(omx_rotary_instance_latency(s) == 0u && lo == 0u && hi == 0u,
+     "A: a refused instance, resolved engaged at full mix, publishes no latency and no sweep");
+  ok(omx_rotary_instance_latency(NULL) == 0u, "A: no instance publishes no latency");
   ok(omx_rotary_instance_init(s, g_sr) == 1, "A: the rate is accepted");
   ok(omx_rotary_instance_latency(s) == 0u, "A: the published latency is zero frames");
   free(s);

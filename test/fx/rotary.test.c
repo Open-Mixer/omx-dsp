@@ -156,20 +156,23 @@ static void arm_h(double sr) {
     ok(!memcmp(y1l, y2l, sizeof x) && !memcmp(y1r, y2r, sizeof x), "arm H: block splits are bit-identical", sr, trial, 0);
     ok(!memcmp(y1l, y1r, sizeof x), "arm H: identical legs give L == R", sr, trial, 0);
   }
-  ok(omx_rotary_latency(sr) == (uint32_t)lrint(OMX_ROTARY_BASE_MS * 1e-3 * sr),
-     "arm H: latency is the sweep's shortest read, rounded", sr, omx_rotary_latency(sr), 0);
-  /* ROTARY_LONGEST_MS is the declared far end of the sweep (a host's descriptor refers to it): the kernel's
-   * longest read, base plus the horn's whole travel, at every rate */
-  ok(fabs(omx_rotary_longest_delay((float)sr) - OMX_ROTARY_LONGEST_MS * 1e-3 * sr) <= 1e-3 * sr * 1e-4,
-     "arm H: ROTARY_LONGEST_MS is the kernel's longest read", sr, omx_rotary_longest_delay((float)sr),
-     OMX_ROTARY_LONGEST_MS * 1e-3 * sr);
-  ok(fabs(OMX_ROTARY_LONGEST_MS_DOUBLE - (OMX_ROTARY_BASE_MS_DOUBLE + 2.0 * fmax(OMX_ROTARY_HORN_DOPPLER_MS_DOUBLE,
-                                                                          OMX_ROTARY_DRUM_DOPPLER_MS_DOUBLE))) < 1e-12,
-     "arm H: ROTARY_LONGEST_MS is the base plus the larger rotor's whole travel", sr, OMX_ROTARY_LONGEST_MS_DOUBLE,
-     OMX_ROTARY_BASE_MS_DOUBLE + 2.0 * OMX_ROTARY_HORN_DOPPLER_MS_DOUBLE);
-  ok(fabs(omx_rotary_shortest_delay((float)sr) - OMX_ROTARY_BASE_MS * 1e-3 * sr) <= 1e-3 * sr * 1e-4,
-     "arm H: ROTARY_BASE_MS is the kernel's shortest read", sr, omx_rotary_shortest_delay((float)sr),
-     OMX_ROTARY_BASE_MS * 1e-3 * sr);
+  /* The sweep is what the rotors resolve to: the shortest read is the nearer rotor base, the longest
+   * the farther rotor's base plus its whole travel. A change of the rotor geometry (a base, a Doppler
+   * excursion) moves these and leaves the published figures behind, and this arm turns red. */
+  omx_rotary_init(&g_s);
+  omx_rotary_resolve(&p, &g_s, 1, OMX_ROTARY_SLOW, HORN_SLOW, HORN_FAST, DRUM_SLOW, DRUM_FAST, 1.0f, 0.0f, 1.0f, (float)sr);
+  const double near = fmin(p.horn.base, p.drum.base);
+  const double far = fmax(p.horn.base + p.horn.depth, p.drum.base + p.drum.depth);
+  ok(omx_rotary_latency((float)sr) == (uint32_t)lrint(near), "arm H: the latency is the rotors' shortest read, rounded", sr,
+     omx_rotary_latency((float)sr), near);
+  ok(fabs(omx_rotary_shortest_delay((float)sr) - near) <= 1e-5 * near, "arm H: the shortest delay is the rotors' nearer base",
+     sr, omx_rotary_shortest_delay((float)sr), near);
+  ok(fabs(omx_rotary_longest_delay((float)sr) - far) <= 1e-5 * far,
+     "arm H: the longest delay (ROTARY_LONGEST_MS) is the farther rotor's base plus its travel", sr,
+     omx_rotary_longest_delay((float)sr), far);
+  uint32_t lo = 0, hi = 0;
+  omx_rotary_sweep((float)sr, &lo, &hi);
+  ok(lo == (uint32_t)lrint(near) && hi == (uint32_t)lrint(far), "arm H: the sweep is the rotors' two ends, rounded", sr, hi, far);
   drain_violations("arm H: no contract violation", sr);
 }
 
