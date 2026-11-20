@@ -221,7 +221,7 @@
     "ROTARY_LONGEST_MS": {
       "kind": "scalar",
       "source": {
-        "impl": "include/omxdsp/fx/omx_rotary.h#omx_rotary_longest_delay"
+        "impl": "include/omxdsp/fx/omx_rotary.h#omx_rotary_resolve"
       },
       "doc": "The sweep's longest Doppler read, ms: ROTARY_BASE_MS plus the horn's whole travel, 2·ROTARY_HORN_DOPPLER_MS (the larger rotor's). With ROTARY_BASE_MS it is the range every lag of the wet path lies in, the far end a descriptor's latency sweep refers to.",
       "unit": "ms",

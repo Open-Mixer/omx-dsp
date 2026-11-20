@@ -89,7 +89,9 @@ static inline enum omx_fdelay_code omx_rotary_init(struct omx_rotary_state *s) {
  * @param mix The wet share, in [0, 1].
  * @param sr The live rate, a declared rate.
  * @pre `a-speed-is-a-member`, `mix-in-unit-range`.
- * @post `balance-gains-never-boost`.
+ * @post `balance-gains-never-boost`; `the-sweep-ends-at-the-declared-far-end`: the farther rotor's
+ *       base plus its travel is ROTARY_LONGEST_MS at the rate (to a float's rounding), the far end a
+ *       descriptor's latency sweep refers to.
  * @note Per block: two `expf` and the split's design. Thread-safe on distinct atoms.
  * @thread audio
  */
@@ -114,6 +116,12 @@ static inline void omx_rotary_resolve(struct omx_rotary *p, const struct omx_rot
   p->dry = 1.0f - mix;
   OMX_POST(p->g_lo >= 0.0f && p->g_lo <= 1.0f && p->g_hi >= 0.0f && p->g_hi <= 1.0f,
            "balance-gains-never-boost");
+#ifdef OMX_CONTRACTS
+  const float horn_end = p->horn.base + p->horn.depth, drum_end = p->drum.base + p->drum.depth;
+  const float far_end = horn_end > drum_end ? horn_end : drum_end;
+  const float declared = OMX_ROTARY_LONGEST_MS * 0.001f * sr, off = far_end - declared;
+  OMX_POST((off < 0.0f ? -off : off) <= 1e-5f * declared, "the-sweep-ends-at-the-declared-far-end");
+#endif
 }
 #undef OMX_CONTRACT_STAGE
 
