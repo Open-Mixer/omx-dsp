@@ -52,3 +52,16 @@ test('sabotage: a union whose CURVE_AXES lacks the frequency axis is refused', (
   editData(dir, 'primitives/curve.json', (d) => { delete d.CURVE_AXES.words.frequency; });
   assert.ok(problems(dir).some((p) => /frequency/.test(p)), problems(dir).join('\n'));
 });
+
+test('the words travel with their translations: 6 catalogs of omx-dsp, one entry per word, each pinned to its source sentence', async () => {
+  const { createHash } = await import('node:crypto');
+  const words = Object.fromEntries(['CURVE_AXES', 'CURVE_KINDS'].flatMap((i) => Object.values(GOLDEN[i].words).map((w) => [`${i}.${w.word}`, w.text.en])));
+  assert.equal(Object.keys(words).length, 21);
+  for (const lang of ['ca', 'de', 'es', 'fr', 'it', 'pt']) {
+    const c = JSON.parse(readFileSync(join(HERE, `catalogs/${lang}.json`), 'utf8'));
+    assert.equal(c.owner, 'omx-dsp');
+    assert.equal(c.lang, lang);
+    assert.deepEqual(Object.keys(c.messages).sort(), Object.keys(words).sort(), lang);
+    for (const [k, m] of Object.entries(c.messages)) assert.equal(m.source, createHash('sha256').update(words[k]).digest('hex'), `${lang} ${k}`);
+  }
+});

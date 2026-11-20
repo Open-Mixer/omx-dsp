@@ -10,7 +10,8 @@
 # The checkout gives the reader (bin/omx-contract.mjs, its node_modules installed), the installer
 # (tools/install-contract-dir.sh) and omx-contract's own data/, installed as the package omx-contract. Both
 # packages go into <build dir>/dir; then, with that directory:
-#   validate --needs omx-dsp@'>= <this version>'   every file found, hashed, floored, validated and merged
+#   validate --needs omx-dsp@'>= <this version>' --catalogs catalogs   every file found, hashed, floored, validated and
+#                                       merged, and every key of this tree's catalogs one of its words
 #   links --check --package omx-dsp                every source link resolves in this tree
 #   fmt --check --data data                        the files are in the one formatting
 # and three arms that must each be refused with their code: an installed file changed after the manifest
@@ -67,7 +68,7 @@ fi
 
 dir="$out/dir"
 install_both "$dir" "$HERE/data"
-oc validate --contract-dir "$dir" --needs "omx-dsp@>= $version"
+oc validate --contract-dir "$dir" --needs "omx-dsp@>= $version" --catalogs "$HERE/catalogs"
 oc links --check --root "$HERE" --contract-dir "$dir" --package omx-dsp
 oc fmt --check --data "$HERE/data"
 
