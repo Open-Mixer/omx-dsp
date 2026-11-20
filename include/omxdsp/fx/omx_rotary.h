@@ -7,7 +7,10 @@
  *
  * Composed of mix_rotor.h (twice),
  * `omx_biquad` over `omx_eq_design_f`'s low-pass for the split (`hi = x − lo`, exact), and
- * `omx_balance_law`. The rings are inline: nothing is allocated. Latency is zero (L1).
+ * `omx_balance_law`. The rings are inline: nothing is allocated. Latency (L1, for a modulated delay):
+ * the sweep's shortest read, ROTARY_BASE_MS at the rate. At full mix every output sample comes
+ * through a Doppler read that is never shorter, so that much delay is always present; the rest of
+ * the sweep is the effect.
  */
 #ifndef OMX_MIX_ROTARY_H
 #define OMX_MIX_ROTARY_H
@@ -156,11 +159,25 @@ static inline void omx_rotary_process(float *l, float *r, uint32_t n, const stru
 #undef OMX_CONTRACT_STAGE
 
 /**
- * @brief The stage's latency, samples: zero at every rate (L1 — the Doppler delay is the effect).
- * @return 0.
- * @note Thread-safe: a constant.
+ * @brief The sweep's shortest Doppler read at a rate, samples: ROTARY_BASE_MS at `sr`, the same
+ *        figure omx_rotor_resolve() sets as each rotor's `base` (both rotors share it).
+ * @param sr The live rate, Hz.
+ * @return `ROTARY_BASE_MS · 1e-3 · sr`.
+ * @note Thread-safe: arithmetic.
  * @thread audio
  */
-static inline uint32_t omx_rotary_latency(void) { return 0u; }
+static inline float omx_rotary_shortest_delay(float sr) { return OMX_ROTARY_BASE_MS * 0.001f * sr; }
+
+/**
+ * @brief The stage's latency at a rate, frames (L1 for a modulated delay): the sweep's shortest
+ *        read, rounded to the nearest frame — where an impulse peaks with both rotors at the
+ *        sweep's shortest phase. It holds while the wet path is the whole output; a caller with a
+ *        direct dry share reports zero (omx_rotary_instance_latency()).
+ * @param sr The live rate, Hz, positive.
+ * @return `round(omx_rotary_shortest_delay(sr))`.
+ * @note Thread-safe: arithmetic, no libm.
+ * @thread audio
+ */
+static inline uint32_t omx_rotary_latency(float sr) { return (uint32_t)(omx_rotary_shortest_delay(sr) + 0.5f); }
 
 #endif /* OMX_MIX_ROTARY_H */

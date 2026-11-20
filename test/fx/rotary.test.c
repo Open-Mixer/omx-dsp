@@ -156,7 +156,8 @@ static void arm_h(double sr) {
     ok(!memcmp(y1l, y2l, sizeof x) && !memcmp(y1r, y2r, sizeof x), "arm H: block splits are bit-identical", sr, trial, 0);
     ok(!memcmp(y1l, y1r, sizeof x), "arm H: identical legs give L == R", sr, trial, 0);
   }
-  ok(omx_rotary_latency() == 0u, "arm H: latency is zero", sr, omx_rotary_latency(), 0);
+  ok(omx_rotary_latency(sr) == (uint32_t)lrint(OMX_ROTARY_BASE_MS * 1e-3 * sr),
+     "arm H: latency is the sweep's shortest read, rounded", sr, omx_rotary_latency(sr), 0);
   drain_violations("arm H: no contract violation", sr);
 }
 
