@@ -169,6 +169,20 @@ static inline void omx_rotary_process(float *l, float *r, uint32_t n, const stru
 static inline float omx_rotary_shortest_delay(float sr) { return OMX_ROTARY_BASE_MS * 0.001f * sr; }
 
 /**
+ * @brief The sweep's longest Doppler read at a rate, samples: the base plus the larger rotor's
+ *        whole travel (the horn's, 2·HORN_DOPPLER_MS against the drum's 2·DRUM_DOPPLER_MS).
+ * @param sr The live rate, Hz.
+ * @return `omx_rotary_shortest_delay(sr) + 2 · max(HORN, DRUM)_DOPPLER_MS · 1e-3 · sr`.
+ * @note Thread-safe: arithmetic.
+ * @thread audio
+ */
+static inline float omx_rotary_longest_delay(float sr) {
+  const float d_ms = OMX_ROTARY_HORN_DOPPLER_MS > OMX_ROTARY_DRUM_DOPPLER_MS ? OMX_ROTARY_HORN_DOPPLER_MS
+                                                                             : OMX_ROTARY_DRUM_DOPPLER_MS;
+  return omx_rotary_shortest_delay(sr) + 2.0f * d_ms * 0.001f * sr;
+}
+
+/**
  * @brief The stage's latency at a rate, frames (L1 for a modulated delay): the sweep's shortest
  *        read, rounded to the nearest frame — where an impulse peaks with both rotors at the
  *        sweep's shortest phase. It holds while the wet path is the whole output; a caller with a
@@ -179,5 +193,20 @@ static inline float omx_rotary_shortest_delay(float sr) { return OMX_ROTARY_BASE
  * @thread audio
  */
 static inline uint32_t omx_rotary_latency(float sr) { return (uint32_t)(omx_rotary_shortest_delay(sr) + 0.5f); }
+
+/**
+ * @brief The sweep at a rate, frames: the shortest read (the latency, omx_rotary_latency()) and
+ *        the longest, each rounded to the nearest frame. Every lag the stage's wet path shows lies
+ *        inside it; a host declares it and checks a measured lag against the range, not one figure.
+ * @param sr The live rate, Hz, positive.
+ * @param shortest Written: `round(omx_rotary_shortest_delay(sr))`.
+ * @param longest Written: `round(omx_rotary_longest_delay(sr))`.
+ * @note Thread-safe: arithmetic, no libm.
+ * @thread audio
+ */
+static inline void omx_rotary_sweep(float sr, uint32_t *shortest, uint32_t *longest) {
+  *shortest = omx_rotary_latency(sr);
+  *longest = (uint32_t)(omx_rotary_longest_delay(sr) + 0.5f);
+}
 
 #endif /* OMX_MIX_ROTARY_H */
