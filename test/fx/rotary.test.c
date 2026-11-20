@@ -163,6 +163,10 @@ static void arm_h(double sr) {
   ok(fabs(omx_rotary_longest_delay((float)sr) - OMX_ROTARY_LONGEST_MS * 1e-3 * sr) <= 1e-3 * sr * 1e-4,
      "arm H: ROTARY_LONGEST_MS is the kernel's longest read", sr, omx_rotary_longest_delay((float)sr),
      OMX_ROTARY_LONGEST_MS * 1e-3 * sr);
+  ok(fabs(OMX_ROTARY_LONGEST_MS_DOUBLE - (OMX_ROTARY_BASE_MS_DOUBLE + 2.0 * fmax(OMX_ROTARY_HORN_DOPPLER_MS_DOUBLE,
+                                                                          OMX_ROTARY_DRUM_DOPPLER_MS_DOUBLE))) < 1e-12,
+     "arm H: ROTARY_LONGEST_MS is the base plus the larger rotor's whole travel", sr, OMX_ROTARY_LONGEST_MS_DOUBLE,
+     OMX_ROTARY_BASE_MS_DOUBLE + 2.0 * OMX_ROTARY_HORN_DOPPLER_MS_DOUBLE);
   ok(fabs(omx_rotary_shortest_delay((float)sr) - OMX_ROTARY_BASE_MS * 1e-3 * sr) <= 1e-3 * sr * 1e-4,
      "arm H: ROTARY_BASE_MS is the kernel's shortest read", sr, omx_rotary_shortest_delay((float)sr),
      OMX_ROTARY_BASE_MS * 1e-3 * sr);

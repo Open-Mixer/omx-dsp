@@ -169,18 +169,15 @@ static inline void omx_rotary_process(float *l, float *r, uint32_t n, const stru
 static inline float omx_rotary_shortest_delay(float sr) { return OMX_ROTARY_BASE_MS * 0.001f * sr; }
 
 /**
- * @brief The sweep's longest Doppler read at a rate, samples: the base plus the larger rotor's
- *        whole travel (the horn's, 2·HORN_DOPPLER_MS against the drum's 2·DRUM_DOPPLER_MS).
+ * @brief The sweep's longest Doppler read at a rate, samples: ROTARY_LONGEST_MS at `sr`, the base
+ *        plus the larger rotor's whole travel (the horn's, 2·HORN_DOPPLER_MS against the drum's
+ *        2·DRUM_DOPPLER_MS); the kernel oracle holds the scalar to that sum.
  * @param sr The live rate, Hz.
- * @return `omx_rotary_shortest_delay(sr) + 2 · max(HORN, DRUM)_DOPPLER_MS · 1e-3 · sr`.
+ * @return `ROTARY_LONGEST_MS · 1e-3 · sr`.
  * @note Thread-safe: arithmetic.
  * @thread audio
  */
-static inline float omx_rotary_longest_delay(float sr) {
-  const float d_ms = OMX_ROTARY_HORN_DOPPLER_MS > OMX_ROTARY_DRUM_DOPPLER_MS ? OMX_ROTARY_HORN_DOPPLER_MS
-                                                                             : OMX_ROTARY_DRUM_DOPPLER_MS;
-  return omx_rotary_shortest_delay(sr) + 2.0f * d_ms * 0.001f * sr;
-}
+static inline float omx_rotary_longest_delay(float sr) { return OMX_ROTARY_LONGEST_MS * 0.001f * sr; }
 
 /**
  * @brief The stage's latency at a rate, frames (L1 for a modulated delay): the sweep's shortest
