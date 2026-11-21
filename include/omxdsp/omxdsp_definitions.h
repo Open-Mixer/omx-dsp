@@ -2995,6 +2995,10 @@
 /** OMX_ROTARY_HORN_SLOW_RANGE_STEP as a double literal. */
 #define OMX_ROTARY_HORN_SLOW_RANGE_STEP_DOUBLE 0.01
 /// @}
+/** The sweep's longest Doppler read, ms: ROTARY_BASE_MS plus the horn's whole travel, 2·ROTARY_HORN_DOPPLER_MS (the larger rotor's). With ROTARY_BASE_MS it is the range every lag of the wet path lies in, the far end a descriptor's latency sweep refers to. (ms) */
+#define OMX_ROTARY_LONGEST_MS 0.98f
+/** OMX_ROTARY_LONGEST_MS as a double literal. */
+#define OMX_ROTARY_LONGEST_MS_DOUBLE 0.98
 /**
  * @name ROTARY_MIX_RANGE
  * The rotary's wet/dry, as an instance of DRIVE_MIX_RANGE: 100 %, because a rotary on an insert IS the sound (it replaces the cabinet) and an `fxReturn` wants it wet too.

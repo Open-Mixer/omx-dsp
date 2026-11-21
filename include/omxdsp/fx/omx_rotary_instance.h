@@ -17,8 +17,10 @@
  *      alias) and runs the kernel on out. Identity when bypassed or not ready.
  *
  * Re-engaging from bypass re-arms the state: the rings are silent and both rotors start from rest,
- * as a fresh instance does. LATENCY IS ZERO at every rate (the kernel's L1: the Doppler delay is
- * the effect). The rings are inline in the state; nothing is caller-owned.
+ * as a fresh instance does. LATENCY (the kernel's L1 for a modulated delay): engaged at full mix,
+ * the sweep's shortest read at the rate (omx_rotary_latency()); with a dry share the dry path is
+ * direct, and bypassed or not ready the instance is the identity, so it is zero. The rings are
+ * inline in the state; nothing is caller-owned.
  *
  * No mutable globals: every word of state is in the caller's {@link OmxRotaryInstance}.
  */
@@ -37,7 +39,6 @@
 #include <omxdsp/omx_param.h>
 
 #define OMX_ROTARY_INSTANCE_CHANNELS 2
-#define OMX_ROTARY_INSTANCE_LATENCY_FRAMES 0.0f
 
 /** Port defaults: the declaration's (ROTARY_*_RANGE.default). The speed set declares no default;
  * the stage comes up at `slow`. */
@@ -137,13 +138,34 @@ static inline void omx_rotary_instance_run(OmxRotaryInstance *s, const float *in
 }
 #undef OMX_CONTRACT_STAGE
 
-/** The frames of latency the instance introduces: the kernel's, zero at every rate.
+/** The frames of latency the instance introduces: engaged at full mix, the kernel's shortest read
+ * at the instance's rate; zero with a dry share (the dry path is direct), bypassed or not ready
+ * (the identity). It moves when the mix crosses 100 % or the bypass flips, as the pitch shifter's
+ * does with its mix, so a host face reads it again at its next activation.
  * @param s The instance.
- * @return omx_rotary_latency(): the kernel's, 0 at every rate.
+ * @return omx_rotary_latency(rate) or 0.
  * @thread audio */
 static inline uint32_t omx_rotary_instance_latency(const OmxRotaryInstance *s) {
-  (void)s;
-  return omx_rotary_latency();
+  if (!s || !s->ready || !s->atom.enabled || s->atom.mix < 1.0f) return 0u;
+  return omx_rotary_latency(s->sr);
 }
+
+/** The instance's sweep, frames: omx_rotary_sweep() at its rate. The wet path's range, whatever
+ * the mix or the bypass (those set only whether the latency is reported); both zero when not ready.
+ * @param s The instance.
+ * @param shortest Written: the shortest read, the latency when engaged at full mix.
+ * @param longest Written: the longest read.
+ * @pre `outs-present`: both pointers name a word.
+ * @thread audio */
+#define OMX_CONTRACT_STAGE "rotary/instance-sweep"
+static inline void omx_rotary_instance_sweep(const OmxRotaryInstance *s, uint32_t *shortest, uint32_t *longest) {
+  OMX_PRE(shortest != NULL && longest != NULL, "outs-present");
+  if (!s || !s->ready) {
+    *shortest = *longest = 0u;
+    return;
+  }
+  omx_rotary_sweep(s->sr, shortest, longest);
+}
+#undef OMX_CONTRACT_STAGE
 
 #endif /* OMX_ROTARY_INSTANCE_H */

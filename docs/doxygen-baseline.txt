@@ -622,7 +622,6 @@ include/omxdsp/fx/omx_rotary_instance.h: warning: Member OMX_ROTARY_INSTANCE_CHA
 include/omxdsp/fx/omx_rotary_instance.h: warning: Member OMX_ROTARY_INSTANCE_DRUM_FAST_HZ_DEFAULT (macro definition) of file omx_rotary_instance.h is not documented.
 include/omxdsp/fx/omx_rotary_instance.h: warning: Member OMX_ROTARY_INSTANCE_DRUM_SLOW_HZ_DEFAULT (macro definition) of file omx_rotary_instance.h is not documented.
 include/omxdsp/fx/omx_rotary_instance.h: warning: Member OMX_ROTARY_INSTANCE_HORN_FAST_HZ_DEFAULT (macro definition) of file omx_rotary_instance.h is not documented.
-include/omxdsp/fx/omx_rotary_instance.h: warning: Member OMX_ROTARY_INSTANCE_LATENCY_FRAMES (macro definition) of file omx_rotary_instance.h is not documented.
 include/omxdsp/fx/omx_rotary_instance.h: warning: Member OMX_ROTARY_INSTANCE_MIX_DEFAULT (macro definition) of file omx_rotary_instance.h is not documented.
 include/omxdsp/fx/omx_rotary_instance.h: warning: Member OMX_ROTARY_INSTANCE_SPEED_DEFAULT (macro definition) of file omx_rotary_instance.h is not documented.
 include/omxdsp/fx/omx_rotary_instance.h: warning: Member atom (variable) of struct OmxRotaryInstance is not documented.

@@ -13,7 +13,12 @@
  *      outside the member set reads as `slow`; the output is finite;
  *   E  a bypass->engaged edge re-arms the state: the re-engaged instance is a fresh one;
  *   F  in == out (an aliased port) is the out-of-place answer;
- *   G  an instance run between two others leaves each the instance alone (no shared state).
+ *   G  an instance run between two others leaves each the instance alone (no shared state);
+ *   H  engaged at full mix, the published latency is where an impulse peaks with both rotors held
+ *      at the sweep's shortest phase: the always-present delay of a modulated read. With a dry
+ *      share (mix under 100 %) or bypassed, the dry path is direct and the latency is zero;
+ *   I  the published sweep holds every lag: an impulse fed at nine start times into a rotary
+ *      spinning at slow peaks inside [shortest, longest], and the shortest is the latency.
  *   make test-fx
  */
 #include <math.h>
@@ -24,6 +29,12 @@
 #include <omxdsp/fx/omx_rotary_instance.h>
 
 #include "instance_harness.h"
+
+/* One latency figure: omx_rotary_instance_latency(). A constant beside it would be a second figure,
+ * and a face reading the constant would report 0 where the instance reports the sweep's shortest read. */
+#ifdef OMX_ROTARY_INSTANCE_LATENCY_FRAMES
+#error "omx_rotary_instance.h defines OMX_ROTARY_INSTANCE_LATENCY_FRAMES beside omx_rotary_instance_latency()"
+#endif
 
 /* Outside the console's declaration each call below records its kernels' `rate-is-declared`; the ledger is taken after every call. */
 #define omx_rotary_instance_run(...) OMX_FX_CHECKPOINTED(omx_rotary_instance_run, __VA_ARGS__)
@@ -59,6 +70,11 @@ static void arm_refused(void) {
   programme(l, r, BLK, 0);
   omx_rotary_instance_run(s, l, r, ol, or_, BLK);
   ok(same_bytes(l, ol, BLK) && same_bytes(r, or_, BLK), "A: a refused instance is the identity");
+  uint32_t lo = 1, hi = 1;
+  omx_rotary_instance_sweep(s, &lo, &hi);
+  ok(omx_rotary_instance_latency(s) == 0u && lo == 0u && hi == 0u,
+     "A: a refused instance, resolved engaged at full mix, publishes no latency and no sweep");
+  ok(omx_rotary_instance_latency(NULL) == 0u, "A: no instance publishes no latency");
   ok(omx_rotary_instance_init(s, g_sr) == 1, "A: the rate is accepted");
   ok(omx_rotary_instance_latency(s) == 0u, "A: the published latency is zero frames");
   free(s);
@@ -225,6 +241,65 @@ static void arm_alias_and_independence(void) {
   drain_violations("F/G: no contract broken");
 }
 
+/* The lag of the largest output sample after a unit impulse fed `pre` frames into a fresh instance
+ * at `speed`; `shortest` holds both rotors at the sweep's shortest phase (lfo_at = -1, a quarter
+ * turn), which a stopped rotor keeps. The peak is the delay: an interpolated read starts at its first
+ * tap, before the delay it reads at. */
+static long peak_lag(long pre, int speed, int shortest, float mix) {
+  OmxRotaryInstance *s = inst();
+  omx_rotary_instance_init(s, g_sr);
+  float l[BLK], r[BLK];
+  long best = -1;
+  float most = 0.0f;
+  const long total = pre + (long)(0.1f * g_sr);
+  for (long n = 0; n < total; n += BLK) {
+    for (uint32_t i = 0; i < BLK; i++) l[i] = r[i] = (n + (long)i == pre) ? 1.0f : 0.0f;
+    omx_rotary_instance_resolve(s, 0, NAN, NAN, NAN, NAN, NAN, NAN, mix, speed);
+    if (shortest && n == 0) s->state.horn.lfo.phase = s->state.drum.lfo.phase = 0.25f;
+    omx_rotary_instance_run(s, l, r, l, r, BLK);
+    for (uint32_t i = 0; i < BLK; i++)
+      if (n + (long)i >= pre && fabsf(l[i]) > most) { most = fabsf(l[i]); best = n + (long)i - pre; }
+  }
+  free(s);
+  return best;
+}
+
+static void arm_latency(void) {
+  OmxRotaryInstance *s = inst();
+  omx_rotary_instance_init(s, g_sr);
+  omx_rotary_instance_resolve(s, 0, NAN, NAN, NAN, NAN, NAN, NAN, 100.0f, OMX_ROTARY_STOP);
+  const long at = peak_lag((long)(0.05f * g_sr), OMX_ROTARY_STOP, 1, 100.0f);
+  ok((long)omx_rotary_instance_latency(s) == at, "H: the published latency is the impulse's peak at the sweep's shortest phase");
+  omx_rotary_instance_resolve(s, 0, NAN, NAN, NAN, NAN, NAN, NAN, 99.0f, OMX_ROTARY_STOP);
+  ok(omx_rotary_instance_latency(s) == 0u, "H: with a dry share the dry path is direct: zero");
+  omx_rotary_instance_resolve(s, 1, NAN, NAN, NAN, NAN, NAN, NAN, 100.0f, OMX_ROTARY_STOP);
+  ok(omx_rotary_instance_latency(s) == 0u, "H: bypassed is the identity: zero");
+  free(s);
+  drain_violations("H: no contract broken");
+}
+
+static void arm_sweep(void) {
+  OmxRotaryInstance *s = inst();
+  omx_rotary_instance_init(s, g_sr);
+  omx_rotary_instance_resolve(s, 0, NAN, NAN, NAN, NAN, NAN, NAN, 100.0f, OMX_ROTARY_SLOW);
+  uint32_t lo = 0, hi = 0;
+  omx_rotary_instance_sweep(s, &lo, &hi);
+  ok(lo == omx_rotary_instance_latency(s) && hi > lo, "I: the sweep starts at the latency and has a far end");
+  /* the nine start times, 48 kHz frames at the rate: the rotors at as many places in their turns */
+  static const long PRE48[9] = {2400, 12000, 21600, 24000, 30000, 36000, 43200, 60000, 72000};
+  int inside = 1;
+  for (int k = 0; k < 9; k++) {
+    const long lag = peak_lag((long)((double)PRE48[k] * g_sr / 48000.0), OMX_ROTARY_SLOW, 0, 100.0f);
+    if (lag < (long)lo || lag > (long)hi) {
+      inside = 0;
+      printf("  %.0f Hz: start %ld peaks at %ld, outside [%u, %u]\n", (double)g_sr, PRE48[k], lag, lo, hi);
+    }
+  }
+  ok(inside, "I: every measured lag lies inside the published sweep");
+  free(s);
+  drain_violations("I: no contract broken");
+}
+
 int main(void) {
   omx_fx_require_rate_floor();
   omx_fx_require_full_rates_cover_declared();
@@ -236,6 +311,8 @@ int main(void) {
     arm_clamps();
     arm_reengage_rearms();
     arm_alias_and_independence();
+    arm_latency();
+    arm_sweep();
   }
   return finish("rotary_instance");
 }
