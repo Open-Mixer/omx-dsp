@@ -3862,7 +3862,7 @@ enum omx_curve_shapes {
 };
 /** The number of ids of CURVE_SHAPES. */
 #define OMX_CURVE_SHAPES_COUNT 10u
-/** The units a curve term's value may come in, the param-contract extension's unit tokens the served description gives a role. omx_curve_points converts once: `coef` to dB for a gain, `oct` to Q for a bandwidth, `khz` to Hz; a level in `db`, `dbfs`, `dbu` or `lufs` is read as dB from the threshold's own scale; `none` is a plain number, a switch or a choice; `ratio` a ratio. A unit its role does not accept is refused. `pc` (since 0.32.4) is percent, the drive's `mix`. `ms` and `s` (since 0.32.4) are a time, read as ms. (since 3.0.0) A named id's value is its position. */
+/** The units a curve term's value may come in, the param-contract extension's unit tokens the served description gives a role. omx_curve_points converts once: `coef` to dB for a gain, `oct` to Q for a bandwidth, `khz` to Hz; a level in `db`, `dbfs`, `dbu` or `lufs` is read as dB from the threshold's own scale; `none` is a plain number, a switch or a choice; `ratio` a ratio. A unit its role does not accept is refused. `pc` (since 0.32.4) is percent, the drive's `mix`. `ms` and `s` (since 0.32.4) are a time, read as ms. `standard` names the PARAM_UNITS const each word stands for (`hz` is Hz, `pc` is percent, `coef` is coef): a host takes a standard id to its curve word through that table, never a copy of its own. (since 3.0.0) A named id's value is its position. */
 enum omx_curve_units {
   OMX_CURVE_UNITS_HZ = 0, ///< The id `hz`.
   OMX_CURVE_UNITS_KHZ = 1, ///< The id `khz`.
@@ -3880,6 +3880,8 @@ enum omx_curve_units {
 };
 /** The number of ids of CURVE_UNITS. */
 #define OMX_CURVE_UNITS_COUNT 13u
+/** The standard unit (a PARAM_UNITS const) each id of CURVE_UNITS stands for, by enumerator. */
+static const char *const OMX_CURVE_UNITS_STANDARD[OMX_CURVE_UNITS_COUNT] = {"Hz", "kHz", "dB", "dBFS", "dBu", "LUFS", "coef", "oct", "none", "ratio", "percent", "ms", "s"};
 /** The de-esser's modes, in the order of the integer the kernel reads: split attenuates the detected band only, wideband the whole signal while the sibilance lasts. A named id's value is its position. */
 enum omx_deess_modes {
   OMX_DEESS_MODES_SPLIT = 0, ///< The id `split`.

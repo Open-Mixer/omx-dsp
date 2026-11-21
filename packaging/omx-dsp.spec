@@ -184,6 +184,8 @@ Its documentation is on openmixer.org.
   (V22) are this library's data, rendered into omxdsp_definitions.h and
   omx_dsp_vocabulary.h; the install no longer excludes codes.json (V20
   follow-up). The floors on omx-contract rise to 3.21.0.
+- CURVE_UNITS names the standard unit each curve word stands for (`standard`,
+  a PARAM_UNITS const), rendered as OMX_CURVE_UNITS_STANDARD.
 - The rotary reports the sweep's shortest read as its latency at full mix,
   and 0 below it (#117).
 - OMX_ROTARY_INSTANCE_LATENCY_FRAMES is removed: the latency is the face's

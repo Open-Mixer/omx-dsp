@@ -86,7 +86,7 @@
     "source": {
       "impl": "include/omxdsp/omx_curve.h#omx_curve_unit_accepted"
     },
-    "doc": "The units a curve term's value may come in, the param-contract extension's unit tokens the served description gives a role. omx_curve_points converts once: `coef` to dB for a gain, `oct` to Q for a bandwidth, `khz` to Hz; a level in `db`, `dbfs`, `dbu` or `lufs` is read as dB from the threshold's own scale; `none` is a plain number, a switch or a choice; `ratio` a ratio. A unit its role does not accept is refused. `pc` (since 0.32.4) is percent, the drive's `mix`. `ms` and `s` (since 0.32.4) are a time, read as ms.",
+    "doc": "The units a curve term's value may come in, the param-contract extension's unit tokens the served description gives a role. omx_curve_points converts once: `coef` to dB for a gain, `oct` to Q for a bandwidth, `khz` to Hz; a level in `db`, `dbfs`, `dbu` or `lufs` is read as dB from the threshold's own scale; `none` is a plain number, a switch or a choice; `ratio` a ratio. A unit its role does not accept is refused. `pc` (since 0.32.4) is percent, the drive's `mix`. `ms` and `s` (since 0.32.4) are a time, read as ms. `standard` names the PARAM_UNITS const each word stands for (`hz` is Hz, `pc` is percent, `coef` is coef): a host takes a standard id to its curve word through that table, never a copy of its own.",
     "ids": [
       "hz",
       "khz",
@@ -99,6 +99,21 @@
       "none",
       "ratio",
       "pc",
+      "ms",
+      "s"
+    ],
+    "standard": [
+      "Hz",
+      "kHz",
+      "dB",
+      "dBFS",
+      "dBu",
+      "LUFS",
+      "coef",
+      "oct",
+      "none",
+      "ratio",
+      "percent",
       "ms",
       "s"
     ]

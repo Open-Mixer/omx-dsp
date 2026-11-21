@@ -9,6 +9,9 @@ omx-dsp (0.34.0) unstable; urgency=medium
     in omx-dsp-contract.
   * The install of omx-contract's data no longer excludes codes.json (V20
     follow-up); the floors on omx-contract rise to 3.21.0.
+  * CURVE_UNITS names the standard unit each curve word stands for
+    (`standard`, a PARAM_UNITS const), rendered as OMX_CURVE_UNITS_STANDARD:
+    a host takes a standard id to its curve word through that table.
   * The rotary reports the sweep's shortest read as its latency at full
     mix, and 0 below it (#117).
   * OMX_ROTARY_INSTANCE_LATENCY_FRAMES is removed: the latency is the face's
