@@ -10,10 +10,10 @@ import { loadData, resolveData } from './oc.mjs';
 import { renderC } from './oc.mjs';
 import { renderJson } from './oc.mjs';
 import { renderTs } from './oc.mjs';
-import { UNION } from './helpers.mjs';
+import { UNION, withoutMemberDocs } from './helpers.mjs';
 
 const resolved = (dir = UNION) => resolveData(loadData(dir));
-const header = (dir) => renderC(resolved(dir))[0].text;
+const header = (dir) => withoutMemberDocs(renderC(resolved(dir))[0].text);
 const json = (dir) => JSON.parse(renderJson(resolved(dir), '0.0.0')[0].text);
 const ts = (dir) => renderTs(resolved(dir)).map((f) => f.text).join('\n');
 // detectorTopology was the last control in 2.5.0; the key path, hold and ducker (c208f5f, FX-2) and releaseMode

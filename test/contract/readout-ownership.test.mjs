@@ -8,7 +8,7 @@
  */
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { test } from 'node:test';
 import { OC, loadData, resolveData, validateData } from './oc.mjs';
@@ -19,8 +19,11 @@ const problems = (dir) => validateData(loadData(dir)).map((p) => `${p.rule}: ${p
 
 test('the owner is this library, and omx-contract no longer holds the item', () => {
   assert.equal(relOf('READOUT_RATE_HZ'), 'data/primitives/readout.json');
-  const prim = JSON.parse(readFileSync(join(DATA, 'primitives.json'), 'utf8'));
+  // omx-contract 3.21.0 drops data/primitives.json with its last item; an older checkout still has the file
+  const file = join(DATA, 'primitives.json');
+  const prim = existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')) : {};
   assert.equal('READOUT_RATE_HZ' in prim, false, 'omx-contract data/primitives.json still holds it (build the chain from its sorting-pass branch)');
+  assert.equal(loadData(DATA).items.has('READOUT_RATE_HZ'), false, 'omx-contract data/ still declares it');
 });
 
 test('the loader returns the item as the old home held it (golden), and the kernels\' refs to it resolve', () => {

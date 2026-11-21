@@ -5,7 +5,7 @@
  * union a consumer installs), its renders, and the helpers that perturb a scratch copy of it. Moved from omx-contract's
  * test/helpers.mjs with the tests, reading this tree instead of a 2.14.0 copy of it.
  */
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -34,8 +34,16 @@ export function scratchUnion() {
   cpSync(DATA, join(dir, 'data'), { recursive: true });
   cpSync(join(HERE, 'data'), join(dir, 'data'), { recursive: true });
   cpSync(join(ROOT, 'schema'), join(dir, 'schema'), { recursive: true });
+  // the domains omx-contract reads beside data/ (contract.d/param holds PARAM_SCALES and PARAM_UNITS since 3.21.0)
+  if (existsSync(join(ROOT, 'contract.d'))) cpSync(join(ROOT, 'contract.d'), join(dir, 'contract.d'), { recursive: true });
   return join(dir, 'data');
 }
+
+/**
+ * A C render with each enum member's trailing doc comment (`  OMX_X = 0, ///< Label`, omx-contract 3.21.0) left out,
+ * so a test reads the member and its value whether the render documents it or not. Nothing else is touched.
+ */
+export const withoutMemberDocs = (h) => h.replace(/^( {2}OMX_[A-Z0-9_]+ = -?\d+,) \/\/\/< [^\n]*$/gm, '$1');
 
 /** The union of omx-contract's data/ and this library's, read like a data directory. */
 export const UNION = scratchUnion();

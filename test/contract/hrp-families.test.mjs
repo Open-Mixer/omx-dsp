@@ -12,10 +12,10 @@ import { test } from 'node:test';
 import { loadData, resolveData } from './oc.mjs';
 import { renderC } from './oc.mjs';
 import { renderJson } from './oc.mjs';
-import { UNION } from './helpers.mjs';
+import { UNION, withoutMemberDocs } from './helpers.mjs';
 
 const json = (dir = UNION) => JSON.parse(renderJson(resolveData(loadData(dir)), '0.0.0')[0].text);
-const header = (dir = UNION) => renderC(resolveData(loadData(dir)))[0].text;
+const header = (dir = UNION) => withoutMemberDocs(renderC(resolveData(loadData(dir)))[0].text);
 
 // omx-dsp's OmxHrpFamily order, which is also the console's INSTRUMENT_FAMILIES order.
 const FAMILIES = ['drums', 'percussion', 'bass', 'guitar', 'keys', 'vocals', 'brass', 'wind', 'strings', 'playback'];
@@ -43,7 +43,9 @@ test('the families are the set INSTRUMENT_FAMILIES, in the order omx-dsp numbers
 });
 
 test('the rendered names never collide with the OMX_HRP_FAMILY_* enum omx-dsp spells today', () => {
-  assert.doesNotMatch(header(), /OMX_HRP_FAMILY_(NONE|COUNT|DRUMS|PERCUSSION|BASS|GUITAR|KEYS|VOCALS|BRASS|WIND|STRINGS|PLAYBACK)\b/);
+  // a rendered name is code: a doc comment's prose (the HRP family control's doc names OMX_HRP_FAMILY_NONE) is no name
+  const code = header().replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
+  assert.doesNotMatch(code, /OMX_HRP_FAMILY_(NONE|COUNT|DRUMS|PERCUSSION|BASS|GUITAR|KEYS|VOCALS|BRASS|WIND|STRINGS|PLAYBACK)\b/);
 });
 
 test('each family carries its voices and fundamental range, one entry per family id', () => {
