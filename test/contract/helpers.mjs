@@ -34,8 +34,9 @@ export function scratchUnion() {
   cpSync(DATA, join(dir, 'data'), { recursive: true });
   cpSync(join(HERE, 'data'), join(dir, 'data'), { recursive: true });
   cpSync(join(ROOT, 'schema'), join(dir, 'schema'), { recursive: true });
-  // the domains omx-contract reads beside data/ (contract.d/param holds PARAM_SCALES and PARAM_UNITS since 3.21.0)
-  if (existsSync(join(ROOT, 'contract.d'))) cpSync(join(ROOT, 'contract.d'), join(dir, 'contract.d'), { recursive: true });
+  // the domains omx-contract reads beside data/: contract.d/param holds PARAM_SCALES and PARAM_UNITS (the floor, 3.21.0)
+  if (!existsSync(join(ROOT, 'contract.d/param/param.json'))) throw new Error(`${ROOT} has no contract.d/param/param.json: the omx-contract floor is 3.21.0, whose param domain holds PARAM_SCALES and PARAM_UNITS`);
+  cpSync(join(ROOT, 'contract.d'), join(dir, 'contract.d'), { recursive: true });
   return join(dir, 'data');
 }
 
@@ -44,6 +45,32 @@ export function scratchUnion() {
  * so a test reads the member and its value whether the render documents it or not. Nothing else is touched.
  */
 export const withoutMemberDocs = (h) => h.replace(/^( {2}OMX_[A-Z0-9_]+ = -?\d+,) \/\/\/< [^\n]*$/gm, '$1');
+
+/**
+ * C source with its comments left out (a `/* *\/` block and a `//` line each become one space), read token by token
+ * so a `//` or `/*` inside a string or character literal stays: what a test of the rendered names reads.
+ */
+export function codeOnly(src) {
+  let out = '';
+  for (let i = 0; i < src.length; i += 1) {
+    const c = src[i];
+    if (c === '"' || c === "'") {
+      let j = i + 1;
+      while (j < src.length && src[j] !== c && src[j] !== '\n') j += src[j] === '\\' ? 2 : 1;
+      out += src.slice(i, j + 1);
+      i = j;
+    } else if (c === '/' && src[i + 1] === '*') {
+      const end = src.indexOf('*/', i + 2);
+      i = end < 0 ? src.length : end + 1;
+      out += ' ';
+    } else if (c === '/' && src[i + 1] === '/') {
+      const end = src.indexOf('\n', i);
+      i = end < 0 ? src.length : end - 1;
+      out += ' ';
+    } else out += c;
+  }
+  return out;
+}
 
 /** The union of omx-contract's data/ and this library's, read like a data directory. */
 export const UNION = scratchUnion();

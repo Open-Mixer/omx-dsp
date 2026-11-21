@@ -12,7 +12,7 @@ import { test } from 'node:test';
 import { loadData, resolveData } from './oc.mjs';
 import { renderC } from './oc.mjs';
 import { renderJson } from './oc.mjs';
-import { UNION, withoutMemberDocs } from './helpers.mjs';
+import { UNION, codeOnly, withoutMemberDocs } from './helpers.mjs';
 
 const json = (dir = UNION) => JSON.parse(renderJson(resolveData(loadData(dir)), '0.0.0')[0].text);
 const header = (dir = UNION) => withoutMemberDocs(renderC(resolveData(loadData(dir)))[0].text);
@@ -44,7 +44,7 @@ test('the families are the set INSTRUMENT_FAMILIES, in the order omx-dsp numbers
 
 test('the rendered names never collide with the OMX_HRP_FAMILY_* enum omx-dsp spells today', () => {
   // a rendered name is code: a doc comment's prose (the HRP family control's doc names OMX_HRP_FAMILY_NONE) is no name
-  const code = header().replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
+  const code = codeOnly(header());
   assert.doesNotMatch(code, /OMX_HRP_FAMILY_(NONE|COUNT|DRUMS|PERCUSSION|BASS|GUITAR|KEYS|VOCALS|BRASS|WIND|STRINGS|PLAYBACK)\b/);
 });
 
