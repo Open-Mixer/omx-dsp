@@ -1,6 +1,6 @@
 {
   "name": "@openmixer/omx-dsp",
-  "version": "0.33.1",
+  "version": "0.34.0",
   "description": "omx-dsp in JavaScript: the curve function as the C compiled to WebAssembly and its loader, the TypeScript twins of the kernels that stay in TypeScript, each pinned to its C kernel by an agreement test",
   "type": "module",
   "license": "GPL-3.0-or-later",
