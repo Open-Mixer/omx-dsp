@@ -33,7 +33,7 @@ describe('ts-golden reads the oracle rates from omx-dsp, not omx-contract', () =
   });
   it('ORACLE_FULL_RATES is read from data/primitives/rates.json', () => {
     assert.match(SRC, /data\/primitives\/rates\.json/);
-    assert.match(SRC, /\.ORACLE_FULL_RATES\.values/);
+    assert.match(SRC, /\.ORACLE_FULL_RATES\??\.values/);
   });
   it('sabotage: a planted read from omx-contract.js is named', () => {
     const planted = "const { ORACLE_FULL_RATES } = await import(pathToFileURL(`${contractTs}/omx-contract.js`).href);";
