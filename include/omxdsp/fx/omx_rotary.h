@@ -200,6 +200,7 @@ static inline float omx_rotary_longest_delay(float sr) { return OMX_ROTARY_LONGE
  */
 static inline uint32_t omx_rotary_latency(float sr) { return (uint32_t)(omx_rotary_shortest_delay(sr) + 0.5f); }
 
+#define OMX_CONTRACT_STAGE "rotary/sweep"
 /**
  * @brief The sweep at a rate, frames: the shortest read (the latency, omx_rotary_latency()) and
  *        the longest, each rounded to the nearest frame. Every lag the stage's wet path shows lies
@@ -211,7 +212,6 @@ static inline uint32_t omx_rotary_latency(float sr) { return (uint32_t)(omx_rota
  * @note Thread-safe: arithmetic, no libm.
  * @thread audio
  */
-#define OMX_CONTRACT_STAGE "rotary/sweep"
 static inline void omx_rotary_sweep(float sr, uint32_t *shortest, uint32_t *longest) {
   OMX_PRE(shortest != NULL && longest != NULL, "outs-present");
   *shortest = omx_rotary_latency(sr);
