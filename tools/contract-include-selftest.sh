@@ -129,14 +129,15 @@ sed -i -E "/^omx-contract-devel/ s/($floor)/\1 4/" "$S/dep/packaging/deps.txt"
 # The Makefile finds the contract whenever a goal compiles, also beside a goal that needs none
 # (`make copy-check test-parallel`): an empty CONTRACT_INC made `-isystem` swallow the next flag
 # (-c, -o, -DOMX_CONTRACTS). A goal list of contract-free goals alone still asks for nothing.
+# -B: an object already built still prints its compile; env -u: a parent make's CONTRACT_INC and flags stay out.
 isys() {  # makefile goal...: the -isystem argument the compile of omx_align_fit.o would get
   mf="$1"; shift
-  OMX_CONTRACT_INC="$S/include" make --no-print-directory -n -C "$HERE" -f "$mf" "$@" 2>/dev/null \
+  env -u CONTRACT_INC -u MAKEFLAGS -u MFLAGS -u MAKELEVEL OMX_CONTRACT_INC="$S/include" make --no-print-directory -n -B -C "$HERE" -f "$mf" "$@" 2>/dev/null \
     | sed -n 's/.*-isystem \([^ ]*\) .*src\/omx_align_fit\.c.*/\1/p' | head -n 1
 }
 got="$(isys "$HERE/Makefile" copy-check build/omx_align_fit.o)"
 [ "$got" = "$S/include" ] || fail "make copy-check build/omx_align_fit.o compiles with -isystem '$got', not $S/include"
-OMX_CONTRACT_INC="$S/missing" make --no-print-directory -n -C "$HERE" copy-check >/dev/null 2>&1 \
+env -u CONTRACT_INC -u MAKEFLAGS -u MFLAGS -u MAKELEVEL OMX_CONTRACT_INC="$S/missing" make --no-print-directory -n -B -C "$HERE" copy-check >/dev/null 2>&1 \
   || fail "make copy-check alone asked for the contract (it compiles nothing against it)"
 # Positive control: the goal test that skipped the lookup when any contract-free goal was named.
 sed 's/^ifneq (\$(if \$(MAKECMDGOALS),\$(filter-out \$(NO_CONTRACT_GOALS),\$(MAKECMDGOALS)),all),)$/ifeq ($(filter $(NO_CONTRACT_GOALS),$(MAKECMDGOALS)),)/' \
