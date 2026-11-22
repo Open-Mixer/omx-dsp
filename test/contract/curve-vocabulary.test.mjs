@@ -2,7 +2,7 @@
 // Copyright (C) 2026 Pau Aliagas <linuxnow@gmail.com>
 /**
  * Sorting pass, row V26: CURVE_AXES and CURVE_KINDS are this library's (data/primitives/curve.json), no longer
- * omx-contract's data/curves.json. The words are held against the golden frozen from omx-contract's data/curves.json
+ * omx-contract's curves.json (the curves file of its data directory). The words are held against the golden frozen from it
  * at b89426c; the read is omx-contract's own loader over the union a consumer installs; the rendered header carries
  * them; a union with an axis removed is refused by name.
  */
@@ -19,7 +19,7 @@ const problems = (dir) => validateData(loadData(dir)).map((p) => `${p.rule}: ${p
 test('the owner is this library: both items live in its data/primitives/curve.json and omx-contract holds no curves.json', () => {
   assert.equal(relOf('CURVE_AXES'), 'data/primitives/curve.json');
   assert.equal(relOf('CURVE_KINDS'), 'data/primitives/curve.json');
-  assert.equal(existsSync(join(DATA, 'curves.json')), false, 'omx-contract still holds data/curves.json (build the chain from its lane/sort-v26-curves-drop)');
+  assert.equal(existsSync(join(DATA, 'curves.json')), false, 'omx-contract still holds its curves.json (build the chain from its lane/sort-v26-curves-drop)');
 });
 
 test('the consumer read: the loader returns the words, their order and every field as the old home held them (golden)', () => {
