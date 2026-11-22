@@ -81,7 +81,10 @@ refused contract.manifest.mismatch "an installed file changed after its manifest
 # a file installed without its schema floor
 scratch="$out/no-floor"; rm -rf "$scratch"; cp -r "$HERE/data" "$scratch"
 f="$(cd "$scratch" && find . -name '*.json' | LC_ALL=C sort | head -1)"
-perl -0pi -e 's/\n  "requires": \{\n    "omx-contract-schema": "[^"]*"\n  \},//' "$scratch/$f"
+# the floor removed as data, not by layout: a regex over the text matched nothing once the layout moved, and the arm
+# then tested an unchanged file; node is already this check's need (the reader), perl was not declared anywhere
+node -e 'const fs=require("fs"),f=process.argv[1],d=JSON.parse(fs.readFileSync(f,"utf8")); if(!d.requires?.["omx-contract-schema"]) process.exit(3); delete d.requires["omx-contract-schema"]; if(!Object.keys(d.requires).length) delete d.requires; fs.writeFileSync(f,JSON.stringify(d,null,2)+"\n")' "$scratch/$f" \
+  || { echo "contract-dir-check: $f carries no omx-contract-schema floor to remove: the no-floor arm tests nothing" >&2; exit 1; }
 install_both "$out/dir-no-floor" "$scratch"
 refused contract.schema.floor-absent "a file with no schema floor" oc validate --contract-dir "$out/dir-no-floor" || bad=1
 
