@@ -16,6 +16,13 @@ static void arm_param(void) {
   ok(omx_clampf(-INFINITY, lo, hi) == lo, "clampf: -Inf saturates to the floor", omx_clampf(-INFINITY, lo, hi), lo);
   ok(omx_clampf(lo, lo, hi) == lo && omx_clampf(hi, lo, hi) == hi, "clampf: both edges are kept", lo, hi);
   ok(omx_clampf(2.0f, lo, hi) == hi && omx_clampf(-2.0f, lo, hi) == lo, "clampf: beyond the travel is the edge", 2.0, hi);
+  {
+    /* The bit-for-bit checks below hold a subnormal input: they mean something only in the default float mode, where a
+     * subnormal is a value. Under flush-to-zero / denormals-are-zero (an arm that set it and kept it) a compiler that
+     * clamps with min/max reads dn as 0 (clang -O1, #99) and one that selects with a branch keeps it (gcc). */
+    volatile float sub = dn, one = 1.0f;
+    ok(sub * one != 0.0f, "param runs with subnormals on: no earlier arm left denormals off", sub * one, dn);
+  }
   const float in[] = {0.0f, -0.0f, dn, -dn, 0.123456789f, -0.5f, 0.8999999f};
   for (unsigned i = 0; i < sizeof in / sizeof in[0]; i++) {
     const float c = omx_clampf(in[i], lo, hi);

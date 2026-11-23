@@ -3,8 +3,14 @@
 
 /* ---- denormal ------------------------------------------------------------------------------- */
 
+#include <fenv.h>
+
 static void arm_denormal(void) {
   g_arm = "denormal";
+  /* the mode is the thread's: the arm puts back the float environment it found, so every later arm runs in the
+   * default mode whatever the compiler makes of a subnormal (#99) */
+  fenv_t entry;
+  fegetenv(&entry);
   ok(omx_flush(1e-30f) == 0.0f, "a value below the floor flushes to zero", 1e-30, 0.0);
   ok(omx_flush(-1e-30f) == 0.0f, "a negative value below the floor flushes to zero", -1e-30, 0.0);
   ok(omx_flush(1e-19f) == 1e-19f, "a value above the floor is untouched", 1e-19, 1e-19);
@@ -26,5 +32,6 @@ static void arm_denormal(void) {
     ok(out_zero == 0.0f, "a subnormal result is exactly zero once denormals are off", out_zero, 0.0);
   }
 #endif
+  fesetenv(&entry);
   expect_clean();
 }
