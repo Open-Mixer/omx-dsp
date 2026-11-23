@@ -81,7 +81,7 @@
         "min": 0.25,
         "max": 4,
         "step": 0.01,
-        "unit": "x",
+        "unit": "coef",
         "default": 1,
         "defaultFrom": "desk"
       },
