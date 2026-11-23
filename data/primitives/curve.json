@@ -80,6 +80,21 @@
       "highCut"
     ]
   },
+  "CURVE_ROLE_PREFIXES": {
+    "kind": "words",
+    "since": "3.22.0",
+    "doc": "The prefixes a role word of CURVE_ROLES is read by: an indexed band role is one whose word starts with the `band` prefix.",
+    "why": "The console, omx-panel and the Zynthian fork each restated `band_` to tell a band role from the others (omx-dsp#40): declared once here, beside the roles it reads.",
+    "words": {
+      "band": {
+        "word": "band_",
+        "doc": "The prefix every indexed band role of CURVE_ROLES carries on the wire (`band_type`, `band_freq`, `band_gain`, `band_q`, `band_on`): a role word that starts with it is a band's and carries an index. A consumer reads this word, or calls omx_curve_role_is_band(), and never writes the prefix itself.",
+        "text": {
+          "en": "The prefix every indexed band role of CURVE_ROLES carries on the wire (`band_type`, `band_freq`, `band_gain`, `band_q`, `band_on`): a role word that starts with it is a band's and carries an index. A consumer reads this word, or calls omx_curve_role_is_band(), and never writes the prefix itself."
+        }
+      }
+    }
+  },
   "CURVE_UNITS": {
     "kind": "set",
     "since": "3.0.0",

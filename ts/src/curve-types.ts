@@ -7,7 +7,7 @@
  * `FromSchema<typeof schema>` (json-schema-to-ts), not from a rendered .d.ts, per omx-contract's runtime-data spec
  * (docs/runtime-data.md, merged in PR #104): no render writes this file.
  */
-import { CURVE_DISPLAYS, CURVE_FAMILIES, CURVE_LEGS, CURVE_ORIGINS, CURVE_ROLES, CURVE_SHAPES, CURVE_UNITS, CURVE_CODES } from './definitions.js';
+import { CURVE_DISPLAYS, CURVE_FAMILIES, CURVE_LEGS, CURVE_ORIGINS, CURVE_ROLE_PREFIXES, CURVE_ROLES, CURVE_SHAPES, CURVE_UNITS, CURVE_CODES } from './definitions.js';
 
 /** A set id as the description spells it: `eqResponse` is `eq_response`; the unshaped band is `-`. */
 const wordOf = (id: string): string => (id === 'unshaped' ? '-' : id.replace(/[A-Z]/g, (c) => `_${c.toLowerCase()}`));
@@ -25,6 +25,12 @@ export const CURVE_WORDS = {
 } as const;
 
 /** What curvePoints answers when it draws nothing: a CURVE_CODES id other than `ok`. */
+/**
+ * Whether a role word is an indexed band role's: it starts with CURVE_ROLE_PREFIXES `band` (`band_freq` does), as
+ * omx_curve_role_is_band() answers in C. A consumer asks this, never a prefix of its own (#40).
+ */
+export const curveRoleIsBand = (word: string): boolean => word.startsWith(CURVE_ROLE_PREFIXES.band);
+
 export type CurveCode = Exclude<(typeof CURVE_CODES)[number], 'ok'>;
 
 /** One bound term: a role of the description, its value now, in the unit the description gives it. */

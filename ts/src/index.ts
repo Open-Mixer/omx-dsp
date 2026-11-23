@@ -27,6 +27,7 @@ export {
   CURVE_FAMILIES,
   CURVE_POINTS_MAX,
   CURVE_ORIGINS,
+  CURVE_ROLE_PREFIXES,
   CURVE_ROLES,
   CURVE_SHAPES,
   CURVE_UNITS,
@@ -73,7 +74,7 @@ export {
   type SpectrumTierInput,
 } from './rta.js';
 export { gaincompDb, type GaincompMode, type GaincompParams } from './gaincomp.js';
-export { CURVE_WORDS, WASI_IMPORTS, loadCurve, wasiStandIns, type CurveAnswer, type CurveCode, type CurveMark, type CurveModule, type CurvePoint, type CurveRequest, type CurveStem, type CurveTerm } from './wasm.js';
+export { CURVE_WORDS, WASI_IMPORTS, curveRoleIsBand, loadCurve, wasiStandIns, type CurveAnswer, type CurveCode, type CurveMark, type CurveModule, type CurvePoint, type CurveRequest, type CurveStem, type CurveTerm } from './wasm.js';
 export { EQ_FREQ_RANGE, HRP_GAIN_STEP_DB } from './definitions.js';
 export { EQ_GAIN_RANGE, FBS_MAX_CUT_DB } from './definitions.js';
 export { METER_MARKER_EMPTY, meterBarStep, meterFill, meterFillDb, meterMarker, meterStep, type MeterMarker } from './meter.js';

@@ -43,6 +43,16 @@ static void arm_curve(void) {
     for (uint32_t i = 0; i < tables[t].n; i++)
       ok(omx_curve_word(tables[t].w, tables[t].n, tables[t].w[i]) == (int)i, "a wire word reads back to its value", t, i);
   ok(omx_curve_word(OMX_CURVE_SHAPE_WORDS, OMX_CURVE_SHAPES_COUNT, "-") == OMX_CURVE_SHAPES_UNSHAPED, "- is the unshaped band", 0, 0);
+  /* The indexed band roles (#40): exactly the roles up to band_on carry OMX_CURVE_ROLE_PREFIXES_BAND, and the
+   * predicate a consumer calls answers on the word, never on a prefix of its own */
+  for (uint32_t i = 0; i < OMX_CURVE_ROLES_COUNT; i++) {
+    const int band = i <= OMX_CURVE_ROLES_BAND_ON;
+    ok(omx_curve_role_is_band(OMX_CURVE_ROLE_WORDS[i]) == band &&
+           (strncmp(OMX_CURVE_ROLE_WORDS[i], OMX_CURVE_ROLE_PREFIXES_BAND, strlen(OMX_CURVE_ROLE_PREFIXES_BAND)) == 0) == band,
+       "a role word is a band's exactly when it carries the band prefix", i, band);
+  }
+  ok(!omx_curve_role_is_band(NULL) && !omx_curve_role_is_band("band") && omx_curve_role_is_band("band_freq"),
+     "no word, or the bare stem, is no band role", 0, 0);
   ok(omx_curve_word(OMX_CURVE_ROLE_WORDS, OMX_CURVE_ROLES_COUNT, "attack") == -1 &&
      omx_curve_word(OMX_CURVE_ROLE_WORDS, OMX_CURVE_ROLES_COUNT, NULL) == -1, "a word the table does not hold is -1", 0, 0);
   ok(omx_curve_word(OMX_CURVE_ROLE_WORDS, OMX_CURVE_ROLES_COUNT, "knee_start") == OMX_CURVE_ROLES_KNEE_START &&

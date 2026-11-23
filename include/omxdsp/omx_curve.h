@@ -51,6 +51,7 @@
 #include "omx_gate.h"
 #include "omx_magnitude.h"
 #include "omx_units.h"
+#include "omx_dsp_vocabulary.h"
 #include "omxdsp_definitions.h"
 
 /** @brief What omx_curve_points() answers in its code: CURVE_CODES, spelt as the design names them. */
@@ -174,6 +175,18 @@ static inline int omx_curve_word(const char *const *words, uint32_t n, const cha
   for (uint32_t i = 0; i < n; i++)
     if (strcmp(words[i], word) == 0) return (int)i;
   return -1;
+}
+
+/**
+ * @brief Whether a role word is an indexed band role's: it starts with CURVE_ROLE_PREFIXES `band`
+ *        (OMX_CURVE_ROLE_PREFIXES_BAND), as `band_freq` does. A consumer asks this, never a prefix of its own.
+ * @param word The role word, NUL-terminated; NULL is no word.
+ * @return 1 for a band role's word, else 0.
+ * @note Thread-safe: pure.
+ * @thread control
+ */
+static inline int omx_curve_role_is_band(const char *word) {
+  return word && strncmp(word, OMX_CURVE_ROLE_PREFIXES_BAND, sizeof OMX_CURVE_ROLE_PREFIXES_BAND - 1u) == 0;
 }
 
 /**
