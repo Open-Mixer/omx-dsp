@@ -6,7 +6,8 @@
 # checked without doxygen: pure awk.
 #
 # For every `include/omxdsp/*.h` and `include/omxdsp/mix/*.h` (or the files given as arguments), at file scope,
-# but include/omxdsp/omxdsp_definitions.h, which is rendered from data/ and documented there (each item's doc):
+# but include/omxdsp/omxdsp_definitions.h and include/omxdsp/omx_dsp_vocabulary.h, which `omx-contract render` writes
+# from data/ (tools/definitions-render.sh, held by make definitions-check) and which are documented there (each item's doc):
 #   - a function (`static inline` definition or a non-static declaration) named omx_*/omxdsp_*,
 #   - a `struct omx_*`/`enum omx_*` definition or a `typedef struct { … } Omx*;`,
 #   - a `#define OMX…` macro (its FIRST definition in the file; the release twin needs none),
@@ -141,6 +142,6 @@ fi
 if [ $# -gt 0 ]; then check "$@"; else
   bash "$0" --self-test
   set -- "$PKG"/include/omxdsp/*.h "$PKG"/include/omxdsp/mix/*.h
-  for f; do shift; [ "$f" = "$PKG/include/omxdsp/omxdsp_definitions.h" ] || set -- "$@" "$f"; done
+  for f; do shift; case "$f" in "$PKG/include/omxdsp/omxdsp_definitions.h"|"$PKG/include/omxdsp/omx_dsp_vocabulary.h") ;; *) set -- "$@" "$f" ;; esac; done
   check "$@" && echo "doc-check: every public symbol in include/omxdsp carries its doc comment"
 fi

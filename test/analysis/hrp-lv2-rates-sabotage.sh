@@ -38,8 +38,8 @@ CFLAGS="${CFLAGS:--Wall -Wextra -Werror -O2 -ffp-contract=off}"
 : "${CONTRACT_INC:?CONTRACT_INC is not set}"
 cd "$PKG"
 HDR=include/omxdsp/analysis/omx_hrp_lv2.h
-nrates="$(printf '#include <omxcontract/omx_contract_limits.h>\nOMX_ORACLE_FULL_RATES_COUNT\n' |
-  $CC -E -P -isystem "$CONTRACT_INC" - | tail -1 | tr -d '() uU')"
+nrates="$(printf '#include <omxdsp/omxdsp_definitions.h>\nOMX_ORACLE_FULL_RATES_COUNT\n' |
+  $CC -E -P -Iinclude -isystem "$CONTRACT_INC" - | tail -1 | tr -d '() uU')"
 rm -rf "$OUT" && mkdir -p "$OUT"
 
 # sabotage <arm> <check text the arm must fail> <sed expression> [<header>]: the sed edits the shell's header, or the

@@ -10,7 +10,8 @@
 # The checkout gives the reader (bin/omx-contract.mjs, its node_modules installed), the installer
 # (tools/install-contract-dir.sh) and omx-contract's own data/, installed as the package omx-contract. Both
 # packages go into <build dir>/dir; then, with that directory:
-#   validate --needs omx-dsp@'>= <this version>'   every file found, hashed, floored, validated and merged
+#   validate --needs omx-dsp@'>= <this version>' --catalogs catalogs   every file found, hashed, floored, validated and
+#                                       merged, and every key of this tree's catalogs one of its words
 #   links --check --package omx-dsp                every source link resolves in this tree
 #   fmt --check --data data                        the files are in the one formatting
 # and three arms that must each be refused with their code: an installed file changed after the manifest
@@ -38,7 +39,7 @@ oc() { (cd "$OC" && node bin/omx-contract.mjs "$@"); }
 # install <dir> <omx-dsp data dir>: the two packages of the contract directory under <dir>
 install_both() {
   rm -rf "$1"; mkdir -p "$1"
-  sh "$installer" -x codes.json -x scale-vectors.json omx-contract "$ocversion" "$major" "$OC/data" "$1" data >/dev/null
+  sh "$installer" -x scale-vectors.json omx-contract "$ocversion" "$major" "$OC/data" "$1" data >/dev/null
   sh "$installer" omx-dsp "$version" "$major" "$2" "$1" data >/dev/null
 }
 
@@ -67,7 +68,7 @@ fi
 
 dir="$out/dir"
 install_both "$dir" "$HERE/data"
-oc validate --contract-dir "$dir" --needs "omx-dsp@>= $version"
+oc validate --contract-dir "$dir" --needs "omx-dsp@>= $version" --catalogs "$HERE/catalogs"
 oc links --check --root "$HERE" --contract-dir "$dir" --package omx-dsp
 oc fmt --check --data "$HERE/data"
 
@@ -80,7 +81,10 @@ refused contract.manifest.mismatch "an installed file changed after its manifest
 # a file installed without its schema floor
 scratch="$out/no-floor"; rm -rf "$scratch"; cp -r "$HERE/data" "$scratch"
 f="$(cd "$scratch" && find . -name '*.json' | LC_ALL=C sort | head -1)"
-perl -0pi -e 's/\n  "requires": \{\n    "omx-contract-schema": "[^"]*"\n  \},//' "$scratch/$f"
+# the floor removed as data, not by layout: a regex over the text matched nothing once the layout moved, and the arm
+# then tested an unchanged file; node is already this check's need (the reader), perl was not declared anywhere
+node -e 'const fs=require("fs"),f=process.argv[1],d=JSON.parse(fs.readFileSync(f,"utf8")); if(!d.requires?.["omx-contract-schema"]) process.exit(3); delete d.requires["omx-contract-schema"]; if(!Object.keys(d.requires).length) delete d.requires; fs.writeFileSync(f,JSON.stringify(d,null,2)+"\n")' "$scratch/$f" \
+  || { echo "contract-dir-check: $f carries no omx-contract-schema floor to remove: the no-floor arm tests nothing" >&2; exit 1; }
 install_both "$out/dir-no-floor" "$scratch"
 refused contract.schema.floor-absent "a file with no schema floor" oc validate --contract-dir "$out/dir-no-floor" || bad=1
 

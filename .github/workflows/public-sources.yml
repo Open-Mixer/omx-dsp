@@ -23,6 +23,17 @@ jobs:
       - uses: Open-Mixer/.github/.github/actions/trigger-gate@openmixer-v1
         with:
           lint-workflow: public-sources.yml
+  fedora:
+    name: no Fedora 44 reference in the workflows
+    # Fedora 45 only (Fedora 44 is dropped for this pass): a workflow that names the old release is refused here.
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - run: tools/test/workflow-fedora-check.sh --self-test
+      - run: tools/test/workflow-fedora-check.sh .
+      - run: tools/test/workflow-deb-cells-check.sh --self-test
+      - run: tools/test/workflow-deb-cells-check.sh .
   docs:
     name: make docs-check (every installed header's public declarations, against a baseline that only shrinks)
     # Pinned: the baseline is what THIS runner's doxygen (1.9.8) warns; another version's extra doc-error
@@ -47,3 +58,12 @@ jobs:
   # local copy of either (Open-Mixer/.github's public-sources-check)
   public-sources:
     uses: Open-Mixer/.github/.github/workflows/public-sources-check.yml@openmixer-v1
+    with:
+      commit-identity: true
+
+  pr-fixes-issue:
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      pull-requests: read
+    uses: Open-Mixer/.github/.github/workflows/pr-fixes-issue.yml@openmixer-v1

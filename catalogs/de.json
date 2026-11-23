@@ -1,0 +1,29 @@
+{
+  "$schema": "../schema/omx-contract.schema.json#/$defs/catalog",
+  "kind": "catalog",
+  "lang": "de",
+  "owner": "omx-dsp",
+  "messages": {
+    "CURVE_AXES.decay-time": { "text": "Die Zeit nach einem Impuls, über die die Energie eines Hallraums abklingt.", "by": "machine", "model": "draft-prose", "source": "c61d02b2a49950786732f93e77123b392fe6e9319fb99cd8d3103c0e8c4543d1" },
+    "CURVE_AXES.delay-time": { "text": "Die Zeit nach dem direkten Signal, zu der ein Delay-Tap oder eine Wiederholung erklingt.", "by": "machine", "model": "draft-prose", "source": "2c054dfb767a109449e3b58a146d64fa052c45596308502d31814573caef5e99" },
+    "CURVE_AXES.frequency": { "text": "Frequenz, an den Punkten von `EQ_CURVE_GRID`, wo die Kurve eine Antwort ist.", "by": "machine", "model": "draft-prose", "source": "cfbfc3fdba35c36e017bd594623ec3901d040a12889ed9b56ab46ab71ca73059" },
+    "CURVE_AXES.input-amplitude": { "text": "Eine Eingangsprobe eines speicherlosen Shapers, linear, -1 bis +1 volle Skala: bipolar, so dass eine ungerade/gerade Asymmetrie sichtbar wird.", "by": "machine", "model": "draft-prose", "source": "fd009d644ce77e5d695221a746097ee7d7deb53aa729284a05f769a4c284c2d1" },
+    "CURVE_AXES.input-level": { "text": "Der Pegel, den ein Gain-Computer liest, der Eingang des statischen Gesetzes.", "by": "machine", "model": "draft-prose", "source": "2093b14de30a00d69f506a7d2d219513a6eac93eedb9e9bf31312db2e978cfa6" },
+    "CURVE_AXES.input-pitch": { "text": "Die Tonhöhe, die in einen Pitch-Effekt gespielt wird, Halbtonschritte von einem Ursprung, den der Host wählt.", "by": "machine", "model": "draft-prose", "source": "809289f78177c9920be5e221c39b7a426abbe79d4e07b971156b9019e5511f7d" },
+    "CURVE_AXES.level": { "text": "Ein Pegel relativ zum direkten Eingang: 0 dB ist der Pegel des Eingangs selbst, ein Tap oder ein Abklingen darunter negativ.", "by": "machine", "model": "draft-prose", "source": "04dcc90206b699da302b00168fac4d542b25f3c1bd3c6a5756d4ecaecb3fb190" },
+    "CURVE_AXES.magnitude": { "text": "Die Magnitude einer Antwort bei einer Frequenz: 0 dB ist Einheit, eine Verstärkung positiv, eine Absenkung negativ.", "by": "machine", "model": "draft-prose", "source": "d362489ce006922501a70944bc6d76daccf3e5291cf1b499617289edf740879e" },
+    "CURVE_AXES.modulation": { "text": "Die Ausgabe einer Modulationsquelle bei einer Phase, -1 bis +1, bevor die Tiefe sie skaliert.", "by": "machine", "model": "draft-prose", "source": "1bc73adf10f7559b4d7371c4deda44661e11f3ec87f61d4fff3dd6efbdaee8da" },
+    "CURVE_AXES.output-amplitude": { "text": "Die Ausgangsprobe des Shapers für eine Eingangsamplitude, linear, auf derselben vollen Skala.", "by": "machine", "model": "draft-prose", "source": "a516417a76d05b1dc9d9f18b079ef359e95eaef1424fce0f028ef0ca82af5e00" },
+    "CURVE_AXES.output-level": { "text": "Der Pegel, den das statische Gesetz für einen Eingangspegel liefert; die Diagonale ist keine Pegeländerung.", "by": "machine", "model": "draft-prose", "source": "458a10c245241a56b11777d51b3c7ce147c5b536b49047141af8349f30578072" },
+    "CURVE_AXES.output-pitch": { "text": "Die Tonhöhe, die der Effekt für eine Eingangs-Tonhöhe erzeugt, Halbtonschritte auf demselben Ursprung: eine unveränderte Zuordnung ist die Diagonale.", "by": "machine", "model": "draft-prose", "source": "82abeda24ce5e13651a0e5bbaf67e1aa6094a51f9ad42cebd10bb02fed67285b" },
+    "CURVE_AXES.phase": { "text": "Die Position innerhalb einer Periode einer Modulationsquelle, 0 bis 1.", "by": "machine", "model": "draft-prose", "source": "cd44dc0548511085e540503887e9dc1a494490c49058875e00c23ab116d0400f" },
+    "CURVE_KINDS.comb-response": { "text": "Die Kamm- oder Notch-Antwort des Wet-Pfads an der aktuellen Sweep-Position (Chorus, Flanger, Phaser, Doubler).", "by": "machine", "model": "draft-prose", "source": "7034422bf345da5637be30b67ec007851995ea22cee94bfd3ee5799e3dbe3266" },
+    "CURVE_KINDS.decay-envelope": { "text": "Die Abklinghüllkurve eines Hallraums nach einem Impuls.", "by": "machine", "model": "draft-prose", "source": "8a5e5982dc5ce11c8afb4e55af25d8089417ee578a9078be5f52beeb4b042cb2" },
+    "CURVE_KINDS.delay-taps": { "text": "Die Taps und Wiederholungen eines Delays, jeweils eine Linie zu ihrer Zeit und ihrem Pegel.", "by": "machine", "model": "draft-prose", "source": "9d54987606b03dde18734bc7738c18da739f3bc2f9b1060418457f88cf8bfb6b" },
+    "CURVE_KINDS.dynamics-curve": { "text": "Das statische Gesetz eines Gates oder Kompressors, Eingangspegel zu Ausgangspegel, mit dem Live-Anzeiger.", "by": "machine", "model": "draft-prose", "source": "fcd408605567abd18386bbea356039d917c4c4ad9a71400b729d80ab943d7ba4" },
+    "CURVE_KINDS.eq-curve": { "text": "Die summierte Magnitudenantwort eines EQs über den logarithmischen Frequenzbereich.", "by": "machine", "model": "draft-prose", "source": "89978b9cef2ff799677c56864874375c907cd1a36221a3e5223fc8ccf48fab1d" },
+    "CURVE_KINDS.interval-map": { "text": "Eine Zuordnung eines Pitch-Effekts von der Eingangs- zur Ausgangshöhe.", "by": "machine", "model": "draft-prose", "source": "510f2e74cfb5b6342825e61891affd7093775bd465c5b009eba582c709d1a337" },
+    "CURVE_KINDS.modulation-shape": { "text": "Eine Modulationsquelle über eine Periode (Tremolo, Rotary).", "by": "machine", "model": "draft-prose", "source": "dcbf61656f9f7da1d8cbd1ca1027e2f18e00594e707e1f2e61fabc7674f2b0bb" },
+    "CURVE_KINDS.transfer-curve": { "text": "Die Übertragungsfunktion eines speicherlosen Shapers, Eingangsprobe zu Ausgangsprobe über die volle Skala.", "by": "machine", "model": "draft-prose", "source": "c22bbb9d662547b696f4ac202e3051aac06168bc7c4adc48bd1c90badc4de945" }
+  }
+}

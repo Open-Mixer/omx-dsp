@@ -14,6 +14,10 @@ rtabandsvectors=${datadir}/omxdsp/rta-bands-vectors.json
 rtadeltavectors=${datadir}/omxdsp/rta-delta-vectors.json
 # the HRP placement's and stepping's vectors (test/analysis/fixtures/hrp_place.vectors), the values a binding of omx_hrp_place is held to
 hrpplacevectors=${datadir}/omxdsp/hrp-place-vectors
+# the correctly rounded log10f the golden builds of a consumer wrap log10f with (test/support: log10f_cr.h, log10f_subst.h)
+testsupportdir=${datadir}/omxdsp/test-support
+# the ThreadSanitizer gate (tools/tsan-gate.sh) a consumer's thread tests run under, with its sabotage arm
+tsangate=${datadir}/omxdsp/tsan-gate.sh
 
 Name: @NAME@
 Description: DSP primitives and effect kernels of OpenMixer, linked statically (@FLAVOUR@)
