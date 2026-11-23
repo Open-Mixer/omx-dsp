@@ -10,7 +10,7 @@
  * plain value, the unit the description gives that role (CURVE_UNITS) and, for an EQ band, the shape the
  * caller resolved (CURVE_SHAPES). The request is already bound: the function parses no label and reads no
  * descriptor. It converts each value once (`coef` to dB through omx_lin_to_db(), `oct` to Q through
- * omx_eq_octaves_q(), `khz` to Hz) and answers ascending points:
+ * omx_eq_octaves_q(), `kHz` to Hz) and answers ascending points:
  *
  * - `eq_response`: exactly omx_eq_curve_db() over the bands the terms make, by omx_eq_curve_bands()'s rule (a
  *   band switched off is not drawn, the head filters as Butterworth sections), x in Hz, y in dB, the bands'
@@ -150,10 +150,10 @@ static const char *const OMX_CURVE_ROLE_WORDS[OMX_CURVE_ROLES_COUNT] = {
     "drive",     "tone",      "model",     "mix",     "output",     "time",       "feedback",   "pingpong",
     "sync",      "division",  "size",      "decay",   "algorithm", "predelay",  "damping",    "width",      "low_cut",
     "high_cut"};
-/** @brief The wire words of CURVE_UNITS, by value: the param-contract extension's unit tokens. */
-static const char *const OMX_CURVE_UNIT_WORDS[OMX_CURVE_UNITS_COUNT] = {"hz",   "khz", "db",   "dbfs", "dbu",
-                                                                        "lufs", "coef", "oct", "none", "ratio",
-                                                                        "pc", "ms", "s"};
+/** @brief The wire words of CURVE_UNITS, by value: the PARAM_UNITS ids themselves, never another spelling. */
+static const char *const OMX_CURVE_UNIT_WORDS[OMX_CURVE_UNITS_COUNT] = {"Hz",   "kHz",  "dB",  "dBFS", "dBu",
+                                                                        "LUFS", "coef", "oct", "none", "ratio",
+                                                                        "percent", "ms", "s"};
 /** @brief The wire words of CURVE_LEGS, by value: the leg a delay's tap lands on. */
 static const char *const OMX_CURVE_LEG_WORDS[OMX_CURVE_LEGS_COUNT] = {"both", "left", "right"};
 /** @brief The wire words of CURVE_SHAPES, by value; `unshaped` is spelt `-`. */
@@ -179,9 +179,9 @@ static inline int omx_curve_word(const char *const *words, uint32_t n, const cha
 /**
  * @brief Whether `role` takes a value in `unit`: the conversions omx_curve_points() makes, and no other.
  *
- * A frequency in `hz` or `khz`; a band's gain in `db` or `coef`; a band's Q in `none` or `coef` (a Q) or `oct`
- * (a bandwidth); a choice or a switch in `none`; a head filter's slope in `none` or `db`, dB per octave; a
- * threshold in any level unit, read as dB; a ratio in `ratio` or `coef`; the other gain computer terms in `db`.
+ * A frequency in `Hz` or `kHz`; a band's gain in `dB` or `coef`; a band's Q in `none` or `coef` (a Q) or `oct`
+ * (a bandwidth); a choice or a switch in `none`; a head filter's slope in `none` or `dB`, dB per octave; a
+ * threshold in any level unit, read as dB; a ratio in `ratio` or `coef`; the other gain computer terms in `dB`.
  * @param role The role.
  * @param unit The unit.
  * @return 1 when the role accepts the unit, else 0.
@@ -193,9 +193,9 @@ static inline int omx_curve_unit_accepted(enum omx_curve_roles role, enum omx_cu
   case OMX_CURVE_ROLES_BAND_FREQ:
   case OMX_CURVE_ROLES_HPF_FREQ:
   case OMX_CURVE_ROLES_LPF_FREQ:
-    return unit == OMX_CURVE_UNITS_HZ || unit == OMX_CURVE_UNITS_KHZ;
+    return unit == OMX_CURVE_UNITS_HZ || unit == OMX_CURVE_UNITS_K_HZ;
   case OMX_CURVE_ROLES_BAND_GAIN:
-    return unit == OMX_CURVE_UNITS_DB || unit == OMX_CURVE_UNITS_COEF;
+    return unit == OMX_CURVE_UNITS_D_B || unit == OMX_CURVE_UNITS_COEF;
   case OMX_CURVE_ROLES_BAND_Q:
     return unit == OMX_CURVE_UNITS_NONE || unit == OMX_CURVE_UNITS_COEF || unit == OMX_CURVE_UNITS_OCT;
   case OMX_CURVE_ROLES_BAND_TYPE:
@@ -205,9 +205,9 @@ static inline int omx_curve_unit_accepted(enum omx_curve_roles role, enum omx_cu
     return unit == OMX_CURVE_UNITS_NONE;
   case OMX_CURVE_ROLES_HPF_SLOPE:
   case OMX_CURVE_ROLES_LPF_SLOPE:
-    return unit == OMX_CURVE_UNITS_NONE || unit == OMX_CURVE_UNITS_DB;
+    return unit == OMX_CURVE_UNITS_NONE || unit == OMX_CURVE_UNITS_D_B;
   case OMX_CURVE_ROLES_THRESHOLD:
-    return unit == OMX_CURVE_UNITS_DB || unit == OMX_CURVE_UNITS_DBFS || unit == OMX_CURVE_UNITS_DBU ||
+    return unit == OMX_CURVE_UNITS_D_B || unit == OMX_CURVE_UNITS_D_BFS || unit == OMX_CURVE_UNITS_D_BU ||
            unit == OMX_CURVE_UNITS_LUFS;
   case OMX_CURVE_ROLES_RATIO:
     return unit == OMX_CURVE_UNITS_RATIO || unit == OMX_CURVE_UNITS_COEF;
@@ -218,7 +218,7 @@ static inline int omx_curve_unit_accepted(enum omx_curve_roles role, enum omx_cu
   case OMX_CURVE_ROLES_KNEE_END:
   case OMX_CURVE_ROLES_DRIVE:
   case OMX_CURVE_ROLES_OUTPUT:
-    return unit == OMX_CURVE_UNITS_DB;
+    return unit == OMX_CURVE_UNITS_D_B;
   case OMX_CURVE_ROLES_TONE:
     return unit == OMX_CURVE_UNITS_NONE || unit == OMX_CURVE_UNITS_COEF;
   case OMX_CURVE_ROLES_MODEL:
@@ -229,7 +229,7 @@ static inline int omx_curve_unit_accepted(enum omx_curve_roles role, enum omx_cu
   case OMX_CURVE_ROLES_DAMPING:
   case OMX_CURVE_ROLES_WIDTH:
     /* a share: the drive serves its mix in percent, the delay and the reverb theirs as a plain 0..1 */
-    return unit == OMX_CURVE_UNITS_PC || unit == OMX_CURVE_UNITS_NONE || unit == OMX_CURVE_UNITS_COEF;
+    return unit == OMX_CURVE_UNITS_PERCENT || unit == OMX_CURVE_UNITS_NONE || unit == OMX_CURVE_UNITS_COEF;
   case OMX_CURVE_ROLES_TIME:
   case OMX_CURVE_ROLES_DECAY:
   case OMX_CURVE_ROLES_PREDELAY:
@@ -241,7 +241,7 @@ static inline int omx_curve_unit_accepted(enum omx_curve_roles role, enum omx_cu
     return unit == OMX_CURVE_UNITS_NONE;
   case OMX_CURVE_ROLES_LOW_CUT:
   case OMX_CURVE_ROLES_HIGH_CUT:
-    return unit == OMX_CURVE_UNITS_HZ || unit == OMX_CURVE_UNITS_KHZ;
+    return unit == OMX_CURVE_UNITS_HZ || unit == OMX_CURVE_UNITS_K_HZ;
   }
   return 0;
 }
@@ -256,7 +256,7 @@ static inline int omx_curve_unit_accepted(enum omx_curve_roles role, enum omx_cu
  */
 static inline double omx_curve_term_value(const struct omx_curve_term *t) {
   switch (t->unit) {
-  case OMX_CURVE_UNITS_KHZ: return t->value * 1000.0;
+  case OMX_CURVE_UNITS_K_HZ: return t->value * 1000.0;
   case OMX_CURVE_UNITS_COEF:
     return t->role == OMX_CURVE_ROLES_BAND_GAIN ? (double)omx_lin_to_db((float)t->value) : t->value;
   case OMX_CURVE_UNITS_OCT: return omx_eq_octaves_q(t->value);
@@ -274,7 +274,7 @@ static inline double omx_curve_term_value(const struct omx_curve_term *t) {
  * @thread control
  */
 static inline double omx_curve_share_value(const struct omx_curve_term *t) {
-  return t->unit == OMX_CURVE_UNITS_PC ? t->value / 100.0 : t->value;
+  return t->unit == OMX_CURVE_UNITS_PERCENT ? t->value / 100.0 : t->value;
 }
 
 /**
@@ -337,7 +337,7 @@ static inline int omx_curve_pass(const struct omx_curve_request *rq, enum omx_cu
   if (!*present) return OMX_CURVE_OK;
   /* the slope in dB per octave: from the role's declared enumeration (the caller resolves a choice to it) or a
    * control in dB; a bare choice value is no slope */
-  if (!f || !s || s->unit != OMX_CURVE_UNITS_DB) return OMX_CURVE_TERM_MISSING;
+  if (!f || !s || s->unit != OMX_CURVE_UNITS_D_B) return OMX_CURVE_TERM_MISSING;
   const double slope = omx_curve_term_value(s);
   if (slope != 12.0 && slope != 24.0) return OMX_CURVE_KIND_UNKNOWN;
   out->on = on ? omx_curve_term_value(on) != 0.0 : 1;

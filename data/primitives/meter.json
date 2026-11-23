@@ -59,15 +59,8 @@
     "source": {
       "impl": "include/omxdsp/mix/omx_meter_view.h#omx_meter_view_unit_of"
     },
-    "doc": "The unit a meter's values are in, spelt as its label: dBFS for a sample peak, dBTP for a true peak, LUFS for a loudness, LU for a loudness range, dB for a gain reduction. The scale a surface draws is captioned with it.",
+    "doc": "The unit a meter's values are in, its PARAM_UNITS id (a surface captions the scale with the id's x-symbol): dBFS for a sample peak, dBTP for a true peak, LUFS for a loudness, LU for a loudness range, dB for a gain reduction.",
     "ids": [
-      "dbfs",
-      "dbtp",
-      "lufs",
-      "lu",
-      "db"
-    ],
-    "labels": [
       "dBFS",
       "dBTP",
       "LUFS",

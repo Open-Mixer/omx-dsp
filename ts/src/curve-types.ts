@@ -17,7 +17,7 @@ export const CURVE_WORDS = {
   displays: CURVE_DISPLAYS.map(wordOf),
   families: CURVE_FAMILIES.map(wordOf),
   roles: CURVE_ROLES.map(wordOf),
-  units: CURVE_UNITS.map(wordOf),
+  units: [...CURVE_UNITS], // the PARAM_UNITS ids themselves, never re-spelt (#122)
   shapes: CURVE_SHAPES.map(wordOf),
   legs: CURVE_LEGS.map(wordOf),
   /** fbs-fixed and fbs-live: the origins are spelt with a hyphen */

@@ -127,7 +127,7 @@ static void arm_curve_time(void) {
 
   /* 1. THE DELAY IS THE KERNEL ON AN IMPULSE: 120 ms, feedback 0.5, mix 0.5, no tone, both legs. */
   {
-    const struct omx_curve_term t[] = {CTM_TERM(TIME, 120.0, MS), CTM_TERM(FEEDBACK, 0.5, NONE), CTM_TERM(MIX, 50.0, PC),
+    const struct omx_curve_term t[] = {CTM_TERM(TIME, 120.0, MS), CTM_TERM(FEEDBACK, 0.5, NONE), CTM_TERM(MIX, 50.0, PERCENT),
                                        CTM_TERM(TONE, 0.0, NONE), CTM_TERM(PINGPONG, 0.0, NONE)};
     const uint32_t n = ctm_ask(OMX_CURVE_FAMILIES_DELAY, t, 5u, 0.0, 16u, x, y, st, &ns, &code);
     ok(code == OMX_CURVE_OK && n == 0u, "a delay answers no point", code, n);
@@ -151,7 +151,7 @@ static void arm_curve_time(void) {
 
   /* 2. PING-PONG on a left-only impulse: the echoes alternate, each on its own leg at the train's level. */
   {
-    const struct omx_curve_term t[] = {CTM_TERM(TIME, 0.1, S), CTM_TERM(FEEDBACK, 60.0, PC), CTM_TERM(MIX, 1.0, COEF),
+    const struct omx_curve_term t[] = {CTM_TERM(TIME, 0.1, S), CTM_TERM(FEEDBACK, 60.0, PERCENT), CTM_TERM(MIX, 1.0, COEF),
                                        CTM_TERM(PINGPONG, 1.0, NONE)};
     ctm_ask(OMX_CURVE_FAMILIES_DELAY, t, 4u, 0.0, 16u, x, y, st, &ns, &code);
     ok(code == OMX_CURVE_OK && ns >= 6u, "a ping-pong train at mix 1 (no dry tap: 1 - mix is silence)", code, ns);
@@ -209,7 +209,7 @@ static void arm_curve_time(void) {
     ok(code == OMX_CURVE_TERM_MISSING, "no feedback: termMissing", code, OMX_CURVE_TERM_MISSING);
     ctm_ask(OMX_CURVE_FAMILIES_DELAY, t, 3u, 0.0, 16u, x, y, NULL, &ns, &code);
     ok(code == OMX_CURVE_ROOM, "a delay with no room for its stems: room", code, OMX_CURVE_ROOM);
-    const struct omx_curve_term db[] = {CTM_TERM(TIME, 120.0, MS), CTM_TERM(FEEDBACK, 0.5, DB)};
+    const struct omx_curve_term db[] = {CTM_TERM(TIME, 120.0, MS), CTM_TERM(FEEDBACK, 0.5, D_B)};
     ctm_ask(OMX_CURVE_FAMILIES_DELAY, db, 2u, 0.0, 16u, x, y, st, &ns, &code);
     ok(code == OMX_CURVE_UNIT_REFUSED, "a feedback in dB is no share: unitRefused", code, OMX_CURVE_UNIT_REFUSED);
     struct omx_curve_request wrong = {OMX_CURVE_DISPLAYS_TRANSFER_CURVE, OMX_CURVE_FAMILIES_DELAY, CTM_RATE, 16u, 0, 0.0, 0.0, t, 3u, 0, 0.0};
@@ -269,7 +269,7 @@ static void arm_curve_time(void) {
 
   /* 7. A DECAY SAID OUTRIGHT, the mix's level, mix 0, and the absences by name. */
   {
-    const struct omx_curve_term t[] = {CTM_TERM(DECAY, 2.0, S), CTM_TERM(MIX, 25.0, PC)};
+    const struct omx_curve_term t[] = {CTM_TERM(DECAY, 2.0, S), CTM_TERM(MIX, 25.0, PERCENT)};
     const uint32_t n = ctm_ask(OMX_CURVE_FAMILIES_REVERB, t, 2u, 0.0, 5u, x, y, st, &ns, &code);
     ok(code == OMX_CURVE_OK && n == 5u && x[4] == 2000.0 && fabs(y[0] - ctm_db(0.25)) < 1e-12 && fabs(y[2] - (ctm_db(0.25) - 30.0)) < 1e-9,
        "a decay of 2 s: -12 dB at 0 (mix 0.25), 30 dB further at 1 s, the floor at 2 s", y[2], ctm_db(0.25) - 30.0);
