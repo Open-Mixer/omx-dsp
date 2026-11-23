@@ -22,7 +22,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <omxcontract/omx_contract_limits.h>
+#include <omxdsp/omxdsp_definitions.h>
 #include <omxdsp/analysis/omx_fbs_lv2.h>
 #include <omxdsp/analysis/omx_hrp_lv2.h>
 

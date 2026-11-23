@@ -86,7 +86,7 @@
     "source": {
       "impl": "include/omxdsp/omx_curve.h#omx_curve_unit_accepted"
     },
-    "doc": "The units a curve term's value may come in, the param-contract extension's unit tokens the served description gives a role. omx_curve_points converts once: `coef` to dB for a gain, `oct` to Q for a bandwidth, `khz` to Hz; a level in `db`, `dbfs`, `dbu` or `lufs` is read as dB from the threshold's own scale; `none` is a plain number, a switch or a choice; `ratio` a ratio. A unit its role does not accept is refused. `pc` (since 0.32.4) is percent, the drive's `mix`. `ms` and `s` (since 0.32.4) are a time, read as ms.",
+    "doc": "The units a curve term's value may come in, the param-contract extension's unit tokens the served description gives a role. omx_curve_points converts once: `coef` to dB for a gain, `oct` to Q for a bandwidth, `khz` to Hz; a level in `db`, `dbfs`, `dbu` or `lufs` is read as dB from the threshold's own scale; `none` is a plain number, a switch or a choice; `ratio` a ratio. A unit its role does not accept is refused. `pc` (since 0.32.4) is percent, the drive's `mix`. `ms` and `s` (since 0.32.4) are a time, read as ms. `standard` names the PARAM_UNITS const each word stands for (`hz` is Hz, `pc` is percent, `coef` is coef): a host takes a standard id to its curve word through that table, never a copy of its own.",
     "ids": [
       "hz",
       "khz",
@@ -99,6 +99,21 @@
       "none",
       "ratio",
       "pc",
+      "ms",
+      "s"
+    ],
+    "standard": [
+      "Hz",
+      "kHz",
+      "dB",
+      "dBFS",
+      "dBu",
+      "LUFS",
+      "coef",
+      "oct",
+      "none",
+      "ratio",
+      "percent",
       "ms",
       "s"
     ]
@@ -206,5 +221,211 @@
       "left",
       "right"
     ]
+  },
+  "CURVE_AXES": {
+    "kind": "words",
+    "since": "3.1.0",
+    "doc": "The axes a curve kind is drawn on, each with its unit and how a host draws it (docs/curves.md). A curve's values are in these units, so the drawn values can be held equal to the closed form a kernel's controls give.",
+    "why": "A curve kind names its axes (the remaining-FX wave, FreeMixer/omx-contract#107): an axis is declared once and every kind drawn on it reads the same unit and scale.",
+    "words": {
+      "frequency": {
+        "word": "frequency",
+        "unit": "Hz",
+        "scale": "log",
+        "doc": "Frequency, on the points of EQ_CURVE_GRID where the curve is a response.",
+        "text": {
+          "en": "Frequency, on the points of EQ_CURVE_GRID where the curve is a response."
+        }
+      },
+      "magnitude": {
+        "word": "magnitude",
+        "unit": "dB",
+        "scale": "linear",
+        "doc": "The magnitude of a response at a frequency: 0 dB is unity, a boost positive, a cut negative.",
+        "text": {
+          "en": "The magnitude of a response at a frequency: 0 dB is unity, a boost positive, a cut negative."
+        }
+      },
+      "inputLevel": {
+        "word": "input-level",
+        "unit": "dBFS",
+        "scale": "linear",
+        "doc": "The level a gain computer reads, the static law's input.",
+        "text": {
+          "en": "The level a gain computer reads, the static law's input."
+        }
+      },
+      "outputLevel": {
+        "word": "output-level",
+        "unit": "dBFS",
+        "scale": "linear",
+        "doc": "The level the static law gives for an input level; the diagonal is no gain change.",
+        "text": {
+          "en": "The level the static law gives for an input level; the diagonal is no gain change."
+        }
+      },
+      "inputAmplitude": {
+        "word": "input-amplitude",
+        "unit": "",
+        "scale": "linear",
+        "doc": "A memoryless shaper's input sample, linear, -1 to +1 full scale: bipolar, so an even/odd asymmetry shows.",
+        "text": {
+          "en": "A memoryless shaper's input sample, linear, -1 to +1 full scale: bipolar, so an even/odd asymmetry shows."
+        }
+      },
+      "outputAmplitude": {
+        "word": "output-amplitude",
+        "unit": "",
+        "scale": "linear",
+        "doc": "The shaper's output sample for an input amplitude, linear, on the same full scale.",
+        "text": {
+          "en": "The shaper's output sample for an input amplitude, linear, on the same full scale."
+        }
+      },
+      "delayTime": {
+        "word": "delay-time",
+        "unit": "ms",
+        "scale": "linear",
+        "doc": "The time after the dry sound at which a delay's tap or repeat sounds.",
+        "text": {
+          "en": "The time after the dry sound at which a delay's tap or repeat sounds."
+        }
+      },
+      "decayTime": {
+        "word": "decay-time",
+        "unit": "s",
+        "scale": "linear",
+        "doc": "The time after an impulse over which a reverb's energy decays.",
+        "text": {
+          "en": "The time after an impulse over which a reverb's energy decays."
+        }
+      },
+      "level": {
+        "word": "level",
+        "unit": "dB",
+        "scale": "linear",
+        "doc": "A level relative to the dry input: 0 dB is the input's own, a tap or a decay below it negative.",
+        "text": {
+          "en": "A level relative to the dry input: 0 dB is the input's own, a tap or a decay below it negative."
+        }
+      },
+      "phase": {
+        "word": "phase",
+        "unit": "",
+        "scale": "linear",
+        "doc": "The position within one period of a modulation source, 0 to 1.",
+        "text": {
+          "en": "The position within one period of a modulation source, 0 to 1."
+        }
+      },
+      "modulation": {
+        "word": "modulation",
+        "unit": "",
+        "scale": "linear",
+        "doc": "A modulation source's output at a phase, -1 to +1, before the depth scales it.",
+        "text": {
+          "en": "A modulation source's output at a phase, -1 to +1, before the depth scales it."
+        }
+      },
+      "inputPitch": {
+        "word": "input-pitch",
+        "unit": "st",
+        "scale": "linear",
+        "doc": "The pitch played into a pitch effect, semitones from an origin the host picks.",
+        "text": {
+          "en": "The pitch played into a pitch effect, semitones from an origin the host picks."
+        }
+      },
+      "outputPitch": {
+        "word": "output-pitch",
+        "unit": "st",
+        "scale": "linear",
+        "doc": "The pitch the effect sounds for an input pitch, semitones on the same origin: an unshifted map is the diagonal.",
+        "text": {
+          "en": "The pitch the effect sounds for an input pitch, semitones on the same origin: an unshifted map is the diagonal."
+        }
+      }
+    }
+  },
+  "CURVE_KINDS": {
+    "kind": "words",
+    "since": "3.1.0",
+    "doc": "The kinds of picture a plugin's panel section draws and a console's card shows, each with the two axes it is drawn on (docs/curves.md). A kernel file and a plugin declaration name a kind by its word; a host keeps only its kind-to-drawing map. Append-only: a kind is never renamed, moved or removed while a reader draws it.",
+    "why": "Declared once here and read by the omx-plugins schema and the console's curve registry (the remaining-FX wave, FreeMixer/omx-contract#107). The first five are the omx-plugins schema's graph kinds as they were; comb-response, modulation-shape and interval-map are the kinds the wave adds for the modulation and pitch plugins. modulation-shape is the picture the schema's unused lfo stood for.",
+    "axes": "CURVE_AXES",
+    "words": {
+      "eqCurve": {
+        "word": "eq-curve",
+        "x": "frequency",
+        "y": "magnitude",
+        "doc": "An EQ's summed magnitude response over log frequency.",
+        "text": {
+          "en": "An EQ's summed magnitude response over log frequency."
+        }
+      },
+      "dynamicsCurve": {
+        "word": "dynamics-curve",
+        "x": "input-level",
+        "y": "output-level",
+        "doc": "A gate's or a compressor's static law, input level to output level, with the live needle.",
+        "text": {
+          "en": "A gate's or a compressor's static law, input level to output level, with the live needle."
+        }
+      },
+      "transferCurve": {
+        "word": "transfer-curve",
+        "x": "input-amplitude",
+        "y": "output-amplitude",
+        "doc": "A memoryless shaper's transfer, input sample to output sample over full scale.",
+        "text": {
+          "en": "A memoryless shaper's transfer, input sample to output sample over full scale."
+        }
+      },
+      "delayTaps": {
+        "word": "delay-taps",
+        "x": "delay-time",
+        "y": "level",
+        "doc": "A delay's taps and repeats, each a line at its time and level.",
+        "text": {
+          "en": "A delay's taps and repeats, each a line at its time and level."
+        }
+      },
+      "decayEnvelope": {
+        "word": "decay-envelope",
+        "x": "decay-time",
+        "y": "level",
+        "doc": "A reverb's decay envelope after an impulse.",
+        "text": {
+          "en": "A reverb's decay envelope after an impulse."
+        }
+      },
+      "combResponse": {
+        "word": "comb-response",
+        "x": "frequency",
+        "y": "magnitude",
+        "doc": "The wet path's comb or notch response at the current sweep position (chorus, flanger, phaser, doubler).",
+        "text": {
+          "en": "The wet path's comb or notch response at the current sweep position (chorus, flanger, phaser, doubler)."
+        }
+      },
+      "modulationShape": {
+        "word": "modulation-shape",
+        "x": "phase",
+        "y": "modulation",
+        "doc": "A modulation source over one period (tremolo, rotary).",
+        "text": {
+          "en": "A modulation source over one period (tremolo, rotary)."
+        }
+      },
+      "intervalMap": {
+        "word": "interval-map",
+        "x": "input-pitch",
+        "y": "output-pitch",
+        "doc": "A pitch effect's map from the input pitch to the output pitch.",
+        "text": {
+          "en": "A pitch effect's map from the input pitch to the output pitch."
+        }
+      }
+    }
   }
 }

@@ -13,10 +13,10 @@ import { test } from 'node:test';
 import { loadData, resolveData } from './oc.mjs';
 import { renderC } from './oc.mjs';
 import { renderJson } from './oc.mjs';
-import { UNION } from './helpers.mjs';
+import { UNION, withoutMemberDocs } from './helpers.mjs';
 
 const json = (dir = UNION) => JSON.parse(renderJson(resolveData(loadData(dir)), '0.0.0')[0].text);
-const header = (dir = UNION) => renderC(resolveData(loadData(dir)))[0].text;
+const header = (dir = UNION) => withoutMemberDocs(renderC(resolveData(loadData(dir)))[0].text);
 
 // omx-dsp's enum omx_eq_kind order, which is core's BiquadKind order.
 const KINDS = ['peaking', 'lowShelf', 'highShelf', 'highpass', 'lowpass', 'notch', 'bandpass', 'allpass1', 'allpass2'];

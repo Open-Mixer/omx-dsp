@@ -126,5 +126,25 @@ mkdir -p "$S/dep/packaging"; cp "$HERE/packaging/deps.txt" "$S/dep/packaging/"
 sed -i -E "/^omx-contract-devel/ s/($floor)/\1 4/" "$S/dep/packaging/deps.txt"
 [ -n "$(deps_ceiling "$S/dep")" ] || fail "the scan does not see a deps.txt ceiling planted; it would prove nothing"
 
+# The Makefile finds the contract whenever a goal compiles, also beside a goal that needs none
+# (`make copy-check test-parallel`): an empty CONTRACT_INC made `-isystem` swallow the next flag
+# (-c, -o, -DOMX_CONTRACTS). A goal list of contract-free goals alone still asks for nothing.
+# -B: an object already built still prints its compile; env -u: a parent make's CONTRACT_INC and flags stay out.
+isys() {  # makefile goal...: the -isystem argument the compile of omx_align_fit.o would get
+  mf="$1"; shift
+  env -u CONTRACT_INC -u MAKEFLAGS -u MFLAGS -u MAKELEVEL OMX_CONTRACT_INC="$S/include" make --no-print-directory -n -B -C "$HERE" -f "$mf" "$@" 2>/dev/null \
+    | sed -n 's/.*-isystem \([^ ]*\) .*src\/omx_align_fit\.c.*/\1/p' | head -n 1
+}
+got="$(isys "$HERE/Makefile" copy-check build/omx_align_fit.o)"
+[ "$got" = "$S/include" ] || fail "make copy-check build/omx_align_fit.o compiles with -isystem '$got', not $S/include"
+env -u CONTRACT_INC -u MAKEFLAGS -u MFLAGS -u MAKELEVEL OMX_CONTRACT_INC="$S/missing" make --no-print-directory -n -B -C "$HERE" copy-check >/dev/null 2>&1 \
+  || fail "make copy-check alone asked for the contract (it compiles nothing against it)"
+# Positive control: the goal test that skipped the lookup when any contract-free goal was named.
+sed 's/^ifneq (\$(if \$(MAKECMDGOALS),\$(filter-out \$(NO_CONTRACT_GOALS),\$(MAKECMDGOALS)),all),)$/ifeq ($(filter $(NO_CONTRACT_GOALS),$(MAKECMDGOALS)),)/' \
+  "$HERE/Makefile" > "$S/Makefile.goals"
+! cmp -s "$HERE/Makefile" "$S/Makefile.goals" || fail "the goal-test sabotage did not apply; it would prove nothing"
+got="$(isys "$S/Makefile.goals" copy-check build/omx_align_fit.o)"
+[ "$got" != "$S/include" ] || fail "the check does not see the contract lookup skipped beside copy-check; it would prove nothing"
+
 [ "$bad" = 0 ] || exit 1
-echo "contract-include-selftest: >= $floor, floors only, agrees in the spec, debian/control and omxdsp.pc.in; floor and newer taken, below the floor and nothing refused naming the package; no download path, no pins file"
+echo "contract-include-selftest: >= $floor, floors only, agrees in the spec, debian/control and omxdsp.pc.in; floor and newer taken, below the floor and nothing refused naming the package; no download path, no pins file; the Makefile finds it beside a contract-free goal"

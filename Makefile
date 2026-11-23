@@ -135,8 +135,10 @@ endif
 # The limits come from Open-Mixer/omx-contract: the installed omx-contract-devel / libomx-contract-dev
 # at or above the floor packaging/omx-dsp.spec declares, found by pkg-config in tools/contract-include.sh
 # (nothing is downloaded); this tree commits no copy of them. Every sub-script that compiles gets the
-# directory as CONTRACT_INC.
-ifeq ($(filter install-confined version clean docs docs-check docs-baseline docs-sabotage public-sources private-refs exports copy-check deps deps-check,$(MAKECMDGOALS)),)
+# directory as CONTRACT_INC. The goals below compile nothing against it; it is found unless every goal
+# named is one of them (no goal is `all`, which needs it), so `make copy-check test-parallel` finds it too.
+NO_CONTRACT_GOALS = install-confined version clean docs docs-check docs-baseline docs-sabotage public-sources private-refs exports copy-check deps deps-check
+ifneq ($(if $(MAKECMDGOALS),$(filter-out $(NO_CONTRACT_GOALS),$(MAKECMDGOALS)),all),)
 CONTRACT_INC := $(shell sh tools/contract-include.sh)
 ifeq ($(CONTRACT_INC),)
 $(error tools/contract-include.sh found no omx-contract: see its message above)
@@ -1174,6 +1176,8 @@ install: $(LIBS_ALL) $(PC_ALL) $(EXPORTS) install-rt-gate install-rta-read
 	@test -n "$(CONTRACTDIR)" && test -f "$(CONTRACT_INSTALLER)" && test -n "$(CONTRACT_MAJOR)" || \
 	  { echo "install: the installed omx-contract names no contract directory, installer or schema major (contractdir and datadir of omx-contract.pc): data/ cannot be installed" >&2; exit 1; }
 	sh $(CONTRACT_INSTALLER) omx-dsp $(VERSION) $(CONTRACT_MAJOR) data $(DESTDIR)$(CONTRACTDIR) data
+	install -d $(DESTDIR)$(DATADIR)/omx-dsp/catalogs
+	install -m 0644 catalogs/*.json $(DESTDIR)$(DATADIR)/omx-dsp/catalogs/
 	install -m 0644 $(EXPORTS) $(DESTDIR)$(DATADIR)/omxdsp/
 	install -m 0644 test/analysis/hrp_peaking_corpus.h $(DESTDIR)$(DATADIR)/omxdsp/
 	install -m 0644 vectors/meter-view.json $(DESTDIR)$(DATADIR)/omxdsp/meter-view-vectors.json

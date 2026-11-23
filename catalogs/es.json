@@ -1,0 +1,29 @@
+{
+  "$schema": "../schema/omx-contract.schema.json#/$defs/catalog",
+  "kind": "catalog",
+  "lang": "es",
+  "owner": "omx-dsp",
+  "messages": {
+    "CURVE_AXES.decay-time": { "text": "El tiempo después de un impulso durante el cual decae la energía de una reverberación.", "by": "machine", "model": "draft-prose", "source": "c61d02b2a49950786732f93e77123b392fe6e9319fb99cd8d3103c0e8c4543d1" },
+    "CURVE_AXES.delay-time": { "text": "El tiempo después del sonido directo en el que suena un retardo o repetición.", "by": "machine", "model": "draft-prose", "source": "2c054dfb767a109449e3b58a146d64fa052c45596308502d31814573caef5e99" },
+    "CURVE_AXES.frequency": { "text": "Frecuencia, en los puntos de la `EQ_CURVE_GRID` donde la curva es una respuesta.", "by": "machine", "model": "draft-prose", "source": "cfbfc3fdba35c36e017bd594623ec3901d040a12889ed9b56ab46ab71ca73059" },
+    "CURVE_AXES.input-amplitude": { "text": "Una muestra de entrada de un modelador sin memoria, lineal, de -1 a +1 a escala completa: bipolar, por lo que se muestra una asimetría par/impar.", "by": "machine", "model": "draft-prose", "source": "fd009d644ce77e5d695221a746097ee7d7deb53aa729284a05f769a4c284c2d1" },
+    "CURVE_AXES.input-level": { "text": "El nivel que lee un ordenador de ganancia, la entrada de la ley estática.", "by": "machine", "model": "draft-prose", "source": "2093b14de30a00d69f506a7d2d219513a6eac93eedb9e9bf31312db2e978cfa6" },
+    "CURVE_AXES.input-pitch": { "text": "El tono que se reproduce en un efecto de tono, semitonos a partir de un origen que elige el host.", "by": "machine", "model": "draft-prose", "source": "809289f78177c9920be5e221c39b7a426abbe79d4e07b971156b9019e5511f7d" },
+    "CURVE_AXES.level": { "text": "Un nivel relativo a la entrada directa: 0 dB es la propia entrada, un retardo o un decaimiento por debajo de ella negativo.", "by": "machine", "model": "draft-prose", "source": "04dcc90206b699da302b00168fac4d542b25f3c1bd3c6a5756d4ecaecb3fb190" },
+    "CURVE_AXES.magnitude": { "text": "La magnitud de una respuesta a una frecuencia: 0 dB es la unidad, un realce positivo, un corte negativo.", "by": "machine", "model": "draft-prose", "source": "d362489ce006922501a70944bc6d76daccf3e5291cf1b499617289edf740879e" },
+    "CURVE_AXES.modulation": { "text": "La salida de una fuente de modulación en una fase, de -1 a +1, antes de que la profundidad la escale.", "by": "machine", "model": "draft-prose", "source": "1bc73adf10f7559b4d7371c4deda44661e11f3ec87f61d4fff3dd6efbdaee8da" },
+    "CURVE_AXES.output-amplitude": { "text": "La muestra de salida del modelador para una amplitud de entrada, lineal, en la misma escala completa.", "by": "machine", "model": "draft-prose", "source": "a516417a76d05b1dc9d9f18b079ef359e95eaef1424fce0f028ef0ca82af5e00" },
+    "CURVE_AXES.output-level": { "text": "El nivel que da la ley estática para un nivel de entrada; la diagonal es sin cambio de ganancia.", "by": "machine", "model": "draft-prose", "source": "458a10c245241a56b11777d51b3c7ce147c5b536b49047141af8349f30578072" },
+    "CURVE_AXES.output-pitch": { "text": "El tono que suena el efecto para un tono de entrada, semitonos en el mismo origen: un mapa sin desplazamiento es la diagonal.", "by": "machine", "model": "draft-prose", "source": "82abeda24ce5e13651a0e5bbaf67e1aa6094a51f9ad42cebd10bb02fed67285b" },
+    "CURVE_AXES.phase": { "text": "La posición dentro de un período de una fuente de modulación, de 0 a 1.", "by": "machine", "model": "draft-prose", "source": "cd44dc0548511085e540503887e9dc1a494490c49058875e00c23ab116d0400f" },
+    "CURVE_KINDS.comb-response": { "text": "La respuesta de peine o muesca de la ruta húmeda en la posición actual del barrido (coro, flanger, phaser, doblador).", "by": "machine", "model": "draft-prose", "source": "7034422bf345da5637be30b67ec007851995ea22cee94bfd3ee5799e3dbe3266" },
+    "CURVE_KINDS.decay-envelope": { "text": "El envolvente de decaimiento de una reverberación después de un impulso.", "by": "machine", "model": "draft-prose", "source": "8a5e5982dc5ce11c8afb4e55af25d8089417ee578a9078be5f52beeb4b042cb2" },
+    "CURVE_KINDS.delay-taps": { "text": "Los retardos y repeticiones de un retardo, cada uno una línea en su tiempo y nivel.", "by": "machine", "model": "draft-prose", "source": "9d54987606b03dde18734bc7738c18da739f3bc2f9b1060418457f88cf8bfb6b" },
+    "CURVE_KINDS.dynamics-curve": { "text": "La ley estática de una puerta o un compresor, nivel de entrada a nivel de salida, con la aguja en vivo.", "by": "machine", "model": "draft-prose", "source": "fcd408605567abd18386bbea356039d917c4c4ad9a71400b729d80ab943d7ba4" },
+    "CURVE_KINDS.eq-curve": { "text": "La respuesta de magnitud sumada de un ecualizador sobre la frecuencia logarítmica.", "by": "machine", "model": "draft-prose", "source": "89978b9cef2ff799677c56864874375c907cd1a36221a3e5223fc8ccf48fab1d" },
+    "CURVE_KINDS.interval-map": { "text": "Un mapeo de un efecto de tono desde el tono de entrada al tono de salida.", "by": "machine", "model": "draft-prose", "source": "510f2e74cfb5b6342825e61891affd7093775bd465c5b009eba582c709d1a337" },
+    "CURVE_KINDS.modulation-shape": { "text": "Una fuente de modulación sobre un período (tremolo, rotatorio).", "by": "machine", "model": "draft-prose", "source": "dcbf61656f9f7da1d8cbd1ca1027e2f18e00594e707e1f2e61fabc7674f2b0bb" },
+    "CURVE_KINDS.transfer-curve": { "text": "La transferencia de un modelador sin memoria, muestra de entrada a muestra de salida sobre la escala completa.", "by": "machine", "model": "draft-prose", "source": "c22bbb9d662547b696f4ac202e3051aac06168bc7c4adc48bd1c90badc4de945" }
+  }
+}
