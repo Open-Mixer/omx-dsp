@@ -76,7 +76,7 @@ jobs:
         run: make -j"$OMX_JOBS" lib
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 26
           registry-url: 'https://registry.npmjs.org'
       - name: npm 11 (trusted publishing needs >= 11.5.1)
         run: |
