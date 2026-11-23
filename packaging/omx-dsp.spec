@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2026 Pau Aliagas <linuxnow@gmail.com>
 Name: omx-dsp
-Version: 0.34.0
+Version: 0.34.1
 Release: 1%{?dist}
 License: GPL-3.0-or-later
 Summary: The audio toolbox of the OpenMixer console, as a real-time-safe C library
@@ -177,6 +177,10 @@ Its documentation is on openmixer.org.
 %{_datadir}/omx-dsp/catalogs/
 
 %changelog
+* Mon Nov 23 2026 Pau Aliagas <linuxnow@gmail.com> - 0.34.1-1
+- ROTARY_ACCEL_RANGE travels in coef, the standard unit omx-contract 3.22.0
+  (V23d) names for a plain multiplier, no longer "x" (#134).
+
 * Sat Nov 21 2026 Pau Aliagas <linuxnow@gmail.com> - 0.34.0-1
 - Sorting pass: RT_HARD_TARGET, ORACLE_FLOOR_RATES and ORACLE_FULL_RATES (V25),
   CURVE_AXES and CURVE_KINDS with their translations (V26 and its
