@@ -752,7 +752,8 @@ static inline uint32_t omx_curve_time(const struct omx_curve_request *rq, int ha
  * `eq_response` of the `eq` family, a `transfer_curve` of `dynamics`, `limiter`, `gate`, `deesser` or `drive`); the grid
  * points, 2 to CURVE_POINTS_MAX (OMX_CURVE_POINTS_RANGE); the rate, the extents and every value finite and the
  * rate positive (OMX_CURVE_VALUE_NOT_FINITE); every unit accepted by its role (OMX_CURVE_UNIT_REFUSED); the
- * extents bounding a range, an EQ's above 0 Hz (OMX_CURVE_POINTS_RANGE); then the model's own terms
+ * extents bounding a range, an EQ's above 0 Hz, and every frequency of an EQ (a band's, a head filter's, switched
+ * off or not) above 0 Hz (OMX_CURVE_POINTS_RANGE); then the model's own terms
  * (OMX_CURVE_TERM_MISSING, OMX_CURVE_KIND_UNKNOWN), an EQ's anchors within CURVE_POINTS_MAX
  * (OMX_CURVE_POINTS_RANGE) and the room (OMX_CURVE_ROOM). With no extents, an EQ runs from CURVE_EXTENTS
  * `freqMinHz` to the lower of `freqMaxHz` and `nyquistFraction` of Nyquist, a transfer curve from `levelMinDb`
@@ -808,6 +809,13 @@ static inline uint32_t omx_curve_points_marked(const struct omx_curve_request *r
   }
   if ((!(hi > lo) && !(timed && !rq->has_extents)) || (eq && !(lo > 0.0)) || (timed && !(lo >= 0.0)))
     return (*code = OMX_CURVE_POINTS_RANGE), 0u;
+  for (uint32_t i = 0; eq && i < rq->nterms; i++) {
+    /* a corner at or below 0 Hz is no filter: refused, never drawn as the flat line of a filter not there (#90) */
+    const enum omx_curve_roles r = rq->terms[i].role;
+    if ((r == OMX_CURVE_ROLES_BAND_FREQ || r == OMX_CURVE_ROLES_HPF_FREQ || r == OMX_CURVE_ROLES_LPF_FREQ) &&
+        !(omx_curve_term_value(&rq->terms[i]) > 0.0))
+      return (*code = OMX_CURVE_POINTS_RANGE), 0u;
+  }
   if (ex && rq->user_only && !ex->y_user) return (*code = OMX_CURVE_ROOM), 0u;
   const uint32_t n = eq                                     ? omx_curve_eq(rq, lo, hi, x, y, room, ex, code)
                      : timed                                  ? omx_curve_time(rq, rq->has_extents, lo, hi, x, y, room, ex, code)

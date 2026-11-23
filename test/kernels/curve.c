@@ -248,6 +248,20 @@ static void arm_curve(void) {
   }
   const struct omx_curve_term slope18[] = {CT(HPF_FREQ, 0, 80.0, HZ, CT_NS), CT(HPF_SLOPE, 0, 18.0, DB, CT_NS)};
   ok(curve_code_of(&CURVE_GOLDEN_EQ, slope18, 2u) == OMX_CURVE_KIND_UNKNOWN, "an 18 dB/oct head filter: kind unknown", 0, 0);
+  {
+    /* a frequency that is not positive draws nothing that is there (#90: an HPF at -100 Hz answered a flat 0 dB
+     * line): every frequency role of an EQ is refused at or below 0 Hz, as the extents are, a head filter switched
+     * off included */
+    const struct omx_curve_term neg_hpf[] = {CT(HPF_FREQ, 0, -100.0, HZ, CT_NS), CT(HPF_SLOPE, 0, 12.0, DB, CT_NS)};
+    const struct omx_curve_term zero_lpf[] = {CT(LPF_FREQ, 0, 0.0, KHZ, CT_NS), CT(LPF_SLOPE, 0, 24.0, DB, CT_NS),
+                                              CT(LPF_ON, 0, 0.0, NONE, CT_NS)};
+    const struct omx_curve_term neg_band[] = {CT(BAND_FREQ, 0, -1000.0, HZ, OMX_CURVE_SHAPES_BELL), CT(BAND_GAIN, 0, 6.0, DB, CT_NS)};
+    const struct omx_curve_term tiny_hpf[] = {CT(HPF_FREQ, 0, 1e-3, HZ, CT_NS), CT(HPF_SLOPE, 0, 12.0, DB, CT_NS)};
+    ok(curve_code_of(&CURVE_GOLDEN_EQ, neg_hpf, 2u) == OMX_CURVE_POINTS_RANGE, "an HPF at -100 Hz: points range", 0, 0);
+    ok(curve_code_of(&CURVE_GOLDEN_EQ, zero_lpf, 3u) == OMX_CURVE_POINTS_RANGE, "an LPF at 0 kHz, off: points range", 0, 0);
+    ok(curve_code_of(&CURVE_GOLDEN_EQ, neg_band, 2u) == OMX_CURVE_POINTS_RANGE, "a band at -1000 Hz: points range", 0, 0);
+    ok(curve_code_of(&CURVE_GOLDEN_EQ, tiny_hpf, 2u) == OMX_CURVE_OK, "a positive corner, however low, is drawn", 0, 0);
+  }
   const struct omx_curve_term off[] = {CT(BAND_TYPE, 0, 0.0, NONE, OMX_CURVE_SHAPES_OFF), CT(BAND_FREQ, 0, 1000.0, HZ, CT_NS)};
   ok(curve_code_of(&CURVE_GOLDEN_EQ, off, 2u) == OMX_CURVE_OK, "an off band needs no Q and is not drawn", 0, 0);
 
