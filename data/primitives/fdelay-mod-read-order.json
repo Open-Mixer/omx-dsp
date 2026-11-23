@@ -9,7 +9,7 @@
       "impl": "include/omxdsp/fx/omx_pitch.h#OMX_PITCH_ORDER"
     },
     "doc": "The order the chorus and flanger construct their lines with (four taps).",
-    "unit": "",
+    "unit": "none",
     "value": 3
   }
 }

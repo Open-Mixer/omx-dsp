@@ -177,7 +177,7 @@
       "impl": "include/omxdsp/omx_curve.h#omx_curve_points_marked"
     },
     "doc": "The most points one curve carries, an EQ's band anchors included: a reply of x with four significant digits and y to 0.01 dB, about 13 bytes a point, fits the 4096-byte line a host's reply is built in. Every caller reads it here; it moves with that buffer, in this one place.",
-    "unit": "",
+    "unit": "none",
     "value": 256
   },
   "CURVE_EXTENTS": {
@@ -206,7 +206,7 @@
       "impl": "include/omxdsp/omx_curve.h#omx_curve_time"
     },
     "doc": "The most taps a delay's time_response carries, the dry tap included (since 0.32.4): a runaway feedback near 1 must not make the train unbounded, and 32 taps at the picture's resolution are a ladder the eye reads as one.",
-    "unit": "",
+    "unit": "none",
     "value": 32
   },
   "CURVE_LEGS": {
@@ -266,7 +266,7 @@
       },
       "inputAmplitude": {
         "word": "input-amplitude",
-        "unit": "",
+        "unit": "none",
         "scale": "linear",
         "doc": "A memoryless shaper's input sample, linear, -1 to +1 full scale: bipolar, so an even/odd asymmetry shows.",
         "text": {
@@ -275,7 +275,7 @@
       },
       "outputAmplitude": {
         "word": "output-amplitude",
-        "unit": "",
+        "unit": "none",
         "scale": "linear",
         "doc": "The shaper's output sample for an input amplitude, linear, on the same full scale.",
         "text": {
@@ -311,7 +311,7 @@
       },
       "phase": {
         "word": "phase",
-        "unit": "",
+        "unit": "none",
         "scale": "linear",
         "doc": "The position within one period of a modulation source, 0 to 1.",
         "text": {
@@ -320,7 +320,7 @@
       },
       "modulation": {
         "word": "modulation",
-        "unit": "",
+        "unit": "none",
         "scale": "linear",
         "doc": "A modulation source's output at a phase, -1 to +1, before the depth scales it.",
         "text": {

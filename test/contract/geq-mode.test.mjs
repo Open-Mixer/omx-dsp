@@ -40,7 +40,7 @@ test('geq: the C enum gives each mode the integer omx-dsp\'s enum omx_geq_mode g
 
 test('geq: designClamped is a 0..1 stepped readout at READOUT_RATE_HZ', () => {
   assert.deepEqual(json().kernels.geq.readouts.map(({ doc, ...r }) => r),
-    [{ name: 'designClamped', unit: '', min: 0, max: 1, scale: 'stepped', rateHz: json().items.READOUT_RATE_HZ.value }]);
+    [{ name: 'designClamped', unit: 'none', min: 0, max: 1, scale: 'stepped', rateHz: json().items.READOUT_RATE_HZ.value }]);
   assert.match(header(), /^#define OMX_GEQ_READOUT_DESIGN_CLAMPED_SCALE OMX_PARAM_SCALES_STEPPED$/m);
 });
 

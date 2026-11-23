@@ -17,7 +17,7 @@
           "ref": "DOUBLER_MAX_VOICES"
         },
         "step": 1,
-        "unit": "",
+        "unit": "none",
         "default": 2,
         "defaultFrom": "desk"
       }
@@ -97,7 +97,7 @@
         "min": 0,
         "max": 100,
         "step": 1,
-        "unit": "%",
+        "unit": "percent",
         "default": 60,
         "defaultFrom": "desk"
       }
@@ -113,7 +113,7 @@
         "min": 0,
         "max": 100,
         "step": 1,
-        "unit": "%",
+        "unit": "percent",
         "default": 50,
         "defaultFrom": "desk"
       }
@@ -126,7 +126,7 @@
         "impl": "include/omxdsp/fx/omx_doubler_instance.h#OMX_DOUBLER_INSTANCE_VOICES"
       },
       "doc": "The most voices the doubler carries; its state holds this many heads.",
-      "unit": "",
+      "unit": "none",
       "value": 4
     },
     "DOUBLER_VOICE_DETUNES": {
@@ -135,7 +135,7 @@
         "impl": "include/omxdsp/fx/omx_doubler_instance.h#OMX_DOUBLER_INSTANCE_DETUNES"
       },
       "doc": "Each voice's share of detuneCents, signed: the first up, the second down, the third and fourth half as far, up and down.",
-      "unit": "",
+      "unit": "none",
       "values": [
         1,
         -1,
@@ -149,7 +149,7 @@
         "impl": "include/omxdsp/fx/omx_doubler_instance.h#OMX_DOUBLER_INSTANCE_DELAYS"
       },
       "doc": "Each voice's share of delayMs, so the voices never land on one sample: two singers do not breathe together.",
-      "unit": "",
+      "unit": "none",
       "values": [
         1,
         1.31,
@@ -163,7 +163,7 @@
         "impl": "include/omxdsp/fx/omx_doubler_instance.h#OMX_DOUBLER_INSTANCE_PANS"
       },
       "doc": "Each voice's place at a spread of 100 %, -1 hard left to +1 hard right.",
-      "unit": "",
+      "unit": "none",
       "values": [
         -1,
         1,
@@ -186,7 +186,7 @@
         "impl": "include/omxdsp/fx/omx_doubler_instance.h#OMX_DOUBLER_INSTANCE_FADE"
       },
       "doc": "The share of the head's sweep the crossfade to the next head takes.",
-      "unit": "",
+      "unit": "none",
       "value": 0.25
     }
   }

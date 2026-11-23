@@ -97,7 +97,7 @@
         "min": -100,
         "max": 100,
         "step": 1,
-        "unit": "%",
+        "unit": "percent",
         "default": 0,
         "defaultFrom": "desk"
       },
@@ -113,7 +113,7 @@
         "min": 0,
         "max": 100,
         "step": 0.1,
-        "unit": "%",
+        "unit": "percent",
         "default": 100,
         "defaultFrom": "desk"
       },
@@ -176,7 +176,7 @@
       },
       "value": 0.5,
       "doc": "The horn's amplitude swing `m_horn` (a −6 dB directivity dip), a ratio.",
-      "unit": ""
+      "unit": "none"
     },
     {
       "name": "ROTARY_DRUM_AM",
@@ -186,7 +186,7 @@
       },
       "value": 0.3,
       "doc": "The drum baffle's amplitude swing `m_drum`, a ratio.",
-      "unit": ""
+      "unit": "none"
     },
     {
       "name": "ROTARY_HORN_ACCEL_MS",
@@ -236,7 +236,7 @@
       },
       "value": 0.0001,
       "doc": "Below this rate, Hz, a rotor coasting toward `stop` is snapped to exactly 0.",
-      "unit": ""
+      "unit": "none"
     },
     {
       "name": "ROTARY_RING_FLOATS",
@@ -246,7 +246,7 @@
       },
       "value": 256,
       "doc": "One inline ring per rotor per leg, floats — at least the 192 kHz need of the horn's sweep.",
-      "unit": ""
+      "unit": "none"
     },
     {
       "name": "ROTARY_SPEEDS",
