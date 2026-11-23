@@ -114,8 +114,6 @@ export const render = () => {
         lines.push('', doc(c.doc, file, undefined, 'primitives'), `export const ${name} = {`, ...body, '} as const;');
       } else if (c?.kind === 'set' && Array.isArray(c.ids) && c.ids.every((i) => typeof i === 'string')) {
         lines.push('', doc(c.doc, file, undefined, 'primitives'), `export const ${name} = [${c.ids.map((i) => `'${i}'`).join(', ')}] as const;`);
-        if (Array.isArray(c.labels))
-          lines.push('', `/** The labels of ${name}, in its order. @see data/primitives/${file} */`, `export const ${name}_LABELS = [${c.labels.map((i) => `'${i}'`).join(', ')}] as const;`);
       } else if (c?.kind === 'words' && c.words && typeof c.words === 'object') {
         const body = Object.entries(c.words).map(([k, w]) => `  ${k}: '${w.word}',`);
         lines.push('', doc(c.doc, file, undefined, 'primitives'), `export const ${name} = {`, ...body, '} as const;');
