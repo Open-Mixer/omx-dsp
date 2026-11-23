@@ -172,7 +172,7 @@ static void arm_curve_drive(void) {
   }
   ok(omx_curve_word(OMX_CURVE_FAMILY_WORDS, OMX_CURVE_FAMILIES_COUNT, "drive") == OMX_CURVE_FAMILIES_DRIVE &&
      omx_curve_word(OMX_CURVE_ROLE_WORDS, OMX_CURVE_ROLES_COUNT, "tone") == OMX_CURVE_ROLES_TONE &&
-     omx_curve_word(OMX_CURVE_UNIT_WORDS, OMX_CURVE_UNITS_COUNT, "pc") == OMX_CURVE_UNITS_PC,
+     omx_curve_word(OMX_CURVE_UNIT_WORDS, OMX_CURVE_UNITS_COUNT, "percent") == OMX_CURVE_UNITS_PERCENT,
      "the drive's words are the description's", 0, 0);
   expect_clean();
 }

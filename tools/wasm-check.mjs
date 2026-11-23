@@ -26,7 +26,7 @@ if (!fail.length) {
     const n = x.omx_curve_wasm_call(bytes.length);
     return n < 0 ? n : new TextDecoder().decode(new Uint8Array(x.memory.buffer, x.omx_curve_wasm_answer(), n));
   };
-  const dyn = '{"kind":"transfer_curve","family":"dynamics","sampleRate":48000,"points":3,"extents":{"min":-40,"max":0},"terms":[{"role":"threshold","value":-20,"unit":"db"},{"role":"ratio","value":4,"unit":"ratio"}]}';
+  const dyn = '{"kind":"transfer_curve","family":"dynamics","sampleRate":48000,"points":3,"extents":{"min":-40,"max":0},"terms":[{"role":"threshold","value":-20,"unit":"dB"},{"role":"ratio","value":4,"unit":"ratio"}]}';
   const got = call(dyn);
   if (got !== '{"points":[{"x":-40,"y":-40},{"x":-20,"y":-20},{"x":0,"y":-15}],"marks":[]}') fail.push(`a request answered ${got}`);
   if (call('{"kind":"transfer_curve"}') !== -1) fail.push('a malformed request was not refused as -1');
