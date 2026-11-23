@@ -391,6 +391,10 @@ jobs:
       - name: make contract-tests
         run: make contract-tests OMX_CONTRACT=/tmp/omx-contract
 
+      # every unit data/ and recipes/answers/ state is a PARAM_UNITS standard symbol, its sabotage held (omx-contract#193)
+      - name: make units-check
+        run: make units-check OMX_CONTRACT=/tmp/omx-contract
+
   # The libFuzzer harnesses of fuzz/ (clang, libFuzzer, ASan, UBSan, the library's contracts), each run for 60 s from
   # its seed corpus; red on any crash or broken contract, the crashing input uploaded. Then the checks prove
   # themselves: every sabotage patch found at the check it names, every record met by its own check on its own seed,

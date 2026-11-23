@@ -204,7 +204,7 @@ VERSION    := $(shell sed -n 's/^\#define OMXDSP_VERSION_\(MAJOR\|MINOR\|PATCH\)
 
 
 
-.PHONY: curve-vectors-wasm wasm wasm-check wasm-sabotage install-wasm npm-stage wasm-loader-check wasm-loader-sabotage fuzz fuzz-run fuzz-sabotage fuzz-records fuzz-coverage fuzz-corpus all lib test lint docs docs-check docs-baseline docs-sabotage clean contract-dir definitions definitions-check contract-proof contract-tests test-tsan suite negative consumer gen-once perturb fdelay-sabotage doppler-sabotage onepole-sabotage threads threads-sabotage checks cost-prel test-fx test-analysis install version golden-write flavours bench-mixmatrix bench-gate bench-drive bench-flanger check-log10f strip-input-identity analysis-engine-identity test-mix mix-engine-identity test-engine-kernels engine-kernels-identity magnitude-sabotage eq-sabotage curve-golden curve-sabotage curve-json-sabotage curve-vectors curve-vectors-write curve-vectors-sabotage meter-view-golden rta-bands-golden meter-view-sabotage rta-bands-sabotage geq-true-sabotage delay-taps-sabotage align-fdelay-sabotage pitch-rates-sabotage instance-rates-sabotage bandwidth-q-table bandwidth-q-sabotage eq-default-bands eq-defaults-table room-ts-golden public-sources private-refs deps deps-check cost-deesser note-map-sabotage exports copy-check eq-q-range-sabotage
+.PHONY: curve-vectors-wasm wasm wasm-check wasm-sabotage install-wasm npm-stage wasm-loader-check wasm-loader-sabotage fuzz fuzz-run fuzz-sabotage fuzz-records fuzz-coverage fuzz-corpus all lib test lint docs docs-check docs-baseline docs-sabotage clean contract-dir definitions definitions-check contract-proof contract-tests units-check test-tsan suite negative consumer gen-once perturb fdelay-sabotage doppler-sabotage onepole-sabotage threads threads-sabotage checks cost-prel test-fx test-analysis install version golden-write flavours bench-mixmatrix bench-gate bench-drive bench-flanger check-log10f strip-input-identity analysis-engine-identity test-mix mix-engine-identity test-engine-kernels engine-kernels-identity magnitude-sabotage eq-sabotage curve-golden curve-sabotage curve-json-sabotage curve-vectors curve-vectors-write curve-vectors-sabotage meter-view-golden rta-bands-golden meter-view-sabotage rta-bands-sabotage geq-true-sabotage delay-taps-sabotage align-fdelay-sabotage pitch-rates-sabotage instance-rates-sabotage bandwidth-q-table bandwidth-q-sabotage eq-default-bands eq-defaults-table room-ts-golden public-sources private-refs deps deps-check cost-deesser note-map-sabotage exports copy-check eq-q-range-sabotage
 
 all: lib
 
@@ -577,6 +577,18 @@ contract-proof:
 contract-tests:
 	@test -n "$(OMX_CONTRACT)" || { echo "$@: name an omx-contract checkout: make $@ OMX_CONTRACT=<dir>" >&2; exit 2; }
 	OMX_CONTRACT=$(abspath $(OMX_CONTRACT)) node --test --test-reporter=tap test/contract/*.test.mjs
+
+# Every unit data/ and recipes/answers/ state is a PARAM_UNITS standard symbol (omx-contract units --check,
+# Open-Mixer/omx-contract#193): a unit with no standard id fails here, not on a wave line (chain 3 stopped at line 53 on
+# ROTARY_ACCEL_RANGE's "x"). The sabotage plants that "x" back in a scratch copy of rotary.json and wants it refused.
+units-check:
+	@test -n "$(OMX_CONTRACT)" || { echo "$@: name an omx-contract checkout: make $@ OMX_CONTRACT=<dir>" >&2; exit 2; }
+	node $(OMX_CONTRACT)/bin/omx-contract.mjs units --check data recipes/answers
+	rm -rf $(BUILD)/units-sabotage && mkdir -p $(BUILD)/units-sabotage
+	sed 's/"unit": "coef"/"unit": "x"/' data/kernels/rotary.json > $(BUILD)/units-sabotage/rotary.json
+	grep -q '"unit": "x"' $(BUILD)/units-sabotage/rotary.json
+	node $(OMX_CONTRACT)/bin/omx-contract.mjs units --check $(BUILD)/units-sabotage > $(BUILD)/units-sabotage/out 2>&1; \
+	  rc=$$?; cat $(BUILD)/units-sabotage/out; test $$rc = 1 && grep -q 'rotary.json:[0-9]*: .*"x" is no PARAM_UNITS standard symbol' $(BUILD)/units-sabotage/out
 
 # The exports file a consumer's copy check reads, generated from the headers and the compiled unit.
 EXPORTS = $(BUILD)/omx-dsp-exports.json
