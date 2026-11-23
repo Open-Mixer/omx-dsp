@@ -44,11 +44,11 @@
 #define OMX_COMP_THRESHOLD_DB_MAX 0.0f
 /** The come-up value of `thresholdDb`. (dB) */
 #define OMX_COMP_THRESHOLD_DB_DEFAULT -18.0f
-/** The least value of `ratio`. (unitless) */
+/** The least value of `ratio`. (none) */
 #define OMX_COMP_RATIO_MIN 1.0f
-/** The greatest value of `ratio`. (unitless) */
+/** The greatest value of `ratio`. (none) */
 #define OMX_COMP_RATIO_MAX 20.0f
-/** The come-up value of `ratio`. (unitless) */
+/** The come-up value of `ratio`. (none) */
 #define OMX_COMP_RATIO_DEFAULT 4.0f
 /** The least value of `kneeDb`. (dB) */
 #define OMX_COMP_KNEE_DB_MIN 0.0f
@@ -74,60 +74,60 @@
 #define OMX_COMP_MAKEUP_DB_MAX 24.0f
 /** The come-up value of `makeupDb`. (dB) */
 #define OMX_COMP_MAKEUP_DB_DEFAULT 0.0f
-/** The least value of `mixPct`. (%) */
+/** The least value of `mixPct`. (percent) */
 #define OMX_COMP_MIX_PCT_MIN 0.0f
-/** The greatest value of `mixPct`. (%) */
+/** The greatest value of `mixPct`. (percent) */
 #define OMX_COMP_MIX_PCT_MAX 100.0f
-/** The come-up value of `mixPct`. (%) */
+/** The come-up value of `mixPct`. (percent) */
 #define OMX_COMP_MIX_PCT_DEFAULT 100.0f
 
-/** The least value of `tap0Gain`. (unitless) */
+/** The least value of `tap0Gain`. (none) */
 #define OMX_DELAY_TAP_TAP0_GAIN_MIN 0.0f
-/** The greatest value of `tap0Gain`. (unitless) */
+/** The greatest value of `tap0Gain`. (none) */
 #define OMX_DELAY_TAP_TAP0_GAIN_MAX 1.0f
-/** The come-up value of `tap0Gain`. (unitless) */
+/** The come-up value of `tap0Gain`. (none) */
 #define OMX_DELAY_TAP_TAP0_GAIN_DEFAULT 1.0f
-/** The least value of `tap0Pan`. (unitless) */
+/** The least value of `tap0Pan`. (none) */
 #define OMX_DELAY_TAP_TAP0_PAN_MIN -1.0f
-/** The greatest value of `tap0Pan`. (unitless) */
+/** The greatest value of `tap0Pan`. (none) */
 #define OMX_DELAY_TAP_TAP0_PAN_MAX 1.0f
-/** The come-up value of `tap0Pan`. (unitless) */
+/** The come-up value of `tap0Pan`. (none) */
 #define OMX_DELAY_TAP_TAP0_PAN_DEFAULT 0.0f
-/** The least value of `tap1Gain`. (unitless) */
+/** The least value of `tap1Gain`. (none) */
 #define OMX_DELAY_TAP_TAP1_GAIN_MIN 0.0f
-/** The greatest value of `tap1Gain`. (unitless) */
+/** The greatest value of `tap1Gain`. (none) */
 #define OMX_DELAY_TAP_TAP1_GAIN_MAX 1.0f
-/** The come-up value of `tap1Gain`. (unitless) */
+/** The come-up value of `tap1Gain`. (none) */
 #define OMX_DELAY_TAP_TAP1_GAIN_DEFAULT 0.7f
-/** The least value of `tap1Pan`. (unitless) */
+/** The least value of `tap1Pan`. (none) */
 #define OMX_DELAY_TAP_TAP1_PAN_MIN -1.0f
-/** The greatest value of `tap1Pan`. (unitless) */
+/** The greatest value of `tap1Pan`. (none) */
 #define OMX_DELAY_TAP_TAP1_PAN_MAX 1.0f
-/** The come-up value of `tap1Pan`. (unitless) */
+/** The come-up value of `tap1Pan`. (none) */
 #define OMX_DELAY_TAP_TAP1_PAN_DEFAULT -0.5f
-/** The least value of `tap2Gain`. (unitless) */
+/** The least value of `tap2Gain`. (none) */
 #define OMX_DELAY_TAP_TAP2_GAIN_MIN 0.0f
-/** The greatest value of `tap2Gain`. (unitless) */
+/** The greatest value of `tap2Gain`. (none) */
 #define OMX_DELAY_TAP_TAP2_GAIN_MAX 1.0f
-/** The come-up value of `tap2Gain`. (unitless) */
+/** The come-up value of `tap2Gain`. (none) */
 #define OMX_DELAY_TAP_TAP2_GAIN_DEFAULT 0.5f
-/** The least value of `tap2Pan`. (unitless) */
+/** The least value of `tap2Pan`. (none) */
 #define OMX_DELAY_TAP_TAP2_PAN_MIN -1.0f
-/** The greatest value of `tap2Pan`. (unitless) */
+/** The greatest value of `tap2Pan`. (none) */
 #define OMX_DELAY_TAP_TAP2_PAN_MAX 1.0f
-/** The come-up value of `tap2Pan`. (unitless) */
+/** The come-up value of `tap2Pan`. (none) */
 #define OMX_DELAY_TAP_TAP2_PAN_DEFAULT 0.5f
-/** The least value of `tap3Gain`. (unitless) */
+/** The least value of `tap3Gain`. (none) */
 #define OMX_DELAY_TAP_TAP3_GAIN_MIN 0.0f
-/** The greatest value of `tap3Gain`. (unitless) */
+/** The greatest value of `tap3Gain`. (none) */
 #define OMX_DELAY_TAP_TAP3_GAIN_MAX 1.0f
-/** The come-up value of `tap3Gain`. (unitless) */
+/** The come-up value of `tap3Gain`. (none) */
 #define OMX_DELAY_TAP_TAP3_GAIN_DEFAULT 0.35f
-/** The least value of `tap3Pan`. (unitless) */
+/** The least value of `tap3Pan`. (none) */
 #define OMX_DELAY_TAP_TAP3_PAN_MIN -1.0f
-/** The greatest value of `tap3Pan`. (unitless) */
+/** The greatest value of `tap3Pan`. (none) */
 #define OMX_DELAY_TAP_TAP3_PAN_MAX 1.0f
-/** The come-up value of `tap3Pan`. (unitless) */
+/** The come-up value of `tap3Pan`. (none) */
 #define OMX_DELAY_TAP_TAP3_PAN_DEFAULT 0.0f
 
 /** The least value of `thresholdDb`. (dB) */
@@ -178,11 +178,11 @@
 #define OMX_GATE_HYSTERESIS_DB_MAX 24.0f
 /** The come-up value of `hysteresisDb`. (dB) */
 #define OMX_GATE_HYSTERESIS_DB_DEFAULT 3.0f
-/** The least value of `ratio`. (unitless) */
+/** The least value of `ratio`. (none) */
 #define OMX_GATE_RATIO_MIN 1.0f
-/** The greatest value of `ratio`. (unitless) */
+/** The greatest value of `ratio`. (none) */
 #define OMX_GATE_RATIO_MAX 100.0f
-/** The come-up value of `ratio`. (unitless) */
+/** The come-up value of `ratio`. (none) */
 #define OMX_GATE_RATIO_DEFAULT 16.0f
 
 /** The least value of `hpHz`. (Hz) */
@@ -225,11 +225,11 @@
 #define OMX_PITCH_CENTS_MAX 50.0f
 /** The come-up value of `cents`. (cents) */
 #define OMX_PITCH_CENTS_DEFAULT 0.0f
-/** The least value of `mix`. (%) */
+/** The least value of `mix`. (percent) */
 #define OMX_PITCH_MIX_MIN 0.0f
-/** The greatest value of `mix`. (%) */
+/** The greatest value of `mix`. (percent) */
 #define OMX_PITCH_MIX_MAX 100.0f
-/** The come-up value of `mix`. (%) */
+/** The come-up value of `mix`. (percent) */
 #define OMX_PITCH_MIX_DEFAULT 100.0f
 
 /** The least value of `attackDb`. (dB) */
@@ -289,7 +289,7 @@
 /** The `step` of BALANCER_AMOUNT_PCT_RANGE. */
 #define OMX_BALANCER_AMOUNT_PCT_RANGE_STEP 1
 /// @}
-/** What a constant-Q band gains per octave on a flat spectrum, dB: its width doubles, 10 log10(2). The target's slope is the spectrum's, so a band's level is read against the slope plus this: on pink noise every band reads the same. (dB/oct) */
+/** What a constant-Q band gains per octave on a flat spectrum, dB: its width doubles, 10 log10(2). The target's slope is the spectrum's, so a band's level is read against the slope plus this: on pink noise every band reads the same. (dBPerOct) */
 #define OMX_BALANCER_BAND_DB_OCT 3.0103f
 /** OMX_BALANCER_BAND_DB_OCT as a double literal. */
 #define OMX_BALANCER_BAND_DB_OCT_DOUBLE 3.0103
@@ -297,7 +297,7 @@
 #define OMX_BALANCER_DETECT_MS 400
 /** Under this mean band level, dBFS, the gains hold: a pause has no tone to correct. (dBFS) */
 #define OMX_BALANCER_GATE_DBFS -60
-/** The Q of each band's detector and of its peaking section: 0.7 is about two octaves, so the bands meet. (unitless) */
+/** The Q of each band's detector and of its peaking section: 0.7 is about two octaves, so the bands meet. (none) */
 #define OMX_BALANCER_Q 0.7f
 /** OMX_BALANCER_Q as a double literal. */
 #define OMX_BALANCER_Q_DOUBLE 0.7
@@ -363,9 +363,9 @@
 #define OMX_BS1770_LOUDNESS_OFFSET_LU_DOUBLE -0.691
 /** The relative gating threshold of ITU-R BS.1770-4, Annex 1: the integrated loudness keeps the blocks above the absolute gate and no more than 10 LU below their mean. LU is written dB here until omx-contract carries the unit (omx-contract#145). (dB; since 3.0.0) */
 #define OMX_BS1770_RELATIVE_GATE_LU -10
-/** The input cap a summing bus can be sized to — **the engine's declared input ceiling**, read from the engine's declarations rather than re-typed here. A gig with more than this many inputs needs more than one engine node; below it a bus is sized to `min(N, BUS_INPUT_CAP)`. It was a literal 64 until 2026-09-15, said to mirror the engine's `MAX_BUS_INPUTS` — and it did, but that 64 was the PipeWire builtin mixer's single-tier fan-in (8 × 8), never the engine's bound: the native node has allocated `OMX_MAX_STRIPS` (128) strips all along. Two literals agreeing by hand is how the console came to refuse a 96-channel desk it could carry. the engine's conformance test holds this to the C header; the console allocation design carries the ruling and the measured cost of width. (unitless) */
+/** The input cap a summing bus can be sized to — **the engine's declared input ceiling**, read from the engine's declarations rather than re-typed here. A gig with more than this many inputs needs more than one engine node; below it a bus is sized to `min(N, BUS_INPUT_CAP)`. It was a literal 64 until 2026-09-15, said to mirror the engine's `MAX_BUS_INPUTS` — and it did, but that 64 was the PipeWire builtin mixer's single-tier fan-in (8 × 8), never the engine's bound: the native node has allocated `OMX_MAX_STRIPS` (128) strips all along. Two literals agreeing by hand is how the console came to refuse a 96-channel desk it could carry. the engine's conformance test holds this to the C header; the console allocation design carries the ruling and the measured cost of width. (none) */
 #define OMX_BUS_INPUT_CAP 128
-/** The Q of a second-order Butterworth section, 1/√2 — maximally flat, the one value every Butterworth biquad in the tree designs at: the LR4 crossover section, the pitch pre-filter and the drive's tilt / band / HF sections, in TS and (as `OMX_BUTTERWORTH_Q`) in C (§7, the scalar door). (unitless) */
+/** The Q of a second-order Butterworth section, 1/√2 — maximally flat, the one value every Butterworth biquad in the tree designs at: the LR4 crossover section, the pitch pre-filter and the drive's tilt / band / HF sections, in TS and (as `OMX_BUTTERWORTH_Q`) in C (§7, the scalar door). (none) */
 #define OMX_BUTTERWORTH_Q 0.7071067811865476f
 /** OMX_BUTTERWORTH_Q as a double literal. */
 #define OMX_BUTTERWORTH_Q_DOUBLE 0.7071067811865476
@@ -489,7 +489,7 @@
 /** OMX_CLIPPER_DRIVE_DB_RANGE_STEP as a double literal. */
 #define OMX_CLIPPER_DRIVE_DB_RANGE_STEP_DOUBLE 0.1
 /// @}
-/** The share of the ceiling the bend spans at a softness of 100 %: the knee sits at (1 - span x softness) x ceiling, half the ceiling at full softness, 6 dB under it. (unitless) */
+/** The share of the ceiling the bend spans at a softness of 100 %: the knee sits at (1 - span x softness) x ceiling, half the ceiling at full softness, 6 dB under it. (none) */
 #define OMX_CLIPPER_KNEE_SPAN 0.5f
 /** OMX_CLIPPER_KNEE_SPAN as a double literal. */
 #define OMX_CLIPPER_KNEE_SPAN_DOUBLE 0.5
@@ -605,11 +605,11 @@
 /** The `timeFloorDb` of CURVE_EXTENTS. */
 #define OMX_CURVE_EXTENTS_TIME_FLOOR_DB -60
 /// @}
-/** The most points one curve carries, an EQ's band anchors included: a reply of x with four significant digits and y to 0.01 dB, about 13 bytes a point, fits the 4096-byte line a host's reply is built in. Every caller reads it here; it moves with that buffer, in this one place. (unitless; since 3.0.0) */
+/** The most points one curve carries, an EQ's band anchors included: a reply of x with four significant digits and y to 0.01 dB, about 13 bytes a point, fits the 4096-byte line a host's reply is built in. Every caller reads it here; it moves with that buffer, in this one place. (none; since 3.0.0) */
 #define OMX_CURVE_POINTS_MAX 256
-/** The most taps a delay's time_response carries, the dry tap included (since 0.32.4): a runaway feedback near 1 must not make the train unbounded, and 32 taps at the picture's resolution are a ladder the eye reads as one. (unitless; since 3.0.0) */
+/** The most taps a delay's time_response carries, the dry tap included (since 0.32.4): a runaway feedback near 1 must not make the train unbounded, and 32 taps at the picture's resolution are a ladder the eye reads as one. (none; since 3.0.0) */
 #define OMX_CURVE_TAPS_MAX 32
-/** The DEEP plateau tier's dwell: ~2 s at the watcher's 10 Hz — the TIME that buys the deeper floor its music safety (see DetectThresholds.deepPlateauFloorDb). (unitless) */
+/** The DEEP plateau tier's dwell: ~2 s at the watcher's 10 Hz — the TIME that buys the deeper floor its music safety (see DetectThresholds.deepPlateauFloorDb). (none) */
 #define OMX_DEEP_PLATEAU_FRAMES 20
 /**
  * @name DEESS_ATTACK_RANGE
@@ -645,7 +645,7 @@
 /// @}
 /** The knee, in dB — a CONSTANT of the stage and not a row field: a de-esser without a soft knee latches audibly on the first sibilant of a phrase, and no other value of this number is a de-esser anyone would dial. The controller pushes it to the node and this is the same number; a second spelling would be a picture that disagrees with the audio about where the reduction starts. (dB) */
 #define OMX_DEESS_KNEE_DB 6
-/** The highest share of Nyquist the detector band's centre may sit at. The frequency travel tops out at 16 kHz, which is Nyquist at 32 kHz, where a band-pass designed on it has no stable poles; the face designs at min(freq, fraction x sample rate / 2). At 0.91 that is 14.56 kHz at 32 kHz, and above the travel's own 16 kHz at every declared rate (0.91 of 22.05 kHz is 20.06 kHz), so it moves no design there. (unitless) */
+/** The highest share of Nyquist the detector band's centre may sit at. The frequency travel tops out at 16 kHz, which is Nyquist at 32 kHz, where a band-pass designed on it has no stable poles; the face designs at min(freq, fraction x sample rate / 2). At 0.91 that is 14.56 kHz at 32 kHz, and above the travel's own 16 kHz at every declared rate (0.91 of 22.05 kHz is 20.06 kHz), so it moves no design there. (none) */
 #define OMX_DEESS_NYQUIST_FRACTION 0.91f
 /** OMX_DEESS_NYQUIST_FRACTION as a double literal. */
 #define OMX_DEESS_NYQUIST_FRACTION_DOUBLE 0.91
@@ -857,7 +857,7 @@
 #define OMX_DETECTOR_OVERSAMPLE_AUTO_MS 0.5f
 /** OMX_DETECTOR_OVERSAMPLE_AUTO_MS as a double literal. */
 #define OMX_DETECTOR_OVERSAMPLE_AUTO_MS_DOUBLE 0.5
-/** What the 4x detector oversampling costs the strip it is engaged on, in samples: the causal linear-phase half-band's reach, by which the audio is delayed so the gain still lands on the sample it was computed from. A sample count, not a time: the same at every rate. omx-dsp's oversampler declares the same number as OMX_OVS_LATENCY_4X, and its comp and gate faces report it while 4x is engaged. (unitless) */
+/** What the 4x detector oversampling costs the strip it is engaged on, in samples: the causal linear-phase half-band's reach, by which the audio is delayed so the gain still lands on the sample it was computed from. A sample count, not a time: the same at every rate. omx-dsp's oversampler declares the same number as OMX_OVS_LATENCY_4X, and its comp and gate faces report it while 4x is engaged. (none) */
 #define OMX_DETECTOR_OVERSAMPLE_LATENCY_SAMPLES 72
 /**
  * @name DIVERGENCE_RANGE
@@ -903,11 +903,11 @@
 /** OMX_DOUBLER_DETUNE_CENTS_RANGE_STEP as a double literal. */
 #define OMX_DOUBLER_DETUNE_CENTS_RANGE_STEP_DOUBLE 0.5
 /// @}
-/** The share of the head's sweep the crossfade to the next head takes. (unitless) */
+/** The share of the head's sweep the crossfade to the next head takes. (none) */
 #define OMX_DOUBLER_FADE 0.25f
 /** OMX_DOUBLER_FADE as a double literal. */
 #define OMX_DOUBLER_FADE_DOUBLE 0.25
-/** The most voices the doubler carries; its state holds this many heads. (unitless) */
+/** The most voices the doubler carries; its state holds this many heads. (none) */
 #define OMX_DOUBLER_MAX_VOICES 4
 /**
  * @name DOUBLER_MIX_PCT_RANGE
@@ -1021,7 +1021,7 @@
 /** The `step` of DRIVE_BAND_FREQ_RANGE. */
 #define OMX_DRIVE_BAND_FREQ_RANGE_STEP 1
 /// @}
-/** The bias at `character = +1`, in the SHAPER's own input units — `OMX_DRIVE_BIAS_MAX`. DERIVED, not chosen. In the saturating limit every knee tends to `sgn`, the output is a rectangular wave of duty `d = ½ + asin(b)/π`, and its `n`th harmonic goes as `sin(nπd)/n` — so `|H2|` is maximal at `d = ¾`, which is `b = sin(π/4) = 1/√2` exactly. Measured too: the H2-maximising bias for a full-scale sine at unity drive is 0.712 (soft), 0.658 (tape), 0.645 (tube), and this one value costs 0.000 / 0.035 / 0.088 dB of H2 against each curve's own optimum. ONE normalised bias for all three knees, not three. (unitless) */
+/** The bias at `character = +1`, in the SHAPER's own input units — `OMX_DRIVE_BIAS_MAX`. DERIVED, not chosen. In the saturating limit every knee tends to `sgn`, the output is a rectangular wave of duty `d = ½ + asin(b)/π`, and its `n`th harmonic goes as `sin(nπd)/n` — so `|H2|` is maximal at `d = ¾`, which is `b = sin(π/4) = 1/√2` exactly. Measured too: the H2-maximising bias for a full-scale sine at unity drive is 0.712 (soft), 0.658 (tape), 0.645 (tube), and this one value costs 0.000 / 0.035 / 0.088 dB of H2 against each curve's own optimum. ONE normalised bias for all three knees, not three. (none) */
 #define OMX_DRIVE_BIAS_MAX 0.7071067811865476f
 /** OMX_DRIVE_BIAS_MAX as a double literal. */
 #define OMX_DRIVE_BIAS_MAX_DOUBLE 0.7071067811865476
@@ -1093,7 +1093,7 @@
 /** OMX_DYNEQ_ATTACK_RANGE_STEP as a double literal. */
 #define OMX_DYNEQ_ATTACK_RANGE_STEP_DOUBLE 0.1
 /// @}
-/** How many bands the dynamic EQ carries, each a static EQ section and its dynamics: six, the floating bands of the reference desks' dynamic EQs. Its state holds this many band-dynamics states. (unitless) */
+/** How many bands the dynamic EQ carries, each a static EQ section and its dynamics: six, the floating bands of the reference desks' dynamic EQs. Its state holds this many band-dynamics states. (none) */
 #define OMX_DYNEQ_BANDS 6
 /**
  * @name DYNEQ_FREQ_RANGE
@@ -1279,7 +1279,7 @@
 /** OMX_EQ_GAIN_RANGE_STEP as a double literal. */
 #define OMX_EQ_GAIN_RANGE_STEP_DOUBLE 0.5
 /// @}
-/** The maximum number of parametric bands a channel EQ may hold — the operator can add up to this many. Generated into `omx_contract_limits.h` as `OMX_EQ_MAX_BANDS`, which `omx_biquad.h` reads (the engine's conformance test reads the header): the native lane allocates exactly this many biquad slots per channel and silently clamps above it, so the model, the wire, and the DSP agree by test, not by memory. (unitless) */
+/** The maximum number of parametric bands a channel EQ may hold — the operator can add up to this many. Generated into `omx_contract_limits.h` as `OMX_EQ_MAX_BANDS`, which `omx_biquad.h` reads (the engine's conformance test reads the header): the native lane allocates exactly this many biquad slots per channel and silently clamps above it, so the model, the wire, and the DSP agree by test, not by memory. (none) */
 #define OMX_EQ_MAX_BANDS 24
 /**
  * @name EQ_NOTCH_Q_RANGE
@@ -1355,13 +1355,13 @@
 #define OMX_FBS_DEFAULT_COOLDOWN_SECONDS 600
 /** The clean hold, in seconds, before a live band's first release stage. (s) */
 #define OMX_FBS_DEFAULT_HOLD_SECONDS 5
-/** How many bands one corrector may plant when nobody set its cap; a full pool plants nothing and says pool-full. (unitless) */
+/** How many bands one corrector may plant when nobody set its cap; a full pool plants nothing and says pool-full. (none) */
 #define OMX_FBS_DEFAULT_MAX_AUTO_BANDS 6
 /** The merge radius, in cents: a confirmed ring this close to a band already planted is that band's find, and plants nothing. (cents) */
 #define OMX_FBS_DEFAULT_MERGE_CENTS 100
-/** Default planted-notch width (Q) — the dbx-AFS-style ultra-narrow notch the corrector plants. `addBand`'s per-shape clamp holds it at 116 for a fixed notch and narrows it to 8 for a live bell, so this is the declared starting point rather than the width every notch ends up with. (unitless) */
+/** Default planted-notch width (Q) — the dbx-AFS-style ultra-narrow notch the corrector plants. `addBand`'s per-shape clamp holds it at 116 for a fixed notch and narrows it to 8 for a live bell, so this is the declared starting point rather than the width every notch ends up with. (none) */
 #define OMX_FBS_DEFAULT_NOTCH_Q 116
-/** The magnitude floor of every detector dB reading (−240 dB): a zero bin stays finite. (unitless) */
+/** The magnitude floor of every detector dB reading (−240 dB): a zero bin stays finite. (none) */
 #define OMX_FBS_FLOOR_LIN 1e-12f
 /** OMX_FBS_FLOOR_LIN as a double literal. */
 #define OMX_FBS_FLOOR_LIN_DOUBLE 1e-12
@@ -1381,7 +1381,7 @@
 /// @}
 /** How long one release stage's gain ramp takes, in ms, from the depth the band stands at to the stage's depth. (ms) */
 #define OMX_FBS_LIFT_RAMP_MS 3000
-/** The equal steps one release ramp takes, FBS_LIFT_RAMP_MS / this apart: the last step lands the stage's depth exactly. (unitless) */
+/** The equal steps one release ramp takes, FBS_LIFT_RAMP_MS / this apart: the last step lands the stage's depth exactly. (none) */
 #define OMX_FBS_LIFT_RAMP_STEPS 10
 /** The deepest cut a band of an fbs-* origin may hold, in dB: the feedback corrector's own safety bound, never the operator EQ's ±15 (EQ_GAIN_RANGE), which stays the bound of every other origin. Declared here as one value until the vocabulary owner (omx-contract) carries it as its own word, a new ref beside EQ_GAIN_RANGE and never a widening of it; this item then becomes that ref, and no second copy of the number is ever written. (dB) */
 #define OMX_FBS_MAX_CUT_DB -24
@@ -1401,19 +1401,19 @@
 /** The `step` of FBS_MERGE_RANGE. */
 #define OMX_FBS_MERGE_RANGE_STEP 10
 /// @}
-/** The smallest pool a corrector may be given: one band. A pool of none is no corrector; the cap is held at or above this. (unitless) */
+/** The smallest pool a corrector may be given: one band. A pool of none is no corrector; the cap is held at or above this. (none) */
 #define OMX_FBS_MIN_AUTO_BANDS 1
-/** PAPR's guard band: bins either side of the peak left out of the floor average (its own skirt). (unitless) */
+/** PAPR's guard band: bins either side of the peak left out of the floor average (its own skirt). (none) */
 #define OMX_FBS_PAPR_GUARD_BINS 2
-/** How many harmonics PHPR reads above the candidate: 2f, 3f and 4f. (unitless) */
+/** How many harmonics PHPR reads above the candidate: 2f, 3f and 4f. (none) */
 #define OMX_FBS_PHPR_HARMONICS 3
-/** The guard inside PNPR's neighbourhood radius that belongs to the peak's own skirt, in bins. (unitless) */
+/** The guard inside PNPR's neighbourhood radius that belongs to the peak's own skirt, in bins. (none) */
 #define OMX_FBS_PNPR_GUARD_BINS 1
-/** PNPR's neighbourhood radius in bins, and the guard inside it that belongs to the peak's own skirt: a pure tone is compared with bins 2 and 3 away on each side. (unitless) */
+/** PNPR's neighbourhood radius in bins, and the guard inside it that belongs to the peak's own skirt: a pure tone is compared with bins 2 and 3 away on each side. (none) */
 #define OMX_FBS_PNPR_RADIUS_BINS 3
-/** PSHR skips sub-window bins within this many of the candidate, so a low bin never measures its own skirt as a sub-harmonic. (unitless) */
+/** PSHR skips sub-window bins within this many of the candidate, so a low bin never measures its own skirt as a sub-harmonic. (none) */
 #define OMX_FBS_PSHR_SELF_SKIP_BINS 3
-/** The most times the clean hold doubles after re-clamps: the hold before the first release stage is the channel's hold times 2^min(re-clamps, this). (unitless) */
+/** The most times the clean hold doubles after re-clamps: the hold before the first release stage is the channel's hold times 2^min(re-clamps, this). (none) */
 #define OMX_FBS_RECLAMP_BACKOFF_CAP 3
 /** How much deeper a live band's full depth goes each time regrowth re-clamps a release, in dB, down to FBS_MAX_CUT_DB: regrowth at a depth is the measurement that the depth was not enough. (dB) */
 #define OMX_FBS_RECLAMP_DEEPEN_DB 3
@@ -1421,7 +1421,7 @@
 #define OMX_FBS_RELEASE_DONE_DB 1
 /** How long a band listens at an eased stage, clean, before the next stage begins, in ms. (ms) */
 #define OMX_FBS_RELEASE_DWELL_MS 8000
-/** Each release stage holds the planted depth times this ratio to the stage's power: every stage releases a third of what remains. (unitless) */
+/** Each release stage holds the planted depth times this ratio to the stage's power: every stage releases a third of what remains. (none) */
 #define OMX_FBS_RELEASE_RATIO 0.6666666666666666f
 /** OMX_FBS_RELEASE_RATIO as a double literal. */
 #define OMX_FBS_RELEASE_RATIO_DOUBLE 0.6666666666666666
@@ -1429,21 +1429,21 @@
 #define OMX_FBS_RING_HZ_MAX 16000
 /** The lowest frequency a confirmed ring is planted at, in Hz; one below it is refused as rejected-edge, never clamped onto the EQ's edge. (Hz) */
 #define OMX_FBS_RING_HZ_MIN 60
-/** Released finds the ring memory holds at once. The console's list is unbounded and expires by FBS_DEFAULT_COOLDOWN_SECONDS; a full memory here forgets its oldest entry first, and counts it. (unitless) */
+/** Released finds the ring memory holds at once. The console's list is unbounded and expires by FBS_DEFAULT_COOLDOWN_SECONDS; a full memory here forgets its oldest entry first, and counts it. (none) */
 #define OMX_FBS_RING_MEMORY_SLOTS 32
 /** Two readings are the same ringing frequency within this many Hz, or FBS_SAME_RING_SHARE of the higher one, whichever is wider. (Hz) */
 #define OMX_FBS_SAME_RING_HZ 3
-/** The share of the higher frequency within which two readings are the same ringing frequency, when it is wider than FBS_SAME_RING_HZ: FFT bin spacing grows with frequency. (unitless) */
+/** The share of the higher frequency within which two readings are the same ringing frequency, when it is wider than FBS_SAME_RING_HZ: FFT bin spacing grows with frequency. (none) */
 #define OMX_FBS_SAME_RING_SHARE 0.015f
 /** OMX_FBS_SAME_RING_SHARE as a double literal. */
 #define OMX_FBS_SAME_RING_SHARE_DOUBLE 0.015
-/** Tracked candidate bins per armed channel. A candidate that finds no free slot is COUNTED and reported, never dropped silently; the identity corpus peaks at 34. (unitless) */
+/** Tracked candidate bins per armed channel. A candidate that finds no free slot is COUNTED and reported, never dropped silently; the identity corpus peaks at 34. (none) */
 #define OMX_FBS_TRACK_SLOTS 512
 /** The detector's frame rate, in Hz: the cadence the detector gates were tuned at. The live shell's hop is the rate over this. (Hz) */
 #define OMX_FBS_WATCH_HZ 10
-/** The order the chorus and flanger construct their lines with (four taps). (unitless) */
+/** The order the chorus and flanger construct their lines with (four taps). (none) */
 #define OMX_FDELAY_MOD_READ_ORDER 3
-/** `Λ` for the chorus/flanger read — ONE value; the header and every law read this. (unitless) */
+/** `Λ` for the chorus/flanger read — ONE value; the header and every law read this. (none) */
 #define OMX_FDELAY_READ_L1_NORM 1.25f
 /** OMX_FDELAY_READ_L1_NORM as a double literal. */
 #define OMX_FDELAY_READ_L1_NORM_DOUBLE 1.25
@@ -1591,9 +1591,9 @@
 /** OMX_GATE_KEY_TILT_DB_RANGE_STEP as a double literal. */
 #define OMX_GATE_KEY_TILT_DB_RANGE_STEP_DOUBLE 0.5
 /// @}
-/** The graphic EQ's section count: DERIVED from ISO_THIRD_OCTAVE_CENTRES_HZ, never a second literal. Generated into `omx_contract_limits.h` as `OMX_GEQ_BANDS`, which sizes `mix_geq.h`'s section array — its OWN budget, never a claimant on EQ_MAX_BANDS (roster ruling 3). (unitless) */
+/** The graphic EQ's section count: DERIVED from ISO_THIRD_OCTAVE_CENTRES_HZ, never a second literal. Generated into `omx_contract_limits.h` as `OMX_GEQ_BANDS`, which sizes `mix_geq.h`'s section array — its OWN budget, never a claimant on EQ_MAX_BANDS (roster ruling 3). (none) */
 #define OMX_GEQ_BANDS 31
-/** The graphic EQ's band Q: the ISO third-octave bandwidth, `2^(1/6)/(2^(1/3) − 1) ≈ 4.318`, to one decimal as the M32 GEQ carries it. Read by the `geq31` preset and the graphic EQ's section design. (unitless) */
+/** The graphic EQ's band Q: the ISO third-octave bandwidth, `2^(1/6)/(2^(1/3) − 1) ≈ 4.318`, to one decimal as the M32 GEQ carries it. Read by the `geq31` preset and the graphic EQ's section design. (none) */
 #define OMX_GEQ_BAND_Q 4.3f
 /** OMX_GEQ_BAND_Q as a double literal. */
 #define OMX_GEQ_BAND_Q_DOUBLE 4.3
@@ -1679,13 +1679,13 @@
 /** OMX_GLUE_THRESHOLD_DB_RANGE_STEP as a double literal. */
 #define OMX_GLUE_THRESHOLD_DB_RANGE_STEP_DOUBLE 0.5
 /// @}
-/** How many CONSECUTIVE frames the ramp gate (`omx_fbs_is_growing`) must hold before a bin confirms — the time-domain tiebreak for the one shape a single window cannot judge: a smooth musical crescendo. Within one window a +6 dB swell (live corpus: a C6 at 1 049 Hz, `[-53.7, -51.4, -50.4, -48, -47.3]`) is indistinguishable from slow feedback — the difference is only visible on the NEXT hop, where a crescendo peaks and plateaus (the window's rise collapses) while feedback keeps climbing. Requiring the gate to hold twice in a row costs a clean ramp nothing — its gate is already true while persistence is still arming — and blocks the swell that peaks the very frame it would have confirmed. (unitless) */
+/** How many CONSECUTIVE frames the ramp gate (`omx_fbs_is_growing`) must hold before a bin confirms — the time-domain tiebreak for the one shape a single window cannot judge: a smooth musical crescendo. Within one window a +6 dB swell (live corpus: a C6 at 1 049 Hz, `[-53.7, -51.4, -50.4, -48, -47.3]`) is indistinguishable from slow feedback — the difference is only visible on the NEXT hop, where a crescendo peaks and plateaus (the window's rise collapses) while feedback keeps climbing. Requiring the gate to hold twice in a row costs a clean ramp nothing — its gate is already true while persistence is still arming — and blocks the swell that peaks the very frame it would have confirmed. (none) */
 #define OMX_GROWTH_CONFIRM_FRAMES 2
 /** Largest single-frame DIP (dB) a run-away window may contain. Real feedback climbs every hop; a small allowance covers measurement jitter and the −0.3 dB-ish wobble frames seen on live captures, while any real drop (a note ending, tremolo) breaks the run. (dB) */
 #define OMX_GROWTH_MAX_DIP_DB 0.5f
 /** OMX_GROWTH_MAX_DIP_DB as a double literal. */
 #define OMX_GROWTH_MAX_DIP_DB_DOUBLE 0.5
-/** Cap on the share of the window's total rise a SINGLE frame may carry. Feedback is exponential in amplitude ⇒ linear in dB ⇒ its rise is distributed roughly evenly across the window; a musical attack / re-articulation puts almost the whole rise in one hop (the exact shape behind every one of the 72 live false positives of the live-music corpus). One half is generous to real ramps (an even N-frame ramp puts 1/(N−1) per hop) and fatal to steps. A side effect worth knowing: a 2-sample window can never pass (one hop IS the whole rise), so confirmation always rests on at least three frames of actual ramp evidence. (unitless) */
+/** Cap on the share of the window's total rise a SINGLE frame may carry. Feedback is exponential in amplitude ⇒ linear in dB ⇒ its rise is distributed roughly evenly across the window; a musical attack / re-articulation puts almost the whole rise in one hop (the exact shape behind every one of the 72 live false positives of the live-music corpus). One half is generous to real ramps (an even N-frame ramp puts 1/(N−1) per hop) and fatal to steps. A side effect worth knowing: a 2-sample window can never pass (one hop IS the whole rise), so confirmation always rests on at least three frames of actual ramp evidence. (none) */
 #define OMX_GROWTH_MAX_SINGLE_FRAME_SHARE 0.5f
 /** OMX_GROWTH_MAX_SINGLE_FRAME_SHARE as a double literal. */
 #define OMX_GROWTH_MAX_SINGLE_FRAME_SHARE_DOUBLE 0.5
@@ -1695,7 +1695,7 @@
 #define OMX_GROWTH_MIN_DB_PER_FRAME_DOUBLE 0.8
 /** Minimum END-TO-END rise (dB) across the window. The live-music corpus showed sustained melody notes drifting up ~4–5 dB over a window without ever being feedback; a loop past unity gains several dB per hop and clears 6 dB in a window trivially. Below this the tone is holding level, not running away. (dB) */
 #define OMX_GROWTH_MIN_TOTAL_RISE_DB 6
-/** How many of a candidate bin's most recent dB readings feed the growth-slope estimate (the engine's least-squares slope) — set equal to DEFAULT_THRESHOLDS's `persistFrames` so growth is judged over the SAME window persistence already demands (the full run since the bin became a candidate, not a shorter or longer slice of it). Long enough that a couple of noisy/vibrato frames can't fake a trend by themselves. (unitless) */
+/** How many of a candidate bin's most recent dB readings feed the growth-slope estimate (the engine's least-squares slope) — set equal to DEFAULT_THRESHOLDS's `persistFrames` so growth is judged over the SAME window persistence already demands (the full run since the bin became a candidate, not a shorter or longer slice of it). Long enough that a couple of noisy/vibrato frames can't fake a trend by themselves. (none) */
 #define OMX_GROWTH_WINDOW_FRAMES 5
 /**
  * @name HPF_FREQ_RANGE
@@ -1741,11 +1741,11 @@
 /** The `step` of HRP_BANDS_RANGE. */
 #define OMX_HRP_BANDS_RANGE_STEP 1
 /// @}
-/** The Q of an HRP correction band — one declared number, operator-adjustable later. A musical cut, not a ring killer: FBS's default notch Q is ~116 because a howl is a single frequency, whereas a partial that is too loud is a note an instrument is playing and a surgical null on it would be heard as a hole. 5 sits mid-band in the 4…6 range a musical subtractive cut occupies, and inside EQ_Q_RANGE — the gain-carrying shapes' extent — so it survives the store's clamp unchanged. Deliberately NOT derived from the harmonic index. A derivation invented with no measurement behind it is a second declaration wearing a formula; this is revisited when the analyse-only surface shows what real corrections look like. (unitless) */
+/** The Q of an HRP correction band — one declared number, operator-adjustable later. A musical cut, not a ring killer: FBS's default notch Q is ~116 because a howl is a single frequency, whereas a partial that is too loud is a note an instrument is playing and a surgical null on it would be heard as a hole. 5 sits mid-band in the 4…6 range a musical subtractive cut occupies, and inside EQ_Q_RANGE — the gain-carrying shapes' extent — so it survives the store's clamp unchanged. Deliberately NOT derived from the harmonic index. A derivation invented with no measurement behind it is a second declaration wearing a formula; this is revisited when the analyse-only surface shows what real corrections look like. (none) */
 #define OMX_HRP_BAND_Q 5
 /** How close two correction candidates must sit, in cents, to count as the SAME spectral region: within it, the stronger candidate is selected and the weaker discarded rather than two near-identical filters being planted. One semitone, and the number follows from HRP_BAND_Q: a Q-5 bell's −3 dB half-width is ~170 cents, so two cuts a semitone apart overlap over most of their travel — the second one deepens the first far more than it shapes anything of its own. The design makes the threshold configurable and tested: declared once here, a parameter everywhere below. (cents) */
 #define OMX_HRP_COLLISION_CENTS 100
-/** How many bands HRP may plant on ONE channel — its half of the machine budget, and the number that makes the budget FORECASTABLE rather than emergent. Without it the count is whatever the material happens to provoke: the placement law is sparse, so a clean note plants two bands and a resonant room plants nine, and nobody can answer "will this fit?" until it does not. With FBS senior that discovery would happen at showtime, to the junior planter, silently. Declared instead, the whole sum is arithmetic an operator can read before a note is played: operator bands + FBS maxAutoBands + HRP maxAutoBands \<= EQ_MAX_BANDS EIGHT — ONE CORRECTION PER VOICE at full polyphony (operator sizing, 2026-09-01). The detector's ceiling is HRP_MAX_VOICES voices, a guitar's six strings and a piano/string voicing's eight, and a budget below the voice count would decide by arithmetic which of the notes actually sounding may be corrected — a limit nobody could read off the desk. Scarcity is handled where it belongs instead: the candidates from every voice meet in ONE globally ranked list and the head of it is what gets planted. It is NOT a claim to seniority, and it is larger than FBS's six. Seniority is the ALLOCATION ORDER — `HrpPlanter` takes only `EQ_MAX_BANDS − others.length`, the remainder after the operator and every other machine — so a bigger junior default cannot reach a senior slot; it only means HRP asks for more of what is left. the engine's conformance test asserts both halves. The per-channel DEFAULT; the row's travel is HRP_AUTO_BANDS_RANGE, so a channel that needs more can have more, as an explicit decision with a visible cost. (unitless) */
+/** How many bands HRP may plant on ONE channel — its half of the machine budget, and the number that makes the budget FORECASTABLE rather than emergent. Without it the count is whatever the material happens to provoke: the placement law is sparse, so a clean note plants two bands and a resonant room plants nine, and nobody can answer "will this fit?" until it does not. With FBS senior that discovery would happen at showtime, to the junior planter, silently. Declared instead, the whole sum is arithmetic an operator can read before a note is played: operator bands + FBS maxAutoBands + HRP maxAutoBands \<= EQ_MAX_BANDS EIGHT — ONE CORRECTION PER VOICE at full polyphony (operator sizing, 2026-09-01). The detector's ceiling is HRP_MAX_VOICES voices, a guitar's six strings and a piano/string voicing's eight, and a budget below the voice count would decide by arithmetic which of the notes actually sounding may be corrected — a limit nobody could read off the desk. Scarcity is handled where it belongs instead: the candidates from every voice meet in ONE globally ranked list and the head of it is what gets planted. It is NOT a claim to seniority, and it is larger than FBS's six. Seniority is the ALLOCATION ORDER — `HrpPlanter` takes only `EQ_MAX_BANDS − others.length`, the remainder after the operator and every other machine — so a bigger junior default cannot reach a senior slot; it only means HRP asks for more of what is left. the engine's conformance test asserts both halves. The per-channel DEFAULT; the row's travel is HRP_AUTO_BANDS_RANGE, so a channel that needs more can have more, as an explicit decision with a visible cost. (none) */
 #define OMX_HRP_DEFAULT_MAX_AUTO_BANDS 8
 /** How far a partial must stand above its LEARNED BASELINE before HRP calls it a resonance (increment 8: `deviation = measured − baseline[note][harmonic]`). A partial level tells you nothing on its own; what marks a resonance is a partial louder than THIS instrument normally measures at THIS note. Three decibels is the same order as the feedback detector's peak-to-neighbour gate and for the same reason: below it, an ordinary performance's variation — a bow dug in, a verse sung harder — would be flattened, and flattening expression is not correcting a room. (Before the learned model existed this same threshold gated the placeholder neighbour rule; the number and its reasoning carried over.) (dB) */
 #define OMX_HRP_EXCESS_THRESHOLD_DB 3
@@ -1833,11 +1833,11 @@
 /// @}
 /** How far ONE reconcile pass may move an HRP band's gain, in dB — the gain smoothing, done at the control level because the native cascade applies pushed coefficients verbatim and the design forbids interpolating there. An unbounded gain step is a waveform discontinuity — the click heard when a correction entered or left at full depth (found live, 2026-08-20, the evening increment 9 raised the enter/leave rate). Bounded, a correction ENTERS by deepening from silence and LEAVES by walking to exactly 0 dB — the provable parked identity (`eqBandIsIdentity`) — from which removal is bit-identical. Two decibels per pass at the corrector's 10 Hz cadence walks the full HRP_MAX_CUT_DB travel in ~300 ms: the same order as the tracker's stability hold and FBS's lift steps, while each individual move stays below audibility on a Q-5 bell. (dB) */
 #define OMX_HRP_GAIN_STEP_DB 2
-/** How many harmonics the HRP model tracks, H1 to H12: the partials it measures per voice. Not a band budget: the number it may cut is the channel's free EQ slots, which is smaller and belongs to the channel. omx-dsp's HRP analysis sizes its per-voice partial arrays by the same number (OMX_HRP_HARMONICS). (unitless) */
+/** How many harmonics the HRP model tracks, H1 to H12: the partials it measures per voice. Not a band budget: the number it may cut is the channel's free EQ slots, which is smaller and belongs to the channel. omx-dsp's HRP analysis sizes its per-voice partial arrays by the same number (OMX_HRP_HARMONICS). (none) */
 #define OMX_HRP_HARMONIC_COUNT 12
 /** The largest automatic cut HRP may place on one harmonic, as a POSITIVE dB magnitude. Well inside the ±15 dB an operator band may hold (core's `EQ_GAIN_LIMIT_DB`): an automatic correction the operator did not ask for gets far less authority than one they dialled themselves. (dB) */
 #define OMX_HRP_MAX_CUT_DB 6
-/** How many simultaneous musical voices the detector may report on one channel. PINNED to `OMX_HRP_MAX_VOICES` in `pipewire-native/src/hrp_pitch.h` — the C voice set is a FIXED-SIZE array, so a TS number above the macro promises voices the analyser structurally cannot return, and one below it silently drops notes the C already found. the engine's conformance test reads the header and holds the pair equal. EIGHT (operator sizing, 2026-09-01): a guitar sounds six strings, a piano or string-section voicing sits at eight. It is a SEARCH ceiling, not a cost — the detector abandons a round as soon as no credible candidate remains, so monophonic material costs what it always did. (unitless) */
+/** How many simultaneous musical voices the detector may report on one channel. PINNED to `OMX_HRP_MAX_VOICES` in `pipewire-native/src/hrp_pitch.h` — the C voice set is a FIXED-SIZE array, so a TS number above the macro promises voices the analyser structurally cannot return, and one below it silently drops notes the C already found. the engine's conformance test reads the header and holds the pair equal. EIGHT (operator sizing, 2026-09-01): a guitar sounds six strings, a piano or string-section voicing sits at eight. It is a SEARCH ceiling, not a cost — the detector abandons a round as soon as no credible candidate remains, so monophonic material costs what it always did. (none) */
 #define OMX_HRP_MAX_VOICES 8
 /**
  * @name INPUT_ALIGN_DELAY_RANGE
@@ -2137,15 +2137,15 @@
 /** The `step` of MBCOMP_XOVER_HZ_RANGE. */
 #define OMX_MBCOMP_XOVER_HZ_RANGE_STEP 1
 /// @}
-/** The highest crossover corner the multiband design builds, as a fraction of the live rate: a corner at or above `fraction x rate` is designed AT that line, because the LR4 section degenerates toward Nyquist. omx_mbcomp_design computes the line in double, so a C reader takes OMX_MBC_CORNER_MAX_FRACTION_DOUBLE. A 20 kHz corner is under the line from 48 kHz up; at 44.1 kHz the line is 19845 Hz and a 20 kHz corner is designed there. (unitless) */
+/** The highest crossover corner the multiband design builds, as a fraction of the live rate: a corner at or above `fraction x rate` is designed AT that line, because the LR4 section degenerates toward Nyquist. omx_mbcomp_design computes the line in double, so a C reader takes OMX_MBC_CORNER_MAX_FRACTION_DOUBLE. A 20 kHz corner is under the line from 48 kHz up; at 44.1 kHz the line is 19845 Hz and a 20 kHz corner is designed there. (none) */
 #define OMX_MBC_CORNER_MAX_FRACTION 0.45f
 /** OMX_MBC_CORNER_MAX_FRACTION as a double literal. */
 #define OMX_MBC_CORNER_MAX_FRACTION_DOUBLE 0.45
-/** The most bands the multiband compressor splits into, and the capacity of its inline state: `struct omx_mbcomp_state` holds this many band compressors and one crossover fewer per leg, so the ceiling and the arrays are one fact. (unitless) */
+/** The most bands the multiband compressor splits into, and the capacity of its inline state: `struct omx_mbcomp_state` holds this many band compressors and one crossover fewer per leg, so the ceiling and the arrays are one fact. (none) */
 #define OMX_MBC_MAX_BANDS 5
-/** The crossovers of a full tree, one fewer than MBC_MAX_BANDS: the count of the corner control and the capacity of each leg's crossover state. (unitless) */
+/** The crossovers of a full tree, one fewer than MBC_MAX_BANDS: the count of the corner control and the capacity of each leg's crossover state. (none) */
 #define OMX_MBC_MAX_XOVERS 4
-/** The fewest bands the multiband compressor splits into: one crossover. omx_mbcomp_design and omx_mbcomp_process refuse a band count below it (`band-count-declared`), and a refused count reads as this floor. (unitless) */
+/** The fewest bands the multiband compressor splits into: one crossover. omx_mbcomp_design and omx_mbcomp_process refuse a band count below it (`band-count-declared`), and a refused count reads as this floor. (none) */
 #define OMX_MBC_MIN_BANDS 2
 /**
  * @name METER_VIEW
@@ -2165,11 +2165,11 @@
 /** The rate the console streams meter values at, Hz. */
 #define OMX_METER_VIEW_STREAM_HZ 20
 /// @}
-/** The share of one audio period a 64 x 32 mix matrix may take on one core: dense, every coefficient ramping, at the top rate, where a period is shortest. The console's whole chain warns at 60 % of `quantum / rate` (the RT admission budget), and the matrix is one stage of it, so it gets a third. It measures 6.5 % at 192 kHz on a desktop core and 1.6 % at 48 kHz, so a kernel that gets three times slower does not fit. A shared CI runner measured 27 %: the budget is the console's core, checked on the desk. (unitless) */
+/** The share of one audio period a 64 x 32 mix matrix may take on one core: dense, every coefficient ramping, at the top rate, where a period is shortest. The console's whole chain warns at 60 % of `quantum / rate` (the RT admission budget), and the matrix is one stage of it, so it gets a third. It measures 6.5 % at 192 kHz on a desktop core and 1.6 % at 48 kHz, so a kernel that gets three times slower does not fit. A shared CI runner measured 27 %: the budget is the console's core, checked on the desk. (none) */
 #define OMX_MIXMATRIX_PERIOD_SHARE 0.2f
 /** OMX_MIXMATRIX_PERIOD_SHARE as a double literal. */
 #define OMX_MIXMATRIX_PERIOD_SHARE_DOUBLE 0.2
-/** The band slots kept for the operator's own hand: the reserve the feedback suppressor and the ring correction may never eat into. Nine is the working set a live EQ actually holds. The budget OPERATOR_EQ_BANDS_RESERVE + FBS_DEFAULT_MAX_AUTO_BANDS + HRP_DEFAULT_MAX_AUTO_BANDS (9 + 6 + 8 = 23) must fit EQ_MAX_BANDS, and `omx-contract validate` refuses data where it does not. (unitless) */
+/** The band slots kept for the operator's own hand: the reserve the feedback suppressor and the ring correction may never eat into. Nine is the working set a live EQ actually holds. The budget OPERATOR_EQ_BANDS_RESERVE + FBS_DEFAULT_MAX_AUTO_BANDS + HRP_DEFAULT_MAX_AUTO_BANDS (9 + 6 + 8 = 23) must fit EQ_MAX_BANDS, and `omx-contract validate` refuses data where it does not. (none) */
 #define OMX_OPERATOR_EQ_BANDS_RESERVE 9
 /**
  * @name OSCILLATOR_FREQ_RANGE
@@ -2329,7 +2329,7 @@
 /** The `windowMs` of PITCH_KERNEL. */
 #define OMX_PITCH_WINDOW_MS 40
 /// @}
-/** The consonant band's top edge is held under this share of the rate, the de-esser's rule: the band is redesigned from its held edges, so the clamp is never silent. (unitless) */
+/** The consonant band's top edge is held under this share of the rate, the de-esser's rule: the band is redesigned from its held edges, so the clamp is never silent. (none) */
 #define OMX_PLOSIVE_BAND_EDGE_FRACTION 0.45f
 /** OMX_PLOSIVE_BAND_EDGE_FRACTION as a double literal. */
 #define OMX_PLOSIVE_BAND_EDGE_FRACTION_DOUBLE 0.45
@@ -2655,11 +2655,11 @@
 /** OMX_REVERB_EARLY_DB_RANGE_STEP as a double literal. */
 #define OMX_REVERB_EARLY_DB_RANGE_STEP_DOUBLE 0.5
 /// @}
-/** The scale the early taps' times take at earlySizePct 100, a share of REVERB_EARLY_TAP_MS; the early ring is sized for it. (unitless) */
+/** The scale the early taps' times take at earlySizePct 100, a share of REVERB_EARLY_TAP_MS; the early ring is sized for it. (none) */
 #define OMX_REVERB_EARLY_SIZE_MAX 1.5f
 /** OMX_REVERB_EARLY_SIZE_MAX as a double literal. */
 #define OMX_REVERB_EARLY_SIZE_MAX_DOUBLE 1.5
-/** The scale the early taps' times take at earlySizePct 0, a share of REVERB_EARLY_TAP_MS. (unitless) */
+/** The scale the early taps' times take at earlySizePct 0, a share of REVERB_EARLY_TAP_MS. (none) */
 #define OMX_REVERB_EARLY_SIZE_MIN 0.5f
 /** OMX_REVERB_EARLY_SIZE_MIN as a double literal. */
 #define OMX_REVERB_EARLY_SIZE_MIN_DOUBLE 0.5
@@ -2897,7 +2897,7 @@
 #define OMX_ROTARY_CROSSOVER_HZ 800
 /** The drum rotor's speed-up time constant, ms (at `accel` 1). (ms) */
 #define OMX_ROTARY_DRUM_ACCEL_MS 1700
-/** The drum baffle's amplitude swing `m_drum`, a ratio. (unitless) */
+/** The drum baffle's amplitude swing `m_drum`, a ratio. (none) */
 #define OMX_ROTARY_DRUM_AM 0.3f
 /** OMX_ROTARY_DRUM_AM as a double literal. */
 #define OMX_ROTARY_DRUM_AM_DOUBLE 0.3
@@ -2947,7 +2947,7 @@
 /// @}
 /** The horn rotor's speed-up time constant, ms (at `accel` 1). (ms) */
 #define OMX_ROTARY_HORN_ACCEL_MS 330
-/** The horn's amplitude swing `m_horn` (a −6 dB directivity dip), a ratio. (unitless) */
+/** The horn's amplitude swing `m_horn` (a −6 dB directivity dip), a ratio. (none) */
 #define OMX_ROTARY_HORN_AM 0.5f
 /** OMX_ROTARY_HORN_AM as a double literal. */
 #define OMX_ROTARY_HORN_AM_DOUBLE 0.5
@@ -3015,9 +3015,9 @@
 /** OMX_ROTARY_MIX_RANGE_STEP as a double literal. */
 #define OMX_ROTARY_MIX_RANGE_STEP_DOUBLE 0.1
 /// @}
-/** One inline ring per rotor per leg, floats — at least the 192 kHz need of the horn's sweep. (unitless) */
+/** One inline ring per rotor per leg, floats — at least the 192 kHz need of the horn's sweep. (none) */
 #define OMX_ROTARY_RING_FLOATS 256
-/** Below this rate, Hz, a rotor coasting toward `stop` is snapped to exactly 0. (unitless) */
+/** Below this rate, Hz, a rotor coasting toward `stop` is snapped to exactly 0. (none) */
 #define OMX_ROTARY_STOP_EPS 0.0001f
 /** OMX_ROTARY_STOP_EPS as a double literal. */
 #define OMX_ROTARY_STOP_EPS_DOUBLE 0.0001
@@ -3031,7 +3031,7 @@
 #define OMX_RTA_DELTA_DEADBAND_DB 0.4f
 /** OMX_RTA_DELTA_DEADBAND_DB as a double literal. */
 #define OMX_RTA_DELTA_DEADBAND_DB_DOUBLE 0.4
-/** The largest RTA FFT the native ring holds — generated into `omx_contract_limits.h` as `OMX_RTA_FFT_SIZE_MAX`. (unitless) */
+/** The largest RTA FFT the native ring holds — generated into `omx_contract_limits.h` as `OMX_RTA_FFT_SIZE_MAX`. (none) */
 #define OMX_RTA_FFT_SIZE_MAX 32768
 /** How often a watched spectrum is read and published: an operator-cadence poll, never the audio thread. (Hz) */
 #define OMX_RTA_HZ 10
@@ -3041,7 +3041,7 @@
 #define OMX_RTA_LEVEL_DB_MIN -72
 /** The spacing of a spectrum display's one dB graticule, from the ceiling down to the floor. (dB) */
 #define OMX_RTA_LEVEL_GRID_DB 12
-/** How far the low zoom's window must have advanced, as a fraction of that window, before it is recomputed; between recomputes the last zoom rides the fresh main spectrum unchanged. (unitless) */
+/** How far the low zoom's window must have advanced, as a fraction of that window, before it is recomputed; between recomputes the last zoom rides the fresh main spectrum unchanged. (none) */
 #define OMX_RTA_LOW_ADVANCE 0.25f
 /** OMX_RTA_LOW_ADVANCE as a double literal. */
 #define OMX_RTA_LOW_ADVANCE_DOUBLE 0.25
@@ -3109,7 +3109,7 @@
 /** The `step` of SPRING_LENGTH_MS_RANGE. */
 #define OMX_SPRING_LENGTH_MS_RANGE_STEP 1
 /// @}
-/** The loop gain's ceiling: the tail always decays. (unitless) */
+/** The loop gain's ceiling: the tail always decays. (none) */
 #define OMX_SPRING_LOOP_MAX 0.97f
 /** OMX_SPRING_LOOP_MAX as a double literal. */
 #define OMX_SPRING_LOOP_MAX_DOUBLE 0.97
@@ -3127,11 +3127,11 @@
 /** The `step` of SPRING_MIX_PCT_RANGE. */
 #define OMX_SPRING_MIX_PCT_RANGE_STEP 1
 /// @}
-/** The right spring's length against the left's: two springs of different lengths, as a tank carries, so the legs decorrelate. (unitless) */
+/** The right spring's length against the left's: two springs of different lengths, as a tank carries, so the legs decorrelate. (none) */
 #define OMX_SPRING_RIGHT_RATIO 1.13f
 /** OMX_SPRING_RIGHT_RATIO as a double literal. */
 #define OMX_SPRING_RIGHT_RATIO_DOUBLE 1.13
-/** The first-order all-pass sections in the loop: enough of them and the low notes come later, the sound of a spring. (unitless) */
+/** The first-order all-pass sections in the loop: enough of them and the low notes come later, the sound of a spring. (none) */
 #define OMX_SPRING_SECTIONS 40
 /**
  * @name SPRING_TENSION_PCT_RANGE
@@ -3147,17 +3147,17 @@
 /** The `step` of SPRING_TENSION_PCT_RANGE. */
 #define OMX_SPRING_TENSION_PCT_RANGE_STEP 1
 /// @}
-/** The largest interpolation factor a plan may carry. 44.1 kHz -\> 192 kHz is 640/147, the widest pair the console's standard rates produce; the cap refuses an exotic pair before it allocates a table nobody budgeted for, rather than discovering it as a bad_alloc. (unitless) */
+/** The largest interpolation factor a plan may carry. 44.1 kHz -\> 192 kHz is 640/147, the widest pair the console's standard rates produce; the cap refuses an exotic pair before it allocates a table nobody budgeted for, rather than discovering it as a bad_alloc. (none) */
 #define OMX_SRC_MAX_L 1024
-/** How much of the shared Nyquist the passband keeps. The remaining 8 % is the transition band the window needs to reach its stopband: at 48 kHz that puts the corner at 22.08 kHz and the stopband in place by 24 kHz. (unitless) */
+/** How much of the shared Nyquist the passband keeps. The remaining 8 % is the transition band the window needs to reach its stopband: at 48 kHz that puts the corner at 22.08 kHz and the stopband in place by 24 kHz. (none) */
 #define OMX_SRC_ROLLOFF 0.92f
 /** OMX_SRC_ROLLOFF as a double literal. */
 #define OMX_SRC_ROLLOFF_DOUBLE 0.92
 /** Stopband attenuation the window is designed for, in dB. 96 dB is below the noise floor of any take this console can capture (float capture of a 24-bit converter), so the conversion is not what limits the file. (dB) */
 #define OMX_SRC_STOPBAND_DB 96
-/** Taps per phase. 64 puts the design's transition band comfortably inside what a Kaiser of this beta can hold at every standard rate pair, and costs 64 multiply-adds per output sample — about 12 M flops per track-minute at 48 kHz, which is nothing offline. (unitless) */
+/** Taps per phase. 64 puts the design's transition band comfortably inside what a Kaiser of this beta can hold at every standard rate pair, and costs 64 multiply-adds per output sample — about 12 M flops per track-minute at 48 kHz, which is nothing offline. (none) */
 #define OMX_SRC_TAPS 64
-/** How far (bins) around bin/2 and bin/3 PSHR (`omx_fbs_pshr`) scans for a sub-harmonic line. A true half/third partial lands mid-bin in the worst case (bin/2 and bin/3 are rarely integers) and spectral leakage smears it one bin further; ±2 covers both. Measured on the #116 live-music corpus: every false positive's sub-line sat inside this window. Deliberately NOT wider — at low bins the window is already a large fraction of an octave, and widening it would start reading unrelated program lines as "sub-harmonics" of real feedback. (unitless) */
+/** How far (bins) around bin/2 and bin/3 PSHR (`omx_fbs_pshr`) scans for a sub-harmonic line. A true half/third partial lands mid-bin in the worst case (bin/2 and bin/3 are rarely integers) and spectral leakage smears it one bin further; ±2 covers both. Measured on the #116 live-music corpus: every false positive's sub-line sat inside this window. Deliberately NOT wider — at low bins the window is already a large fraction of an octave, and widening it would start reading unrelated program lines as "sub-harmonics" of real feedback. (none) */
 #define OMX_SUBHARMONIC_RADIUS_BINS 2
 /**
  * @name SUBOCT_DRY_RANGE
@@ -3181,7 +3181,7 @@
 #define OMX_SUBOCT_ENV_RELEASE_MS 100
 /** How long the octaves take to fade out under the gate, or in over it, ms. (ms) */
 #define OMX_SUBOCT_GATE_RAMP_MS 5
-/** The arming threshold as a share of the tracked peak: a toggle needs a dip under -1/4 of the peak, which a fundamental-dominant note makes once a cycle and noise under half of it never makes. (unitless) */
+/** The arming threshold as a share of the tracked peak: a toggle needs a dip under -1/4 of the peak, which a fundamental-dominant note makes once a cycle and noise under half of it never makes. (none) */
 #define OMX_SUBOCT_HYSTERESIS 0.25f
 /** OMX_SUBOCT_HYSTERESIS as a double literal. */
 #define OMX_SUBOCT_HYSTERESIS_DOUBLE 0.25
@@ -3235,11 +3235,11 @@
 /// @}
 /** The loudness range's relative gate of EBU Tech 3342 v4.0 (November 2023), "Loudness Range: A measure to supplement EBU R 128 loudness normalisation": the short-term blocks it measures are those above the absolute gate and no more than 20 LU below their mean. LU is written dB here until omx-contract carries the unit (omx-contract#145). (dB; since 3.0.0) */
 #define OMX_TECH3342_RANGE_GATE_LU -20
-/** The high end of the loudness range of EBU Tech 3342 v4.0 (November 2023), "Loudness Range: A measure to supplement EBU R 128 loudness normalisation": the 95th percentile of the gated short-term loudness distribution, as a fraction. (unitless; since 3.0.0) */
+/** The high end of the loudness range of EBU Tech 3342 v4.0 (November 2023), "Loudness Range: A measure to supplement EBU R 128 loudness normalisation": the 95th percentile of the gated short-term loudness distribution, as a fraction. (none; since 3.0.0) */
 #define OMX_TECH3342_RANGE_HIGH_PERCENTILE 0.95f
 /** OMX_TECH3342_RANGE_HIGH_PERCENTILE as a double literal. */
 #define OMX_TECH3342_RANGE_HIGH_PERCENTILE_DOUBLE 0.95
-/** The low end of the loudness range of EBU Tech 3342 v4.0 (November 2023), "Loudness Range: A measure to supplement EBU R 128 loudness normalisation": the 10th percentile of the gated short-term loudness distribution, as a fraction. (unitless; since 3.0.0) */
+/** The low end of the loudness range of EBU Tech 3342 v4.0 (November 2023), "Loudness Range: A measure to supplement EBU R 128 loudness normalisation": the 10th percentile of the gated short-term loudness distribution, as a fraction. (none; since 3.0.0) */
 #define OMX_TECH3342_RANGE_LOW_PERCENTILE 0.1f
 /** OMX_TECH3342_RANGE_LOW_PERCENTILE as a double literal. */
 #define OMX_TECH3342_RANGE_LOW_PERCENTILE_DOUBLE 0.1
@@ -3317,7 +3317,7 @@
 #define OMX_TRANSIENT_FAST_ATTACK_MS_DOUBLE 0.5
 /** The fast follower's release, ms: one 50 Hz cycle held, a 180 bpm sixteenth forgotten. (ms) */
 #define OMX_TRANSIENT_FAST_RELEASE_MS 20
-/** The detector floor, linear (−100 dBFS): below it both envelopes read the floor and the stage is unity. (unitless) */
+/** The detector floor, linear (−100 dBFS): below it both envelopes read the floor and the stage is unity. (none) */
 #define OMX_TRANSIENT_FLOOR_LIN 0.00001f
 /** OMX_TRANSIENT_FLOOR_LIN as a double literal. */
 #define OMX_TRANSIENT_FLOOR_LIN_DOUBLE 0.00001
@@ -3485,7 +3485,7 @@
 /** The `step` of WIDTH_BASS_MONO_HZ_RANGE. */
 #define OMX_WIDTH_BASS_MONO_HZ_RANGE_STEP 1
 /// @}
-/** The complementary comb's gain g: its legs ripple between 1 - g and 1 + g, 0.5 a +3.5 / -6 dB comb, the mono sum unmoved. (unitless) */
+/** The complementary comb's gain g: its legs ripple between 1 - g and 1 + g, 0.5 a +3.5 / -6 dB comb, the mono sum unmoved. (none) */
 #define OMX_WIDTH_COMB_GAIN 0.5f
 /** OMX_WIDTH_COMB_GAIN as a double literal. */
 #define OMX_WIDTH_COMB_GAIN_DOUBLE 0.5
@@ -3547,27 +3547,27 @@
 #define OMX_BALANCER_BAND_HZ_INIT { 125, 500, 2000, 8000 }
 /** The number of values of DELAY_DIVISION_BEATS, the length of OMX_DELAY_DIVISION_BEATS_INIT. */
 #define OMX_DELAY_DIVISION_BEATS_COUNT 18u
-/** The beats each division of the delay lasts, in the order of its ids: whole, half, quarter, eighth, sixteenth, thirty-second, each straight, dotted (x 3/2) and triplet (x 2/3). A quarter note is one beat. The values in declaration order, an initialiser. (unitless) */
+/** The beats each division of the delay lasts, in the order of its ids: whole, half, quarter, eighth, sixteenth, thirty-second, each straight, dotted (x 3/2) and triplet (x 2/3). A quarter note is one beat. The values in declaration order, an initialiser. (none) */
 #define OMX_DELAY_DIVISION_BEATS_INIT { 4, 6, 2.6666666666666665f, 2, 3, 1.3333333333333333f, 1, 1.5f, 0.6666666666666666f, 0.5f, 0.75f, 0.3333333333333333f, 0.25f, 0.375f, 0.16666666666666666f, 0.125f, 0.1875f, 0.08333333333333333f }
 /** The number of values of DELAY_TAP_FACTOR_DENS, the length of OMX_DELAY_TAP_FACTOR_DENS_INIT. */
 #define OMX_DELAY_TAP_FACTOR_DENS_COUNT 11u
-/** The denominators of the FX delay's tap factor set, in member order, one per numerator of DELAY_TAP_FACTOR_NUMS: the factor at position i is DELAY_TAP_FACTOR_NUMS[i] / DELAY_TAP_FACTOR_DENS[i]. The values in declaration order, an initialiser. (unitless) */
+/** The denominators of the FX delay's tap factor set, in member order, one per numerator of DELAY_TAP_FACTOR_NUMS: the factor at position i is DELAY_TAP_FACTOR_NUMS[i] / DELAY_TAP_FACTOR_DENS[i]. The values in declaration order, an initialiser. (none) */
 #define OMX_DELAY_TAP_FACTOR_DENS_INIT { 4, 3, 8, 2, 3, 4, 1, 3, 2, 1, 1 }
 /** The number of values of DELAY_TAP_FACTOR_NUMS, the length of OMX_DELAY_TAP_FACTOR_NUMS_INIT. */
 #define OMX_DELAY_TAP_FACTOR_NUMS_COUNT 11u
-/** The numerators of the FX delay's tap factor set, in member order: 1/4, 1/3, 3/8, 1/2, 2/3, 3/4, 1, 4/3, 3/2, 2, 3. A read tap k \>= 1 sits at the base time times numerator / denominator (DELAY_TAP_FACTOR_DENS at the same position), formed in double and bounded in milliseconds to FX_DELAY_TIME_RANGE.max by `omx_fxdelay_tap_ms`, then rounded once to samples. The set is two integer lists, not a set of ids, because a factor such as 1/2 is no id the schema accepts and the ratio must stay exact (1/3 has no finite decimal). The values in declaration order, an initialiser. (unitless) */
+/** The numerators of the FX delay's tap factor set, in member order: 1/4, 1/3, 3/8, 1/2, 2/3, 3/4, 1, 4/3, 3/2, 2, 3. A read tap k \>= 1 sits at the base time times numerator / denominator (DELAY_TAP_FACTOR_DENS at the same position), formed in double and bounded in milliseconds to FX_DELAY_TIME_RANGE.max by `omx_fxdelay_tap_ms`, then rounded once to samples. The set is two integer lists, not a set of ids, because a factor such as 1/2 is no id the schema accepts and the ratio must stay exact (1/3 has no finite decimal). The values in declaration order, an initialiser. (none) */
 #define OMX_DELAY_TAP_FACTOR_NUMS_INIT { 1, 1, 3, 1, 2, 3, 1, 4, 3, 2, 3 }
 /** The number of values of DOUBLER_VOICE_DELAYS, the length of OMX_DOUBLER_VOICE_DELAYS_INIT. */
 #define OMX_DOUBLER_VOICE_DELAYS_COUNT 4u
-/** Each voice's share of delayMs, so the voices never land on one sample: two singers do not breathe together. The values in declaration order, an initialiser. (unitless) */
+/** Each voice's share of delayMs, so the voices never land on one sample: two singers do not breathe together. The values in declaration order, an initialiser. (none) */
 #define OMX_DOUBLER_VOICE_DELAYS_INIT { 1, 1.31f, 0.78f, 1.17f }
 /** The number of values of DOUBLER_VOICE_DETUNES, the length of OMX_DOUBLER_VOICE_DETUNES_INIT. */
 #define OMX_DOUBLER_VOICE_DETUNES_COUNT 4u
-/** Each voice's share of detuneCents, signed: the first up, the second down, the third and fourth half as far, up and down. The values in declaration order, an initialiser. (unitless) */
+/** Each voice's share of detuneCents, signed: the first up, the second down, the third and fourth half as far, up and down. The values in declaration order, an initialiser. (none) */
 #define OMX_DOUBLER_VOICE_DETUNES_INIT { 1, -1, 0.5f, -0.5f }
 /** The number of values of DOUBLER_VOICE_PANS, the length of OMX_DOUBLER_VOICE_PANS_INIT. */
 #define OMX_DOUBLER_VOICE_PANS_COUNT 4u
-/** Each voice's place at a spread of 100 %, -1 hard left to +1 hard right. The values in declaration order, an initialiser. (unitless) */
+/** Each voice's place at a spread of 100 %, -1 hard left to +1 hard right. The values in declaration order, an initialiser. (none) */
 #define OMX_DOUBLER_VOICE_PANS_INIT { -1, 1, -0.5f, 0.5f }
 /** The number of values of EQ_CENTRE_SERIES_R20_HZ, the length of OMX_EQ_CENTRE_SERIES_R20_HZ_INIT. */
 #define OMX_EQ_CENTRE_SERIES_R20_HZ_COUNT 61u
@@ -3583,7 +3583,7 @@
 #define OMX_GLUE_ATTACK_MS_INIT { 0.1f, 0.3f, 1, 3, 10, 30 }
 /** The number of values of GLUE_RATIO_VALUES, the length of OMX_GLUE_RATIO_VALUES_INIT. */
 #define OMX_GLUE_RATIO_VALUES_COUNT 3u
-/** The ratios of the `ratio` detents. The values in declaration order, an initialiser. (unitless) */
+/** The ratios of the `ratio` detents. The values in declaration order, an initialiser. (none) */
 #define OMX_GLUE_RATIO_VALUES_INIT { 2, 4, 10 }
 /** The number of values of GLUE_RELEASE_MS, the length of OMX_GLUE_RELEASE_MS_INIT. */
 #define OMX_GLUE_RELEASE_MS_COUNT 4u
@@ -3595,7 +3595,7 @@
 #define OMX_ISO_THIRD_OCTAVE_CENTRES_HZ_INIT { 20, 25, 31.5f, 40, 50, 63, 80, 100, 125, 160, 200, 250, 315, 400, 500, 630, 800, 1000, 1250, 1600, 2000, 2500, 3150, 4000, 5000, 6300, 8000, 10000, 12500, 16000, 20000 }
 /** The number of values of LEVELER_AMOUNT_POINTS, the length of OMX_LEVELER_AMOUNT_POINTS_INIT. */
 #define OMX_LEVELER_AMOUNT_POINTS_COUNT 5u
-/** The amounts the table's rows are written at, percent; between two the leveler reads the rows linearly. The values in declaration order, an initialiser. (%) */
+/** The amounts the table's rows are written at, percent; between two the leveler reads the rows linearly. The values in declaration order, an initialiser. (percent) */
 #define OMX_LEVELER_AMOUNT_POINTS_INIT { 0, 25, 50, 75, 100 }
 /** The number of values of LEVELER_DOWN_MAKEUP_DB, the length of OMX_LEVELER_DOWN_MAKEUP_DB_INIT. */
 #define OMX_LEVELER_DOWN_MAKEUP_DB_COUNT 5u
@@ -3603,7 +3603,7 @@
 #define OMX_LEVELER_DOWN_MAKEUP_DB_INIT { 0, 1, 2.5f, 4, 6 }
 /** The number of values of LEVELER_DOWN_RATIO, the length of OMX_LEVELER_DOWN_RATIO_INIT. */
 #define OMX_LEVELER_DOWN_RATIO_COUNT 5u
-/** The downward slot's ratio at each point; 1 is no compression. The values in declaration order, an initialiser. (unitless) */
+/** The downward slot's ratio at each point; 1 is no compression. The values in declaration order, an initialiser. (none) */
 #define OMX_LEVELER_DOWN_RATIO_INIT { 1, 1.5f, 2, 3, 4 }
 /** The number of values of LEVELER_DOWN_THRESHOLD_DB, the length of OMX_LEVELER_DOWN_THRESHOLD_DB_INIT. */
 #define OMX_LEVELER_DOWN_THRESHOLD_DB_COUNT 5u
@@ -3623,7 +3623,7 @@
 #define OMX_LEVELER_UP_RANGE_DB_INIT { 0, 3, 6, 9, 12 }
 /** The number of values of LEVELER_UP_RATIO, the length of OMX_LEVELER_UP_RATIO_INIT. */
 #define OMX_LEVELER_UP_RATIO_COUNT 5u
-/** The upward slot's ratio at each point; 1 is no lift. The values in declaration order, an initialiser. (unitless) */
+/** The upward slot's ratio at each point; 1 is no lift. The values in declaration order, an initialiser. (none) */
 #define OMX_LEVELER_UP_RATIO_INIT { 1, 1.5f, 2, 2.5f, 3 }
 /** The number of values of LEVELER_UP_THRESHOLD_DB, the length of OMX_LEVELER_UP_THRESHOLD_DB_INIT. */
 #define OMX_LEVELER_UP_THRESHOLD_DB_COUNT 5u
@@ -3655,7 +3655,7 @@
 #define OMX_ORACLE_FULL_RATES_INIT { 32000, 44100, 48000, 64000, 88200, 96000, 128000, 176400, 192000 }
 /** The number of values of REVERB_EARLY_TAP_GAINS, the length of OMX_REVERB_EARLY_TAP_GAINS_INIT. */
 #define OMX_REVERB_EARLY_TAP_GAINS_COUNT 8u
-/** The early reflections' gains, linear, one per REVERB_EARLY_TAP_MS entry, falling with the time. The values in declaration order, an initialiser. (unitless) */
+/** The early reflections' gains, linear, one per REVERB_EARLY_TAP_MS entry, falling with the time. The values in declaration order, an initialiser. (none) */
 #define OMX_REVERB_EARLY_TAP_GAINS_INIT { 0.84f, 0.75f, 0.67f, 0.6f, 0.53f, 0.47f, 0.42f, 0.37f }
 /** The number of values of REVERB_EARLY_TAP_MS, the length of OMX_REVERB_EARLY_TAP_MS_INIT. */
 #define OMX_REVERB_EARLY_TAP_MS_COUNT 8u
@@ -4663,20 +4663,20 @@ enum omx_gate_readouts {
 #define OMX_GATE_READOUT_GAIN_REDUCTION_DB_UNIT "dB"
 /** The readouts of the geq kernel, the meters a host draws, each at its position. */
 enum omx_geq_readouts {
-  OMX_GEQ_READOUT_DESIGN_CLAMPED = 0, ///< Whether the last design clamped: 1 when a `true` solve asked a section for more than GEQ_DESIGN_GAIN_MAX_DB and got the ceiling, 0 otherwise and always in `standard`. Derived by the design step, never written by a host (omx-dsp's OmxGeqDesign.clamped). (unitless)
+  OMX_GEQ_READOUT_DESIGN_CLAMPED = 0, ///< Whether the last design clamped: 1 when a `true` solve asked a section for more than GEQ_DESIGN_GAIN_MAX_DB and got the ceiling, 0 otherwise and always in `standard`. Derived by the design step, never written by a host (omx-dsp's OmxGeqDesign.clamped). (none)
 };
 /** The number of readouts of the geq kernel. */
 #define OMX_GEQ_READOUT_COUNT 1u
-/** The least value the `designClamped` readout shows. (unitless) */
+/** The least value the `designClamped` readout shows. (none) */
 #define OMX_GEQ_READOUT_DESIGN_CLAMPED_MIN 0.0f
-/** The greatest value the `designClamped` readout shows. (unitless) */
+/** The greatest value the `designClamped` readout shows. (none) */
 #define OMX_GEQ_READOUT_DESIGN_CLAMPED_MAX 1.0f
 /** How often the `designClamped` readout is published (Hz). */
 #define OMX_GEQ_READOUT_DESIGN_CLAMPED_RATE_HZ 50
 /** How a host draws the `designClamped` readout, an enum omx_param_scales member. */
 #define OMX_GEQ_READOUT_DESIGN_CLAMPED_SCALE OMX_PARAM_SCALES_STEPPED
 /** The unit of the `designClamped` readout, as a string. */
-#define OMX_GEQ_READOUT_DESIGN_CLAMPED_UNIT ""
+#define OMX_GEQ_READOUT_DESIGN_CLAMPED_UNIT "none"
 /** The readouts of the glue kernel, the meters a host draws, each at its position. */
 enum omx_glue_readouts {
   OMX_GLUE_READOUT_GAIN_REDUCTION_DB = 0, ///< The compressor's gain reduction, in dB with CLAP's sign: 0 while it reduces nothing, negative the deepest gain of the block, make-up included. (dB)
