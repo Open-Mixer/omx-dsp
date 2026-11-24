@@ -24,6 +24,7 @@
 #include <string.h>
 
 #include <omxdsp/fx/omx_instance_io.h>
+#include <omxdsp/omx_clipper.h>
 #include <omxdsp/omx_contract.h>
 #include <omxdsp/omx_param.h>
 #include <omxdsp/omx_units.h>
@@ -31,23 +32,6 @@
 
 /** @brief Audio legs in and out: TWO, a stereo pair. */
 #define OMX_CLIPPER_INSTANCE_CHANNELS 2
-
-/**
- * @brief One sample through the clip.
- * @param u The sample after the drive.
- * @param c The ceiling, linear, positive.
- * @param a The knee, linear, in (0, c].
- * @return `u` under the knee, else the bend, signed as `u`, never past `c`.
- * @note One divide above the knee. Thread-safe: pure.
- * @thread audio
- */
-static inline float omx_clipper_sample(float u, float c, float a) {
-  const float m = fabsf(u);
-  if (m <= a) return u;
-  const float room = c - a, d = m - a;
-  const float y = room > 0.0f ? a + room * d / (d + room) : c;
-  return u < 0.0f ? -y : y;
-}
 
 /** @brief One instance: the rate, the resolved drive, ceiling and knee, and the last block's reduction. */
 typedef struct {
@@ -106,16 +90,15 @@ static inline void omx_clipper_instance_resolve(OmxClipperInstance *s, int bypas
                                 (float)OMX_CLIPPER_SOFTNESS_PCT_RANGE_MAX, (float)OMX_CLIPPER_SOFTNESS_PCT_RANGE_DEFAULT);
   s->drive_lin = omx_db_to_lin(dr);
   s->ceiling_lin = omx_db_to_lin(ce);
-  s->knee_lin = s->ceiling_lin * (1.0f - (float)OMX_CLIPPER_KNEE_SPAN * so * 0.01f);
+  s->knee_lin = omx_clipper_knee(s->ceiling_lin, so);
   s->enabled = !bypass;
   OMX_POST(s->knee_lin > 0.0f && s->knee_lin <= s->ceiling_lin, "knee-under-the-ceiling");
 }
 #undef OMX_CONTRACT_STAGE
 
-#define OMX_CONTRACT_STAGE "clipper/instance-run"
 /**
- * THE AUDIO CALLBACK'S WHOLE SHARE: the clip over both legs, in to out. `in_*` and `out_*` may alias.
- * Not ready or bypassed is the identity.
+ * THE AUDIO CALLBACK'S WHOLE SHARE: the clip over both legs, in to out (omx_clipper_block()). `in_*` and
+ * `out_*` may alias. Not ready or bypassed is the identity.
  * @param s The instance; null, not ready or bypassed leaves `out_*` holding `in_*`.
  * @param in_l The left input, `n` frames.
  * @param in_r The right input, `n` frames.
@@ -133,22 +116,8 @@ static inline void omx_clipper_instance_run(OmxClipperInstance *s, const float *
     if (s) s->gr_db = 0.0f;
     return;
   }
-  OMX_PRE(omx_block_pair_finite(out_l, out_r, n), "finite-in");
-  const float g = s->drive_lin, c = s->ceiling_lin, a = s->knee_lin;
-  float over = 0.0f, kept = 0.0f;
-  for (uint32_t i = 0; i < n; i++) {
-    const float ul = g * out_l[i], ur = g * out_r[i];
-    const float yl = omx_clipper_sample(ul, c, a), yr = omx_clipper_sample(ur, c, a);
-    const float ml = fabsf(ul), mr = fabsf(ur);
-    if (ml > over) { over = ml; kept = fabsf(yl); }
-    if (mr > over) { over = mr; kept = fabsf(yr); }
-    out_l[i] = yl;
-    out_r[i] = yr;
-  }
-  s->gr_db = over > 0.0f && kept < over ? omx_lin_to_db(kept / over) : 0.0f;
-  OMX_POST(omx_block_pair_finite(out_l, out_r, n), "finite-out");
+  s->gr_db = omx_clipper_block(out_l, out_r, n, s->drive_lin, s->ceiling_lin, s->knee_lin);
 }
-#undef OMX_CONTRACT_STAGE
 
 /** The gainReductionDb readout: the last block's reduction, dB, 0 or negative.
  * @param s The instance; null reads 0.

@@ -551,6 +551,8 @@ checks:
 	bash tools/umbrella-check.sh --self-test
 	bash tools/face-conformance.sh
 	bash tools/face-conformance.sh --self-test
+	CC="$(CC)" bash tools/face-descriptor-check.sh $(BUILD)/face-descriptor
+	CC="$(CC)" bash tools/face-descriptor-check.sh --self-test $(BUILD)/face-descriptor-self
 	bash tools/rate-list-check.sh
 	bash tools/rate-list-check.sh --self-test
 	bash tools/ci-matrix-follows-set.sh
@@ -647,9 +649,9 @@ check-log10f: tools/log10f-check.c test/support/log10f_cr.h | $(BUILD)
 #   test/fx/<k>_golden.test.c  the golden digests, compared with test/golden/<k>.sha256
 FX_KERNELS = delay geq pitch transient drive chorus flanger phaser reverb tremolo rotor rotary transient_instance geq_instance eq_instance limiter dynamics_keyed dynamics gate gate_instance gate_knee gate_keyfilter comp_instance band_dyn deesser dyn_controls trim_instance align reverse_render dynamics_feedback idelay loudness mbcomp dyneq_instance mbcomp_instance doubler_instance tone_instance leveler_instance plosive_instance width_instance suboct_instance clipper_instance upward_instance glue_instance loudlevel_instance spring_instance balancer_instance
 # Oracles that read the contract ledger themselves build with contracts and threads.
-FX_CONTRACT_ORACLES = delay_taps geq pitch transient chorus flanger phaser tremolo rotor rotary transient_instance geq_instance eq_instance limiter dynamics_keyed dynamics gate gate_instance gate_knee gate_keyfilter comp_instance band_dyn dyn_controls trim_instance align_fdelay dynamics_feedback idelay loudness mbcomp geq_true dyneq_instance comp_key mbcomp_instance delay_color gate_key reverb_return doubler_instance tone_instance dyn_upward leveler_instance comp_release comp_models comp_key_isolation comp_feedback plosive_instance transient_readouts width_instance suboct_instance clipper_instance upward_instance glue_instance loudlevel_instance spring_instance balancer_instance $(addsuffix _instance,$(FX_INSTANCES))
+FX_CONTRACT_ORACLES = delay_taps geq pitch transient chorus flanger phaser tremolo rotor rotary transient_instance geq_instance eq_instance limiter dynamics_keyed dynamics gate gate_instance gate_knee gate_keyfilter comp_instance band_dyn dyn_controls trim_instance align_fdelay dynamics_feedback idelay loudness mbcomp geq_true dyneq_instance comp_key mbcomp_instance delay_color gate_key reverb_return doubler_instance tone_instance dyn_upward leveler_instance comp_release comp_models comp_key_isolation comp_feedback plosive_instance transient_readouts width_instance suboct_instance clipper_instance upward_instance glue_instance loudlevel_instance spring_instance balancer_instance face $(addsuffix _instance,$(FX_INSTANCES))
 # Further oracles of a kernel in FX_KERNELS, each test/fx/<o>.test.c, built by the same rule.
-FX_ORACLES = align_fdelay delay_taps dyn_flat gaincomp_fpflags geq_true band_dyn_poly comp_key delay_color gate_key reverb_return dyn_upward comp_release comp_models transient_readouts comp_key_isolation comp_feedback
+FX_ORACLES = align_fdelay delay_taps dyn_flat gaincomp_fpflags geq_true band_dyn_poly comp_key delay_color gate_key reverb_return dyn_upward comp_release comp_models transient_readouts comp_key_isolation comp_feedback face
 # The effects that carry a host-agnostic instance core, include/omxdsp/fx/omx_<k>_instance.h: each
 # adds test/fx/<k>_instance.test.c, its oracle at every declared rate, contracts compiled in.
 FX_INSTANCES = chorus flanger drive reverb tremolo phaser pitch rotary limiter deesser delay
@@ -659,6 +661,10 @@ FX_INSTANCE_GOLDENS = pitch
 # The further oracles with golden digests of their own: test/fx/<o>_golden.test.c, compared with
 # test/golden/<o>.sha256.
 FX_ORACLE_GOLDENS = delay_taps comp_key delay_color gate_key reverb_return
+# The kernels the generic face serves (docs/generic-face.md), each through it against its hand-written face's
+# own digests: test/fx/face_<k>_golden.test.c, compared with test/golden/<k>_instance.sha256. test/fx/face.test.c
+# holds the face to each hand-written face bit for bit.
+FX_FACE_GOLDENS = trim width clipper
 # A kernel's perturbation arm: test/fx/<k>-perturb.sh builds its oracle against a moved declaration.
 FX_PERTURB = $(wildcard test/fx/*-perturb.sh)
 FX_DEPS = $(LIB) $(LIB_CONTRACTS) $(HEADERS) $(FX_HEADERS) $(FX_TESTS) | $(BUILD)
@@ -709,6 +715,7 @@ FX_LDFLAGS_loudlevel_instance = $(FX_NO_ALLOC_LDFLAGS)
 FX_LDFLAGS_spring_instance = $(FX_NO_ALLOC_LDFLAGS)
 FX_LDFLAGS_balancer_instance = $(FX_NO_ALLOC_LDFLAGS)
 FX_LDFLAGS_suboct_instance = $(FX_NO_ALLOC_LDFLAGS)
+FX_LDFLAGS_face = $(FX_NO_ALLOC_LDFLAGS)
 
 $(BUILD)/fx_%: test/fx/%.test.c $(FX_DEPS)
 	$(if $(filter $*,$(FX_CONTRACT_ORACLES)),$(CC) $(TESTFLAGS) -pthread -Itest/fx -o $@ $< $(LIB_CONTRACTS) -lm $(FX_LDFLAGS_$*),$(CC) $(CFLAGS) $(INC) -Itest/fx -o $@ $< $(LIB) -lm $(FX_LDFLAGS_$*))
@@ -717,7 +724,8 @@ FX_BINS = $(foreach k,$(FX_KERNELS),$(BUILD)/fx_$(k) $(if $(wildcard test/fx/$(k
           $(foreach k,$(FX_INSTANCES),$(BUILD)/fx_$(k)_instance) \
           $(foreach o,$(FX_ORACLES),$(BUILD)/fx_$(o)) \
           $(foreach k,$(FX_INSTANCE_GOLDENS),$(BUILD)/fx_$(k)_instance_golden) \
-          $(foreach o,$(FX_ORACLE_GOLDENS),$(BUILD)/fx_$(o)_golden)
+          $(foreach o,$(FX_ORACLE_GOLDENS),$(BUILD)/fx_$(o)_golden) \
+          $(foreach k,$(FX_FACE_GOLDENS),$(BUILD)/fx_face_$(k)_golden)
 
 # test-fx is one phony target per thing it runs, so `make -jN test-fx` runs them side by side. The
 # targets and the order of the prerequisites are the loops' that stood here: the same binaries, with
@@ -728,8 +736,9 @@ FX_RUN_INSTANCES = $(addprefix fx-run-instance-,$(FX_INSTANCES))
 FX_RUN_ORACLES  = $(addprefix fx-run-oracle-,$(FX_ORACLES))
 FX_RUN_INSTGOLD = $(addprefix fx-run-instance-golden-,$(FX_INSTANCE_GOLDENS))
 FX_RUN_ORAGOLD  = $(addprefix fx-run-oracle-golden-,$(FX_ORACLE_GOLDENS))
+FX_RUN_FACEGOLD = $(addprefix fx-run-face-golden-,$(FX_FACE_GOLDENS))
 FX_RUN_PERTURB  = $(addprefix fx-run-perturb-,$(notdir $(basename $(FX_PERTURB))))
-FX_RUN_ALL      = $(FX_RUN_KERNELS) $(FX_RUN_MATHS) $(FX_RUN_INSTANCES) $(FX_RUN_ORACLES) $(FX_RUN_INSTGOLD) $(FX_RUN_ORAGOLD) $(FX_RUN_PERTURB)
+FX_RUN_ALL      = $(FX_RUN_KERNELS) $(FX_RUN_MATHS) $(FX_RUN_INSTANCES) $(FX_RUN_ORACLES) $(FX_RUN_INSTGOLD) $(FX_RUN_ORAGOLD) $(FX_RUN_FACEGOLD) $(FX_RUN_PERTURB)
 .PHONY: $(FX_RUN_ALL)
 
 # fx-oracles is test-fx without the perturbation scripts: what make check-package runs
@@ -757,6 +766,10 @@ $(FX_RUN_INSTGOLD): fx-run-instance-golden-%: $(BUILD)/fx_%_instance_golden
 
 $(FX_RUN_ORAGOLD): fx-run-oracle-golden-%: $(BUILD)/fx_%_golden
 	@echo "./$(BUILD)/fx_$*_golden test/golden/$*.sha256"; ./$(BUILD)/fx_$*_golden test/golden/$*.sha256
+
+$(FX_RUN_FACEGOLD): fx-run-face-golden-%: $(BUILD)/fx_face_%_golden
+	@echo "./$(BUILD)/fx_face_$*_golden test/golden/$*_instance.sha256"; \
+	  ./$(BUILD)/fx_face_$*_golden test/golden/$*_instance.sha256
 
 $(foreach p,$(FX_PERTURB),$(eval fx-run-perturb-$(notdir $(basename $(p))): $(p) $(LIB) $(HEADERS) $(FX_HEADERS) $(FX_TESTS) | $(BUILD)))
 $(FX_RUN_PERTURB): fx-run-perturb-%:
