@@ -162,9 +162,9 @@ static void arm_curve_json(void) {
         "{\"role\":\"band_q\",\"index\":1,\"value\":8,\"unit\":\"none\"},"
         "{\"role\":\"hpf_freq\",\"value\":40,\"unit\":\"Hz\"},{\"role\":\"hpf_slope\",\"value\":24,\"unit\":\"dB\"}]}";
     const struct omx_curve_term t[] = {
-        CT(BAND_FREQ, 0, 1000.0, HZ, OMX_CURVE_SHAPES_BELL), CT(BAND_GAIN, 0, 6.0, D_B, CT_NS), CT(BAND_Q, 0, 1.0, OCT, CT_NS),
-        CTO(BAND_FREQ, 1, 0.25, K_HZ, OMX_CURVE_SHAPES_NOTCH, FBS_LIVE), CT(BAND_Q, 1, 8.0, NONE, CT_NS),
-        CT(HPF_FREQ, 0, 40.0, HZ, CT_NS), CT(HPF_SLOPE, 0, 24.0, D_B, CT_NS)};
+        CT(BAND_FREQ, 0, 1000.0, HZ, OMX_CURVE_SHAPES_BELL), CT(BAND_GAIN, 0, 6.0, DB, CT_NS), CT(BAND_Q, 0, 1.0, OCT, CT_NS),
+        CTO(BAND_FREQ, 1, 0.25, KHZ, OMX_CURVE_SHAPES_NOTCH, FBS_LIVE), CT(BAND_Q, 1, 8.0, NONE, CT_NS),
+        CT(HPF_FREQ, 0, 40.0, HZ, CT_NS), CT(HPF_SLOPE, 0, 24.0, DB, CT_NS)};
     const struct omx_curve_request rq = {OMX_CURVE_DISPLAYS_EQ_RESPONSE, OMX_CURVE_FAMILIES_EQ, 48000.0, 16u, 0, 0.0, 0.0, t, 7u, 1, 0.0};
     double x[OMX_CURVE_POINTS_MAX], y[OMX_CURVE_POINTS_MAX], yu[OMX_CURVE_POINTS_MAX];
     struct omx_curve_mark mk[4];

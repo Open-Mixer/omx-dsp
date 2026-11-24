@@ -3869,10 +3869,10 @@ enum omx_curve_shapes {
 /** The units a curve term's value may come in: the PARAM_UNITS ids (the wire word, never its x-symbol) the served description gives a role, so a host sends the unit it was given. omx_curve_points converts once: `coef` to dB for a gain, `oct` to Q for a bandwidth, `kHz` to Hz; a level in `dB`, `dBFS`, `dBu` or `LUFS` is read as dB from the threshold's own scale; `none` is a plain number, a switch or a choice; `ratio` a ratio. A unit its role does not accept is refused, and so is any other spelling of an id (`hz`, `db`). `percent` (since 0.32.4) is the drive's `mix`. `ms` and `s` (since 0.32.4) are a time, read as ms. (since 3.0.0) A named id's value is its position. */
 enum omx_curve_units {
   OMX_CURVE_UNITS_HZ = 0, ///< The id `Hz`.
-  OMX_CURVE_UNITS_K_HZ = 1, ///< The id `kHz`.
-  OMX_CURVE_UNITS_D_B = 2, ///< The id `dB`.
-  OMX_CURVE_UNITS_D_BFS = 3, ///< The id `dBFS`.
-  OMX_CURVE_UNITS_D_BU = 4, ///< The id `dBu`.
+  OMX_CURVE_UNITS_KHZ = 1, ///< The id `kHz`.
+  OMX_CURVE_UNITS_DB = 2, ///< The id `dB`.
+  OMX_CURVE_UNITS_DBFS = 3, ///< The id `dBFS`.
+  OMX_CURVE_UNITS_DBU = 4, ///< The id `dBu`.
   OMX_CURVE_UNITS_LUFS = 5, ///< The id `LUFS`.
   OMX_CURVE_UNITS_COEF = 6, ///< The id `coef`.
   OMX_CURVE_UNITS_OCT = 7, ///< The id `oct`.
@@ -4367,11 +4367,11 @@ enum omx_meter_measurements {
 #define OMX_METER_MEASUREMENTS_COUNT 6u
 /** The unit a meter's values are in, its PARAM_UNITS id (a surface captions the scale with the id's x-symbol): dBFS for a sample peak, dBTP for a true peak, LUFS for a loudness, LU for a loudness range, dB for a gain reduction. (since 3.0.0) A named id's value is its position. */
 enum omx_meter_units {
-  OMX_METER_UNITS_D_BFS = 0, ///< The id `dBFS`.
-  OMX_METER_UNITS_D_BTP = 1, ///< The id `dBTP`.
+  OMX_METER_UNITS_DBFS = 0, ///< The id `dBFS`.
+  OMX_METER_UNITS_DBTP = 1, ///< The id `dBTP`.
   OMX_METER_UNITS_LUFS = 2, ///< The id `LUFS`.
   OMX_METER_UNITS_LU = 3, ///< The id `LU`.
-  OMX_METER_UNITS_D_B = 4, ///< The id `dB`.
+  OMX_METER_UNITS_DB = 4, ///< The id `dB`.
 };
 /** The number of ids of METER_UNITS. */
 #define OMX_METER_UNITS_COUNT 5u

@@ -209,7 +209,7 @@ static void arm_curve_time(void) {
     ok(code == OMX_CURVE_TERM_MISSING, "no feedback: termMissing", code, OMX_CURVE_TERM_MISSING);
     ctm_ask(OMX_CURVE_FAMILIES_DELAY, t, 3u, 0.0, 16u, x, y, NULL, &ns, &code);
     ok(code == OMX_CURVE_ROOM, "a delay with no room for its stems: room", code, OMX_CURVE_ROOM);
-    const struct omx_curve_term db[] = {CTM_TERM(TIME, 120.0, MS), CTM_TERM(FEEDBACK, 0.5, D_B)};
+    const struct omx_curve_term db[] = {CTM_TERM(TIME, 120.0, MS), CTM_TERM(FEEDBACK, 0.5, DB)};
     ctm_ask(OMX_CURVE_FAMILIES_DELAY, db, 2u, 0.0, 16u, x, y, st, &ns, &code);
     ok(code == OMX_CURVE_UNIT_REFUSED, "a feedback in dB is no share: unitRefused", code, OMX_CURVE_UNIT_REFUSED);
     struct omx_curve_request wrong = {OMX_CURVE_DISPLAYS_TRANSFER_CURVE, OMX_CURVE_FAMILIES_DELAY, CTM_RATE, 16u, 0, 0.0, 0.0, t, 3u, 0, 0.0};

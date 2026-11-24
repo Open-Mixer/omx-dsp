@@ -221,11 +221,11 @@ static inline double omx_meter_view_decimate(enum omx_meter_kinds kind, double k
  */
 static inline enum omx_meter_units omx_meter_view_unit_of(enum omx_meter_kinds kind,
                                                           enum omx_meter_measurements measurement) {
-  if (kind == OMX_METER_KINDS_GAIN_REDUCTION) return OMX_METER_UNITS_D_B;
+  if (kind == OMX_METER_KINDS_GAIN_REDUCTION) return OMX_METER_UNITS_DB;
   if (kind != OMX_METER_KINDS_LEVEL) return (enum omx_meter_units)OMX_METER_UNITS_COUNT;
   switch (measurement) {
-  case OMX_METER_MEASUREMENTS_PEAK: return OMX_METER_UNITS_D_BFS;
-  case OMX_METER_MEASUREMENTS_TRUE_PEAK: return OMX_METER_UNITS_D_BTP;
+  case OMX_METER_MEASUREMENTS_PEAK: return OMX_METER_UNITS_DBFS;
+  case OMX_METER_MEASUREMENTS_TRUE_PEAK: return OMX_METER_UNITS_DBTP;
   case OMX_METER_MEASUREMENTS_LUFS_M:
   case OMX_METER_MEASUREMENTS_LUFS_S:
   case OMX_METER_MEASUREMENTS_LUFS_I: return OMX_METER_UNITS_LUFS;
