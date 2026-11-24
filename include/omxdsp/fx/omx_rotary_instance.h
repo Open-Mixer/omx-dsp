@@ -38,26 +38,38 @@
 #include <omxdsp/fx/omx_instance_io.h>
 #include <omxdsp/omx_param.h>
 
+/** @brief Audio legs in and out: TWO, a stereo pair. */
 #define OMX_ROTARY_INSTANCE_CHANNELS 2
 
 /** Port defaults: the declaration's (ROTARY_*_RANGE.default). The speed set declares no default;
  * the stage comes up at `slow`. */
 #define OMX_ROTARY_INSTANCE_HORN_SLOW_HZ_DEFAULT ((float)OMX_ROTARY_HORN_SLOW_RANGE_DEFAULT)
+/** @brief The hornFastHz port's default, Hz (ROTARY_HORN_FAST_RANGE.default). */
 #define OMX_ROTARY_INSTANCE_HORN_FAST_HZ_DEFAULT ((float)OMX_ROTARY_HORN_FAST_RANGE_DEFAULT)
+/** @brief The drumSlowHz port's default, Hz (ROTARY_DRUM_SLOW_RANGE.default). */
 #define OMX_ROTARY_INSTANCE_DRUM_SLOW_HZ_DEFAULT ((float)OMX_ROTARY_DRUM_SLOW_RANGE_DEFAULT)
+/** @brief The drumFastHz port's default, Hz (ROTARY_DRUM_FAST_RANGE.default). */
 #define OMX_ROTARY_INSTANCE_DRUM_FAST_HZ_DEFAULT ((float)OMX_ROTARY_DRUM_FAST_RANGE_DEFAULT)
+/** @brief The accel port's default, a scale on the speed-change time constants (ROTARY_ACCEL_RANGE.default). */
 #define OMX_ROTARY_INSTANCE_ACCEL_DEFAULT ((float)OMX_ROTARY_ACCEL_RANGE_DEFAULT)
+/** @brief The balance port's default, percent (ROTARY_BALANCE_RANGE.default). */
 #define OMX_ROTARY_INSTANCE_BALANCE_DEFAULT ((float)OMX_ROTARY_BALANCE_RANGE_DEFAULT)
+/** @brief The mix port's default, percent (ROTARY_MIX_RANGE.default). */
 #define OMX_ROTARY_INSTANCE_MIX_DEFAULT ((float)OMX_ROTARY_MIX_RANGE_DEFAULT)
+/** @brief The speed the stage comes up at, and the one a speed outside the set reads as: `slow`. */
 #define OMX_ROTARY_INSTANCE_SPEED_DEFAULT OMX_ROTARY_SLOW
 
 /** One instance: the atom the host's ports resolve to and the state (rotors and inline rings). */
 typedef struct {
+  /** The sample rate init bound the instance to, Hz. */
   float sr;
+  /** The kernel's controls as resolve() last resolved them; run() hands them to the kernel's process. */
   struct omx_rotary atom;
+  /** The kernel's running state, carried from block to block and handed to its process with the atom. */
   struct omx_rotary_state state;
   /** The previous cycle's engaged flag, so a bypass->engaged edge can re-arm the state. */
   int was_engaged;
+  /** Non-zero once init bound the instance to a usable rate; while zero, resolve() does nothing and run() leaves the output as the input. */
   int ready;
 } OmxRotaryInstance;
 
@@ -78,6 +90,7 @@ static inline int omx_rotary_instance_init(OmxRotaryInstance *s, float sr) {
   return 1;
 }
 
+#define OMX_CONTRACT_STAGE "rotary/instance-resolve"
 /**
  * Resolve the host's control-port values into the kernel's atom for one cycle. `bypass` non-zero
  * disables the atom. The arguments are the kernel's contract controls, in their declared order and
@@ -85,9 +98,23 @@ static inline int omx_rotary_instance_init(OmxRotaryInstance *s, float sr) {
  * scale), `balance` and `mix` (percent), each clamped into its declared travel, a non-finite word
  * reading as the declared default; `speed` is the ROTARY_SPEEDS index, an `enum omx_rotary_speed`
  * member (any other value reads as `slow`).
+ * @param s The instance; null or not ready leaves it as it is.
+ * @param bypass Non-zero makes run() the identity.
+ * @param horn_slow_hz hornSlowHz, 0.1 to 2 Hz, default 0.8: The horn's chorale (slow) rate, Hz.
+ * @param horn_fast_hz hornFastHz, 3 to 10 Hz, default 6.8: The horn's tremolo (fast) rate, Hz.
+ * @param drum_slow_hz drumSlowHz, 0.1 to 2 Hz, default 0.7: The drum's chorale (slow) rate, Hz.
+ * @param drum_fast_hz drumFastHz, 3 to 10 Hz, default 5.9: The drum's tremolo (fast) rate, Hz.
+ * @param accel accel, 0.25 to 4 coef, default 1: The scale on every speed-change time constant
+ *        (`ROTARY_*_ACCEL_MS`/`_DECEL_MS`): 2 is twice as slow.
+ * @param balance balance, -100 to 100 \%, default 0: The drum/horn balance, percent: −100 drum only, +100 horn only;
+ *        the law attenuates, never boosts.
+ * @param mix mix, 0 to 100 \%, default 100: The rotary's wet/dry, as an instance of DRIVE_MIX_RANGE: 100 \%, because a
+ *        rotary on an insert IS the sound (it replaces the cabinet) and an `fxReturn` wants it wet too.
+ * @param speed speed, the place in stop, slow, fast (0 to 2): The rotary speaker's speed settings, in the order of the
+ *        integer the kernel reads: the rotors stopped, at their chorale (slow) rate, or at their tremolo (fast) rate.
+ * @post `atom-meets-the-kernel-preconditions`: the mix inside [0, 1] and both rotors' target rates not negative.
  * @thread audio
  */
-#define OMX_CONTRACT_STAGE "rotary/instance-resolve"
 static inline void omx_rotary_instance_resolve(OmxRotaryInstance *s, int bypass, float horn_slow_hz,
                                                float horn_fast_hz, float drum_slow_hz, float drum_fast_hz,
                                                float accel, float balance, float mix, int speed) {

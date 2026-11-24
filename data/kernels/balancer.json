@@ -1,8 +1,5 @@
 {
   "$schema": "../../schema/omx-contract.schema.json",
-  "requires": {
-    "omx-contract-schema": ">= 3.1.0"
-  },
   "controls": [
     {
       "name": "amountPct",
@@ -15,7 +12,7 @@
         "min": 0,
         "max": 100,
         "step": 1,
-        "unit": "%",
+        "unit": "percent",
         "default": 0,
         "defaultFrom": "desk"
       }
@@ -47,7 +44,7 @@
         "min": 0.1,
         "max": 6,
         "step": 0.1,
-        "unit": "dB",
+        "unit": "dBPerS",
         "default": 0.5,
         "defaultFrom": "desk"
       }
@@ -63,7 +60,7 @@
         "min": -6,
         "max": 0,
         "step": 0.5,
-        "unit": "dB/oct",
+        "unit": "dBPerOct",
         "default": -3,
         "defaultFrom": "desk"
       }
@@ -144,7 +141,7 @@
         "impl": "include/omxdsp/fx/omx_balancer_instance.h#omx_balancer_instance_init"
       },
       "doc": "The Q of each band's detector and of its peaking section: 0.7 is about two octaves, so the bands meet.",
-      "unit": "",
+      "unit": "none",
       "value": 0.7
     },
     "BALANCER_DETECT_MS": {
@@ -171,7 +168,7 @@
         "impl": "include/omxdsp/fx/omx_balancer_instance.h#omx_balancer_tick"
       },
       "doc": "What a constant-Q band gains per octave on a flat spectrum, dB: its width doubles, 10 log10(2). The target's slope is the spectrum's, so a band's level is read against the slope plus this: on pink noise every band reads the same.",
-      "unit": "dB/oct",
+      "unit": "dBPerOct",
       "value": 3.0103
     }
   }

@@ -1,8 +1,5 @@
 {
   "$schema": "../../schema/omx-contract.schema.json",
-  "requires": {
-    "omx-contract-schema": ">= 3.1.0"
-  },
   "controls": [
     {
       "name": "thresholdDb",
@@ -25,7 +22,7 @@
         "min": 1,
         "max": 20,
         "step": 0.5,
-        "unit": "",
+        "unit": "none",
         "default": 4,
         "defaultFrom": "desk"
       }
@@ -90,7 +87,7 @@
         "min": 0,
         "max": 100,
         "step": 5,
-        "unit": "%",
+        "unit": "percent",
         "default": 100,
         "defaultFrom": "desk"
       }
@@ -210,7 +207,7 @@
         "min": -6,
         "max": 6,
         "step": 0.5,
-        "unit": "dB/oct",
+        "unit": "dBPerOct",
         "default": 0,
         "defaultFrom": "desk"
       }
@@ -389,7 +386,7 @@
         },
         "impl": "include/omxdsp/omx_envelope.h#charge_pole"
       },
-      "doc": "The program-dependent release's model constants — the LA-2A's opto cell as DATA. `chargeMs`/`dischargeMs` are the word's memory constants, shared by every profile; each profile's `fastMs`, `slowMinMs`, `slowMaxMs` and `share` fit the unit's published two-stage recovery (opto); `auto` spans a bus compressor's fixed release detents, 100 ms to 1.2 s, half fast and half slow. Not operator controls: generated into `omx_contract_limits.h` as `OMX_PROGRAM_RELEASE_*`, which libomxdsp's `omx_env_program_release` reads.",
+      "doc": "The program-dependent release's model constants — the LA-2A's opto cell as DATA. `chargeMs`/`dischargeMs` are the word's memory constants, shared by every profile; each profile's `fastMs`, `slowMinMs`, `slowMaxMs` and `share` fit the unit's published two-stage recovery (opto); `auto` spans a bus compressor's fixed release detents, 100 ms to 1.2 s, half fast and half slow. Not operator controls: rendered into `omxdsp/omxdsp_definitions.h` as `OMX_PROGRAM_RELEASE_*`, which libomxdsp's `omx_env_program_release` reads.",
       "value": {
         "chargeMs": 1000,
         "dischargeMs": 5000,
@@ -415,7 +412,7 @@
         "impl": "include/omxdsp/omx_oversampler.h#OMX_OVS_LATENCY_4X"
       },
       "doc": "What the 4x detector oversampling costs the strip it is engaged on, in samples: the causal linear-phase half-band's reach, by which the audio is delayed so the gain still lands on the sample it was computed from. A sample count, not a time: the same at every rate. omx-dsp's oversampler declares the same number as OMX_OVS_LATENCY_4X, and its comp and gate faces report it while 4x is engaged.",
-      "unit": "",
+      "unit": "none",
       "value": 72
     },
     "KEY_TILT_PIVOT_HZ": {

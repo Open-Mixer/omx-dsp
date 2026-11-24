@@ -68,9 +68,9 @@ sabotage bassdefault omxdsp_definitions.h 's|^#define OMX_WIDTH_BASS_MONO_HZ_RAN
 pids+=($!)
 sabotage mstop omxdsp_definitions.h 's|^#define OMX_WIDTH_PSEUDO_MS_RANGE_MAX 30$|#define OMX_WIDTH_PSEUDO_MS_RANGE_MAX 25|' F &
 pids+=($!)
-sabotage ringkeep fx/omx_width_instance.h 's|    if (s->p.pseudo != was_pseudo [|][|] s->p.d != was_d) {|    if (0 \&\& (s->p.pseudo != was_pseudo \|\| s->p.d != was_d)) {|' G &
+sabotage ringkeep omx_width.h 's|    if (p->pseudo != was_pseudo [|][|] p->d != was_d) {|    if (0 \&\& (p->pseudo != was_pseudo \|\| p->d != was_d)) {|' G &
 pids+=($!)
-sabotage engagekeep fx/omx_width_instance.h 's|  if (s->enabled [\&][\&] s->p.active [\&][\&] !was_live) {|  if (0 \&\& !was_live) {|' G &
+sabotage engagekeep omx_width.h 's|  if (\*enabled [\&][\&] p->active [\&][\&] !was_live) {|  if (0 \&\& !was_live) {|' G &
 pids+=($!)
 failed=0
 for p in "${pids[@]}"; do wait "$p" || failed=1; done

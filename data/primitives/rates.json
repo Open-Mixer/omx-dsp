@@ -1,8 +1,5 @@
 {
   "$schema": "../../schema/omx-contract.schema.json",
-  "requires": {
-    "omx-contract-schema": ">= 3.0.0"
-  },
   "RT_HARD_TARGET": {
     "kind": "sheet",
     "doc": "THE declaration: 192 kHz at quantum 128.",

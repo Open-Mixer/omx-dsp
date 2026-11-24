@@ -11,7 +11,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { OC, controlGlobal, isKernelFile, isUse, loadData, packageVersion, renderC, renderJson, renderTs, resolveData } from './oc.mjs';
 
-/** omx-contract's checkout: its own data/, schema/, committed renders and release fixtures. */
+/** omx-contract's checkout: its own data/, schema/ and committed renders. */
 export const ROOT = OC;
 /** omx-contract's own data. */
 export const DATA = join(OC, 'data');
@@ -34,8 +34,8 @@ export function scratchUnion() {
   cpSync(DATA, join(dir, 'data'), { recursive: true });
   cpSync(join(HERE, 'data'), join(dir, 'data'), { recursive: true });
   cpSync(join(ROOT, 'schema'), join(dir, 'schema'), { recursive: true });
-  // the domains omx-contract reads beside data/: contract.d/param holds PARAM_SCALES and PARAM_UNITS (the floor, 3.21.0)
-  if (!existsSync(join(ROOT, 'contract.d/param/param.json'))) throw new Error(`${ROOT} has no contract.d/param/param.json: the omx-contract floor is 3.21.0, whose param domain holds PARAM_SCALES and PARAM_UNITS`);
+  // the domains omx-contract reads beside data/: contract.d/param holds PARAM_SCALES and PARAM_UNITS (from 3.21.0 on)
+  if (!existsSync(join(ROOT, 'contract.d/param/param.json'))) throw new Error(`${ROOT} has no contract.d/param/param.json: omx-contract 3.21.0 on holds PARAM_SCALES and PARAM_UNITS`);
   cpSync(join(ROOT, 'contract.d'), join(dir, 'contract.d'), { recursive: true });
   return join(dir, 'data');
 }

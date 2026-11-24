@@ -36,24 +36,35 @@
 #include <omxdsp/fx/omx_instance_io.h>
 #include <omxdsp/omx_param.h>
 
+/** @brief Audio legs in and out: TWO, a stereo pair. */
 #define OMX_PHASER_INSTANCE_CHANNELS 2
+/** @brief The latency the instance reports to its host, frames: none. */
 #define OMX_PHASER_INSTANCE_LATENCY_FRAMES 0.0f
 
 /** Port defaults: the declaration's (PHASER_*_RANGE.default). */
 #define OMX_PHASER_INSTANCE_RATE_HZ_DEFAULT ((float)OMX_PHASER_RATE_RANGE_DEFAULT)
+/** @brief The baseHz port's default, Hz (PHASER_BASE_RANGE.default). */
 #define OMX_PHASER_INSTANCE_BASE_HZ_DEFAULT ((float)OMX_PHASER_BASE_RANGE_DEFAULT)
+/** @brief The depthOct port's default, octaves (PHASER_DEPTH_RANGE.default). */
 #define OMX_PHASER_INSTANCE_DEPTH_OCT_DEFAULT ((float)OMX_PHASER_DEPTH_RANGE_DEFAULT)
+/** @brief The stages port's default, sections per leg (PHASER_STAGES_RANGE.default). */
 #define OMX_PHASER_INSTANCE_STAGES_DEFAULT ((float)OMX_PHASER_STAGES_RANGE_DEFAULT)
+/** @brief The feedback port's default, signed (PHASER_FEEDBACK_RANGE.default). */
 #define OMX_PHASER_INSTANCE_FEEDBACK_DEFAULT ((float)OMX_PHASER_FEEDBACK_RANGE_DEFAULT)
+/** @brief The mix port's default, percent (PHASER_MIX_RANGE.default). */
 #define OMX_PHASER_INSTANCE_MIX_DEFAULT ((float)OMX_PHASER_MIX_RANGE_DEFAULT)
 
 /** One instance: the atom the host's ports resolve to and the state it drives. */
 typedef struct {
+  /** The sample rate init bound the instance to, Hz. */
   float sr;
+  /** The kernel's controls as resolve() last resolved them; run() hands them to the kernel's process. */
   struct omx_phaser atom;
+  /** The kernel's running state, carried from block to block and handed to its process with the atom. */
   struct omx_phaser_state state;
   /** The previous cycle's engaged flag, so a bypass->engaged edge can clear the state. */
   int was_engaged;
+  /** Non-zero once init bound the instance to a usable rate; while zero, resolve() does nothing and run() leaves the output as the input. */
   int ready;
 } OmxPhaserInstance;
 
@@ -77,15 +88,29 @@ static inline int omx_phaser_instance_init(OmxPhaserInstance *s, float sr) {
   return 1;
 }
 
+#define OMX_CONTRACT_STAGE "phaser/instance-resolve"
 /**
  * Resolve the host's control-port values into the kernel's atom for one cycle. `bypass` non-zero
  * disables the atom. The arguments are the kernel's contract controls, in their declared order and
  * user units: `rate_hz` (Hz), `base_hz` (Hz), `depth_oct` (octaves), `stages` (a section count,
  * rounded to the nearest even member), `feedback` (signed) and `mix` (percent), each clamped into
  * its declared travel, a non-finite word reading as the declared default.
+ * @param s The instance; null or not ready leaves it as it is.
+ * @param bypass Non-zero makes run() the identity.
+ * @param rate_hz rateHz, 0.05 to 5 Hz, default 0.5: The phaser's sweep speed.
+ * @param base_hz baseHz, 50 to 2000 Hz, default 200: The phaser's lowest centre frequency; the sweep runs upward from
+ *        it.
+ * @param depth_oct depthOct, 0 to 6 oct, default 4: The sweep's span above `base`, in octaves; 0 is a static phaser at
+ *        `base`.
+ * @param stages stages, 2 to 12, default 6: The phaser's section count per leg — EVEN, 2 … 12 (two sections per notch).
+ * @param feedback feedback, -0.9 to 0.9, default 0.4: The phaser's SIGNED resonance.
+ * @param mix mix, 0 to 100 \%, default 50: The phaser's wet/dry, as an instance of DRIVE_MIX_RANGE: 50 \%, where the
+ *        notch is complete.
+ * @post `atom-meets-the-kernel-preconditions`: a legal stage count, the feedback's magnitude at most
+ *       OMX_PHASER_FB_MAX, the mix inside [0, 1], the base above 0 Hz, the depth not negative and the oscillator's
+ *       increment inside [0, 1).
  * @thread audio
  */
-#define OMX_CONTRACT_STAGE "phaser/instance-resolve"
 static inline void omx_phaser_instance_resolve(OmxPhaserInstance *s, int bypass, float rate_hz,
                                                float base_hz, float depth_oct, float stages,
                                                float feedback, float mix) {

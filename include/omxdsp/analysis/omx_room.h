@@ -20,12 +20,12 @@
  *   modes      local maxima of a position's magnitude a set height above the band's median, with a
  *              half-power Q, confirmed when every position shows one within a bin;
  *   mode-eq    the cut a confirmed mode proposes, bounded by the notch depth law and the EQ's gain
- *              and Q travel (omx-contract's OMX_FBS_MAX_NOTCH_DEPTH_DB, OMX_EQ_GAIN_RANGE_*,
+ *              and Q travel (this library's OMX_FBS_MAX_NOTCH_DEPTH_DB, OMX_EQ_GAIN_RANGE_*,
  *              OMX_EQ_Q_RANGE_*), and the residual a re-sweep reads.
  *
  * Every other number core declares for these readers (the bands, the floors, the horizon, the T20
  * span, the median margin, the position floor, the frame floor) is the caller's to pass:
- * omx-contract does not declare them yet and this tree types none of them.
+ * this library's data/ does not declare them yet and this tree types none of them.
  * Control thread only, never the audio callback: no allocation (every buffer and scratch is the
  * caller's, sized as each function states), no lock, no global state, no I/O.
  */

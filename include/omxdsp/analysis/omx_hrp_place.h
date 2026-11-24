@@ -57,9 +57,9 @@ typedef struct OmxHrpPlaceLimits {
 /** One placed band: a bell at freq_hz, gain_db (negative is a cut), q. */
 typedef struct OmxHrpPlacedBand {
   uint32_t harmonic; /**< the harmonic it was placed for (1 is the fundamental) */
-  double freq_hz;
-  double gain_db;
-  double q;
+  double freq_hz;    /**< `harmonic · f0_hz`, Hz; inside EQ_FREQ_RANGE */
+  double gain_db;    /**< the requested gain clamped into [-max_cut_db, max_boost_db], dB; never 0 */
+  double q;          /**< the caller's q clamped into EQ_Q_RANGE, the same for every band of one placement */
 } OmxHrpPlacedBand;
 
 /**
@@ -78,6 +78,8 @@ uint32_t omx_hrp_place_bands(double f0_hz, const double *gains_db, uint32_t n_ga
 
 /**
  * @brief Is a band at freq_hz placeable (inside EQ_FREQ_RANGE, both bounds kept)? A NaN is not.
+ * @param freq_hz The band's frequency, Hz.
+ * @return 1 when placeable, else 0.
  * @thread worker
  */
 int omx_hrp_place_in_range(double freq_hz);
@@ -85,6 +87,9 @@ int omx_hrp_place_in_range(double freq_hz);
 /**
  * @brief One bounded move of `current` toward `target`: the target when it is within HRP_GAIN_STEP_DB, else one
  * step toward it. A NaN in gives a NaN out, as the console's arithmetic does.
+ * @param current The band's gain now, dB.
+ * @param target The gain it moves toward, dB.
+ * @return The gain after the move, dB.
  * @thread worker
  */
 double omx_hrp_step_toward(double current, double target);

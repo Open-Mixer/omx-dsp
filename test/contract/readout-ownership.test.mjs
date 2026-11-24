@@ -19,8 +19,8 @@ const problems = (dir) => validateData(loadData(dir)).map((p) => `${p.rule}: ${p
 
 test('the owner is this library, and omx-contract no longer holds the item', () => {
   assert.equal(relOf('READOUT_RATE_HZ'), 'data/primitives/readout.json');
-  // omx-contract 3.21.0, the floor, drops data/primitives.json with its last item, READOUT_RATE_HZ
-  assert.equal(existsSync(join(DATA, 'primitives.json')), false, 'omx-contract data/primitives.json is still there: the floor is 3.21.0 (build the chain from its sorting-pass branch)');
+  // omx-contract 3.21.0 on drops data/primitives.json with its last item, READOUT_RATE_HZ
+  assert.equal(existsSync(join(DATA, 'primitives.json')), false, 'omx-contract data/primitives.json is still there: it is gone from omx-contract 3.21.0 on');
   assert.equal(loadData(DATA).items.has('READOUT_RATE_HZ'), false, 'omx-contract data/ still declares it');
 });
 

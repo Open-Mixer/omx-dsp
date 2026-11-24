@@ -42,7 +42,7 @@ test('the check names a readout floor and a travel bound written as a number, an
   const doc = {
     controls: [{ name: 'thresholdDb', kind: 'travel', travel: { min: -40, max: 0, step: 0.5, unit: 'dB' } }],
     readouts: [{ name: 'gainReductionDb', unit: 'dB', min: -40, max: 0, scale: 'linear', rateHz: 50 }],
-    constants: { X_CEILING_DB: { kind: 'scalar', unit: 'dB', value: 6 }, X_COUNT: { kind: 'scalar', unit: '', value: -40 } },
+    constants: { X_CEILING_DB: { kind: 'scalar', unit: 'dB', value: 6 }, X_COUNT: { kind: 'scalar', unit: 'none', value: -40 } },
   };
   doc.controls.push({ name: 'boostDb', kind: 'travel', travel: { min: 0, max: 6, step: 0.5, unit: 'dB' } });
   assert.deepEqual(repeatedBounds([{ rel: 'data/kernels/x.json', doc }]), [

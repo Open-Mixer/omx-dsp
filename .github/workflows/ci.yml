@@ -5,8 +5,8 @@ name: ci
 # By workflow_dispatch (on a pull request's head before it is merged: gh workflow run ci.yml --ref <branch>): the whole suite (make test) on Fedora, and the package check (make check-package: every oracle and golden digest,
 # not the sabotage and perturbation arms, which run once) on both Debian releases and Ubuntu 24.04,
 # on the cells check-matrix names (the quick set's while the release matrix is quick); on workflow_dispatch the packages built, their file lists checked and a consumer outside the tree built
-# against each; omx-contract installed from the OpenMixer channel at the floor the packaging
-# declares, and refused below its floor. The packages and the release workflow as a dry run only on workflow_dispatch
+# against each; omx-contract installed from the OpenMixer channel, the published package and nothing else, with no
+# version typed anywhere (owner ruling 2026-11-24). The packages and the release workflow as a dry run only on workflow_dispatch
 # (fast-release dispatches it on a release head). The fast checks, the documentation check among them, run on every
 # pull request from public-sources.yml. Nothing is signed or published here. Every job reads this
 # repository and other public ones, and runs on GitHub's runners.
@@ -16,11 +16,6 @@ on:
 
 permissions:
   contents: read
-
-env:
-  # omx-contract's reader, render and install script, which data/ is read back through and the definitions header
-  # rendered by, from this release tag: the floor packaging/deps.txt declares
-  OMX_CONTRACT_REF: v3.21.0
 
 concurrency:
   # Every dispatch has a group of its own (the run id) and is never cancelled.
@@ -49,6 +44,29 @@ jobs:
           deb-arches: '["amd64", "arm64"]'
           x86-runner: ${{ github.event.pull_request.head.repo.fork && 'ubuntu-latest' || vars.OMX_RUNNER || 'ubuntu-latest' }}
 
+  # the lints run in a job of their own: a lint red never skips a step of the suite, which runs and reports whatever the
+  # lint says (a lint step before make test in the same job skipped the suite on its red, and hid every red behind it).
+  # tools/test/workflow-lint-job-check.sh holds them here and nowhere else.
+  lint:
+    name: the licence headers, no ceiling and no hand-kept floor
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Every file a comment can be written in opens with its licence
+        id: handback-spdx
+        uses: Open-Mixer/.github/.github/actions/spdx-check@openmixer-v1
+
+      # no packaging/deps.txt: the shared render has nothing to write and refuses a ceiling or a pin anywhere
+      - name: No ceiling or pin on a dependency
+        id: handback-deps
+        uses: Open-Mixer/.github/.github/actions/deps-render@openmixer-v1
+
+      - name: No hand-kept version floor (self-test, six planted floors red)
+        id: handback-no-floor
+        run: bash tools/no-floor-check.sh && bash tools/no-floor-check.sh --self-test
+
   test:
     name: make test (${{ matrix.cell.image }}, ${{ matrix.cell.arch }})
     runs-on: ${{ matrix.cell.runner }}
@@ -62,7 +80,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # ruling D25: bookworm is a full cell, served its floors (omx-contract 3.18.0) only at the wave-end full release
+        # ruling D25: bookworm is a full cell, served only at the wave-end full release
         cell: ${{ fromJSON(needs.checks.outputs.cells) }}
     container:
       image: ${{ matrix.cell.image }}
@@ -114,22 +132,9 @@ jobs:
           # the test containers carry no node: the twins' version is read as text
           grep -q "^  \"version\": \"$v\",\$" ts/package.json
 
-      - name: Every file a comment can be written in opens with its licence
-        id: handback-spdx
-        uses: Open-Mixer/.github/.github/actions/spdx-check@openmixer-v1
-
-      # packaging/deps.txt is the one place a floor is written: the spec, debian/control and OMX_CONTRACT_REF follow it
-      - name: The dependency floors are the ones packaging/deps.txt declares
-        id: handback-deps
-        uses: Open-Mixer/.github/.github/actions/deps-render@openmixer-v1
-
       - name: The release workflow builds arm on every tag
         id: handback-release-arm-gate
         run: tools/release-arm-gate-selftest.sh && tools/release-arm-gate-selftest.sh --sabotage
-
-      - name: The picker chooses the newest published omx-contract below the floor (self-test, sabotage held)
-        id: handback-below-floor-picker
-        run: sh tools/below-floor-version-selftest.sh
 
       # the parallel jobs from the job's CPU quota and the runner's declared CPUs, never the host's nproc
       - name: The parallel jobs this runner may run
@@ -152,9 +157,6 @@ jobs:
         if: ${{ !startsWith(matrix.cell.image, 'fedora') }}
         run: make -j"$OMX_JOBS" check-package
 
-  # The sabotage of the range: the newest published omx-contract below the floor the spec declares, picked
-  # by tools/below-floor-version.sh from the channel's own versions and installed with its signature checked,
-  # must stop the build at once with a message that names the dependency, the floor and the version installed.
   # The curve function as WebAssembly (make wasm, tools/wasm-build.sh): the distribution's own clang, lld and wasi-libc,
   # nothing downloaded. Fedora is the reference; Debian trixie's package names are what this cell confirms or refutes.
   wasm:
@@ -186,14 +188,14 @@ jobs:
         uses: Open-Mixer/.github/.github/actions/add-openmixer@openmixer-v1
         with:
           suite: ${{ startsWith(matrix.image, 'ubuntu') && 'trixie' || '' }}
-      - name: Install omx-contract at the floor
+      - name: Install omx-contract from the OpenMixer channel
         run: |
           set -euo pipefail
           if command -v dnf >/dev/null; then dnf install -y --setopt=tsflags=nodocs --setopt=install_weak_deps=False omx-contract-devel; else apt-get -o Dpkg::Options::=--force-unsafe-io install -y --no-install-recommends libomx-contract-dev; fi
           sh tools/contract-include.sh
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 26
       - name: make wasm, wasm-check and wasm-sabotage
         run: |
           set -euo pipefail
@@ -244,7 +246,7 @@ jobs:
         run: make -j"$OMX_JOBS" lib
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 26
       - name: The shared curve vectors, native
         run: |
           apt-get -o Dpkg::Options::=--force-unsafe-io install -y --no-install-recommends python3
@@ -269,101 +271,43 @@ jobs:
       - name: The EQ Q range moves the kernel and the twin together (omx-dsp#5)
         run: make -j"$OMX_JOBS" eq-q-range-sabotage
 
-  contract-floor:
-    name: below the omx-contract floor the build refuses (${{ matrix.cell.image }}, ${{ matrix.cell.arch }})
-    runs-on: ${{ matrix.cell.runner }}
-    needs: checks
-    if: needs.checks.outputs.count != '0'
-    timeout-minutes: 15
-    strategy:
-      fail-fast: false
-      matrix:
-        cell: ${{ fromJSON(needs.checks.outputs.cells) }}
+  # data/ read back through omx-contract's reader (make contract-dir) and the committed definitions header held
+  # equal to its render (make definitions-check), and the completeness proof over data/ and recipes/answers/
+  # (make contract-proof). They need node and an omx-contract source tree, which no other job has: the source of the
+  # omx-contract package published on the channel, at the tag of the version installed (no version typed here).
+  contract:
+    name: data/ read back through omx-contract's reader, the committed header its render
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
     container:
-      image: ${{ matrix.cell.image }}
+      image: fedora:45
     defaults:
       run:
         shell: bash
     steps:
-      - name: Install the build tools
-        run: |
-          set -euo pipefail
-          if command -v dnf >/dev/null; then
-            dnf install -y --setopt=tsflags=nodocs --setopt=install_weak_deps=False git gcc make gawk dnf5-plugins pkgconf-pkg-config
-          else
-            apt-get update -qq
-            apt-get -o Dpkg::Options::=--force-unsafe-io install -y --no-install-recommends git ca-certificates curl build-essential gawk pkgconf
-          fi
-
-      - name: Add the OpenMixer repository
-        uses: Open-Mixer/.github/.github/actions/add-openmixer@openmixer-v1
+      - name: Install the tools
+        run: dnf install -y --setopt=tsflags=nodocs --setopt=install_weak_deps=False make gcc git tar gzip pkgconf-pkg-config dnf5-plugins
 
       - uses: actions/checkout@v4
 
       - name: The checkout is a git directory this job may read
         run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
-      # The newest published version strictly below the floor, read from the channel itself (the signature check stays on:
-      # no --nogpgcheck), never a version typed here. Refused by name when the channel publishes none below the floor.
-      - name: Install the newest published omx-contract below the floor, its signature checked
-        run: |
-          set -euo pipefail
-          floor="$(sh tools/contract-include.sh --floor)"
-          if command -v dnf >/dev/null; then
-            # -y takes the FreeREAC key the add-openmixer step enabled (the list stops at its prompt otherwise); the signature check stays on
-            dnf -y list --showduplicates omx-contract-devel > avail.txt
-            awk '$1 ~ /^omx-contract-devel\./ {print $2}' avail.txt > versions.txt
-            pkg="$(sh tools/below-floor-version.sh "$floor" < versions.txt)"
-          else
-            apt-get -o Dpkg::Options::=--force-unsafe-io update -qq
-            apt-cache madison libomx-contract-dev | awk -F'|' '{n=$1; v=$2; gsub(/ /,"",n); gsub(/ /,"",v); if (n=="libomx-contract-dev") print v}' > versions.txt
-            pkg="$(sh tools/below-floor-version.sh --deb "$floor" < versions.txt)"
-          fi
-          old="$(printf '%s' "$pkg" | sed 's/-[^-]*$//')"
-          echo "below-floor: the newest published omx-contract below the floor $floor is $pkg (omx-contract $old)"
-          if command -v dnf >/dev/null; then
-            dnf install -y --setopt=tsflags=nodocs "omx-contract-devel-$pkg"
-          else
-            # the data package is pinned to the same version: the devel depends on it at that version, and apt otherwise picks the newest (3.20.0)
-            apt-get -o Dpkg::Options::=--force-unsafe-io install -y --no-install-recommends "libomx-contract-dev=$pkg" "omx-contract-data=$pkg"
-          fi
-          test "$(pkg-config --modversion omx-contract)" = "$old"
-          echo "OLD=$old" >> "$GITHUB_ENV"
-
-      - name: make lib fails, naming omx-contract, the floor and the version installed
-        run: |
-          set +e -uo pipefail
-          floor="$(sh tools/contract-include.sh --floor)"
-          make lib > out.txt 2>&1; rc=$?
-          cat out.txt
-          [ "$rc" != 0 ] || { echo "make lib built against omx-contract $OLD, below the floor $floor"; exit 1; }
-          ! ls build/*.o >/dev/null 2>&1 || { echo "make compiled before refusing"; exit 1; }
-          for word in omx-contract "$floor" "$OLD"; do
-            grep -q "contract-include:.*$word" out.txt || { echo "the refusal does not name '$word'"; exit 1; }
-          done
-          echo "refused as it must be: $(grep -m1 'contract-include:' out.txt)"
-
-  # data/ read back through omx-contract's reader (make contract-dir) and the committed definitions header held
-  # equal to its render (make definitions-check), and the completeness proof over data/ and recipes/answers/
-  # (make contract-proof). They need node and an omx-contract checkout, which no other job has.
-  contract:
-    name: data/ read back through omx-contract's reader, the committed header its render
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v4
-
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 26
 
-      - name: Fetch omx-contract at OMX_CONTRACT_REF and install it
+      - name: Add the OpenMixer repository
+        uses: Open-Mixer/.github/.github/actions/add-openmixer@openmixer-v1
+
+      # the published package names the source it was built from: its version's release tag, never a typed one
+      - name: Install omx-contract from the channel and fetch the source of the version installed
         run: |
           set -euo pipefail
-          case $OMX_CONTRACT_REF in
-            v[0-9]*.[0-9]*.[0-9]*) ref=refs/tags/$OMX_CONTRACT_REF ;;
-            *) echo "OMX_CONTRACT_REF is $OMX_CONTRACT_REF: pin a release tag" >&2; exit 1 ;;
-          esac
+          dnf install -y --setopt=tsflags=nodocs --setopt=install_weak_deps=False omx-contract
+          v="$(rpm -q --qf '%{VERSION}' omx-contract)"
+          ref=refs/tags/v$v
+          echo "omx-contract $v installed from the channel: its source at $ref"
           git init -q /tmp/omx-contract
           git -C /tmp/omx-contract fetch -q --depth 1 https://github.com/Open-Mixer/omx-contract "$ref"
           git -C /tmp/omx-contract checkout -q FETCH_HEAD
@@ -391,33 +335,42 @@ jobs:
       - name: make contract-tests
         run: make contract-tests OMX_CONTRACT=/tmp/omx-contract
 
+      # every unit data/ and recipes/answers/ state is a PARAM_UNITS standard id, its sabotage held (omx-contract#193)
+      - name: make units-check
+        run: make units-check OMX_CONTRACT=/tmp/omx-contract
+
   # The libFuzzer harnesses of fuzz/ (clang, libFuzzer, ASan, UBSan, the library's contracts), each run for 60 s from
   # its seed corpus; red on any crash or broken contract, the crashing input uploaded. Then the checks prove
   # themselves: every sabotage patch found at the check it names, every record met by its own check on its own seed,
-  # and every harness at its coverage floor with every check reached. omx-contract's header is read from a checkout
-  # at OMX_CONTRACT_REF through OMX_CONTRACT_INC (no node and no install needed to fuzz).
+  # and every harness at its coverage floor with every check reached. omx-contract's header is the installed
+  # libomx-contract-dev from the channel, found by pkg-config (no version typed).
   fuzz:
     name: fuzz (60 s per harness)
     runs-on: ubuntu-latest
     # a backstop: six harnesses of 60 s, their build, and the three proofs, which run seeds only, end well inside this
     timeout-minutes: 30
+    # a Debian container: the channel serves Debian, and the job installs omx-contract's header from it
+    container:
+      image: debian:trixie
+    defaults:
+      run:
+        shell: bash
     steps:
+      - name: Install clang, libFuzzer's runtime and llvm-cov
+        run: |
+          apt-get update -qq
+          apt-get -o Dpkg::Options::=--force-unsafe-io install -y --no-install-recommends make gawk git ca-certificates curl pkgconf clang libclang-rt-dev llvm
+
       - uses: actions/checkout@v4
 
-      - name: Install clang, libFuzzer's runtime and llvm-cov
-        run: sudo apt-get update -qq && sudo apt-get install -y --no-install-recommends clang libclang-rt-dev llvm
+      - name: Add the OpenMixer repository
+        uses: Open-Mixer/.github/.github/actions/add-openmixer@openmixer-v1
 
-      - name: Fetch omx-contract at OMX_CONTRACT_REF
+      - name: Install omx-contract from the channel
         run: |
           set -euo pipefail
-          case $OMX_CONTRACT_REF in
-            v[0-9]*.[0-9]*.[0-9]*) ref=refs/tags/$OMX_CONTRACT_REF ;;
-            *) echo "OMX_CONTRACT_REF is $OMX_CONTRACT_REF: pin a release tag" >&2; exit 1 ;;
-          esac
-          git init -q /tmp/omx-contract
-          git -C /tmp/omx-contract fetch -q --depth 1 https://github.com/Open-Mixer/omx-contract "$ref"
-          git -C /tmp/omx-contract checkout -q FETCH_HEAD
-          echo "OMX_CONTRACT_INC=/tmp/omx-contract/include" >> "$GITHUB_ENV"
+          apt-get -o Dpkg::Options::=--force-unsafe-io install -y --no-install-recommends libomx-contract-dev
+          pkg-config --modversion omx-contract
 
       - name: Build the harnesses (clang, libFuzzer, ASan, UBSan, contracts)
         run: make fuzz
@@ -538,8 +491,10 @@ jobs:
       - name: The packaged loader loads the packaged module, in a clean root
         run: |
           set -euo pipefail
-          # fedora:45: an earlier step may have installed node as nodejs22-bin, which conflicts with the nodejs package
-          dnf install -y --setopt=tsflags=nodocs --setopt=install_weak_deps=False $(command -v node >/dev/null || echo nodejs) rpms/omx-dsp-wasm-[0-9]*.noarch.rpm
+          # Node 26 (#130): Fedora 45's plain nodejs is Node 22, and the build's nodejs22-bin holds /usr/bin/node, so
+          # nodejs26-bin takes it over (--allowerasing)
+          dnf install -y --setopt=tsflags=nodocs --setopt=install_weak_deps=False --allowerasing nodejs26 nodejs26-bin rpms/omx-dsp-wasm-[0-9]*.noarch.rpm
+          node --version | grep -q '^v26\.'
           node tools/wasm-loader-check.mjs /usr/share/omx-dsp
 
       - uses: actions/upload-artifact@v4
@@ -612,10 +567,15 @@ jobs:
           gcc $(pkg-config --cflags omxdsp-contracts) -O2 -o /tmp/flavour test/omxdsp_flavour.c $(pkg-config --libs omxdsp-contracts)
           /tmp/flavour
 
+      # Node 26 (#130): Debian's archive carries no Node 26
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 26
       - name: The packaged loader loads the packaged module, in a clean root
         run: |
           set -euo pipefail
-          apt-get -o Dpkg::Options::=--force-unsafe-io install -y --no-install-recommends ./debs/omx-dsp-wasm_*.deb nodejs
+          apt-get -o Dpkg::Options::=--force-unsafe-io install -y --no-install-recommends ./debs/omx-dsp-wasm_*.deb
+          node --version | grep -q '^v26\.'
           dpkg -L omx-dsp-wasm > listing.txt
           grep -q '^/usr/share/omx-dsp/dist/index.js$' listing.txt
           grep -q '^/usr/share/omx-dsp/wasm/omx-dsp.wasm$' listing.txt
@@ -630,5 +590,4 @@ jobs:
       actions: read
     uses: ./.github/workflows/release.yml
     with:
-      publish: false
       arm: false  # arm64/aarch64 build at release only

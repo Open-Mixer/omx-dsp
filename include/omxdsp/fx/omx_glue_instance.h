@@ -29,17 +29,25 @@
 #include <omxdsp/omx_param.h>
 #include <omxdsp/omxdsp_definitions.h>
 
+/** @brief Audio legs in and out: TWO, a stereo pair. */
 #define OMX_GLUE_INSTANCE_CHANNELS 2
 
+/** The ratio detents, in the order of the ratio choice's index: GLUE_RATIO_VALUES (2, 4, 10). */
 static const float OMX_GLUE_INSTANCE_RATIOS[OMX_GLUE_RATIO_VALUES_COUNT] = OMX_GLUE_RATIO_VALUES_INIT;
+/** The attack detents, ms, in the order of the attack choice's index: GLUE_ATTACK_MS (0.1 to 30). */
 static const float OMX_GLUE_INSTANCE_ATTACKS[OMX_GLUE_ATTACK_MS_COUNT] = OMX_GLUE_ATTACK_MS_INIT;
+/** The fixed release detents, ms, in the order of the release choice's index: GLUE_RELEASE_MS (100 to 1200); the
+ * choice's last index, auto, has no entry here. */
 static const float OMX_GLUE_INSTANCE_RELEASES[OMX_GLUE_RELEASE_MS_COUNT] = OMX_GLUE_RELEASE_MS_INIT;
 _Static_assert(OMX_GLUE_RATIO_VALUES_COUNT == OMX_GLUE_RATIOS_COUNT && OMX_GLUE_ATTACK_MS_COUNT == OMX_GLUE_ATTACKS_COUNT &&
                    OMX_GLUE_RELEASE_MS_COUNT + 1u == OMX_GLUE_RELEASES_COUNT,
                "one value per detent, the release's last being auto");
 
+/** @brief One instance: the one comp slot it resolves its detents into. */
 typedef struct {
+  /** The comp slot that does the work; resolve() fills it from the detents and run() runs it on both legs. */
   OmxCompInstance comp;
+  /** Non-zero once init bound the instance to a usable rate; while zero, resolve() does nothing and run() leaves the output as the input. */
   int ready;
 } OmxGlueInstance;
 
@@ -68,6 +76,19 @@ static inline int omx_glue_instance_init(OmxGlueInstance *s, float sr) {
  * Resolve the host's control values for one cycle. `bypass` non-zero makes run() the identity. The
  * arguments are the glue kernel's contract controls in their declared order: a travel clamped, a
  * non-finite one reading as its default; a choice its index, one outside its set reading as its default.
+ * @param s The instance; null or not ready leaves it as it is.
+ * @param bypass Non-zero makes run() the identity.
+ * @param threshold_db thresholdDb, -40 to 0 dB, default -10: where the slot starts to compress.
+ * @param ratio The ratio choice's index into OMX_GLUE_INSTANCE_RATIOS (2:1, 4:1, 10:1), default 2:1.
+ * @param attack The attack choice's index into OMX_GLUE_INSTANCE_ATTACKS (0.1 to 30 ms), default 10 ms.
+ * @param release The release choice's index: OMX_GLUE_INSTANCE_RELEASES (0.1 to 1.2 s), then auto, the slot's
+ *        program-dependent release; default auto.
+ * @param makeup_db makeupDb, 0 to 24 dB, default 0: the slot's make-up gain.
+ * @param key_hp_hz keyHpHz, 0 to 500 Hz, default 0: the corner of the slot's key filter on its own legs; not handed
+ *        to the slot in `feedback`.
+ * @param mix_pct mixPct, 0 to 100 \%, default 100: the slot's parallel mix.
+ * @param detector_topology The DETECTOR_TOPOLOGY index: `feedback` runs the loop, any other value reads as
+ *        `feedforward`.
  * @thread audio
  */
 static inline void omx_glue_instance_resolve(OmxGlueInstance *s, int bypass, float threshold_db, int ratio, int attack,
@@ -121,11 +142,15 @@ static inline void omx_glue_instance_run(OmxGlueInstance *s, const float *in_l, 
 }
 
 /** The gainReductionDb readout: the deepest gain of the last block, dB, 0 or negative.
+ * @param s The instance; null reads 0.
+ * @return The slot's deepest gain over the last block, dB, 0 or negative.
  * @thread audio */
 static inline float omx_glue_instance_gain_reduction_db(const OmxGlueInstance *s) { return s ? s->comp.st.gr_min_db : 0.0f; }
 
 /** The attack the detector runs, ms: the detent's, or in `feedback` the floor of omx_dyn_fb_attack_pole() at this
  * rate where the detent is faster (0.1 ms at 10:1 runs 0.198 ms at 48 kHz).
+ * @param s The instance; null reads 0.
+ * @return The attack the slot's detector runs, ms.
  * @thread audio */
 static inline float omx_glue_instance_effective_attack_ms(const OmxGlueInstance *s) {
   return s ? omx_comp_instance_effective_attack_ms(&s->comp) : 0.0f;

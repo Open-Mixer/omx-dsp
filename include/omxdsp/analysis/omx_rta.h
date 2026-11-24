@@ -51,10 +51,12 @@
  * — at the target resolution. A power of two. OMX_RTA_FFT_SIZE_MAX comes from the generated
  * omxdsp_definitions.h (declared once, in core). */
 
-/** The FFT length for `rate`: the smallest power of two whose bins are at or under
- * {@link OMX_RTA_TARGET_BIN_HZ} (44.1/48 kHz → 8192, 88.2/96 kHz → 16384, 176.4/192 kHz →
+/** @brief The FFT length for `rate`: the smallest power of two whose bins are at or under
+ * OMX_RTA_TARGET_BIN_HZ (44.1/48 kHz → 8192, 88.2/96 kHz → 16384, 176.4/192 kHz →
  * 32768). Window time stays ~171 ms at every rate — resolution AND responsiveness are both
  * rate-invariant, which is the point of deriving.
+ * @param rate The sample rate, Hz.
+ * @return The FFT length: a power of two from 2048 up to OMX_RTA_FFT_SIZE_MAX.
  * @thread audio */
 static inline uint32_t omx_rta_fft_size_for(uint32_t rate) {
   uint32_t n = 2048;
@@ -62,7 +64,7 @@ static inline uint32_t omx_rta_fft_size_for(uint32_t rate) {
   return n;
 }
 
-/** The display's LOW-frequency ZOOM: a fixed 8192-point FFT over a ÷8-decimated copy of
+/** @brief The display's LOW-frequency ZOOM: a fixed 8192-point FFT over a ÷8-decimated copy of
  * the SAME tap — sub-2 Hz bins at every graph rate (48 kHz → 0.73, 96 kHz → 1.46) exactly
  * where the log display's bottom decades starve on the main spectrum's linear grid. It is
  * DISPLAY-ONLY and rides the same tap value (one stream, one row — the operator's one-
@@ -71,48 +73,52 @@ static inline uint32_t omx_rta_fft_size_for(uint32_t rate) {
  * is a resolution floor for eyes, not a rate-scaled analysis window, and fixing it keeps
  * the ring and scratch costs rate-independent. */
 #define OMX_RTA_LOW_FFT_SIZE 8192
-/** How many cascaded ÷2 half-band decimation stages the LOW zoom runs — see
+/** @brief How many cascaded ÷2 half-band decimation stages the LOW zoom runs — see
  * omx_decimate_halfband()'s doc for why three CHEAP ÷2 stages, not one ÷8 FIR. */
 #define OMX_RTA_LOW_DECIM_STAGES 3
-/** 2^{@link OMX_RTA_LOW_DECIM_STAGES} — the LOW zoom's overall decimation factor. */
+/** @brief 2^{@link OMX_RTA_LOW_DECIM_STAGES} — the LOW zoom's overall decimation factor. */
 #define OMX_RTA_LOW_DECIM_FACTOR 8
-/** The RAW (ring-rate) sample window the LOW zoom reads: three ÷2 stages hand
+/** @brief The RAW (ring-rate) sample window the LOW zoom reads: three ÷2 stages hand
  * `omx_rta_spectrum` back exactly {@link OMX_RTA_LOW_FFT_SIZE} decimated samples. The cost
  * is LATENCY on the zoom's own reading only (~683 ms @96 kHz), never RT load. */
 #define OMX_RTA_LOW_WINDOW (OMX_RTA_LOW_FFT_SIZE * OMX_RTA_LOW_DECIM_FACTOR)
 
-/** Ring capacity per leg: 2× the LARGER of the two readers' windows — the LOW zoom's
+/** @brief Ring capacity per leg: 2× the LARGER of the two readers' windows — the LOW zoom's
  * {@link OMX_RTA_LOW_WINDOW} (65536) exceeds even the 192 kHz main window
- * ({@link OMX_RTA_FFT_SIZE_MAX}), the same "a read never races a write all the way around
+ * (OMX_RTA_FFT_SIZE_MAX), the same "a read never races a write all the way around
  * the buffer" margin the ring always carried. */
 #define OMX_RTA_RING_SIZE (OMX_RTA_LOW_WINDOW * 2)
 
-/** One leg's capture ring (MAIN gets two instances, L+R; a watched strip likewise). */
+/** @brief One leg's capture ring (MAIN gets two instances, L+R; a watched strip likewise). */
 struct omx_ring {
+  /** The samples, written by omx_ring_write() from `pos` on and wrapping at OMX_RTA_RING_SIZE; plain memory,
+   *  published to a reader only by the RELEASE stores of `pos` and `filled` that follow each write. */
   float buf[OMX_RTA_RING_SIZE];
-  _Atomic uint32_t pos; /* next write index, mod OMX_RTA_RING_SIZE — RELEASE-stored after buf */
-  /* How many samples have been written since omx_ring_reset(), SATURATING at the ring's
+  _Atomic uint32_t pos; /**< next write index, mod OMX_RTA_RING_SIZE — RELEASE-stored after buf */
+  /** How many samples have been written since omx_ring_reset(), SATURATING at the ring's
    * capacity. It is what tells a reader whether the window it is about to take is audio or a
    * ring that is still part silence — see omx_ring_has(). Written by the RT thread with
    * a RELEASE store, after `buf` and `pos` (single writer, no read-modify-write), read by the
    * JS thread with ACQUIRE so a `filled` a reader trusts has the samples it counts behind it. */
   _Atomic uint32_t filled;
-  /* How many samples the writer has CLAIMED since the ring was made — monotonic, wrapping at
+  /** How many samples the writer has CLAIMED since the ring was made — monotonic, wrapping at
    * 2^32, never reset. Advanced by `n` and fenced BEFORE omx_ring_write() touches `buf`
    * (the seqlock writer's "odd first", per ring), so a reader that copied any sample of a write
-   * sees that write's claim once it fences after the copy. {@link omx_ring_latch4} latches it
-   * beside `pos`; {@link omx_ring_window_intact} re-reads it after the copy — the check that the
+   * sees that write's claim once it fences after the copy. The console's reader (pipewire-native
+   * mix_dsp.h) latches it beside `pos` in omx_ring_latch4 and re-reads it after the copy in
+   * omx_ring_window_intact — the check that the
    * window the latch proved was not LAPPED while the reader was copying it ("the copy is inside the proof"). */
   _Atomic uint32_t head;
 };
 
-/*
- * Start ring `ring` EMPTY without clearing its buffer — the control thread's door, taken when a
+/**
+ * @brief Start ring `ring` EMPTY without clearing its buffer — the control thread's door, taken when a
  * lane is armed after a spell disarmed. With `pos` and `filled` both at zero, the newest `n`
  * samples are all post-reset audio as soon as `filled` reaches `n`, so the samples the previous
  * arming left behind can never be read: omx_ring_has() refuses the window until then.
  * Call it only while nothing is writing the ring (a disarmed lane), and publish the ring
  * afterwards, so the RT thread sees the zeroed counters before the pointer.
+ * @param ring The ring; `pos` and `filled` are set to 0, `buf` and `head` are left as they are.
  * @thread control
  */
 static inline void omx_ring_reset(struct omx_ring *ring) {
@@ -120,33 +126,42 @@ static inline void omx_ring_reset(struct omx_ring *ring) {
   atomic_store_explicit(&ring->filled, 0, memory_order_relaxed);
 }
 
-/** How many real samples the ring holds since its reset, capped at its capacity. ACQUIRE: a
+/** @brief How many real samples the ring holds since its reset, capped at its capacity. ACQUIRE: a
  * caller that gates a read on this count must also see the samples the count describes.
+ * @param ring The ring.
+ * @return `filled`, 0..OMX_RTA_RING_SIZE.
  * @thread audio */
 static inline uint32_t omx_ring_filled(const struct omx_ring *ring) {
   return atomic_load_explicit(&ring->filled, memory_order_acquire);
 }
 
-/** Whether a window of `n` samples read off this ring is entirely audio written since the reset
+/** @brief Whether a window of `n` samples read off this ring is entirely audio written since the reset
  * — the fact a reader gates a frame on.
+ * @param ring The ring.
+ * @param n The window's length, samples.
+ * @return true when omx_ring_filled() is at least `n`.
  * @thread audio */
 static inline bool omx_ring_has(const struct omx_ring *ring, uint32_t n) {
   return omx_ring_filled(ring) >= n;
 }
 
-/*
- * Append `n` samples to the ring (RT thread, called from on_process). Handles wraparound
+#define OMX_CONTRACT_STAGE "dsp/ring-write"
+/**
+ * @brief Append `n` samples to the ring (RT thread, called from on_process). Handles wraparound
  * and — defensively, for an oversized quantum — `n` greater than the ring's capacity (only
  * the most recent OMX_RTA_RING_SIZE samples survive). RT-safe: fixed-work memcpy(s), no
  * allocation, no branch beyond the wrap/oversize checks.
+ * @param ring The ring.
+ * @param in The samples, `n` of them.
+ * @param n How many; 0 does nothing.
+ * @invariant `pos` stays below OMX_RTA_RING_SIZE and `filled` at or below it ("ring-cursors-in-bounds").
  * @thread audio
  */
-#define OMX_CONTRACT_STAGE "dsp/ring-write"
 static inline void omx_ring_write(struct omx_ring *ring, const float *in, uint32_t n) {
   if (n == 0) return;
   /* THE CLAIM BEFORE THE SAMPLES — the one store that has to lead `buf` rather than follow it:
    * a reader whose copy overlaps these samples must be able to tell, after its copy, that the
-   * writer got there ({@link omx_ring_window_intact}). The release FENCE orders the claim ahead
+   * writer got there (the console's omx_ring_window_intact). The release FENCE orders the claim ahead
    * of every store below it (a release store alone orders only what came BEFORE it). */
   atomic_store_explicit(&ring->head, atomic_load_explicit(&ring->head, memory_order_relaxed) + n,
                         memory_order_relaxed);
@@ -189,8 +204,8 @@ static inline void omx_ring_write(struct omx_ring *ring, const float *in, uint32
 }
 #undef OMX_CONTRACT_STAGE
 
-/*
- * Read `n` samples ending `back` samples BEFORE the newest one, in chronological order
+/**
+ * @brief Read `n` samples ending `back` samples BEFORE the newest one, in chronological order
  * (oldest first) into `out` — the JS-thread side, called from mixerRta and mixerAlignPair,
  * never from on_process. A silent (never-written) ring reads back all zero, which FFTs to a
  * silent spectrum.
@@ -208,6 +223,11 @@ static inline void omx_ring_write(struct omx_ring *ring, const float *in, uint32
  * `n + back` past the ring's capacity would read samples the writer has already overwritten,
  * so it is REFUSED — `out` is zeroed rather than filled with whatever is there. Silence
  * reads as an absent spectrum, which the fit refuses by name; plausible garbage would not.
+ * @param ring The ring.
+ * @param out Where the samples go, `n` floats.
+ * @param n How many samples; above OMX_RTA_RING_SIZE it is cut to OMX_RTA_RING_SIZE.
+ * @param pos The write cursor the read is anchored on: the newest sample is the one before it.
+ * @param back How many samples before the newest one the window ends.
  * @thread audio
  */
 static inline void omx_ring_read_from(const struct omx_ring *ring, float *out, uint32_t n,
@@ -225,16 +245,23 @@ static inline void omx_ring_read_from(const struct omx_ring *ring, float *out, u
   if (rem > 0) memcpy(out + first, ring->buf, rem * sizeof(float));
 }
 
-/* omx_ring_read_from() anchored on this ring's own cursor, read now. ACQUIRE: pairs with
+/** @brief omx_ring_read_from() anchored on this ring's own cursor, read now. ACQUIRE: pairs with
  * the RELEASE store in omx_ring_write() so the samples this cursor points at are visible
  * before the read that follows it.
+ * @param ring The ring.
+ * @param out Where the samples go, `n` floats.
+ * @param n How many samples.
+ * @param back How many samples before the newest one the window ends.
  * @thread audio */
 static inline void omx_ring_read_at(const struct omx_ring *ring, float *out, uint32_t n,
                                     uint32_t back) {
   omx_ring_read_from(ring, out, n, atomic_load_explicit(&ring->pos, memory_order_acquire), back);
 }
 
-/* The newest `n` samples — omx_ring_read_at() with no history asked for.
+/** @brief The newest `n` samples — omx_ring_read_at() with no history asked for.
+ * @param ring The ring.
+ * @param out Where the samples go, `n` floats.
+ * @param n How many samples.
  * @thread audio */
 static inline void omx_ring_read_latest(const struct omx_ring *ring, float *out, uint32_t n) {
   omx_ring_read_at(ring, out, n, 0);
@@ -243,20 +270,14 @@ static inline void omx_ring_read_latest(const struct omx_ring *ring, float *out,
 /* The Hann window and the real/complex f32 FFTs the RTA readings below run on are the library's
  * (<omxdsp/omx_fft.h>: omx_hann_window, omx_fft_radix2, omx_fft_real_half). */
 
-/*
- * Linear-magnitude spectrum of a REAL block: windows a COPY into `work_re`/`work_im`
- * (n-length scratch, caller-owned — no allocation here), FFTs it, and writes n/2 magnitude
- * bins to `mags[k]` = amplitude at `k · sampleRate / n` Hz. The `4/n` scale corrects for
- * the Hann window's 0.5 coherent gain (amplitude = |bin| · 2/(n·gain) = |bin| · 4/n) so a
- * full-scale, bin-aligned sinusoid reads back at ~unity magnitude (0 dBFS) — see
- * {@link mix_dsp.test.c}'s known-sinusoid test. `n` must be a power of two ≥ 2. From n ≥ 4
- * the transform is the real-input half-length one (omx_fft_real_half()); n = 2 keeps
- * the plain complex transform.
- */
-/* Window + transform into `work_re`/`work_im`, unscaled. The ONE window and the ONE FFT
+/** @brief Window + transform into `work_re`/`work_im`, unscaled. The ONE window and the ONE FFT
  * both readings below share: a magnitude spectrum and a complex spectrum differ only in
  * what they keep afterwards, and computing the transform twice would be a second answer to
  * the same question.
+ * @param block The block, `n` samples, read only (the window is applied to a copy).
+ * @param n Its length, a power of two ≥ 2.
+ * @param work_re Scratch, `n` floats: the real parts out.
+ * @param work_im Scratch, `n` floats: the imaginary parts out.
  * @thread worker */
 static inline void omx_rta_transform(const float *block, uint32_t n, float *work_re,
                                      float *work_im) {
@@ -270,7 +291,22 @@ static inline void omx_rta_transform(const float *block, uint32_t n, float *work
   }
 }
 
-/** @thread worker */
+/**
+ * @brief Linear-magnitude spectrum of a REAL block: windows a COPY into `work_re`/`work_im`
+ * (n-length scratch, caller-owned — no allocation here), FFTs it, and writes n/2 magnitude
+ * bins to `mags[k]` = amplitude at `k · sampleRate / n` Hz. The `4/n` scale corrects for
+ * the Hann window's 0.5 coherent gain (amplitude = |bin| · 2/(n·gain) = |bin| · 4/n) so a
+ * full-scale, bin-aligned sinusoid reads back at ~unity magnitude (0 dBFS) — see
+ * mix_dsp.test.c's known-sinusoid test. `n` must be a power of two ≥ 2. From n ≥ 4
+ * the transform is the real-input half-length one (omx_fft_real_half()); n = 2 keeps
+ * the plain complex transform.
+ * @param block The block, `n` samples, read only.
+ * @param n Its length, a power of two ≥ 2.
+ * @param work_re Scratch, `n` floats.
+ * @param work_im Scratch, `n` floats.
+ * @param mags The magnitudes out, `n/2` floats.
+ * @thread worker
+ */
 static inline void omx_rta_spectrum(const float *block, uint32_t n, float *work_re,
                                     float *work_im, float *mags) {
   omx_rta_transform(block, n, work_re, work_im);

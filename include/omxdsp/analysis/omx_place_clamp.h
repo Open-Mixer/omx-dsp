@@ -18,6 +18,10 @@ extern "C" {
 
 /**
  * @brief The console's clamp of `n` into [lo, hi]; a NaN passes through.
+ * @param n The value.
+ * @param lo The lower bound.
+ * @param hi The upper bound.
+ * @return lo when n < lo, hi when n > hi, else n (a NaN included).
  * @thread worker
  */
 static inline double omx_place_clamp(double n, double lo, double hi) { return n < lo ? lo : (n > hi ? hi : n); }
