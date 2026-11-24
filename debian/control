@@ -4,6 +4,9 @@ Source: omx-dsp
 Section: libdevel
 Priority: optional
 Maintainer: Pau Aliagas <linuxnow@gmail.com>
+# nodejs and npm are the archive's (trixie: Node 20): Debian ships no Node 26, and the build takes no Node from outside
+# the archive. Node runs once, in install-wasm's npm ci and npm pack (the pinned TypeScript's tsc, which needs >= 14.17);
+# debian/rules turns engine-strict off, so ts/package.json's engines >= 26 is npm ci's warning here, not a failure.
 Build-Depends: debhelper-compat (= 13), libomx-contract-dev (>= 3.21.0~), pkgconf, libjack-jackd2-dev, jackd2, clang, lld, wasi-libc, nodejs, npm
 Standards-Version: 4.6.2
 Homepage: https://github.com/Open-Mixer/omx-dsp
