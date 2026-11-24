@@ -39,6 +39,49 @@ static inline float omx_clipper_sample(float u, float c, float a) {
   return u < 0.0f ? -y : y;
 }
 
+/**
+ * @brief Where the bend starts for a ceiling and a softness.
+ * @param ceiling_lin The ceiling, linear, positive.
+ * @param softness_pct softnessPct, 0 to 100.
+ * @return The knee, linear: `c·(1 − CLIPPER_KNEE_SPAN·softness/100)`, in (0, c].
+ * @thread audio
+ */
+static inline float omx_clipper_knee(float ceiling_lin, float softness_pct) {
+  return ceiling_lin * (1.0f - (float)OMX_CLIPPER_KNEE_SPAN * softness_pct * 0.01f);
+}
+
+#define OMX_CONTRACT_STAGE "clipper/block"
+/**
+ * @brief One block through the clip, both legs in place: the drive, the clip, and the block's reduction.
+ * @param l The left leg, `n` frames.
+ * @param r The right leg, `n` frames.
+ * @param n The block length.
+ * @param drive_lin The gain before the clip.
+ * @param ceiling_lin The ceiling, linear, positive.
+ * @param knee_lin The knee, linear, in (0, ceiling_lin].
+ * @return The reduction of the block's loudest driven sample, dB, 0 or negative.
+ * @pre `finite-in`.
+ * @post `finite-out`.
+ * @thread audio
+ */
+static inline float omx_clipper_block(float *l, float *r, uint32_t n, float drive_lin, float ceiling_lin, float knee_lin) {
+  OMX_PRE(omx_block_pair_finite(l, r, n), "finite-in");
+  const float g = drive_lin, c = ceiling_lin, a = knee_lin;
+  float over = 0.0f, kept = 0.0f;
+  for (uint32_t i = 0; i < n; i++) {
+    const float ul = g * l[i], ur = g * r[i];
+    const float yl = omx_clipper_sample(ul, c, a), yr = omx_clipper_sample(ur, c, a);
+    const float ml = fabsf(ul), mr = fabsf(ur);
+    if (ml > over) { over = ml; kept = fabsf(yl); }
+    if (mr > over) { over = mr; kept = fabsf(yr); }
+    l[i] = yl;
+    r[i] = yr;
+  }
+  OMX_POST(omx_block_pair_finite(l, r, n), "finite-out");
+  return over > 0.0f && kept < over ? omx_lin_to_db(kept / over) : 0.0f;
+}
+#undef OMX_CONTRACT_STAGE
+
 /** @brief The clipper's state: the resolved drive, ceiling and knee, and the last block's reduction. */
 struct omx_clipper_kernel {
   float drive_lin;   /**< The gain before the clip. */
@@ -72,41 +115,24 @@ static inline void omx_clipper_kernel_set(void *state, const float *values, int 
   struct omx_clipper_kernel *k = state;
   k->drive_lin = omx_db_to_lin(values[0]);
   k->ceiling_lin = omx_db_to_lin(values[1]);
-  k->knee_lin = k->ceiling_lin * (1.0f - (float)OMX_CLIPPER_KNEE_SPAN * values[2] * 0.01f);
+  k->knee_lin = omx_clipper_knee(k->ceiling_lin, values[2]);
   if (bypass) k->gr_db = 0.0f;
   OMX_POST(k->knee_lin > 0.0f && k->knee_lin <= k->ceiling_lin, "knee-under-the-ceiling");
 }
 #undef OMX_CONTRACT_STAGE
 
-#define OMX_CONTRACT_STAGE "clipper/kernel-process"
 /**
- * @brief One engaged block, in place: the clip over both legs, and the block's reduction.
+ * @brief One engaged block, in place: omx_clipper_block() at the resolved drive, ceiling and knee.
  * @param state A struct omx_clipper_kernel.
  * @param l The left leg, `n` frames.
  * @param r The right leg, `n` frames.
  * @param n The block length.
- * @pre `finite-in`.
- * @post `finite-out`.
  * @thread audio
  */
 static inline void omx_clipper_kernel_process(void *state, float *l, float *r, uint32_t n) {
   struct omx_clipper_kernel *k = state;
-  OMX_PRE(omx_block_pair_finite(l, r, n), "finite-in");
-  const float g = k->drive_lin, c = k->ceiling_lin, a = k->knee_lin;
-  float over = 0.0f, kept = 0.0f;
-  for (uint32_t i = 0; i < n; i++) {
-    const float ul = g * l[i], ur = g * r[i];
-    const float yl = omx_clipper_sample(ul, c, a), yr = omx_clipper_sample(ur, c, a);
-    const float ml = fabsf(ul), mr = fabsf(ur);
-    if (ml > over) { over = ml; kept = fabsf(yl); }
-    if (mr > over) { over = mr; kept = fabsf(yr); }
-    l[i] = yl;
-    r[i] = yr;
-  }
-  k->gr_db = over > 0.0f && kept < over ? omx_lin_to_db(kept / over) : 0.0f;
-  OMX_POST(omx_block_pair_finite(l, r, n), "finite-out");
+  k->gr_db = omx_clipper_block(l, r, n, k->drive_lin, k->ceiling_lin, k->knee_lin);
 }
-#undef OMX_CONTRACT_STAGE
 
 /**
  * @brief Rest the readout: a clipper has no other memory.

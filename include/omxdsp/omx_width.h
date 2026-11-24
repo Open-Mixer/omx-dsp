@@ -149,6 +149,43 @@ static inline void omx_width_process(float *l, float *r, uint32_t n, const struc
 }
 #undef OMX_CONTRACT_STAGE
 
+/**
+ * @brief Design the word from resolved controls and engage or bypass it. The engage edge starts the word from
+ *        silence; otherwise bass mono coming on starts its crossover from silence, and a new pseudo-stereo mode
+ *        or delay starts its ring from silence, so a ring left from minutes earlier, or the other mode's signal,
+ *        is never read.
+ * @param p The design, redesigned.
+ * @param st The word's state, cleared where the new design needs it.
+ * @param enabled Whether the word is engaged: read as it was, written as `bypass` leaves it.
+ * @param bypass Non-zero disengages the word.
+ * @param w The side's scale, widthPct/100.
+ * @param pseudo An enum omx_width_pseudo.
+ * @param d The delay, samples (omx_width_delay()).
+ * @param bass_mono 1 to sum the low end to mono below `bass_hz`.
+ * @param bass_hz The crossover's corner, Hz.
+ * @param sr The rate, Hz.
+ * @thread audio
+ */
+static inline void omx_width_redesign(struct omx_width *p, struct omx_width_state *st, int *enabled, int bypass, float w,
+                                      int pseudo, uint32_t d, int bass_mono, double bass_hz, double sr) {
+  const int was_bass = p->bass_mono, was_pseudo = p->pseudo, was_live = *enabled && p->active;
+  const uint32_t was_d = p->d;
+  omx_width_design(p, w, pseudo, d, bass_mono, bass_hz, sr);
+  *enabled = bypass ? 0 : 1;
+  if (*enabled && p->active && !was_live) {
+    memset(st, 0, sizeof *st);
+  } else {
+    if (p->bass_mono && !was_bass) {
+      memset(&st->xs, 0, sizeof st->xs);
+      memset(&st->ap, 0, sizeof st->ap);
+    }
+    if (p->pseudo != was_pseudo || p->d != was_d) {
+      memset(st->ring, 0, sizeof st->ring);
+      st->pos = 0u;
+    }
+  }
+}
+
 /** @brief The width kernel as the generic face serves it: the rate, the design, its state and whether it is engaged. */
 struct omx_width_kernel {
   float sr;                   /**< The sample rate init bound the state to, Hz. */
@@ -172,9 +209,7 @@ static inline int omx_width_kernel_init(void *state, float sr) {
 }
 
 /**
- * @brief Take the resolved controls and design the word. The engage edge starts the word from silence; bass
- *        mono coming on starts its crossover from silence; a new pseudo-stereo mode or delay starts its ring
- *        from silence, so a ring left from minutes earlier, or the other mode's signal, is never read.
+ * @brief Take the resolved controls: omx_width_redesign().
  * @param state A struct omx_width_kernel.
  * @param values widthPct (%), pseudo (a WIDTH_PSEUDOS index), pseudoMs (ms), bassMono (a WIDTH_BASS_MONOS
  *        index) and bassMonoHz (Hz), each resolved.
@@ -183,23 +218,8 @@ static inline int omx_width_kernel_init(void *state, float sr) {
  */
 static inline void omx_width_kernel_set(void *state, const float *values, int bypass) {
   struct omx_width_kernel *k = state;
-  const int was_bass = k->p.bass_mono, was_pseudo = k->p.pseudo, was_live = k->enabled && k->p.active;
-  const uint32_t was_d = k->p.d;
-  omx_width_design(&k->p, values[0] * 0.01f, (int)values[1], omx_width_delay(values[2], k->sr),
-                   (int)values[3] == (int)OMX_WIDTH_BASS_MONOS_ON ? 1 : 0, (double)values[4], (double)k->sr);
-  k->enabled = bypass ? 0 : 1;
-  if (k->enabled && k->p.active && !was_live) {
-    memset(&k->st, 0, sizeof k->st);
-  } else {
-    if (k->p.bass_mono && !was_bass) {
-      memset(&k->st.xs, 0, sizeof k->st.xs);
-      memset(&k->st.ap, 0, sizeof k->st.ap);
-    }
-    if (k->p.pseudo != was_pseudo || k->p.d != was_d) {
-      memset(k->st.ring, 0, sizeof k->st.ring);
-      k->st.pos = 0u;
-    }
-  }
+  omx_width_redesign(&k->p, &k->st, &k->enabled, bypass, values[0] * 0.01f, (int)values[1], omx_width_delay(values[2], k->sr),
+                     (int)values[3] == (int)OMX_WIDTH_BASS_MONOS_ON ? 1 : 0, (double)values[4], (double)k->sr);
 }
 
 /**

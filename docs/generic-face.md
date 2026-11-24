@@ -78,7 +78,10 @@ nine oracle rates (`test/fx/face.test.c`).
 A hand-written face is removed, with every hand list that names it, once no consumer outside this
 library includes it. The first batch's three headers are still included by omx-plugins (its trim,
 width, clipper and channel-strip plugins and their oracles), so they stay, unchanged, until those
-plugins call the generic face; no header is kept as a forwarding wrapper.
+plugins call the generic face; no header is kept as a forwarding wrapper. While both faces stand, each
+body lives once, in the kernel's header, and both faces call it: the clip's block and knee
+(`omx_clipper_block`, `omx_clipper_knee`) and the width's redesign (`omx_width_redesign`); the trim's
+one ramp is omx_ramp.h's.
 
 The later batches, smallest first, each a kernel whose state is its parameters:
 
