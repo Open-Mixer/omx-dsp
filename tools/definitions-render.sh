@@ -31,6 +31,12 @@ ocversion="$(sed -n 's/^  "version": "\(.*\)",$/\1/p' "$OC/package.json")"
 dir="$out/dir"
 rm -rf "$dir"; mkdir -p "$dir"
 sh "$OC/tools/install-contract-dir.sh" -x scale-vectors.json omx-contract "$ocversion" "$major" "$OC/data" "$dir" data >/dev/null
+# omx-contract's domains (contract.d/<domain>: PARAM_UNITS lives in contract.d/param), installed as its package installs them;
+# without them the render resolves no unit set's titles and writes the enumerators from the raw ids (OMX_CURVE_UNITS_D_B)
+for d in "$OC"/contract.d/*/; do
+  [ -d "$d" ] || continue
+  sh "$OC/tools/install-contract-dir.sh" --domain "${d%/}" "$dir" omx-contract >/dev/null
+done
 sh "$OC/tools/install-contract-dir.sh" omx-dsp "$version" "$major" "$HERE/data" "$dir" data >/dev/null
 header=omxdsp/omxdsp_definitions.h
 vocabulary=omxdsp/omx_dsp_vocabulary.h

@@ -335,7 +335,7 @@ jobs:
       - name: make contract-tests
         run: make contract-tests OMX_CONTRACT=/tmp/omx-contract
 
-      # every unit data/ and recipes/answers/ state is a PARAM_UNITS standard symbol, its sabotage held (omx-contract#193)
+      # every unit data/ and recipes/answers/ state is a PARAM_UNITS standard id, its sabotage held (omx-contract#193)
       - name: make units-check
         run: make units-check OMX_CONTRACT=/tmp/omx-contract
 

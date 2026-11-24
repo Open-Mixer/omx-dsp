@@ -181,10 +181,21 @@ npm_config_engine_strict=true %make_install PREFIX=%{_prefix} LIBDIR=%{_libdir} 
 %{_datadir}/omx-dsp/catalogs/
 
 %changelog
-* Mon Nov 23 2026 Pau Aliagas <linuxnow@gmail.com> - 0.34.1-1
-- ROTARY_ACCEL_RANGE travels in coef, the standard unit omx-contract 3.22.0
-  (V23d) names for a plain multiplier, no longer "x" (#134). The floors on
-  omx-contract rise to 3.22.0, the first that has coef (#156).
+* Tue Nov 24 2026 Pau Aliagas <linuxnow@gmail.com> - 0.34.1-1
+- ROTARY_ACCEL_RANGE travels in coef, the standard unit omx-contract names for
+  a plain multiplier, no longer "x" (#134).
+- No hand-kept version floor (the devel wave 2026-11-24): packaging/deps.txt
+  is gone, the spec, debian/control and omxdsp.pc name omx-contract with no
+  version, and the requires of the 59 data files (each only
+  omx-contract-schema) are removed; the build installs the published
+  omx-contract it is paired with.
+- The curve and meter unit words are the PARAM_UNITS ids (#122): the wire
+  words of CURVE_UNITS and OMX_CURVE_UNIT_WORDS are now "Hz", "kHz", "dB",
+  "dBFS", "dBu", "LUFS", "percent" (were "hz", "khz", "db", "dbfs", "dbu",
+  "lufs", "pc"), and OMX_CURVE_UNITS_PC is OMX_CURVE_UNITS_PERCENT. A
+  consumer that spells the old words or the old enumerator must follow.
+- Every unit data/ states is a PARAM_UNITS standard id (dBPerOct, dBPerS,
+  coef), held by make units-check.
 
 * Sat Nov 21 2026 Pau Aliagas <linuxnow@gmail.com> - 0.34.0-1
 - Sorting pass: RT_HARD_TARGET, ORACLE_FLOOR_RATES and ORACLE_FULL_RATES (V25),

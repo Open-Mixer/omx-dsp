@@ -583,7 +583,7 @@ contract-tests:
 	@test -n "$(OMX_CONTRACT)" || { echo "$@: name an omx-contract checkout: make $@ OMX_CONTRACT=<dir>" >&2; exit 2; }
 	OMX_CONTRACT=$(abspath $(OMX_CONTRACT)) node --test --test-reporter=tap test/contract/*.test.mjs
 
-# Every unit data/ and recipes/answers/ state is a PARAM_UNITS standard symbol (omx-contract units --check,
+# Every unit data/ and recipes/answers/ state is a PARAM_UNITS standard id (omx-contract units --check,
 # Open-Mixer/omx-contract#193): a unit with no standard id fails here, not on a wave line (chain 3 stopped at line 53 on
 # ROTARY_ACCEL_RANGE's "x"). The sabotage plants that "x" back in a scratch copy of rotary.json and wants it refused.
 units-check:
@@ -593,7 +593,7 @@ units-check:
 	sed 's/"unit": "coef"/"unit": "x"/' data/kernels/rotary.json > $(BUILD)/units-sabotage/rotary.json
 	grep -q '"unit": "x"' $(BUILD)/units-sabotage/rotary.json
 	node $(OMX_CONTRACT)/bin/omx-contract.mjs units --check $(BUILD)/units-sabotage > $(BUILD)/units-sabotage/out 2>&1; \
-	  rc=$$?; cat $(BUILD)/units-sabotage/out; test $$rc = 1 && grep -q 'rotary.json:[0-9]*: .*"x" is no PARAM_UNITS standard symbol' $(BUILD)/units-sabotage/out
+	  rc=$$?; cat $(BUILD)/units-sabotage/out; test $$rc = 1 && grep -q 'rotary.json:[0-9]*: .*"x" is no PARAM_UNITS standard id' $(BUILD)/units-sabotage/out
 
 # The exports file a consumer's copy check reads, generated from the headers and the compiled unit.
 EXPORTS = $(BUILD)/omx-dsp-exports.json

@@ -67,7 +67,7 @@
     "CLIPPER_KNEE_SPAN": {
       "kind": "scalar",
       "source": {
-        "impl": "include/omxdsp/fx/omx_clipper_instance.h#omx_clipper_instance_resolve"
+        "impl": "include/omxdsp/omx_clipper.h#omx_clipper_knee"
       },
       "doc": "The share of the ceiling the bend spans at a softness of 100 %: the knee sits at (1 - span x softness) x ceiling, half the ceiling at full softness, 6 dB under it.",
       "unit": "none",
