@@ -27,9 +27,10 @@ BuildRequires: omx-contract-devel >= 3.21.0
 # only: no package of this spec requires jack2 (omx-rta-read needs libjack.so.0, which either provides).
 BuildRequires: pkgconfig(jack)
 BuildRequires: jack-audio-connection-kit
-# the npm package's module tree (make npm-stage): npm ci fetches the package's pinned TypeScript in ts/, and npm pack's prepack compiles ts/ with it
-BuildRequires: nodejs
-BuildRequires: npm
+# the npm package's module tree (make npm-stage): npm ci fetches the package's pinned TypeScript in ts/, and npm pack's prepack compiles ts/ with it.
+# Node 26, the floor ts/package.json's engines names: nodejs26-npm-bin brings npm and nodejs26-bin, whose /usr/bin/node is 26.
+BuildRequires: nodejs26
+BuildRequires: nodejs26-npm-bin
 
 # Headers and a static archive only: nothing of this package is loaded at run time.
 %global debug_package %{nil}
@@ -127,7 +128,10 @@ Its documentation is on openmixer.org.
 %make_build lib rt-gate-ship rta-read wasm
 
 %install
-%make_install PREFIX=%{_prefix} LIBDIR=%{_libdir} INCLUDEDIR=%{_includedir} install-wasm
+# The npm tree is built under the Node ts/package.json's engines names: the log shows the node, and
+# engine-strict turns npm ci's EBADENGINE warning into the build's failure on an older one.
+node --version
+npm_config_engine_strict=true %make_install PREFIX=%{_prefix} LIBDIR=%{_libdir} INCLUDEDIR=%{_includedir} install-wasm
 
 %check
 %make_build check-package

@@ -12,8 +12,10 @@ include /usr/share/dpkg/architecture.mk
 override_dh_auto_build:
 	dh_auto_build -- lib rt-gate-ship rta-read wasm
 
+# The deb builds the npm tree under the archive's Node, below ts/package.json's engines (>= 26; Debian ships no Node 26):
+# npm ci warns EBADENGINE and goes on, whatever an npmrc says. The RPM sets engine-strict on (packaging/omx-dsp.spec).
 override_dh_auto_install:
-	dh_auto_install -- PREFIX=/usr LIBDIR=/usr/lib/$(DEB_HOST_MULTIARCH) INCLUDEDIR=/usr/include install-wasm
+	npm_config_engine_strict=false dh_auto_install -- PREFIX=/usr LIBDIR=/usr/lib/$(DEB_HOST_MULTIARCH) INCLUDEDIR=/usr/include install-wasm
 
 # The gate and the reader are packages of their own, omx-rt-gate and omx-rta-read: an executable has no
 # place in libomxdsp-dev, which is Multi-Arch: same, and only the reader needs JACK. libomxdsp-dev.install
