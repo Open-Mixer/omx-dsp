@@ -65,7 +65,7 @@
  *  allocates nothing. */
 #define OMX_CHORUS_MAX_VOICES OMX_CHORUS_VOICES_RANGE_MAX
 
-/* The base delay (OMX_CHORUS_BASE_MS) is declared in omx-contract: the shortest delay any voice reads. */
+/* The base delay (OMX_CHORUS_BASE_MS) is declared in data/kernels/chorus.json: the shortest delay any voice reads. */
 /** The deepest sweep the row may ask for, ms. */
 #define OMX_CHORUS_MAX_DEPTH_MS ((float)OMX_CHORUS_DEPTH_RANGE_MAX)
 /** The widest right-leg offset, turns: half a turn is the Dimension's opposed sweep,
@@ -74,7 +74,7 @@
 #define OMX_CHORUS_SPREAD_MAX OMX_CHORUS_SPREAD_RANGE_MAX
 /** Highest graph rate the ring is sized for, so base+depth is reachable at every declared rate. */
 #define OMX_CHORUS_MAX_RATE OMX_RT_HARD_TARGET_RATE
-/* The longest delay, whole ms (OMX_CHORUS_MAX_MS: base + depth ceiling rounded up), is declared in omx-contract, an integer constant expression for the ring size below. */
+/* The longest delay, whole ms (OMX_CHORUS_MAX_MS: base + depth ceiling rounded up), is declared in data/kernels/chorus.json, an integer constant expression for the ring size below. */
 /** Per-leg ring capacity, samples: the longest delay at the highest rate, plus the kernel's reach
  *  (`omx_fdelay_cap_for`'s +2 and lookbehind, taken at the maximum order). */
 #define OMX_CHORUS_CAP ((uint32_t)(((OMX_CHORUS_MAX_RATE / 1000) * OMX_CHORUS_MAX_MS) + 4))

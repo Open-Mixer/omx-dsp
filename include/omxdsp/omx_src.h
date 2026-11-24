@@ -26,7 +26,7 @@
  * accumulator starts at `(taps/2)*L`, so output frame 0 corresponds to input frame 0 whatever the
  * rate pair, and the tracks of a multitrack stay aligned.
  *
- * The console's design is omx-contract's src kernel: OMX_SRC_TAPS taps per phase, a window for
+ * The console's design is this library's src kernel: OMX_SRC_TAPS taps per phase, a window for
  * OMX_SRC_STOPBAND_DB, a passband of OMX_SRC_ROLLOFF_DOUBLE of the shared Nyquist, and at most
  * OMX_SRC_MAX_L phases. Moved from the OpenMixer engine (mix_src.h) unchanged in behaviour:
  * test/golden/engine_kernels.sha256 holds its output to the engine's, bit for bit.

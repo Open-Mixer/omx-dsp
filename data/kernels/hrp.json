@@ -215,7 +215,7 @@
         },
         "impl": "include/omxdsp/analysis/omx_hrp_attribute.h#omx_hrp_attribute"
       },
-      "doc": "The ATTRIBUTION window: two partials closer than this are one spectral event as far as the desk can tell — the same ±1 bin `omx_hrp_bin_peak` reads over, expressed musically so it holds across the range. A different law from HRP_COLLISION_CENTS (the SELECTION window, which stays above it): this one is the analyser's resolution, that one the corrector's. Generated into `omx_contract_limits.h` as `OMX_HRP_ATTRIBUTION_CENTS`; `hrp_attribute.h` reads it.",
+      "doc": "The ATTRIBUTION window: two partials closer than this are one spectral event as far as the desk can tell — the same ±1 bin `omx_hrp_bin_peak` reads over, expressed musically so it holds across the range. A different law from HRP_COLLISION_CENTS (the SELECTION window, which stays above it): this one is the analyser's resolution, that one the corrector's. Rendered into `omxdsp/omxdsp_definitions.h` as `OMX_HRP_ATTRIBUTION_CENTS`; `hrp_attribute.h` reads it.",
       "unit": "cents",
       "value": 60
     },

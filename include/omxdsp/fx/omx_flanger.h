@@ -64,7 +64,8 @@
 /** The Lagrange order this stage constructs — the fdelay decision's §3 row. */
 #define OMX_FLANGER_ORDER OMX_FDELAY_MOD_READ_ORDER
 
-/* The base delay (OMX_FLANGER_BASE_MS) is declared in omx-contract: the shortest delay the sweep reaches. */
+/* The base delay (OMX_FLANGER_BASE_MS) is declared in data/kernels/flanger.json: the shortest delay the sweep
+ * reaches. */
 /** The deepest sweep the row may ask for, ms. */
 #define OMX_FLANGER_MAX_DEPTH_MS ((float)OMX_FLANGER_DEPTH_RANGE_MAX)
 /** The feedback clamp. Strictly below one, so the loop decays; 0.95 is +26.0 dB of resonance at
@@ -72,7 +73,7 @@
 #define OMX_FLANGER_FB_MAX OMX_FLANGER_FEEDBACK_RANGE_MAX
 /** Highest graph rate the ring is sized for. */
 #define OMX_FLANGER_MAX_RATE OMX_RT_HARD_TARGET_RATE
-/* The longest delay, whole ms (OMX_FLANGER_MAX_MS), is declared in omx-contract, an integer constant expression for the ring size below. */
+/* The longest delay, whole ms (OMX_FLANGER_MAX_MS), is declared in data/kernels/flanger.json, an integer constant expression for the ring size below. */
 /** Per-leg ring capacity, samples: the longest delay at the highest rate plus the kernel's reach. */
 #define OMX_FLANGER_CAP ((uint32_t)(((OMX_FLANGER_MAX_RATE / 1000) * OMX_FLANGER_MAX_MS) + 4))
 

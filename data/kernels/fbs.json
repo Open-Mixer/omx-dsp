@@ -406,7 +406,7 @@
         },
         "impl": "src/omx_fbs_place.c#omx_fbs_place_gain_cap"
       },
-      "doc": "The deepest cut a band of an fbs-* origin may hold, in dB: the feedback corrector's own safety bound, never the operator EQ's ±15 (EQ_GAIN_RANGE), which stays the bound of every other origin. Declared here as one value until the vocabulary owner (omx-contract) carries it as its own word, a new ref beside EQ_GAIN_RANGE and never a widening of it; this item then becomes that ref, and no second copy of the number is ever written.",
+      "doc": "The deepest cut a band of an fbs-* origin may hold, in dB: the feedback corrector's own safety bound, never the operator EQ's ±15 (EQ_GAIN_RANGE), which stays the bound of every other origin. This library owns it beside EQ_GAIN_RANGE (data/kernels/eq.json) as its own word, never a widening of that travel, and no second copy of the number is ever written.",
       "unit": "dB",
       "value": -24
     },

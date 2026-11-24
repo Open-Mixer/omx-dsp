@@ -233,7 +233,7 @@
         },
         "impl": "include/omxdsp/fx/omx_eq_instance.h#nb"
       },
-      "doc": "The maximum number of parametric bands a channel EQ may hold — the operator can add up to this many. Generated into `omx_contract_limits.h` as `OMX_EQ_MAX_BANDS`, which `omx_biquad.h` reads (the engine's conformance test reads the header): the native lane allocates exactly this many biquad slots per channel and silently clamps above it, so the model, the wire, and the DSP agree by test, not by memory.",
+      "doc": "The maximum number of parametric bands a channel EQ may hold — the operator can add up to this many. Rendered into `omxdsp/omxdsp_definitions.h` as `OMX_EQ_MAX_BANDS`, which `omx_biquad.h` reads (the engine's conformance test reads the header): the native lane allocates exactly this many biquad slots per channel and silently clamps above it, so the model, the wire, and the DSP agree by test, not by memory.",
       "unit": "",
       "value": 24
     },
@@ -291,7 +291,7 @@
         },
         "impl": "include/omxdsp/fx/omx_geq_instance.h#acc"
       },
-      "doc": "The graphic EQ's section count: DERIVED from ISO_THIRD_OCTAVE_CENTRES_HZ, never a second literal. Generated into `omx_contract_limits.h` as `OMX_GEQ_BANDS`, which sizes `mix_geq.h`'s section array — its OWN budget, never a claimant on EQ_MAX_BANDS (roster ruling 3).",
+      "doc": "The graphic EQ's section count: DERIVED from ISO_THIRD_OCTAVE_CENTRES_HZ, never a second literal. Rendered into `omxdsp/omxdsp_definitions.h` as `OMX_GEQ_BANDS`, which sizes `mix_geq.h`'s section array — its OWN budget, never a claimant on EQ_MAX_BANDS (roster ruling 3).",
       "unit": "",
       "value": {
         "derive": "count",
