@@ -70,6 +70,7 @@ _Static_assert((int)OMX_DYNEQ_BAND_ONS_DEFAULT == (int)OMX_EQ_BAND_ONS_DEFAULT &
 /** One instance: the EQ face that runs the static sections, one band-dynamics atom and state per band,
  * the listen histories and the scratch. */
 typedef struct {
+  /** The sample rate init bound the instance to, Hz. */
   float sr;
   OmxEqInstance eq;
   struct omx_band_dyn band[OMX_DYNEQ_INSTANCE_BANDS];
@@ -85,7 +86,9 @@ typedef struct {
   /** Each listening band's own history of `B`, per leg. */
   float listen_l[OMX_DYNEQ_INSTANCE_BANDS][4], listen_r[OMX_DYNEQ_INSTANCE_BANDS][4];
   float mix;
+  /** Non-zero while the effect is engaged, as the last resolve() set it; while zero, run() leaves the output as the input. */
   int enabled;
+  /** Non-zero once init bound the instance to a usable rate; while zero, resolve() does nothing and run() leaves the output as the input. */
   int ready;
   float dry_l[OMX_DYNEQ_INSTANCE_CHUNK], dry_r[OMX_DYNEQ_INSTANCE_CHUNK];
   float sum_l[OMX_DYNEQ_INSTANCE_CHUNK], sum_r[OMX_DYNEQ_INSTANCE_CHUNK];

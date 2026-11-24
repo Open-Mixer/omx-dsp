@@ -32,6 +32,7 @@
 #define OMX_LOUDLEVEL_INSTANCE_CHANNELS 2
 
 typedef struct {
+  /** The sample rate init bound the instance to, Hz. */
   float sr;
   struct omx_loudness meter;
   float target, range, step_db, gate; /**< the controls; step_db is the walk per tick */
@@ -44,7 +45,9 @@ typedef struct {
   uint32_t left;  /**< samples left in the running tick */
   uint32_t ticks; /**< ticks since the meter started, up to the longest window */
   float lufs;     /**< the loudnessLufs readout */
+  /** Non-zero while the effect is engaged, as the last resolve() set it; while zero, run() leaves the output as the input. */
   int enabled;
+  /** Non-zero once init bound the instance to a usable rate; while zero, resolve() does nothing and run() leaves the output as the input. */
   int ready;
 } OmxLoudlevelInstance;
 

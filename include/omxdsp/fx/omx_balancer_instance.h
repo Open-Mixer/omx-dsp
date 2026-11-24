@@ -42,6 +42,7 @@
 static const float OMX_BALANCER_INSTANCE_HZ[OMX_BALANCER_BAND_HZ_COUNT] = OMX_BALANCER_BAND_HZ_INIT;
 
 typedef struct {
+  /** The sample rate init bound the instance to, Hz. */
   float sr;
   float det[OMX_BALANCER_INSTANCE_BANDS][5];    /**< each band's bandpass */
   float det_s[OMX_BALANCER_INSTANCE_BANDS][4];  /**< its history */
@@ -54,7 +55,9 @@ typedef struct {
   float offset[OMX_BALANCER_INSTANCE_BANDS]; /**< each band's octaves from the bands' mean */
   float amount, range, step_db, slope; /**< the controls; step_db is the walk per tick */
   uint32_t tick, left, settled, settle;
+  /** Non-zero while the effect is engaged, as the last resolve() set it; while zero, run() leaves the output as the input. */
   int enabled;
+  /** Non-zero once init bound the instance to a usable rate; while zero, resolve() does nothing and run() leaves the output as the input. */
   int ready;
 } OmxBalancerInstance;
 

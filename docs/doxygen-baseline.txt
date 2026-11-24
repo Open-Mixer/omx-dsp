@@ -314,13 +314,10 @@ include/omxdsp/analysis/omx_rta_bands.h: warning: return type of member omx_rta_
 include/omxdsp/fx/omx_balancer_instance.h: warning: Compound OmxBalancerInstance is not documented.
 include/omxdsp/fx/omx_balancer_instance.h: warning: Member OMX_BALANCER_INSTANCE_HZ[OMX_BALANCER_BAND_HZ_COUNT] (variable) of file omx_balancer_instance.h is not documented.
 include/omxdsp/fx/omx_balancer_instance.h: warning: Member amount (variable) of struct OmxBalancerInstance is not documented.
-include/omxdsp/fx/omx_balancer_instance.h: warning: Member enabled (variable) of struct OmxBalancerInstance is not documented.
 include/omxdsp/fx/omx_balancer_instance.h: warning: Member left (variable) of struct OmxBalancerInstance is not documented.
 include/omxdsp/fx/omx_balancer_instance.h: warning: Member range (variable) of struct OmxBalancerInstance is not documented.
-include/omxdsp/fx/omx_balancer_instance.h: warning: Member ready (variable) of struct OmxBalancerInstance is not documented.
 include/omxdsp/fx/omx_balancer_instance.h: warning: Member settle (variable) of struct OmxBalancerInstance is not documented.
 include/omxdsp/fx/omx_balancer_instance.h: warning: Member settled (variable) of struct OmxBalancerInstance is not documented.
-include/omxdsp/fx/omx_balancer_instance.h: warning: Member sr (variable) of struct OmxBalancerInstance is not documented.
 include/omxdsp/fx/omx_balancer_instance.h: warning: Member step_db (variable) of struct OmxBalancerInstance is not documented.
 include/omxdsp/fx/omx_balancer_instance.h: warning: Member tick (variable) of struct OmxBalancerInstance is not documented.
 include/omxdsp/fx/omx_balancer_instance.h: warning: parameters of member omx_balancer_instance_band_gain_db are not documented
@@ -328,9 +325,6 @@ include/omxdsp/fx/omx_balancer_instance.h: warning: parameters of member omx_bal
 include/omxdsp/fx/omx_balancer_instance.h: warning: parameters of member omx_balancer_tick are not documented
 include/omxdsp/fx/omx_balancer_instance.h: warning: return type of member omx_balancer_instance_band_gain_db is not documented
 include/omxdsp/fx/omx_clipper_instance.h: warning: Compound OmxClipperInstance is not documented.
-include/omxdsp/fx/omx_clipper_instance.h: warning: Member enabled (variable) of struct OmxClipperInstance is not documented.
-include/omxdsp/fx/omx_clipper_instance.h: warning: Member ready (variable) of struct OmxClipperInstance is not documented.
-include/omxdsp/fx/omx_clipper_instance.h: warning: Member sr (variable) of struct OmxClipperInstance is not documented.
 include/omxdsp/fx/omx_clipper_instance.h: warning: parameters of member omx_clipper_instance_gain_reduction_db are not documented
 include/omxdsp/fx/omx_clipper_instance.h: warning: return type of member omx_clipper_instance_gain_reduction_db is not documented
 include/omxdsp/fx/omx_deesser.h: warning: Compound omx_deess is not documented.
@@ -349,23 +343,18 @@ include/omxdsp/fx/omx_deesser_instance.h: warning: Member OMX_DEESSER_INSTANCE_T
 include/omxdsp/fx/omx_deesser_instance.h: warning: Member OMX_DEESSER_INSTANCE_WIDTH_DEFAULT (macro definition) of file omx_deesser_instance.h is not documented.
 include/omxdsp/fx/omx_deesser_instance.h: warning: Member atom (variable) of struct OmxDeesserInstance is not documented.
 include/omxdsp/fx/omx_deesser_instance.h: warning: Member designed (variable) of struct OmxDeesserInstance is not documented.
-include/omxdsp/fx/omx_deesser_instance.h: warning: Member ready (variable) of struct OmxDeesserInstance is not documented.
-include/omxdsp/fx/omx_deesser_instance.h: warning: Member sr (variable) of struct OmxDeesserInstance is not documented.
 include/omxdsp/fx/omx_deesser_instance.h: warning: Member state (variable) of struct OmxDeesserInstance is not documented.
 include/omxdsp/fx/omx_deesser_instance.h: warning: Member width (variable) of struct OmxDeesserInstance is not documented.
 include/omxdsp/fx/omx_doubler_instance.h: warning: Compound OmxDoublerInstance is not documented.
 include/omxdsp/fx/omx_doubler_instance.h: warning: Member OMX_DOUBLER_INSTANCE_DELAYS[OMX_DOUBLER_VOICE_DELAYS_COUNT] (variable) of file omx_doubler_instance.h is not documented.
 include/omxdsp/fx/omx_doubler_instance.h: warning: Member OMX_DOUBLER_INSTANCE_FADE (macro definition) of file omx_doubler_instance.h is not documented.
 include/omxdsp/fx/omx_doubler_instance.h: warning: Member OMX_DOUBLER_INSTANCE_PANS[OMX_DOUBLER_VOICE_PANS_COUNT] (variable) of file omx_doubler_instance.h is not documented.
-include/omxdsp/fx/omx_doubler_instance.h: warning: Member enabled (variable) of struct OmxDoublerInstance is not documented.
 include/omxdsp/fx/omx_doubler_instance.h: warning: Member head[OMX_DOUBLER_INSTANCE_VOICES] (variable) of struct OmxDoublerInstance is not documented.
 include/omxdsp/fx/omx_doubler_instance.h: warning: Member hs[OMX_DOUBLER_INSTANCE_VOICES] (variable) of struct OmxDoublerInstance is not documented.
 include/omxdsp/fx/omx_doubler_instance.h: warning: Member lfo (variable) of struct OmxDoublerInstance is not documented.
 include/omxdsp/fx/omx_doubler_instance.h: warning: Member line (variable) of struct OmxDoublerInstance is not documented.
 include/omxdsp/fx/omx_doubler_instance.h: warning: Member mix (variable) of struct OmxDoublerInstance is not documented.
-include/omxdsp/fx/omx_doubler_instance.h: warning: Member ready (variable) of struct OmxDoublerInstance is not documented.
 include/omxdsp/fx/omx_doubler_instance.h: warning: Member ring[OMX_DOUBLER_INSTANCE_CAP] (variable) of struct OmxDoublerInstance is not documented.
-include/omxdsp/fx/omx_doubler_instance.h: warning: Member sr (variable) of struct OmxDoublerInstance is not documented.
 include/omxdsp/fx/omx_doubler_instance.h: warning: parameters of member omx_doubler_instance_settle are not documented
 include/omxdsp/fx/omx_drive_design.h: warning: parameters of member omx_drive_design_bank are not documented
 include/omxdsp/fx/omx_drive_design_corpus.h: warning: Member OMX_DRIVE_DESIGN_CORPUS[] (variable) of file omx_drive_design_corpus.h is not documented.
@@ -378,7 +367,6 @@ include/omxdsp/fx/omx_dyneq_instance.h: warning: Member band[OMX_DYNEQ_INSTANCE_
 include/omxdsp/fx/omx_dyneq_instance.h: warning: Member designed[OMX_DYNEQ_INSTANCE_BANDS] (variable) of struct OmxDyneqInstance is not documented.
 include/omxdsp/fx/omx_dyneq_instance.h: warning: Member dry_l[OMX_DYNEQ_INSTANCE_CHUNK] (variable) of struct OmxDyneqInstance is not documented.
 include/omxdsp/fx/omx_dyneq_instance.h: warning: Member dry_r[OMX_DYNEQ_INSTANCE_CHUNK] (variable) of struct OmxDyneqInstance is not documented.
-include/omxdsp/fx/omx_dyneq_instance.h: warning: Member enabled (variable) of struct OmxDyneqInstance is not documented.
 include/omxdsp/fx/omx_dyneq_instance.h: warning: Member eq (variable) of struct OmxDyneqInstance is not documented.
 include/omxdsp/fx/omx_dyneq_instance.h: warning: Member freq[OMX_DYNEQ_INSTANCE_BANDS] (variable) of struct OmxDyneqInstance is not documented.
 include/omxdsp/fx/omx_dyneq_instance.h: warning: Member listen[OMX_DYNEQ_INSTANCE_BANDS] (variable) of struct OmxDyneqInstance is not documented.
@@ -386,8 +374,6 @@ include/omxdsp/fx/omx_dyneq_instance.h: warning: Member listen_r[OMX_DYNEQ_INSTA
 include/omxdsp/fx/omx_dyneq_instance.h: warning: Member mix (variable) of struct OmxDyneqInstance is not documented.
 include/omxdsp/fx/omx_dyneq_instance.h: warning: Member on[OMX_DYNEQ_INSTANCE_BANDS] (variable) of struct OmxDyneqInstance is not documented.
 include/omxdsp/fx/omx_dyneq_instance.h: warning: Member q[OMX_DYNEQ_INSTANCE_BANDS] (variable) of struct OmxDyneqInstance is not documented.
-include/omxdsp/fx/omx_dyneq_instance.h: warning: Member ready (variable) of struct OmxDyneqInstance is not documented.
-include/omxdsp/fx/omx_dyneq_instance.h: warning: Member sr (variable) of struct OmxDyneqInstance is not documented.
 include/omxdsp/fx/omx_dyneq_instance.h: warning: Member st[OMX_DYNEQ_INSTANCE_BANDS] (variable) of struct OmxDyneqInstance is not documented.
 include/omxdsp/fx/omx_dyneq_instance.h: warning: Member sum_l[OMX_DYNEQ_INSTANCE_CHUNK] (variable) of struct OmxDyneqInstance is not documented.
 include/omxdsp/fx/omx_dyneq_instance.h: warning: Member sum_r[OMX_DYNEQ_INSTANCE_CHUNK] (variable) of struct OmxDyneqInstance is not documented.
@@ -404,10 +390,8 @@ include/omxdsp/fx/omx_flanger_instance.h: warning: Member OMX_FLANGER_INSTANCE_M
 include/omxdsp/fx/omx_flanger_instance.h: warning: Member OMX_FLANGER_INSTANCE_RATE_HZ_DEFAULT (macro definition) of file omx_flanger_instance.h is not documented.
 include/omxdsp/fx/omx_flanger_instance.h: warning: Member atom (variable) of struct OmxFlangerInstance is not documented.
 include/omxdsp/fx/omx_flanger_instance.h: warning: Member cap (variable) of struct OmxFlangerInstance is not documented.
-include/omxdsp/fx/omx_flanger_instance.h: warning: Member ready (variable) of struct OmxFlangerInstance is not documented.
 include/omxdsp/fx/omx_flanger_instance.h: warning: Member ring_l[OMX_FLANGER_CAP] (variable) of struct OmxFlangerInstance is not documented.
 include/omxdsp/fx/omx_flanger_instance.h: warning: Member ring_r[OMX_FLANGER_CAP] (variable) of struct OmxFlangerInstance is not documented.
-include/omxdsp/fx/omx_flanger_instance.h: warning: Member sr (variable) of struct OmxFlangerInstance is not documented.
 include/omxdsp/fx/omx_flanger_instance.h: warning: Member state (variable) of struct OmxFlangerInstance is not documented.
 include/omxdsp/fx/omx_flanger_instance.h: warning: parameters of member omx_flanger_instance_cap_for are not documented
 include/omxdsp/fx/omx_flanger_instance.h: warning: return type of member omx_flanger_instance_cap_for is not documented
@@ -415,15 +399,12 @@ include/omxdsp/fx/omx_geq_instance.h: warning: Member atom (variable) of struct 
 include/omxdsp/fx/omx_geq_instance.h: warning: Member coeffs[OMX_GEQ_BANDS][5] (variable) of struct OmxGeqInstance is not documented.
 include/omxdsp/fx/omx_geq_instance.h: warning: Member designed (variable) of struct OmxGeqInstance is not documented.
 include/omxdsp/fx/omx_geq_instance.h: warning: Member omx_geq_instance_centres_hz[] (variable) of file omx_geq_instance.h is not documented.
-include/omxdsp/fx/omx_geq_instance.h: warning: Member ready (variable) of struct OmxGeqInstance is not documented.
-include/omxdsp/fx/omx_geq_instance.h: warning: Member sr (variable) of struct OmxGeqInstance is not documented.
 include/omxdsp/fx/omx_geq_instance.h: warning: Member state (variable) of struct OmxGeqInstance is not documented.
 include/omxdsp/fx/omx_glue_instance.h: warning: Compound OmxGlueInstance is not documented.
 include/omxdsp/fx/omx_glue_instance.h: warning: Member OMX_GLUE_INSTANCE_ATTACKS[OMX_GLUE_ATTACK_MS_COUNT] (variable) of file omx_glue_instance.h is not documented.
 include/omxdsp/fx/omx_glue_instance.h: warning: Member OMX_GLUE_INSTANCE_RATIOS[OMX_GLUE_RATIO_VALUES_COUNT] (variable) of file omx_glue_instance.h is not documented.
 include/omxdsp/fx/omx_glue_instance.h: warning: Member OMX_GLUE_INSTANCE_RELEASES[OMX_GLUE_RELEASE_MS_COUNT] (variable) of file omx_glue_instance.h is not documented.
 include/omxdsp/fx/omx_glue_instance.h: warning: Member comp (variable) of struct OmxGlueInstance is not documented.
-include/omxdsp/fx/omx_glue_instance.h: warning: Member ready (variable) of struct OmxGlueInstance is not documented.
 include/omxdsp/fx/omx_glue_instance.h: warning: parameters of member omx_glue_instance_effective_attack_ms are not documented
 include/omxdsp/fx/omx_glue_instance.h: warning: parameters of member omx_glue_instance_gain_reduction_db are not documented
 include/omxdsp/fx/omx_glue_instance.h: warning: parameters of member omx_glue_instance_resolve are not documented
@@ -442,9 +423,6 @@ include/omxdsp/fx/omx_leveler_instance.h: warning: Member OMX_LEVELER_INSTANCE_U
 include/omxdsp/fx/omx_leveler_instance.h: warning: Member OMX_LEVELER_LERP(t) (macro definition) of file omx_leveler_instance.h is not documented.
 include/omxdsp/fx/omx_leveler_instance.h: warning: Member down_r (variable) of struct omx_leveler_row is not documented.
 include/omxdsp/fx/omx_leveler_instance.h: warning: Member down_t (variable) of struct omx_leveler_row is not documented.
-include/omxdsp/fx/omx_leveler_instance.h: warning: Member enabled (variable) of struct OmxLevelerInstance is not documented.
-include/omxdsp/fx/omx_leveler_instance.h: warning: Member ready (variable) of struct OmxLevelerInstance is not documented.
-include/omxdsp/fx/omx_leveler_instance.h: warning: Member sr (variable) of struct OmxLevelerInstance is not documented.
 include/omxdsp/fx/omx_leveler_instance.h: warning: Member up_r (variable) of struct omx_leveler_row is not documented.
 include/omxdsp/fx/omx_leveler_instance.h: warning: Member up_st (variable) of struct OmxLevelerInstance is not documented.
 include/omxdsp/fx/omx_leveler_instance.h: warning: Member up_t (variable) of struct omx_leveler_row is not documented.
@@ -453,11 +431,8 @@ include/omxdsp/fx/omx_leveler_instance.h: warning: parameters of member omx_leve
 include/omxdsp/fx/omx_leveler_instance.h: warning: return type of member omx_leveler_table is not documented
 include/omxdsp/fx/omx_limiter.h: warning: Member omx_limiter_lookahead_frames(float lookahead_ms, float rate) (function) of file omx_limiter.h is not documented.
 include/omxdsp/fx/omx_loudlevel_instance.h: warning: Compound OmxLoudlevelInstance is not documented.
-include/omxdsp/fx/omx_loudlevel_instance.h: warning: Member enabled (variable) of struct OmxLoudlevelInstance is not documented.
 include/omxdsp/fx/omx_loudlevel_instance.h: warning: Member meter (variable) of struct OmxLoudlevelInstance is not documented.
 include/omxdsp/fx/omx_loudlevel_instance.h: warning: Member range (variable) of struct OmxLoudlevelInstance is not documented.
-include/omxdsp/fx/omx_loudlevel_instance.h: warning: Member ready (variable) of struct OmxLoudlevelInstance is not documented.
-include/omxdsp/fx/omx_loudlevel_instance.h: warning: Member sr (variable) of struct OmxLoudlevelInstance is not documented.
 include/omxdsp/fx/omx_loudlevel_instance.h: warning: Member step_db (variable) of struct OmxLoudlevelInstance is not documented.
 include/omxdsp/fx/omx_loudlevel_instance.h: warning: Member target (variable) of struct OmxLoudlevelInstance is not documented.
 include/omxdsp/fx/omx_loudlevel_instance.h: warning: Member win (variable) of struct OmxLoudlevelInstance is not documented.
@@ -469,8 +444,6 @@ include/omxdsp/fx/omx_loudlevel_instance.h: warning: return type of member omx_l
 include/omxdsp/fx/omx_loudlevel_instance.h: warning: return type of member omx_loudlevel_instance_loudness_lufs is not documented
 include/omxdsp/fx/omx_mbcomp_instance.h: warning: Member atom (variable) of struct OmxMbcompInstance is not documented.
 include/omxdsp/fx/omx_mbcomp_instance.h: warning: Member designed (variable) of struct OmxMbcompInstance is not documented.
-include/omxdsp/fx/omx_mbcomp_instance.h: warning: Member ready (variable) of struct OmxMbcompInstance is not documented.
-include/omxdsp/fx/omx_mbcomp_instance.h: warning: Member sr (variable) of struct OmxMbcompInstance is not documented.
 include/omxdsp/fx/omx_mbcomp_instance.h: warning: Member st (variable) of struct OmxMbcompInstance is not documented.
 include/omxdsp/fx/omx_mbcomp_instance.h: warning: parameters of member omx_mbcomp_instance_band_gr_db are not documented
 include/omxdsp/fx/omx_mbcomp_instance.h: warning: parameters of member omx_mbcomp_instance_resolve are not documented
@@ -481,18 +454,14 @@ include/omxdsp/fx/omx_phaser_instance.h: warning: Member OMX_PHASER_INSTANCE_FEE
 include/omxdsp/fx/omx_phaser_instance.h: warning: Member OMX_PHASER_INSTANCE_MIX_DEFAULT (macro definition) of file omx_phaser_instance.h is not documented.
 include/omxdsp/fx/omx_phaser_instance.h: warning: Member OMX_PHASER_INSTANCE_STAGES_DEFAULT (macro definition) of file omx_phaser_instance.h is not documented.
 include/omxdsp/fx/omx_phaser_instance.h: warning: Member atom (variable) of struct OmxPhaserInstance is not documented.
-include/omxdsp/fx/omx_phaser_instance.h: warning: Member ready (variable) of struct OmxPhaserInstance is not documented.
-include/omxdsp/fx/omx_phaser_instance.h: warning: Member sr (variable) of struct OmxPhaserInstance is not documented.
 include/omxdsp/fx/omx_phaser_instance.h: warning: Member state (variable) of struct OmxPhaserInstance is not documented.
 include/omxdsp/fx/omx_pitch_instance.h: warning: Member atom (variable) of struct OmxPitchInstance is not documented.
 include/omxdsp/fx/omx_pitch_instance.h: warning: Member cap (variable) of struct OmxPitchInstance is not documented.
 include/omxdsp/fx/omx_pitch_instance.h: warning: Member cents (variable) of struct OmxPitchInstance is not documented.
 include/omxdsp/fx/omx_pitch_instance.h: warning: Member mix (variable) of struct OmxPitchInstance is not documented.
-include/omxdsp/fx/omx_pitch_instance.h: warning: Member ready (variable) of struct OmxPitchInstance is not documented.
 include/omxdsp/fx/omx_pitch_instance.h: warning: Member resolved (variable) of struct OmxPitchInstance is not documented.
 include/omxdsp/fx/omx_pitch_instance.h: warning: Member ring_l[OMX_PITCH_INSTANCE_RING_FLOATS] (variable) of struct OmxPitchInstance is not documented.
 include/omxdsp/fx/omx_pitch_instance.h: warning: Member ring_r[OMX_PITCH_INSTANCE_RING_FLOATS] (variable) of struct OmxPitchInstance is not documented.
-include/omxdsp/fx/omx_pitch_instance.h: warning: Member sr (variable) of struct OmxPitchInstance is not documented.
 include/omxdsp/fx/omx_pitch_instance.h: warning: Member state (variable) of struct OmxPitchInstance is not documented.
 include/omxdsp/fx/omx_pitch_instance.h: warning: parameters of member omx_pitch_instance_cap_for are not documented
 include/omxdsp/fx/omx_pitch_instance.h: warning: return type of member omx_pitch_instance_cap_for is not documented
@@ -502,15 +471,12 @@ include/omxdsp/fx/omx_plosive_instance.h: warning: Member band_oct (variable) of
 include/omxdsp/fx/omx_plosive_instance.h: warning: Member cd (variable) of struct OmxPlosiveInstance is not documented.
 include/omxdsp/fx/omx_plosive_instance.h: warning: Member cons_rec (variable) of struct OmxPlosiveInstance is not documented.
 include/omxdsp/fx/omx_plosive_instance.h: warning: Member cons_s (variable) of struct OmxPlosiveInstance is not documented.
-include/omxdsp/fx/omx_plosive_instance.h: warning: Member enabled (variable) of struct OmxPlosiveInstance is not documented.
 include/omxdsp/fx/omx_plosive_instance.h: warning: Member pop_db (variable) of struct OmxPlosiveInstance is not documented.
 include/omxdsp/fx/omx_plosive_instance.h: warning: Member pop_hz (variable) of struct OmxPlosiveInstance is not documented.
 include/omxdsp/fx/omx_plosive_instance.h: warning: Member pop_min (variable) of struct OmxPlosiveInstance is not documented.
 include/omxdsp/fx/omx_plosive_instance.h: warning: Member pop_rec (variable) of struct OmxPlosiveInstance is not documented.
 include/omxdsp/fx/omx_plosive_instance.h: warning: Member pop_s (variable) of struct OmxPlosiveInstance is not documented.
-include/omxdsp/fx/omx_plosive_instance.h: warning: Member ready (variable) of struct OmxPlosiveInstance is not documented.
 include/omxdsp/fx/omx_plosive_instance.h: warning: Member slow (variable) of struct omx_plosive_detector is not documented.
-include/omxdsp/fx/omx_plosive_instance.h: warning: Member sr (variable) of struct OmxPlosiveInstance is not documented.
 include/omxdsp/fx/omx_plosive_instance.h: warning: parameters of member omx_plosive_cons_apply are not documented
 include/omxdsp/fx/omx_plosive_instance.h: warning: parameters of member omx_plosive_gain are not documented
 include/omxdsp/fx/omx_plosive_instance.h: warning: parameters of member omx_plosive_instance_consonant_reduction_db are not documented
@@ -541,8 +507,6 @@ include/omxdsp/fx/omx_reverb_instance.h: warning: Member OMX_REVERB_INSTANCE_WID
 include/omxdsp/fx/omx_reverb_instance.h: warning: Member atom (variable) of struct OmxReverbInstance is not documented.
 include/omxdsp/fx/omx_reverb_instance.h: warning: Member early_ring[OMX_REVERB_INSTANCE_EARLY_CAP] (variable) of struct OmxReverbInstance is not documented.
 include/omxdsp/fx/omx_reverb_instance.h: warning: Member pool[OMX_REVERB_POOL_FLOATS] (variable) of struct OmxReverbInstance is not documented.
-include/omxdsp/fx/omx_reverb_instance.h: warning: Member ready (variable) of struct OmxReverbInstance is not documented.
-include/omxdsp/fx/omx_reverb_instance.h: warning: Member sr (variable) of struct OmxReverbInstance is not documented.
 include/omxdsp/fx/omx_reverb_instance.h: warning: Member state (variable) of struct OmxReverbInstance is not documented.
 include/omxdsp/fx/omx_reverse_render.h: warning: Member tmp_l (variable) of struct omx_reverse_render_scratch is not documented.
 include/omxdsp/fx/omx_reverse_render.h: warning: Member wet_l (variable) of struct omx_reverse_render_scratch is not documented.
@@ -554,18 +518,13 @@ include/omxdsp/fx/omx_rotary_instance.h: warning: Member OMX_ROTARY_INSTANCE_HOR
 include/omxdsp/fx/omx_rotary_instance.h: warning: Member OMX_ROTARY_INSTANCE_MIX_DEFAULT (macro definition) of file omx_rotary_instance.h is not documented.
 include/omxdsp/fx/omx_rotary_instance.h: warning: Member OMX_ROTARY_INSTANCE_SPEED_DEFAULT (macro definition) of file omx_rotary_instance.h is not documented.
 include/omxdsp/fx/omx_rotary_instance.h: warning: Member atom (variable) of struct OmxRotaryInstance is not documented.
-include/omxdsp/fx/omx_rotary_instance.h: warning: Member ready (variable) of struct OmxRotaryInstance is not documented.
-include/omxdsp/fx/omx_rotary_instance.h: warning: Member sr (variable) of struct OmxRotaryInstance is not documented.
 include/omxdsp/fx/omx_rotary_instance.h: warning: Member state (variable) of struct OmxRotaryInstance is not documented.
 include/omxdsp/fx/omx_spring_instance.h: warning: Compound OmxSpringInstance is not documented.
 include/omxdsp/fx/omx_spring_instance.h: warning: Member OMX_SPRING_INSTANCE_CHIRP[OMX_SPRING_CHIRP_HZ_COUNT] (variable) of file omx_spring_instance.h is not documented.
 include/omxdsp/fx/omx_spring_instance.h: warning: Member chain[OMX_SPRING_SECTIONS] (variable) of struct omx_spring_leg is not documented.
 include/omxdsp/fx/omx_spring_instance.h: warning: Member dry (variable) of struct OmxSpringInstance is not documented.
-include/omxdsp/fx/omx_spring_instance.h: warning: Member enabled (variable) of struct OmxSpringInstance is not documented.
 include/omxdsp/fx/omx_spring_instance.h: warning: Member leg[2] (variable) of struct OmxSpringInstance is not documented.
-include/omxdsp/fx/omx_spring_instance.h: warning: Member ready (variable) of struct OmxSpringInstance is not documented.
 include/omxdsp/fx/omx_spring_instance.h: warning: Member ring[OMX_SPRING_INSTANCE_RING] (variable) of struct omx_spring_leg is not documented.
-include/omxdsp/fx/omx_spring_instance.h: warning: Member sr (variable) of struct OmxSpringInstance is not documented.
 include/omxdsp/fx/omx_spring_instance.h: warning: Member wet (variable) of struct OmxSpringInstance is not documented.
 include/omxdsp/fx/omx_spring_instance.h: warning: parameters of member omx_spring_chain_delay are not documented
 include/omxdsp/fx/omx_spring_instance.h: warning: parameters of member omx_spring_leg_tick are not documented
@@ -579,7 +538,6 @@ include/omxdsp/fx/omx_suboct_instance.h: warning: Member ac (variable) of struct
 include/omxdsp/fx/omx_suboct_instance.h: warning: Member d2 (variable) of struct OmxSuboctInstance is not documented.
 include/omxdsp/fx/omx_suboct_instance.h: warning: Member dr (variable) of struct OmxSuboctInstance is not documented.
 include/omxdsp/fx/omx_suboct_instance.h: warning: Member e1 (variable) of struct OmxSuboctInstance is not documented.
-include/omxdsp/fx/omx_suboct_instance.h: warning: Member enabled (variable) of struct OmxSuboctInstance is not documented.
 include/omxdsp/fx/omx_suboct_instance.h: warning: Member hp[5] (variable) of struct OmxSuboctInstance is not documented.
 include/omxdsp/fx/omx_suboct_instance.h: warning: Member ls[4] (variable) of struct OmxSuboctInstance is not documented.
 include/omxdsp/fx/omx_suboct_instance.h: warning: Member o1 (variable) of struct OmxSuboctInstance is not documented.
@@ -587,8 +545,6 @@ include/omxdsp/fx/omx_suboct_instance.h: warning: Member o2 (variable) of struct
 include/omxdsp/fx/omx_suboct_instance.h: warning: Member p1[2][5] (variable) of struct OmxSuboctInstance is not documented.
 include/omxdsp/fx/omx_suboct_instance.h: warning: Member p1s[2][4] (variable) of struct OmxSuboctInstance is not documented.
 include/omxdsp/fx/omx_suboct_instance.h: warning: Member p2s[2][4] (variable) of struct OmxSuboctInstance is not documented.
-include/omxdsp/fx/omx_suboct_instance.h: warning: Member ready (variable) of struct OmxSuboctInstance is not documented.
-include/omxdsp/fx/omx_suboct_instance.h: warning: Member sr (variable) of struct OmxSuboctInstance is not documented.
 include/omxdsp/fx/omx_suboct_instance.h: warning: parameters of member omx_suboct_arm_level are not documented
 include/omxdsp/fx/omx_suboct_instance.h: warning: parameters of member omx_suboct_instance_tracked_hz are not documented
 include/omxdsp/fx/omx_suboct_instance.h: warning: parameters of member omx_suboct_lp24 are not documented
@@ -596,9 +552,6 @@ include/omxdsp/fx/omx_suboct_instance.h: warning: return type of member omx_subo
 include/omxdsp/fx/omx_suboct_instance.h: warning: return type of member omx_suboct_instance_tracked_hz is not documented
 include/omxdsp/fx/omx_tone_instance.h: warning: Compound OmxToneInstance is not documented.
 include/omxdsp/fx/omx_tone_instance.h: warning: Member OMX_TONE_INSTANCE_HIGH_HZ (macro definition) of file omx_tone_instance.h is not documented.
-include/omxdsp/fx/omx_tone_instance.h: warning: Member enabled (variable) of struct OmxToneInstance is not documented.
-include/omxdsp/fx/omx_tone_instance.h: warning: Member ready (variable) of struct OmxToneInstance is not documented.
-include/omxdsp/fx/omx_tone_instance.h: warning: Member sr (variable) of struct OmxToneInstance is not documented.
 include/omxdsp/fx/omx_tone_instance.h: warning: Member tilt (variable) of struct OmxToneInstance is not documented.
 include/omxdsp/fx/omx_tone_instance.h: warning: parameters of member omx_tone_filter_hz are not documented
 include/omxdsp/fx/omx_tone_instance.h: warning: parameters of member omx_tone_instance_magnitude are not documented
@@ -607,9 +560,7 @@ include/omxdsp/fx/omx_tone_instance.h: warning: return type of member omx_tone_i
 include/omxdsp/fx/omx_transient_instance.h: warning: Member atom (variable) of struct OmxTransientInstance is not documented.
 include/omxdsp/fx/omx_transient_instance.h: warning: Member attack_time_ms (variable) of struct OmxTransientInstance is not documented.
 include/omxdsp/fx/omx_transient_instance.h: warning: Member output_db (variable) of struct OmxTransientInstance is not documented.
-include/omxdsp/fx/omx_transient_instance.h: warning: Member ready (variable) of struct OmxTransientInstance is not documented.
 include/omxdsp/fx/omx_transient_instance.h: warning: Member resolved (variable) of struct OmxTransientInstance is not documented.
-include/omxdsp/fx/omx_transient_instance.h: warning: Member sr (variable) of struct OmxTransientInstance is not documented.
 include/omxdsp/fx/omx_transient_instance.h: warning: Member state (variable) of struct OmxTransientInstance is not documented.
 include/omxdsp/fx/omx_transient_instance.h: warning: Member sustain_db (variable) of struct OmxTransientInstance is not documented.
 include/omxdsp/fx/omx_transient_instance.h: warning: Member sustain_time_ms (variable) of struct OmxTransientInstance is not documented.
@@ -621,25 +572,16 @@ include/omxdsp/fx/omx_tremolo_instance.h: warning: Member OMX_TREMOLO_INSTANCE_D
 include/omxdsp/fx/omx_tremolo_instance.h: warning: Member OMX_TREMOLO_INSTANCE_MIX_DEFAULT (macro definition) of file omx_tremolo_instance.h is not documented.
 include/omxdsp/fx/omx_tremolo_instance.h: warning: Member OMX_TREMOLO_INSTANCE_RATE_HZ_DEFAULT (macro definition) of file omx_tremolo_instance.h is not documented.
 include/omxdsp/fx/omx_tremolo_instance.h: warning: Member atom (variable) of struct OmxTremoloInstance is not documented.
-include/omxdsp/fx/omx_tremolo_instance.h: warning: Member ready (variable) of struct OmxTremoloInstance is not documented.
-include/omxdsp/fx/omx_tremolo_instance.h: warning: Member sr (variable) of struct OmxTremoloInstance is not documented.
 include/omxdsp/fx/omx_tremolo_instance.h: warning: Member state (variable) of struct OmxTremoloInstance is not documented.
 include/omxdsp/fx/omx_trim_instance.h: warning: Member bypass (variable) of struct OmxTrimInstance is not documented.
 include/omxdsp/fx/omx_trim_instance.h: warning: Member cur (variable) of struct OmxTrimInstance is not documented.
-include/omxdsp/fx/omx_trim_instance.h: warning: Member ready (variable) of struct OmxTrimInstance is not documented.
 include/omxdsp/fx/omx_trim_instance.h: warning: Member tgt (variable) of struct OmxTrimInstance is not documented.
 include/omxdsp/fx/omx_upward_instance.h: warning: Compound OmxUpwardInstance is not documented.
 include/omxdsp/fx/omx_upward_instance.h: warning: Member atom (variable) of struct OmxUpwardInstance is not documented.
-include/omxdsp/fx/omx_upward_instance.h: warning: Member enabled (variable) of struct OmxUpwardInstance is not documented.
-include/omxdsp/fx/omx_upward_instance.h: warning: Member ready (variable) of struct OmxUpwardInstance is not documented.
-include/omxdsp/fx/omx_upward_instance.h: warning: Member sr (variable) of struct OmxUpwardInstance is not documented.
 include/omxdsp/fx/omx_upward_instance.h: warning: Member st (variable) of struct OmxUpwardInstance is not documented.
 include/omxdsp/fx/omx_upward_instance.h: warning: parameters of member omx_upward_instance_gain_db are not documented
 include/omxdsp/fx/omx_upward_instance.h: warning: return type of member omx_upward_instance_gain_db is not documented
 include/omxdsp/fx/omx_width_instance.h: warning: Compound OmxWidthInstance is not documented.
-include/omxdsp/fx/omx_width_instance.h: warning: Member enabled (variable) of struct OmxWidthInstance is not documented.
 include/omxdsp/fx/omx_width_instance.h: warning: Member p (variable) of struct OmxWidthInstance is not documented.
-include/omxdsp/fx/omx_width_instance.h: warning: Member ready (variable) of struct OmxWidthInstance is not documented.
-include/omxdsp/fx/omx_width_instance.h: warning: Member sr (variable) of struct OmxWidthInstance is not documented.
 include/omxdsp/fx/omx_width_instance.h: warning: Member st (variable) of struct OmxWidthInstance is not documented.
 include/omxdsp/mix/omx_key.h: warning: Member hp_on (variable) of struct omx_key is not documented.

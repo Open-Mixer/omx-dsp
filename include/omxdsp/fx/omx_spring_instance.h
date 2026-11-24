@@ -49,12 +49,15 @@ struct omx_spring_leg {
 };
 
 typedef struct {
+  /** The sample rate init bound the instance to, Hz. */
   float sr;
   struct omx_spring_leg leg[2];
   float a;   /**< the all-pass coefficient */
   float pole; /**< the loop low-pass's pole */
   float wet, dry;
+  /** Non-zero while the effect is engaged, as the last resolve() set it; while zero, run() leaves the output as the input. */
   int enabled;
+  /** Non-zero once init bound the instance to a usable rate; while zero, resolve() does nothing and run() leaves the output as the input. */
   int ready;
 } OmxSpringInstance;
 

@@ -56,6 +56,7 @@
 
 /** One instance: the atom, the state and the last resolved controls. */
 typedef struct {
+  /** The sample rate init bound the instance to, Hz. */
   float sr;
   struct omx_transient atom;
   struct omx_transient_state state;
@@ -64,6 +65,7 @@ typedef struct {
   int resolved;
   /** The previous cycle's engaged flag, so a bypass->engaged edge can clear the state. */
   int was_engaged;
+  /** Non-zero once init bound the instance to a usable rate; while zero, resolve() does nothing and run() leaves the output as the input. */
   int ready;
 } OmxTransientInstance;
 

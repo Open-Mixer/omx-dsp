@@ -61,12 +61,14 @@
 
 /** One instance: the atom the host's ports resolve to and the kernel's inline state. */
 typedef struct {
+  /** The sample rate init bound the instance to, Hz. */
   float sr;
   struct omx_deess atom;
   struct omx_deess_state state;
   /** The clamped frequency and width the band was last designed from; `designed` 0 until the first. */
   float freq, width;
   int designed;
+  /** Non-zero once init bound the instance to a usable rate; while zero, resolve() does nothing and run() leaves the output as the input. */
   int ready;
 } OmxDeesserInstance;
 

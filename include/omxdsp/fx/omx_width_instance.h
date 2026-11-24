@@ -35,6 +35,7 @@
 #define OMX_WIDTH_INSTANCE_CHANNELS 2
 
 typedef struct {
+  /** The sample rate init bound the instance to, Hz. */
   float sr;
   struct omx_width p;
   struct omx_width_state st;
@@ -43,7 +44,9 @@ typedef struct {
   float pms;   /**< pseudoMs as resolved */
   int bmode;   /**< bassMono as resolved, an OMX_WIDTH_BASS_MONOS_* member */
   float bhz;   /**< bassMonoHz as resolved */
+  /** Non-zero while the effect is engaged, as the last resolve() set it; while zero, run() leaves the output as the input. */
   int enabled;
+  /** Non-zero once init bound the instance to a usable rate; while zero, resolve() does nothing and run() leaves the output as the input. */
   int ready;
 } OmxWidthInstance;
 

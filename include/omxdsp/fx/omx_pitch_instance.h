@@ -60,6 +60,7 @@
 
 /** One instance. It owns its rings; the kernel is armed over the first `cap` floats of each. */
 typedef struct {
+  /** The sample rate init bound the instance to, Hz. */
   float sr;
   struct omx_pitch atom;
   struct omx_pitch_state state;
@@ -71,6 +72,7 @@ typedef struct {
   int resolved;
   /** The previous cycle's engaged flag, so a bypass->engaged edge can clear the rings. */
   int was_engaged;
+  /** Non-zero once init bound the instance to a usable rate; while zero, resolve() does nothing and run() leaves the output as the input. */
   int ready;
 } OmxPitchInstance;
 

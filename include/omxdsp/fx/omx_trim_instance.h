@@ -61,6 +61,7 @@
 typedef struct {
   float cur, tgt;
   int bypass;
+  /** Non-zero once init bound the instance to a usable rate; while zero, resolve() does nothing and run() leaves the output as the input. */
   int ready;
 } OmxTrimInstance;
 

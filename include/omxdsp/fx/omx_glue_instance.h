@@ -41,6 +41,7 @@ _Static_assert(OMX_GLUE_RATIO_VALUES_COUNT == OMX_GLUE_RATIOS_COUNT && OMX_GLUE_
 
 typedef struct {
   OmxCompInstance comp;
+  /** Non-zero once init bound the instance to a usable rate; while zero, resolve() does nothing and run() leaves the output as the input. */
   int ready;
 } OmxGlueInstance;
 

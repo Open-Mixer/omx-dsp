@@ -50,12 +50,15 @@ static inline float omx_clipper_sample(float u, float c, float a) {
 }
 
 typedef struct {
+  /** The sample rate init bound the instance to, Hz. */
   float sr;
   float drive_lin;   /**< the gain before the clip */
   float ceiling_lin; /**< the ceiling */
   float knee_lin;    /**< where the bend starts */
   float gr_db;       /**< the last block's reduction, dB, negative or 0 */
+  /** Non-zero while the effect is engaged, as the last resolve() set it; while zero, run() leaves the output as the input. */
   int enabled;
+  /** Non-zero once init bound the instance to a usable rate; while zero, resolve() does nothing and run() leaves the output as the input. */
   int ready;
 } OmxClipperInstance;
 

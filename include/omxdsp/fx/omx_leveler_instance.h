@@ -86,13 +86,16 @@ static inline struct omx_leveler_row omx_leveler_table(float amount) {
 }
 
 typedef struct {
+  /** The sample rate init bound the instance to, Hz. */
   float sr;
   struct omx_dyn down, up;           /**< the two slots' atoms */
   struct omx_dyn_state down_st, up_st;
   float amt; /**< the amount as resolved, percent */
   int dir;   /**< the direction as resolved, an OMX_LEVELER_DIRECTIONS_* member */
   int spd;   /**< the speed as resolved, an OMX_LEVELER_SPEEDS_* member */
+  /** Non-zero while the effect is engaged, as the last resolve() set it; while zero, run() leaves the output as the input. */
   int enabled;
+  /** Non-zero once init bound the instance to a usable rate; while zero, resolve() does nothing and run() leaves the output as the input. */
   int ready;
 } OmxLevelerInstance;
 

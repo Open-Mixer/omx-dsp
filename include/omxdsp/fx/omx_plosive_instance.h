@@ -62,6 +62,7 @@ struct omx_plosive_detector {
 };
 
 typedef struct {
+  /** The sample rate init bound the instance to, Hz. */
   float sr;
   /** the resolved controls */
   float cons_db, cons_s, cons_rec, band_hz, band_oct, pop_db, pop_s, pop_rec, pop_hz;
@@ -76,7 +77,9 @@ typedef struct {
   float bs[2][4];                /**< the band section's history, per leg */
   struct omx_plosive_detector pd, cd;
   float pop_min, cons_min;       /**< the deepest gain of each half in the last block, linear */
+  /** Non-zero while the effect is engaged, as the last resolve() set it; while zero, run() leaves the output as the input. */
   int enabled;
+  /** Non-zero once init bound the instance to a usable rate; while zero, resolve() does nothing and run() leaves the output as the input. */
   int ready;
 } OmxPlosiveInstance;
 

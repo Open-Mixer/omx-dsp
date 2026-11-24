@@ -50,11 +50,13 @@
 
 /** One instance: the atom the host's ports resolve to and the oscillator it drives. */
 typedef struct {
+  /** The sample rate init bound the instance to, Hz. */
   float sr;
   struct omx_tremolo atom;
   struct omx_tremolo_state state;
   /** The previous cycle's engaged flag, so a bypass->engaged edge can restart the oscillator. */
   int was_engaged;
+  /** Non-zero once init bound the instance to a usable rate; while zero, resolve() does nothing and run() leaves the output as the input. */
   int ready;
 } OmxTremoloInstance;
 

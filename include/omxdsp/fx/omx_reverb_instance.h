@@ -76,6 +76,7 @@ static const float OMX_REVERB_INSTANCE_TAP_GAINS[OMX_REVERB_EARLY_TAPS] = OMX_RE
 #define OMX_REVERB_INSTANCE_EARLY_ORDER 3
 
 typedef struct {
+  /** The sample rate init bound the instance to, Hz. */
   float sr;
   struct omx_reverb atom;
   struct omx_reverb_state state;
@@ -86,6 +87,7 @@ typedef struct {
   float pool[OMX_REVERB_POOL_FLOATS];
   /** The previous cycle's engaged flag, so a bypass->engaged edge can clear the lines. */
   int was_engaged;
+  /** Non-zero once init bound the instance to a usable rate; while zero, resolve() does nothing and run() leaves the output as the input. */
   int ready;
 } OmxReverbInstance;
 

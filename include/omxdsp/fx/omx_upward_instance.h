@@ -31,11 +31,14 @@
 #define OMX_UPWARD_INSTANCE_CHANNELS 2
 
 typedef struct {
+  /** The sample rate init bound the instance to, Hz. */
   float sr;
   struct omx_dyn atom;
   struct omx_dyn_state st;
   float gain_db; /**< the gainDb readout */
+  /** Non-zero while the effect is engaged, as the last resolve() set it; while zero, run() leaves the output as the input. */
   int enabled;
+  /** Non-zero once init bound the instance to a usable rate; while zero, resolve() does nothing and run() leaves the output as the input. */
   int ready;
 } OmxUpwardInstance;
 

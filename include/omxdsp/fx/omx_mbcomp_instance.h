@@ -46,6 +46,7 @@
 
 /** One instance: the atom, the stage's state, the corners the tree was designed at and the output gain. */
 typedef struct {
+  /** The sample rate init bound the instance to, Hz. */
   float sr;
   struct omx_mbcomp atom;
   struct omx_mbcomp_state st;
@@ -53,6 +54,7 @@ typedef struct {
   int designed;
   uint32_t factor; /**< The factor the band compressors were armed at. */
   float out_lin;   /**< The output gain, linear; exactly 1 at 0 dB. */
+  /** Non-zero once init bound the instance to a usable rate; while zero, resolve() does nothing and run() leaves the output as the input. */
   int ready;
 } OmxMbcompInstance;
 

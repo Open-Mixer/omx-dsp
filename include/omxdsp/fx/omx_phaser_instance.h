@@ -51,11 +51,13 @@
 
 /** One instance: the atom the host's ports resolve to and the state it drives. */
 typedef struct {
+  /** The sample rate init bound the instance to, Hz. */
   float sr;
   struct omx_phaser atom;
   struct omx_phaser_state state;
   /** The previous cycle's engaged flag, so a bypass->engaged edge can clear the state. */
   int was_engaged;
+  /** Non-zero once init bound the instance to a usable rate; while zero, resolve() does nothing and run() leaves the output as the input. */
   int ready;
 } OmxPhaserInstance;
 

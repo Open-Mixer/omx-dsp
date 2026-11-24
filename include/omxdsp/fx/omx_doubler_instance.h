@@ -72,6 +72,7 @@ _Static_assert(OMX_DOUBLER_VOICE_DETUNES_COUNT == OMX_DOUBLER_MAX_VOICES && OMX_
 #define OMX_DOUBLER_INSTANCE_CAP 16384u
 
 typedef struct {
+  /** The sample rate init bound the instance to, Hz. */
   float sr;
   struct omx_fdelay line;
   struct omx_doppler head[OMX_DOUBLER_INSTANCE_VOICES];
@@ -88,7 +89,9 @@ typedef struct {
   float hand_len;                          /**< a hand-over's crossfade, samples */
   uint32_t nv;                             /**< voices sounding */
   float mix;
+  /** Non-zero while the effect is engaged, as the last resolve() set it; while zero, run() leaves the output as the input. */
   int enabled;
+  /** Non-zero once init bound the instance to a usable rate; while zero, resolve() does nothing and run() leaves the output as the input. */
   int ready;
   float ring[OMX_DOUBLER_INSTANCE_CAP];
 } OmxDoublerInstance;

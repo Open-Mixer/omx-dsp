@@ -62,6 +62,7 @@ _Static_assert(OMX_SUBOCT_RANGE_LO_HZ_COUNT == OMX_SUBOCT_RANGES_COUNT && OMX_SU
 static inline float omx_suboct_arm_level(float e) { return OMX_SUBOCT_HYSTERESIS * e; }
 
 typedef struct {
+  /** The sample rate init bound the instance to, Hz. */
   float sr;
   int rng;                      /**< the range as resolved, an OMX_SUBOCT_RANGES_* member */
   float o1, o2, dr, gate_db;    /**< the levels (shares) and the gate (dBFS) as resolved */
@@ -79,7 +80,9 @@ typedef struct {
   uint64_t n;                   /**< samples run */
   uint64_t last_toggle;         /**< the sample of the first divider's last toggle */
   uint32_t period;              /**< samples between its last two toggles; 0 until two */
+  /** Non-zero while the effect is engaged, as the last resolve() set it; while zero, run() leaves the output as the input. */
   int enabled;
+  /** Non-zero once init bound the instance to a usable rate; while zero, resolve() does nothing and run() leaves the output as the input. */
   int ready;
 } OmxSuboctInstance;
 

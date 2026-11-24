@@ -105,6 +105,7 @@ static inline int omx_geq_instance_rate_ok(double sr) {
 
 /** One instance: the atom, the state, the gains the sections were designed at. */
 typedef struct {
+  /** The sample rate init bound the instance to, Hz. */
   double sr;
   struct omx_geq atom;
   struct omx_geq_state state;
@@ -114,6 +115,7 @@ typedef struct {
   int designed;
   /** The previous cycle's engaged flag, so a bypass->engaged edge can clear the histories. */
   int was_engaged;
+  /** Non-zero once init bound the instance to a usable rate; while zero, resolve() does nothing and run() leaves the output as the input. */
   int ready;
 } OmxGeqInstance;
 

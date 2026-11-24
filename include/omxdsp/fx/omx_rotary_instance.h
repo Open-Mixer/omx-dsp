@@ -54,11 +54,13 @@
 
 /** One instance: the atom the host's ports resolve to and the state (rotors and inline rings). */
 typedef struct {
+  /** The sample rate init bound the instance to, Hz. */
   float sr;
   struct omx_rotary atom;
   struct omx_rotary_state state;
   /** The previous cycle's engaged flag, so a bypass->engaged edge can re-arm the state. */
   int was_engaged;
+  /** Non-zero once init bound the instance to a usable rate; while zero, resolve() does nothing and run() leaves the output as the input. */
   int ready;
 } OmxRotaryInstance;
 

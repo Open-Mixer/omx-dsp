@@ -51,6 +51,7 @@
 #define OMX_TONE_INSTANCE_HIGH_HZ ((double)OMX_TONE_FILTER_HIGH_HZ)
 
 typedef struct {
+  /** The sample rate init bound the instance to, Hz. */
   float sr;
   struct omx_tilt tilt;
   double fc[5];       /**< the filter's section, `{b0, b1, b2, a1, a2}` */
@@ -63,7 +64,9 @@ typedef struct {
   int tilt_on;        /**< 1 while the tilt is not flat */
   int filter_on;      /**< 1 while the filter is not open */
   int fside;          /**< the side the filter's history belongs to: -1 the low-pass, +1 the high-pass */
+  /** Non-zero while the effect is engaged, as the last resolve() set it; while zero, run() leaves the output as the input. */
   int enabled;
+  /** Non-zero once init bound the instance to a usable rate; while zero, resolve() does nothing and run() leaves the output as the input. */
   int ready;
 } OmxToneInstance;
 
