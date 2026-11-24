@@ -6,12 +6,17 @@ name: Publish the TypeScript twins to npm
 # npmjs.org by npm trusted publishing (OIDC, no token anywhere), modelled on omx-contract's publish.yml. npmjs.com
 # trusts the CALLER of the publish by repository + workflow filename (+ environment when one is set there; none is):
 #   Repository: Open-Mixer/omx-dsp    Workflow filename: publish.yml    Environment: (none)
-# A version tag publishes (the library's own tag: ts/package.json carries the library version); a manual dispatch
-# is a dry run unless asked otherwise. Only the public repository publishes.
+# npm follows the promotion, never the bare tag (owner ruling 2026-11-24: npm latest at the promotion). A v* tag runs
+# release.yml, whose promote job makes the staged build the release; this workflow runs when that run completes and
+# publishes only when it was a tag push of this repository, concluded success, and every job of its promote call read
+# success: a refused promotion (a tag not on main, an incomplete staged tree) publishes nothing. It checks out the
+# tag's commit, never the default branch the run event starts on (ts/package.json carries the library version). A
+# manual dispatch is a dry run unless asked otherwise. Only the public repository publishes.
 
 on:
-  push:
-    tags: ['v*']
+  workflow_run:
+    workflows: [release]
+    types: [completed]
   workflow_dispatch:
     inputs:
       dry-run:
@@ -27,10 +32,29 @@ jobs:
   checks:
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read
     outputs:
       deb: ${{ steps.m.outputs.deb }}
       deb-count: ${{ steps.m.outputs.deb-count }}
     steps:
+      # a release run of a v* tag push: the promotion itself, job by job, not only the run's conclusion (gh is on this
+      # runner, not in the publish cell's container); a red gate leaves publish skipped
+      - name: The release run promoted the tag
+        if: github.event_name == 'workflow_run' && github.event.workflow_run.event == 'push' && startsWith(github.event.workflow_run.head_branch, 'v')
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN: ${{ github.event.workflow_run.id }}
+          TAG: ${{ github.event.workflow_run.head_branch }}
+        run: |
+          set -euo pipefail
+          gh api --paginate "repos/$GITHUB_REPOSITORY/actions/runs/$RUN/jobs" --jq '.jobs[] | [.name, (.conclusion // "none")] | @tsv' > jobs.tsv
+          cat jobs.tsv
+          promote=$(grep -c '^promote / ' jobs.tsv || true)
+          [ "$promote" -gt 0 ] || { echo "::error::release run $RUN of $TAG has no promote job: nothing was promoted, npm is not published"; exit 1; }
+          bad=$(grep '^promote / ' jobs.tsv | awk -F'\t' '$2 != "success"' || true)
+          [ -z "$bad" ] || { echo "::error::the promotion of $TAG did not succeed, npm is not published:"; echo "$bad"; exit 1; }
       - id: m
         uses: Open-Mixer/.github/.github/actions/check-matrix@openmixer-v1
         with:
@@ -40,7 +64,12 @@ jobs:
           x86-runner: ${{ github.event.pull_request.head.repo.fork && 'ubuntu-latest' || vars.OMX_RUNNER || 'ubuntu-latest' }}
 
   publish:
-    if: github.repository == 'Open-Mixer/omx-dsp' && needs.checks.outputs.deb-count != '0'
+    # a dispatch (dry run by default), or a release run of a v* tag push here that concluded success
+    if: >-
+      github.repository == 'Open-Mixer/omx-dsp' && needs.checks.outputs.deb-count != '0' && (github.event_name == 'workflow_dispatch' || (
+        github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'
+        && startsWith(github.event.workflow_run.head_branch, 'v')
+        && github.event.workflow_run.head_repository.full_name == github.repository))
     needs: checks
     runs-on: ${{ matrix.cell.runner }}
     strategy:
@@ -55,12 +84,18 @@ jobs:
     permissions:
       contents: read
       id-token: write
+    env:
+      # the tag and its commit: the release run's for a promotion, the dispatched ref's for a dry run
+      TAG: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_branch || github.ref_name }}
+      SHA: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
     steps:
       - name: Install the build tools
         run: |
           apt-get update -qq
           apt-get -o Dpkg::Options::=--force-unsafe-io install -y --no-install-recommends build-essential gawk diffutils git ca-certificates curl pkgconf dpkg-dev
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.SHA }}
       - name: Add the OpenMixer repository
         uses: Open-Mixer/.github/.github/actions/add-openmixer@openmixer-v1
       - name: Install the build dependencies from the OpenMixer channel
@@ -94,7 +129,7 @@ jobs:
         run: |
           v=$(node -p "require('./package.json').version")
           [ "$v" = "$(make -s -C .. version)" ] || { echo "ts/package.json $v is not the library's $(make -s -C .. version)"; exit 1; }
-          if [ "${GITHUB_REF_TYPE}" = tag ]; then [ "${GITHUB_REF_NAME}" = "v$v" ] || { echo "tag ${GITHUB_REF_NAME} is not v$v"; exit 1; }; fi
+          if [ "$GITHUB_EVENT_NAME" = workflow_run ]; then [ "$TAG" = "v$v" ] || { echo "::error::tag $TAG is not v$v"; exit 1; }; fi
       - name: Publish @openmixer/omx-dsp
         working-directory: ts
         env:

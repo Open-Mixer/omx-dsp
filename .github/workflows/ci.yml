@@ -67,6 +67,11 @@ jobs:
         id: handback-no-floor
         run: bash tools/no-floor-check.sh && bash tools/no-floor-check.sh --self-test
 
+      # a v* tag promotes the staged build, never rebuilds; npm follows the promotion (python3-yaml is on this runner)
+      - name: A tag promotes the staged build (self-test, nine planted edits red)
+        id: handback-release-promote
+        run: bash tools/release-promote-check.sh && bash tools/release-promote-check.sh --sabotage
+
   test:
     name: make test (${{ matrix.cell.image }}, ${{ matrix.cell.arch }})
     runs-on: ${{ matrix.cell.runner }}
@@ -132,7 +137,7 @@ jobs:
           # the test containers carry no node: the twins' version is read as text
           grep -q "^  \"version\": \"$v\",\$" ts/package.json
 
-      - name: The release workflow builds arm on every tag
+      - name: The release workflow builds arm on a dispatch unless told not to
         id: handback-release-arm-gate
         run: tools/release-arm-gate-selftest.sh && tools/release-arm-gate-selftest.sh --sabotage
 
