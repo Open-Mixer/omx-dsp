@@ -1,3 +1,10 @@
+omx-dsp (0.34.1) unstable; urgency=medium
+
+  * ROTARY_ACCEL_RANGE travels in coef, the standard unit omx-contract 3.22.0
+    (V23d) names for a plain multiplier, no longer "x" (#134).
+
+ -- Pau Aliagas <linuxnow@gmail.com>  Mon, 23 Nov 2026 22:30:00 +0100
+
 omx-dsp (0.34.0) unstable; urgency=medium
 
   * Sorting pass: RT_HARD_TARGET, ORACLE_FLOOR_RATES and ORACLE_FULL_RATES

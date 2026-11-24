@@ -47,7 +47,7 @@
         "min": 0,
         "max": 100,
         "step": 1,
-        "unit": "%",
+        "unit": "percent",
         "default": 0,
         "defaultFrom": "desk"
       }
@@ -73,7 +73,7 @@
         "impl": "include/omxdsp/fx/omx_clipper_instance.h#omx_clipper_instance_resolve"
       },
       "doc": "The share of the ceiling the bend spans at a softness of 100 %: the knee sits at (1 - span x softness) x ceiling, half the ceiling at full softness, 6 dB under it.",
-      "unit": "",
+      "unit": "none",
       "value": 0.5
     }
   }

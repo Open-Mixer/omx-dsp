@@ -14,6 +14,18 @@
  * @brief The vocabulary of omx-dsp: every code and every word as a string define, with its sentence
  * where it carries one. */
 
+/* CURVE_ROLE_PREFIXES (data/primitives/curve.json) */
+#define OMX_CURVE_ROLE_PREFIXES_BAND "band_" ///< The prefix every indexed band role of CURVE_ROLES carries on the wire (`band_type`, `band_freq`, `band_gain`, `band_q`, `band_on`): a role word that starts with it is a band's and carries an index. A consumer reads this word, or calls omx_curve_role_is_band(), and never writes the prefix itself.
+/** The source sentence (English) of OMX_CURVE_ROLE_PREFIXES_BAND. */
+#define OMX_CURVE_ROLE_PREFIXES_BAND_TEXT_EN "The prefix every indexed band role of CURVE_ROLES carries on the wire (`band_type`, `band_freq`, `band_gain`, `band_q`, `band_on`): a role word that starts with it is a band's and carries an index. A consumer reads this word, or calls omx_curve_role_is_band(), and never writes the prefix itself."
+/** The number of words of CURVE_ROLE_PREFIXES. */
+#define OMX_CURVE_ROLE_PREFIXES_COUNT 1u
+/** The words of CURVE_ROLE_PREFIXES in their declared order, as a C initializer list. */
+#define OMX_CURVE_ROLE_PREFIXES_INIT { "band_" }
+/** Expands `X(code, "word", NAME)` once per word of CURVE_ROLE_PREFIXES, in order, the code being its place in the order. The prefixes a role word of CURVE_ROLES is read by: an indexed band role is one whose word starts with the `band` prefix. */
+#define OMX_CURVE_ROLE_PREFIXES(X) \
+    X(0u, "band_", BAND)
+
 /* CURVE_AXES (data/primitives/curve.json) */
 #define OMX_CURVE_AXES_FREQUENCY "frequency" ///< Frequency, on the points of EQ_CURVE_GRID where the curve is a response.
 /** The source sentence (English) of OMX_CURVE_AXES_FREQUENCY. */

@@ -15,7 +15,7 @@
         "min": 0,
         "max": 100,
         "step": 1,
-        "unit": "%",
+        "unit": "percent",
         "default": 0,
         "defaultFrom": "desk"
       }
@@ -66,7 +66,7 @@
         "impl": "include/omxdsp/fx/omx_leveler_instance.h#OMX_LEVELER_INSTANCE_POINTS"
       },
       "doc": "The amounts the table's rows are written at, percent; between two the leveler reads the rows linearly.",
-      "unit": "%",
+      "unit": "percent",
       "values": [
         0,
         25,
@@ -96,7 +96,7 @@
         "impl": "include/omxdsp/fx/omx_leveler_instance.h#OMX_LEVELER_INSTANCE_DOWN_R"
       },
       "doc": "The downward slot's ratio at each point; 1 is no compression.",
-      "unit": "",
+      "unit": "none",
       "values": [
         1,
         1.5,
@@ -141,7 +141,7 @@
         "impl": "include/omxdsp/fx/omx_leveler_instance.h#OMX_LEVELER_INSTANCE_UP_R"
       },
       "doc": "The upward slot's ratio at each point; 1 is no lift.",
-      "unit": "",
+      "unit": "none",
       "values": [
         1,
         1.5,

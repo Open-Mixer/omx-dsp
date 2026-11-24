@@ -17,7 +17,7 @@
         "min": 0,
         "max": 400,
         "step": 1,
-        "unit": "%",
+        "unit": "percent",
         "default": 100,
         "defaultFrom": "desk"
       },
@@ -33,7 +33,7 @@
         "min": 0,
         "max": 1,
         "step": 0,
-        "unit": "",
+        "unit": "none",
         "default": 0.3,
         "defaultFrom": "desk",
         "byKind": {
@@ -53,7 +53,7 @@
         "min": 0,
         "max": 1,
         "step": 0,
-        "unit": "",
+        "unit": "none",
         "default": 0.7,
         "defaultFrom": "desk"
       },
@@ -70,7 +70,7 @@
         "min": 0,
         "max": 1,
         "step": 0,
-        "unit": "",
+        "unit": "none",
         "default": 0.5,
         "defaultFrom": "desk"
       },
@@ -87,7 +87,7 @@
         "min": 0,
         "max": 1,
         "step": 0,
-        "unit": "",
+        "unit": "none",
         "default": 1,
         "defaultFrom": "desk"
       },
@@ -281,7 +281,7 @@
         "min": 0,
         "max": 100,
         "step": 1,
-        "unit": "%",
+        "unit": "percent",
         "default": 50,
         "defaultFrom": "desk"
       },
@@ -419,7 +419,7 @@
         0.42,
         0.37
       ],
-      "unit": "",
+      "unit": "none",
       "doc": "The early reflections' gains, linear, one per REVERB_EARLY_TAP_MS entry, falling with the time."
     },
     {
@@ -429,7 +429,7 @@
         "origin": "first declared in omx-dsp data/kernels/reverb.json at d9655862d764, shipped in omx-dsp 0.27.0; implemented at include/omxdsp/fx/omx_reverb_instance.h#early_scale"
       },
       "value": 0.5,
-      "unit": "",
+      "unit": "none",
       "doc": "The scale the early taps' times take at earlySizePct 0, a share of REVERB_EARLY_TAP_MS."
     },
     {
@@ -439,7 +439,7 @@
         "origin": "first declared in omx-dsp data/kernels/reverb.json at d9655862d764, shipped in omx-dsp 0.27.0; implemented at include/omxdsp/fx/omx_reverb_instance.h#early_scale"
       },
       "value": 1.5,
-      "unit": "",
+      "unit": "none",
       "doc": "The scale the early taps' times take at earlySizePct 100, a share of REVERB_EARLY_TAP_MS; the early ring is sized for it."
     }
   ]

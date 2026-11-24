@@ -148,7 +148,7 @@
         "origin": "first declared in omx-dsp data/kernels/plosive.json at af15c3bccdb6, shipped in omx-dsp 0.27.0; implemented at include/omxdsp/fx/omx_plosive_instance.h#OMX_PLOSIVE_INSTANCE_EDGE"
       },
       "value": 0.45,
-      "unit": "",
+      "unit": "none",
       "doc": "The consonant band's top edge is held under this share of the rate, the de-esser's rule: the band is redesigned from its held edges, so the clamp is never silent."
     }
   ]

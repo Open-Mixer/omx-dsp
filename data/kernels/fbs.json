@@ -62,7 +62,7 @@
           "ref": "EQ_MAX_BANDS"
         },
         "step": 1,
-        "unit": "",
+        "unit": "none",
         "default": {
           "ref": "FBS_DEFAULT_MAX_AUTO_BANDS"
         }
@@ -114,7 +114,7 @@
         "impl": "src/omx_fbs_detect.c#omx_fbs_pshr"
       },
       "doc": "How far (bins) around bin/2 and bin/3 PSHR (`omx_fbs_pshr`) scans for a sub-harmonic line. A true half/third partial lands mid-bin in the worst case (bin/2 and bin/3 are rarely integers) and spectral leakage smears it one bin further; ±2 covers both. Measured on the #116 live-music corpus: every false positive's sub-line sat inside this window. Deliberately NOT wider — at low bins the window is already a large fraction of an octave, and widening it would start reading unrelated program lines as \"sub-harmonics\" of real feedback.",
-      "unit": "",
+      "unit": "none",
       "value": 2
     },
     "FBS_PAPR_GUARD_BINS": {
@@ -127,7 +127,7 @@
         "impl": "src/omx_fbs_detect.c#papr"
       },
       "doc": "PAPR's guard band: bins either side of the peak left out of the floor average (its own skirt).",
-      "unit": "",
+      "unit": "none",
       "value": 2
     },
     "FBS_PNPR_RADIUS_BINS": {
@@ -140,7 +140,7 @@
         "impl": "src/omx_fbs_detect.c#pnpr"
       },
       "doc": "PNPR's neighbourhood radius in bins, and the guard inside it that belongs to the peak's own skirt: a pure tone is compared with bins 2 and 3 away on each side.",
-      "unit": "",
+      "unit": "none",
       "value": 3
     },
     "FBS_PNPR_GUARD_BINS": {
@@ -153,7 +153,7 @@
         "impl": "src/omx_fbs_detect.c#pnpr"
       },
       "doc": "The guard inside PNPR's neighbourhood radius that belongs to the peak's own skirt, in bins.",
-      "unit": "",
+      "unit": "none",
       "value": 1
     },
     "FBS_PHPR_HARMONICS": {
@@ -166,7 +166,7 @@
         "impl": "src/omx_fbs_detect.c#phpr"
       },
       "doc": "How many harmonics PHPR reads above the candidate: 2f, 3f and 4f.",
-      "unit": "",
+      "unit": "none",
       "value": 3
     },
     "FBS_PSHR_SELF_SKIP_BINS": {
@@ -179,7 +179,7 @@
         "impl": "src/omx_fbs_detect.c#self"
       },
       "doc": "PSHR skips sub-window bins within this many of the candidate, so a low bin never measures its own skirt as a sub-harmonic.",
-      "unit": "",
+      "unit": "none",
       "value": 3
     },
     "FBS_FLOOR_LIN": {
@@ -192,7 +192,7 @@
         "impl": "src/omx_fbs_detect.c#to_db"
       },
       "doc": "The magnitude floor of every detector dB reading (−240 dB): a zero bin stays finite.",
-      "unit": "",
+      "unit": "none",
       "value": 1e-12
     },
     "FBS_TRACK_SLOTS": {
@@ -208,7 +208,7 @@
         }
       },
       "doc": "Tracked candidate bins per armed channel. A candidate that finds no free slot is COUNTED and reported, never dropped silently; the identity corpus peaks at 34.",
-      "unit": "",
+      "unit": "none",
       "value": 512
     },
     "PSHR_MIN_DB": {
@@ -237,7 +237,7 @@
         "impl": "src/omx_fbs_detect.c#omx_fbs_push"
       },
       "doc": "How many of a candidate bin's most recent dB readings feed the growth-slope estimate (the engine's least-squares slope) — set equal to DEFAULT_THRESHOLDS's `persistFrames` so growth is judged over the SAME window persistence already demands (the full run since the bin became a candidate, not a shorter or longer slice of it). Long enough that a couple of noisy/vibrato frames can't fake a trend by themselves.",
-      "unit": "",
+      "unit": "none",
       "value": 5
     },
     "DEEP_PLATEAU_FRAMES": {
@@ -250,7 +250,7 @@
         "impl": "src/omx_fbs_detect.c#by_deep"
       },
       "doc": "The DEEP plateau tier's dwell: ~2 s at the watcher's 10 Hz — the TIME that buys the deeper floor its music safety (see DetectThresholds.deepPlateauFloorDb).",
-      "unit": "",
+      "unit": "none",
       "value": 20
     },
     "GROWTH_MIN_DB_PER_FRAME": {
@@ -314,7 +314,7 @@
         }
       },
       "doc": "Cap on the share of the window's total rise a SINGLE frame may carry. Feedback is exponential in amplitude ⇒ linear in dB ⇒ its rise is distributed roughly evenly across the window; a musical attack / re-articulation puts almost the whole rise in one hop (the exact shape behind every one of the 72 live false positives of the live-music corpus). One half is generous to real ramps (an even N-frame ramp puts 1/(N−1) per hop) and fatal to steps. A side effect worth knowing: a 2-sample window can never pass (one hop IS the whole rise), so confirmation always rests on at least three frames of actual ramp evidence.",
-      "unit": "",
+      "unit": "none",
       "value": 0.5
     },
     "GROWTH_CONFIRM_FRAMES": {
@@ -330,7 +330,7 @@
         }
       },
       "doc": "How many CONSECUTIVE frames the ramp gate (`omx_fbs_is_growing`) must hold before a bin confirms — the time-domain tiebreak for the one shape a single window cannot judge: a smooth musical crescendo. Within one window a +6 dB swell (live corpus: a C6 at 1 049 Hz, `[-53.7, -51.4, -50.4, -48, -47.3]`) is indistinguishable from slow feedback — the difference is only visible on the NEXT hop, where a crescendo peaks and plateaus (the window's rise collapses) while feedback keeps climbing. Requiring the gate to hold twice in a row costs a clean ramp nothing — its gate is already true while persistence is still arming — and blocks the swell that peaks the very frame it would have confirmed.",
-      "unit": "",
+      "unit": "none",
       "value": 2
     },
     "DEFAULT_THRESHOLDS": {
@@ -394,7 +394,7 @@
         "impl": "src/omx_fbs_detect.c#candidate_of"
       },
       "doc": "Default planted-notch width (Q) — the dbx-AFS-style ultra-narrow notch the corrector plants. `addBand`'s per-shape clamp holds it at 116 for a fixed notch and narrows it to 8 for a live bell, so this is the declared starting point rather than the width every notch ends up with.",
-      "unit": "",
+      "unit": "none",
       "value": 116
     },
     "FBS_MAX_CUT_DB": {
@@ -433,7 +433,7 @@
         "impl": "src/omx_fbs_place.c#hold_sweep"
       },
       "doc": "The most times the clean hold doubles after re-clamps: the hold before the first release stage is the channel's hold times 2^min(re-clamps, this).",
-      "unit": "",
+      "unit": "none",
       "value": 3
     },
     "FBS_LIFT_RAMP_MS": {
@@ -459,7 +459,7 @@
         "impl": "src/omx_fbs_place.c#begin_stage"
       },
       "doc": "The equal steps one release ramp takes, FBS_LIFT_RAMP_MS / this apart: the last step lands the stage's depth exactly.",
-      "unit": "",
+      "unit": "none",
       "value": 10
     },
     "FBS_RELEASE_RATIO": {
@@ -472,7 +472,7 @@
         "impl": "src/omx_fbs_place.c#begin_stage"
       },
       "doc": "Each release stage holds the planted depth times this ratio to the stage's power: every stage releases a third of what remains.",
-      "unit": "",
+      "unit": "none",
       "value": 0.6666666666666666
     },
     "FBS_RELEASE_DONE_DB": {
@@ -550,7 +550,7 @@
         "impl": "src/omx_fbs_place.c#omx_fbs_place_same_ring"
       },
       "doc": "The share of the higher frequency within which two readings are the same ringing frequency, when it is wider than FBS_SAME_RING_HZ: FFT bin spacing grows with frequency.",
-      "unit": "",
+      "unit": "none",
       "value": 0.015
     },
     "FBS_DEFAULT_HOLD_SECONDS": {
@@ -576,7 +576,7 @@
         "impl": "src/omx_fbs_place.c#omx_fbs_place_init"
       },
       "doc": "How many bands one corrector may plant when nobody set its cap; a full pool plants nothing and says pool-full.",
-      "unit": "",
+      "unit": "none",
       "value": 6
     },
     "FBS_DEFAULT_MERGE_CENTS": {
@@ -624,7 +624,7 @@
         "impl": "src/omx_fbs_place.c#remember"
       },
       "doc": "Released finds the ring memory holds at once. The console's list is unbounded and expires by FBS_DEFAULT_COOLDOWN_SECONDS; a full memory here forgets its oldest entry first, and counts it.",
-      "unit": "",
+      "unit": "none",
       "value": 32
     },
     "FBS_MIN_AUTO_BANDS": {
@@ -633,7 +633,7 @@
         "impl": "src/omx_fbs_place.c#omx_fbs_place_set"
       },
       "doc": "The smallest pool a corrector may be given: one band. A pool of none is no corrector; the cap is held at or above this.",
-      "unit": "",
+      "unit": "none",
       "value": 1
     }
   }
