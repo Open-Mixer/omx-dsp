@@ -48,6 +48,7 @@
 typedef struct {
   /** The sample rate init bound the instance to, Hz. */
   float sr;
+  /** The kernel's controls as resolve() last resolved them; run() hands them to the kernel's process. */
   struct omx_mbcomp atom;
   struct omx_mbcomp_state st;
   float hz[OMX_MBC_MAX_XOVERS]; /**< The corners in use as the tree was last designed. */

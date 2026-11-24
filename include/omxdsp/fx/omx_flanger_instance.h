@@ -56,7 +56,9 @@
 typedef struct {
   /** The sample rate init bound the instance to, Hz. */
   float sr;
+  /** The kernel's controls as resolve() last resolved them; run() hands them to the kernel's process. */
   struct omx_flanger atom;
+  /** The kernel's running state, carried from block to block and handed to its process with the atom. */
   struct omx_flanger_state state;
   float ring_l[OMX_FLANGER_CAP];
   float ring_r[OMX_FLANGER_CAP];

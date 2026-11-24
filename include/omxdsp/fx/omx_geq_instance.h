@@ -107,7 +107,9 @@ static inline int omx_geq_instance_rate_ok(double sr) {
 typedef struct {
   /** The sample rate init bound the instance to, Hz. */
   double sr;
+  /** The kernel's controls as resolve() last resolved them; run() hands them to the kernel's process. */
   struct omx_geq atom;
+  /** The kernel's running state, carried from block to block and handed to its process with the atom. */
   struct omx_geq_state state;
   /** The clamped gain each section was last designed at, dB; `designed` 0 until the first. */
   float gain_db[OMX_GEQ_BANDS];

@@ -53,7 +53,9 @@
 typedef struct {
   /** The sample rate init bound the instance to, Hz. */
   float sr;
+  /** The kernel's controls as resolve() last resolved them; run() hands them to the kernel's process. */
   struct omx_phaser atom;
+  /** The kernel's running state, carried from block to block and handed to its process with the atom. */
   struct omx_phaser_state state;
   /** The previous cycle's engaged flag, so a bypass->engaged edge can clear the state. */
   int was_engaged;
