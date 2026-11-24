@@ -44,6 +44,29 @@ jobs:
           deb-arches: '["amd64", "arm64"]'
           x86-runner: ${{ github.event.pull_request.head.repo.fork && 'ubuntu-latest' || vars.OMX_RUNNER || 'ubuntu-latest' }}
 
+  # the lints run in a job of their own: a lint red never skips a step of the suite, which runs and reports whatever the
+  # lint says (a lint step before make test in the same job skipped the suite on its red, and hid every red behind it).
+  # tools/test/workflow-lint-job-check.sh holds them here and nowhere else.
+  lint:
+    name: the licence headers, no ceiling and no hand-kept floor
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Every file a comment can be written in opens with its licence
+        id: handback-spdx
+        uses: Open-Mixer/.github/.github/actions/spdx-check@openmixer-v1
+
+      # no packaging/deps.txt: the shared render has nothing to write and refuses a ceiling or a pin anywhere
+      - name: No ceiling or pin on a dependency
+        id: handback-deps
+        uses: Open-Mixer/.github/.github/actions/deps-render@openmixer-v1
+
+      - name: No hand-kept version floor (self-test, six planted floors red)
+        id: handback-no-floor
+        run: bash tools/no-floor-check.sh && bash tools/no-floor-check.sh --self-test
+
   test:
     name: make test (${{ matrix.cell.image }}, ${{ matrix.cell.arch }})
     runs-on: ${{ matrix.cell.runner }}
@@ -108,19 +131,6 @@ jobs:
           head -1 debian/changelog | grep -q "^omx-dsp ($v) "
           # the test containers carry no node: the twins' version is read as text
           grep -q "^  \"version\": \"$v\",\$" ts/package.json
-
-      - name: Every file a comment can be written in opens with its licence
-        id: handback-spdx
-        uses: Open-Mixer/.github/.github/actions/spdx-check@openmixer-v1
-
-      # no packaging/deps.txt: the shared render has nothing to write and refuses a ceiling or a pin anywhere
-      - name: No ceiling or pin on a dependency
-        id: handback-deps
-        uses: Open-Mixer/.github/.github/actions/deps-render@openmixer-v1
-
-      - name: No hand-kept version floor (self-test, six planted floors red)
-        id: handback-no-floor
-        run: bash tools/no-floor-check.sh && bash tools/no-floor-check.sh --self-test
 
       - name: The release workflow builds arm on every tag
         id: handback-release-arm-gate

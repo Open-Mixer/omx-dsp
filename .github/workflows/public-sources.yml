@@ -34,6 +34,8 @@ jobs:
       - run: tools/test/workflow-fedora-check.sh .
       - run: tools/test/workflow-deb-cells-check.sh --self-test
       - run: tools/test/workflow-deb-cells-check.sh .
+      - run: tools/test/workflow-lint-job-check.sh --self-test
+      - run: tools/test/workflow-lint-job-check.sh .
   docs:
     name: make docs-check (every installed header's public declarations, against a baseline that only shrinks)
     # Pinned: the baseline is what THIS runner's doxygen (1.9.8) warns; another version's extra doc-error
