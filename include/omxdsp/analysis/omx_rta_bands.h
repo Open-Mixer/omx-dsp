@@ -153,8 +153,8 @@ struct omx_rta_wedge {
  * Then the wedges,
  * one per pair of neighbouring bands whose larger |difference| reaches OMX_RTA_DELTA_DEADBAND_DB, none across a silent
  * band: a boost when the pair's two differences sum to zero or more, else a cut, its strength the larger |difference|
- * over the EQ's own gain limit (omx-contract's EQ_GAIN_RANGE maximum), clamped to 1. `wedges` holds n − 1; returns how
- * many it wrote.
+ * over the EQ's own gain limit (EQ_GAIN_RANGE's maximum, data/kernels/eq.json), clamped to 1. `wedges` holds n − 1;
+ * returns how many it wrote.
  * @param pre The PRE bands, `n` of them.
  * @param post The POST bands, `n` of them.
  * @param n How many bands.

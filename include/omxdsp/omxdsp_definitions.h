@@ -1279,7 +1279,7 @@
 /** OMX_EQ_GAIN_RANGE_STEP as a double literal. */
 #define OMX_EQ_GAIN_RANGE_STEP_DOUBLE 0.5
 /// @}
-/** The maximum number of parametric bands a channel EQ may hold — the operator can add up to this many. Generated into `omx_contract_limits.h` as `OMX_EQ_MAX_BANDS`, which `omx_biquad.h` reads (the engine's conformance test reads the header): the native lane allocates exactly this many biquad slots per channel and silently clamps above it, so the model, the wire, and the DSP agree by test, not by memory. (none) */
+/** The maximum number of parametric bands a channel EQ may hold — the operator can add up to this many. Rendered into `omxdsp/omxdsp_definitions.h` as `OMX_EQ_MAX_BANDS`, which `omx_biquad.h` reads (the engine's conformance test reads the header): the native lane allocates exactly this many biquad slots per channel and silently clamps above it, so the model, the wire, and the DSP agree by test, not by memory. (none) */
 #define OMX_EQ_MAX_BANDS 24
 /**
  * @name EQ_NOTCH_Q_RANGE
@@ -1383,7 +1383,7 @@
 #define OMX_FBS_LIFT_RAMP_MS 3000
 /** The equal steps one release ramp takes, FBS_LIFT_RAMP_MS / this apart: the last step lands the stage's depth exactly. (none) */
 #define OMX_FBS_LIFT_RAMP_STEPS 10
-/** The deepest cut a band of an fbs-* origin may hold, in dB: the feedback corrector's own safety bound, never the operator EQ's ±15 (EQ_GAIN_RANGE), which stays the bound of every other origin. Declared here as one value until the vocabulary owner (omx-contract) carries it as its own word, a new ref beside EQ_GAIN_RANGE and never a widening of it; this item then becomes that ref, and no second copy of the number is ever written. (dB) */
+/** The deepest cut a band of an fbs-* origin may hold, in dB: the feedback corrector's own safety bound, never the operator EQ's ±15 (EQ_GAIN_RANGE), which stays the bound of every other origin. This library owns it beside EQ_GAIN_RANGE (data/kernels/eq.json) as its own word, never a widening of that travel, and no second copy of the number is ever written. (dB) */
 #define OMX_FBS_MAX_CUT_DB -24
 /** THE NOTCH DEPTH LAW: the deepest cut any machine planter may propose from one reading, in dB. A number, not a literal at the call site, because two planters now lean on it. FBS derives a candidate's depth from the peak-to-average ratio around its bin and stops here; Room Analysis derives a mode's depth from its height above the median curve and is held to the SAME ceiling (the room-analysis design — "never more than the FBS notch depth law"). Written twice as `18` those two bounds would be equal by coincidence and could drift apart in silence. It is a CEILING ON THE PROPOSAL, not the final gain: a band that lands as a rampable BELL is bounded again by `EQ_GAIN_RANGE`, which is tighter. A planter must honour both and REPORT when either bit, never quietly deliver a shallower cut than it was asked for. (dB) */
 #define OMX_FBS_MAX_NOTCH_DEPTH_DB 18
@@ -1591,7 +1591,7 @@
 /** OMX_GATE_KEY_TILT_DB_RANGE_STEP as a double literal. */
 #define OMX_GATE_KEY_TILT_DB_RANGE_STEP_DOUBLE 0.5
 /// @}
-/** The graphic EQ's section count: DERIVED from ISO_THIRD_OCTAVE_CENTRES_HZ, never a second literal. Generated into `omx_contract_limits.h` as `OMX_GEQ_BANDS`, which sizes `mix_geq.h`'s section array — its OWN budget, never a claimant on EQ_MAX_BANDS (roster ruling 3). (none) */
+/** The graphic EQ's section count: DERIVED from ISO_THIRD_OCTAVE_CENTRES_HZ, never a second literal. Rendered into `omxdsp/omxdsp_definitions.h` as `OMX_GEQ_BANDS`, which sizes `mix_geq.h`'s section array — its OWN budget, never a claimant on EQ_MAX_BANDS (roster ruling 3). (none) */
 #define OMX_GEQ_BANDS 31
 /** The graphic EQ's band Q: the ISO third-octave bandwidth, `2^(1/6)/(2^(1/3) − 1) ≈ 4.318`, to one decimal as the M32 GEQ carries it. Read by the `geq31` preset and the graphic EQ's section design. (none) */
 #define OMX_GEQ_BAND_Q 4.3f
@@ -1725,7 +1725,7 @@
 /** The `step` of HRP_AMOUNT_RANGE. */
 #define OMX_HRP_AMOUNT_RANGE_STEP 0
 /// @}
-/** The ATTRIBUTION window: two partials closer than this are one spectral event as far as the desk can tell — the same ±1 bin `omx_hrp_bin_peak` reads over, expressed musically so it holds across the range. A different law from HRP_COLLISION_CENTS (the SELECTION window, which stays above it): this one is the analyser's resolution, that one the corrector's. Generated into `omx_contract_limits.h` as `OMX_HRP_ATTRIBUTION_CENTS`; `hrp_attribute.h` reads it. (cents) */
+/** The ATTRIBUTION window: two partials closer than this are one spectral event as far as the desk can tell — the same ±1 bin `omx_hrp_bin_peak` reads over, expressed musically so it holds across the range. A different law from HRP_COLLISION_CENTS (the SELECTION window, which stays above it): this one is the analyser's resolution, that one the corrector's. Rendered into `omxdsp/omxdsp_definitions.h` as `OMX_HRP_ATTRIBUTION_CENTS`; `hrp_attribute.h` reads it. (cents) */
 #define OMX_HRP_ATTRIBUTION_CENTS 60
 /**
  * @name HRP_BANDS_RANGE
@@ -2475,7 +2475,7 @@
 /// @}
 /**
  * @name PROGRAM_RELEASE
- * The program-dependent release's model constants — the LA-2A's opto cell as DATA. `chargeMs`/`dischargeMs` are the word's memory constants, shared by every profile; each profile's `fastMs`, `slowMinMs`, `slowMaxMs` and `share` fit the unit's published two-stage recovery (opto); `auto` spans a bus compressor's fixed release detents, 100 ms to 1.2 s, half fast and half slow. Not operator controls: generated into `omx_contract_limits.h` as `OMX_PROGRAM_RELEASE_*`, which libomxdsp's `omx_env_program_release` reads.
+ * The program-dependent release's model constants — the LA-2A's opto cell as DATA. `chargeMs`/`dischargeMs` are the word's memory constants, shared by every profile; each profile's `fastMs`, `slowMinMs`, `slowMaxMs` and `share` fit the unit's published two-stage recovery (opto); `auto` spans a bus compressor's fixed release detents, 100 ms to 1.2 s, half fast and half slow. Not operator controls: rendered into `omxdsp/omxdsp_definitions.h` as `OMX_PROGRAM_RELEASE_*`, which libomxdsp's `omx_env_program_release` reads.
  */
 /// @{
 /** The `chargeMs` of PROGRAM_RELEASE. */
@@ -3031,7 +3031,7 @@
 #define OMX_RTA_DELTA_DEADBAND_DB 0.4f
 /** OMX_RTA_DELTA_DEADBAND_DB as a double literal. */
 #define OMX_RTA_DELTA_DEADBAND_DB_DOUBLE 0.4
-/** The largest RTA FFT the native ring holds — generated into `omx_contract_limits.h` as `OMX_RTA_FFT_SIZE_MAX`. (none) */
+/** The largest RTA FFT the native ring holds — rendered into `omxdsp/omxdsp_definitions.h` as `OMX_RTA_FFT_SIZE_MAX`. (none) */
 #define OMX_RTA_FFT_SIZE_MAX 32768
 /** How often a watched spectrum is read and published: an operator-cadence poll, never the audio thread. (Hz) */
 #define OMX_RTA_HZ 10
@@ -3047,7 +3047,7 @@
 #define OMX_RTA_LOW_ADVANCE_DOUBLE 0.25
 /** Quiet gate of a tap's raw spectrum, before any banding: when no bin rises above this the whole tap reads as the floor. The console's overlay frame applies it; a banded reading is gated by RTA_BAND_GATE_DB instead. (dB) */
 #define OMX_RTA_TAP_GATE_DB -60
-/** The RTA's target bin resolution — generated into `omx_contract_limits.h` as `OMX_RTA_TARGET_BIN_HZ`, which `mix_dsp.h` reads; the engine's conformance test reads it back from the header. (Hz) */
+/** The RTA's target bin resolution — rendered into `omxdsp/omxdsp_definitions.h` as `OMX_RTA_TARGET_BIN_HZ`, which `mix_dsp.h` reads; the engine's conformance test reads it back from the header. (Hz) */
 #define OMX_RTA_TARGET_BIN_HZ 5.9f
 /** OMX_RTA_TARGET_BIN_HZ as a double literal. */
 #define OMX_RTA_TARGET_BIN_HZ_DOUBLE 5.9

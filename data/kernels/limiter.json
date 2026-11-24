@@ -69,7 +69,7 @@
         },
         "impl": "include/omxdsp/fx/omx_limiter.h#omx_limiter_cap"
       },
-      "doc": "The precision limiter's travels, rendered into `omx_contract_limits.h` as `OMX_LIMITER_*` by the engine's limits generator, so `mix_limiter.h` reads them and never restates one (R-094). The ceiling is a TRUE peak in dBFS (the ×4 detector); the look-ahead sets the declared latency; the release is the envelope's time constant on the gain depth."
+      "doc": "The precision limiter's travels, rendered into `omxdsp/omxdsp_definitions.h` as `OMX_LIMITER_*`, so `mix_limiter.h` reads them and never restates one (R-094). The ceiling is a TRUE peak in dBFS (the ×4 detector); the look-ahead sets the declared latency; the release is the envelope's time constant on the gain depth."
     }
   }
 }

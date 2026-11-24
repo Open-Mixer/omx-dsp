@@ -28,7 +28,7 @@
 
 /** @brief The most sections one leg runs. */
 #define OMX_PHASER_MAX_STAGES OMX_PHASER_STAGES_RANGE_MAX
-/* The highest centre frequency the sweep reaches, Hz (OMX_PHASER_F_TOP_HZ), is declared in omx-contract. */
+/* The highest centre frequency the sweep reaches, Hz (OMX_PHASER_F_TOP_HZ), is declared in data/kernels/phaser.json. */
 /** @brief The feedback clamp, the kernel's enforcement half of the row's ±0.9 travel. */
 #define OMX_PHASER_FB_MAX OMX_PHASER_FEEDBACK_RANGE_MAX
 /** @brief Control points per second: the coefficient is recomputed every `sr/6000` samples (§4). */

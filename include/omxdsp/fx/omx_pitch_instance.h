@@ -94,7 +94,7 @@ typedef struct {
 static inline uint32_t omx_pitch_instance_cap_for(float sr) { return omx_pitch_cap_for(sr); }
 
 /**
- * @brief Whether the instance runs at `sr`: one of omx-contract's nine full-oracle rates, 32 to
+ * @brief Whether the instance runs at `sr`: one of this library's nine full-oracle rates, 32 to
  *        192 kHz (they hold every declared rate), so 32, 64 and 128 kHz too. The rule
  *        omx_pitch_instance_init() applies.
  * @param sr The sample rate, Hz.

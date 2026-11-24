@@ -13,7 +13,7 @@
  *             sits at lag N − 1 and the k-th harmonic `L·ln(k)·rate` samples before it.
  *
  * The fade lengths are the caller's (core's default is `DEFAULT_FADE_FRACTION` of the realised
- * duration, which omx-contract does not declare yet). Control thread only, never the audio
+ * duration, which this library's data/ does not declare yet). Control thread only, never the audio
  * callback: no allocation (every buffer and scratch is the caller's), no lock, no global state.
  */
 /**
