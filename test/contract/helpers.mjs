@@ -11,7 +11,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { OC, controlGlobal, isKernelFile, isUse, loadData, packageVersion, renderC, renderJson, renderTs, resolveData } from './oc.mjs';
 
-/** omx-contract's checkout: its own data/, schema/, committed renders and release fixtures. */
+/** omx-contract's checkout: its own data/, schema/ and committed renders. */
 export const ROOT = OC;
 /** omx-contract's own data. */
 export const DATA = join(OC, 'data');
