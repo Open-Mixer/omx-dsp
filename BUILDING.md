@@ -28,7 +28,6 @@ Needs a C11 compiler, GNU make, binutils, awk, sed, grep and diffutils.
 | `make mix-engine-identity OPENMIXER=<checkout>` | renders the mix digests again through each set of copies OpenMixer's engine still carries (the bus stages' `omx_mix_strip`, `omx_bus_out_gain` and `omx_bus_out_stage` in `mix_dsp.h`, under the same names as `mix/omx_bus_stage.h`), and checks that each of its sabotages goes red; a desk check, not run in CI |
 | `make strip-input-identity OMX_PLUGINS=<checkout>` | renders omx-plugins' channel strip's own input stage (`plugins/omx-strip/omx_strip.h`) and requires the trim face's golden digests, then its sabotage; a desk check, not run in CI |
 | `make analysis-engine-identity OPENMIXER=<checkout>` | builds the analysis golden against the engine's own `mix_dsp.h`, `hrp_render.h` and `hrp_lv2.h` and requires the committed digests, then its sabotage; a desk check, not run in CI |
-| `make room-ts-golden OPENMIXER=<checkout>` | runs core's room analysis and alignment fit from an OpenMixer checkout under node (22.6 or later) and requires the committed parity table `test/analysis/fixtures/room_ts.h`; a desk check, not run in CI |
 | `make eq-sabotage` | the EQ bank, head-filter and drawn-curve arms (`eq-curve`, `eq-design-ts`) against nine sabotaged copies of the headers; each must fail both arms (part of `make test`) |
 | `make bench-mixmatrix` | the mix matrix's cost, then a 64 x 32 matrix held to MIXMATRIX_PERIOD_SHARE of the period at the nine rates, and a budget nothing can meet must go red; a desk check, not run in CI, whose shared runners time a core the console does not run on |
 | `make golden-write` | rewrites every kernel's `test/golden/<kernel>.sha256`; only in a commit that bumps the minor version or adds a kernel |
@@ -205,18 +204,19 @@ bounds are omx-contract's (`OMX_FBS_MAX_NOTCH_DEPTH_DB`, `OMX_EQ_GAIN_RANGE_*`,
 Two kinds of oracle hold them. `test/analysis/align_fit.test.c`, `room.test.c` and
 `sweep.test.c` check closed forms at the nine oracle rates (a known delay, gain, reflection,
 decay, set of resonances, sweep law) and count allocations. `test/analysis/room_ts.test.c` holds
-every result to what core's TypeScript computes on fixed inputs, from the parity table
+every result to what core's TypeScript computed on fixed inputs, from the parity table
 `test/analysis/fixtures/room_ts.h`: integers exactly, reals within 1e-9 relative (measured gap
-about 1e-12; V8's libm against the host's). `tools/room-ts-golden.mjs` wrote the table from an
-OpenMixer checkout, with omx-contract's TypeScript render from the pinned release; every input
-is built from an integer PRNG and exact arithmetic, so the C test rebuilds the same bits.
-`make room-ts-golden OPENMIXER=<checkout>` writes it again and requires the committed file; run
-it whenever core's TypeScript or these kernels change, until the TypeScript is deleted. `test/analysis/room-sabotage.sh` breaks each kernel once in a
+about 1e-12; V8's libm against the host's). Every input is built from an integer PRNG and exact
+arithmetic, so the C test rebuilds the same bits. The table is frozen: core's TypeScript now calls
+these kernels for every one of these results, so the C is the only source of these numbers and
+nothing writes the table again. `test/analysis/room-sabotage.sh` breaks each kernel once in a
 scratch copy and requires its closed-form oracle and the parity test to fail.
-## The EQ maths openmixer's TypeScript computes
+## The EQ maths openmixer's TypeScript computed
 
-openmixer designs its console EQ and draws its curve in TypeScript today. The C
-here computes the same results, so the engine and the server can take them from one place:
+openmixer designed its console EQ and drew its curve in TypeScript. The C here computes
+the same results, and openmixer now takes every one of them from this library (`@openmixer/omx-dsp`,
+or these kernels through its DSP port), so the C is the only source of these numbers. Where each
+TypeScript function went:
 
 | TypeScript | C |
 |---|---|
@@ -236,16 +236,15 @@ here computes the same results, so the engine and the server can take them from 
 | web `eqStateCurveDb`, `compositeCurveDb` | `omx_eq_curve_bands`, then `omx_eq_curve_db` |
 | catalog `octavesToQ` (catalog `eq.ts`) | `omx_eq_octaves_q` |
 
-`test/kernels/fixtures/eq_design_ts.h` is what that TypeScript computes on fixed inputs at the nine
-oracle rates, written by `tools/ts-golden.mjs design <openmixer> <contract-ts>` (Node 22.7 or later;
-`<contract-ts>` is omx-contract's TypeScript render, `omx-contract render --target ts --out <dir>`
-from a checkout of the installed release). The `eq-design-ts` arm holds the C to it: a coefficient, a Q or
-a frequency of the drawn grid within 4 ulp, a magnitude within 1e-9 dB, the bank's order, count and
-parked sections exactly. Two families of coefficient pass 4 ulp, both a cancellation that turns one
-ulp of V8's `exp` or `cos` into many (a matched bell or shelf at a low corner or a wide Q, and the
-fitted low-pass's b2 far below Nyquist); they are held to 1e-13 absolute, and the arm prints the
-largest gap of each kind. Regenerate the fixture when openmixer's TypeScript changes, until it is
-deleted. The `eq-curve` arm holds the same functions to closed forms.
+`test/kernels/fixtures/eq_design_ts.h` is what that TypeScript computed on fixed inputs at the nine
+oracle rates, frozen when the TypeScript went (nothing writes it again; likewise
+`test/kernels/fixtures/eq_curve_ts.h`, core's `eqCurveDb` points). The `eq-design-ts` arm holds the
+C to it: a coefficient, a Q or a frequency of the drawn grid within 4 ulp, a magnitude within
+1e-9 dB, the bank's order, count and parked sections exactly. Two families of coefficient pass 4
+ulp, both a cancellation that turns one ulp of V8's `exp` or `cos` into many (a matched bell or
+shelf at a low corner or a wide Q, and the fitted low-pass's b2 far below Nyquist); they are held to
+1e-13 absolute, and the arm prints the largest gap of each kind. The `eq-curve` arm holds the same
+functions to closed forms.
 
 ## Loudness
 
