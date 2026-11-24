@@ -42,6 +42,7 @@
 #include <omxdsp/fx/omx_instance_io.h>
 #include <omxdsp/omx_param.h>
 
+/** @brief Audio legs in and out: TWO, a stereo pair. */
 #define OMX_DEESSER_INSTANCE_CHANNELS 2
 
 /** The detector band's centre is held under this share of Nyquist (DEESS_NYQUIST_FRACTION). */

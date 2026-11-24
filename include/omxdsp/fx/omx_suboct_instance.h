@@ -43,6 +43,7 @@
 #include <omxdsp/omx_units.h>
 #include <omxdsp/omxdsp_definitions.h>
 
+/** @brief Audio legs in and out: TWO, a stereo pair. */
 #define OMX_SUBOCT_INSTANCE_CHANNELS 2
 
 /** The range table, a row per SUBOCT_RANGES member. */

@@ -49,6 +49,7 @@
 #include <omxdsp/omx_param.h>
 #include <omxdsp/omx_wetdry.h>
 
+/** @brief Audio legs in and out: TWO, a stereo pair. */
 #define OMX_DYNEQ_INSTANCE_CHANNELS 2
 
 /** The bands, the dyneq kernel's DYNEQ_BANDS. */

@@ -41,6 +41,7 @@
 #include <omxdsp/fx/omx_instance_io.h>
 #include <omxdsp/omx_param.h>
 
+/** @brief Audio legs in and out: TWO, a stereo pair. */
 #define OMX_MBCOMP_INSTANCE_CHANNELS 2
 
 /** One instance: the atom, the stage's state, the corners the tree was designed at and the output gain. */

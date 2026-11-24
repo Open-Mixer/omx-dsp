@@ -33,6 +33,7 @@
 #include <omxdsp/omx_param.h>
 #include <omxdsp/omxdsp_definitions.h>
 
+/** @brief Audio legs in and out: TWO, a stereo pair. */
 #define OMX_BALANCER_INSTANCE_CHANNELS 2
 /** The bands. */
 #define OMX_BALANCER_INSTANCE_BANDS OMX_BALANCER_BAND_HZ_COUNT

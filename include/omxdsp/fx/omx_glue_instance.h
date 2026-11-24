@@ -29,6 +29,7 @@
 #include <omxdsp/omx_param.h>
 #include <omxdsp/omxdsp_definitions.h>
 
+/** @brief Audio legs in and out: TWO, a stereo pair. */
 #define OMX_GLUE_INSTANCE_CHANNELS 2
 
 static const float OMX_GLUE_INSTANCE_RATIOS[OMX_GLUE_RATIO_VALUES_COUNT] = OMX_GLUE_RATIO_VALUES_INIT;

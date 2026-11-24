@@ -49,7 +49,9 @@
 #include <omxdsp/omx_ramp.h>
 #include <omxdsp/omx_units.h>
 
+/** @brief Audio legs in and out: TWO, a stereo pair. */
 #define OMX_TRIM_INSTANCE_CHANNELS 2
+/** @brief The latency the instance reports to its host, frames: none. */
 #define OMX_TRIM_INSTANCE_LATENCY_FRAMES 0.0f
 
 /** The port default: the declaration's (TRIM_RANGE.default, dB). */

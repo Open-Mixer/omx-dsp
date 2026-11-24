@@ -31,6 +31,7 @@
 #include <omxdsp/omx_width.h>
 #include <omxdsp/omxdsp_definitions.h>
 
+/** @brief Audio legs in and out: TWO, a stereo pair. */
 #define OMX_WIDTH_INSTANCE_CHANNELS 2
 
 typedef struct {

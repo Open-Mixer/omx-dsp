@@ -37,7 +37,9 @@
 #include <omxdsp/fx/omx_instance_io.h>
 #include <omxdsp/omx_param.h>
 
+/** @brief Audio legs in and out: TWO, a stereo pair. */
 #define OMX_TREMOLO_INSTANCE_CHANNELS 2
+/** @brief The latency the instance reports to its host, frames: none. */
 #define OMX_TREMOLO_INSTANCE_LATENCY_FRAMES 0.0f
 
 /** Port defaults: the declaration's (TREMOLO_*_RANGE.default), the mode the stage comes up at. */

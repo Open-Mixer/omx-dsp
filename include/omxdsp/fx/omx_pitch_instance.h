@@ -49,6 +49,7 @@
 #include <omxdsp/fx/omx_instance_io.h>
 #include <omxdsp/omx_param.h>
 
+/** @brief Audio legs in and out: TWO, a stereo pair. */
 #define OMX_PITCH_INSTANCE_CHANNELS 2
 
 /** The highest rate, Hz, the inline rings are sized for: the top of the nine accepted rates. */

@@ -38,6 +38,7 @@
 #include <omxdsp/fx/omx_instance_io.h>
 #include <omxdsp/omx_param.h>
 
+/** @brief Audio legs in and out: TWO, a stereo pair. */
 #define OMX_ROTARY_INSTANCE_CHANNELS 2
 
 /** Port defaults: the declaration's (ROTARY_*_RANGE.default). The speed set declares no default;
