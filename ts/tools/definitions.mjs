@@ -46,7 +46,7 @@ const TRAVELS = {
 };
 /** data/primitives file -> the items of it a twin reads */
 const PRIMITIVES = {
-  'curve.json': ['CURVE_DISPLAYS', 'CURVE_FAMILIES', 'CURVE_ROLES', 'CURVE_UNITS', 'CURVE_SHAPES', 'CURVE_ORIGINS', 'CURVE_CODES', 'CURVE_POINTS_MAX', 'CURVE_EXTENTS', 'CURVE_TAPS_MAX', 'CURVE_LEGS'],
+  'curve.json': ['CURVE_DISPLAYS', 'CURVE_FAMILIES', 'CURVE_ROLES', 'CURVE_ROLE_PREFIXES', 'CURVE_UNITS', 'CURVE_SHAPES', 'CURVE_ORIGINS', 'CURVE_CODES', 'CURVE_POINTS_MAX', 'CURVE_EXTENTS', 'CURVE_TAPS_MAX', 'CURVE_LEGS'],
   'dsp-knob-reference-rate.json': ['DSP_KNOB_REFERENCE_RATE'],
   'reverb-decay.json': ['REVERB_DECAY_LOOPS'],
   'lin-to-db-floor.json': ['LIN_TO_DB_FLOOR'],
@@ -114,9 +114,10 @@ export const render = () => {
         lines.push('', doc(c.doc, file, undefined, 'primitives'), `export const ${name} = {`, ...body, '} as const;');
       } else if (c?.kind === 'set' && Array.isArray(c.ids) && c.ids.every((i) => typeof i === 'string')) {
         lines.push('', doc(c.doc, file, undefined, 'primitives'), `export const ${name} = [${c.ids.map((i) => `'${i}'`).join(', ')}] as const;`);
-        if (Array.isArray(c.labels))
-          lines.push('', `/** The labels of ${name}, in its order. @see data/primitives/${file} */`, `export const ${name}_LABELS = [${c.labels.map((i) => `'${i}'`).join(', ')}] as const;`);
-      } else throw new Error(`data/primitives/${file}: ${name} is no scalar, flat sheet or set of named ids`);
+      } else if (c?.kind === 'words' && c.words && typeof c.words === 'object') {
+        const body = Object.entries(c.words).map(([k, w]) => `  ${k}: '${w.word}',`);
+        lines.push('', doc(c.doc, file, undefined, 'primitives'), `export const ${name} = {`, ...body, '} as const;');
+      } else throw new Error(`data/primitives/${file}: ${name} is no scalar, flat sheet, set of named ids or words`);
     }
   }
   for (const [file, controls] of Object.entries(TRAVELS)) {

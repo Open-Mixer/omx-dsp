@@ -25,7 +25,7 @@
         "min": 1,
         "max": 20,
         "step": 0.5,
-        "unit": "",
+        "unit": "none",
         "default": 4,
         "defaultFrom": "desk"
       }
@@ -90,7 +90,7 @@
         "min": 0,
         "max": 100,
         "step": 5,
-        "unit": "%",
+        "unit": "percent",
         "default": 100,
         "defaultFrom": "desk"
       }
@@ -210,7 +210,7 @@
         "min": -6,
         "max": 6,
         "step": 0.5,
-        "unit": "dB/oct",
+        "unit": "dBPerOct",
         "default": 0,
         "defaultFrom": "desk"
       }
@@ -415,7 +415,7 @@
         "impl": "include/omxdsp/omx_oversampler.h#OMX_OVS_LATENCY_4X"
       },
       "doc": "What the 4x detector oversampling costs the strip it is engaged on, in samples: the causal linear-phase half-band's reach, by which the audio is delayed so the gain still lands on the sample it was computed from. A sample count, not a time: the same at every rate. omx-dsp's oversampler declares the same number as OMX_OVS_LATENCY_4X, and its comp and gate faces report it while 4x is engaged.",
-      "unit": "",
+      "unit": "none",
       "value": 72
     },
     "KEY_TILT_PIVOT_HZ": {

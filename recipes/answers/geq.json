@@ -45,7 +45,7 @@
       },
       "value": 4.3,
       "doc": "The graphic EQ's band Q: the ISO third-octave bandwidth, `2^(1/6)/(2^(1/3) − 1) ≈ 4.318`, to one decimal as the M32 GEQ carries it. Read by the `geq31` preset and the graphic EQ's section design.",
-      "unit": ""
+      "unit": "none"
     },
     {
       "name": "GEQ_PROTO_DB",

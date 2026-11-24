@@ -19,7 +19,7 @@
         "min": 0,
         "max": 0.5,
         "step": 0.01,
-        "unit": "",
+        "unit": "none",
         "default": 0,
         "defaultFrom": "desk"
       }
@@ -79,7 +79,7 @@
         "min": 1,
         "max": 4,
         "step": 1,
-        "unit": "",
+        "unit": "none",
         "default": 3,
         "defaultFrom": "desk"
       }
@@ -99,7 +99,7 @@
         "min": 0,
         "max": 100,
         "step": 0.1,
-        "unit": "%",
+        "unit": "percent",
         "default": 35,
         "defaultFrom": "desk"
       }

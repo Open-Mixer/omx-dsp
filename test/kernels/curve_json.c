@@ -9,7 +9,7 @@
 
 #define CJ_DYN                                                                                                      \
   "{\"kind\":\"transfer_curve\",\"family\":\"dynamics\",\"sampleRate\":48000,\"points\":3,"                          \
-  "\"extents\":{\"min\":-40,\"max\":0},\"terms\":[{\"role\":\"threshold\",\"value\":-20,\"unit\":\"db\"},"           \
+  "\"extents\":{\"min\":-40,\"max\":0},\"terms\":[{\"role\":\"threshold\",\"value\":-20,\"unit\":\"dB\"},"           \
   "{\"role\":\"ratio\",\"value\":4,\"unit\":\"ratio\"}]}"
 
 /* A request whose terms are `terms` (a JSON array body) on the dynamics family, the code or the answer of it. */
@@ -51,8 +51,12 @@ static void arm_curve_json(void) {
   ok(cj_is("{\"kind\":\"transfer_curve\",\"family\":\"dynamics\",\"sampleRate\":48000,\"points\":3,\"terms\":["
            "{\"role\":\"threshold\",\"value\":-20,\"unit\":\"furlong\"}]}", "{\"code\":\"unitRefused\"}"),
      "a unit no table holds: unitRefused", 0, 0);
+  ok(cj_is("{\"kind\":\"transfer_curve\",\"family\":\"dynamics\",\"sampleRate\":48000,\"points\":3,\"terms\":["
+           "{\"role\":\"threshold\",\"value\":-20,\"unit\":\"db\"},{\"role\":\"ratio\",\"value\":4,\"unit\":\"ratio\"}]}",
+           "{\"code\":\"unitRefused\"}"),
+     "a unit is its PARAM_UNITS id: the lowercase `db` is no unit, unitRefused", 0, 0);
   ok(cj_is("{\"kind\":\"eq_response\",\"family\":\"eq\",\"sampleRate\":48000,\"points\":8,\"terms\":["
-           "{\"role\":\"band_freq\",\"value\":1000,\"unit\":\"hz\",\"shape\":\"bump\"}]}", "{\"code\":\"kindUnknown\"}"),
+           "{\"role\":\"band_freq\",\"value\":1000,\"unit\":\"Hz\",\"shape\":\"bump\"}]}", "{\"code\":\"kindUnknown\"}"),
      "a shape no table holds: kindUnknown", 0, 0);
   ok(cj_is("{\"kind\":\"transfer_curve\",\"family\":\"dynamics\",\"sampleRate\":0,\"points\":3,\"terms\":[]}",
            "{\"code\":\"valueNotFinite\"}"), "a rate of zero: valueNotFinite", 0, 0);
@@ -74,14 +78,14 @@ static void arm_curve_json(void) {
       "{\"kind\":3,\"family\":\"dynamics\",\"sampleRate\":48000,\"points\":3,\"terms\":[]}",         /* a number for a word */
       "{\"kind\":\"transfer\\u005fcurve\",\"family\":\"dynamics\",\"sampleRate\":48000,\"points\":3,\"terms\":[]}", /* an escape */
       "{\"kind\":\"transfer_curve\",\"family\":\"dynamics\",\"sampleRate\":48000,\"points\":3,\"terms\":["
-      "{\"role\":\"threshold\",\"unit\":\"db\"}]}",                                                   /* a term with no value */
+      "{\"role\":\"threshold\",\"unit\":\"dB\"}]}",                                                   /* a term with no value */
       "{\"kind\":\"transfer_curve\",\"family\":\"dynamics\",\"sampleRate\":48000,\"points\":3,\"terms\":[,]}",
       "{\"kind\":\"transfer_curve\",\"family\":\"dynamics\",\"sampleRate\":48000,\"points\":3,\"extents\":{\"min\":0},\"terms\":[]}",
       /* a key given twice is refused, never the last or the first of them */
       "{\"kind\":\"transfer_curve\",\"kind\":\"eq_response\",\"family\":\"dynamics\",\"sampleRate\":48000,\"points\":3,\"terms\":[]}",
       "{\"kind\":\"transfer_curve\",\"family\":\"dynamics\",\"sampleRate\":48000,\"points\":3,\"terms\":[],\"terms\":[]}",
       "{\"kind\":\"transfer_curve\",\"family\":\"dynamics\",\"sampleRate\":48000,\"points\":3,\"terms\":["
-      "{\"role\":\"threshold\",\"value\":-20,\"value\":-30,\"unit\":\"db\"}]}",
+      "{\"role\":\"threshold\",\"value\":-20,\"value\":-30,\"unit\":\"dB\"}]}",
       "{\"kind\":\"transfer_curve\",\"family\":\"dynamics\",\"sampleRate\":48000,\"points\":3,"
       "\"extents\":{\"min\":-40,\"min\":-50,\"max\":0},\"terms\":[]}",
       "{\"kind\":\"transfer_curve\",\"family\":\"dynamics\",\"sampleRate\":48000,\"sampleRate\":44100,\"points\":3,\"terms\":[]}"};
@@ -98,7 +102,7 @@ static void arm_curve_json(void) {
     for (uint32_t count = OMX_CURVE_JSON_TERMS_MAX; count <= OMX_CURVE_JSON_TERMS_MAX + 1u; count++) {
       size_t n = (size_t)snprintf(big, sizeof big, "{\"kind\":\"transfer_curve\",\"family\":\"dynamics\",\"sampleRate\":48000,\"points\":3,\"terms\":[");
       for (uint32_t i = 0; i < count; i++)
-        n += (size_t)snprintf(big + n, sizeof big - n, "%s{\"role\":\"threshold\",\"value\":-20,\"unit\":\"db\"}", i ? "," : "");
+        n += (size_t)snprintf(big + n, sizeof big - n, "%s{\"role\":\"threshold\",\"value\":-20,\"unit\":\"dB\"}", i ? "," : "");
       snprintf(big + n, sizeof big - n, "]}");
       const int w = cj_call(big, out, sizeof out);
       ok(count == OMX_CURVE_JSON_TERMS_MAX ? w > 0 : w == OMX_CURVE_JSON_MALFORMED,
@@ -112,7 +116,7 @@ static void arm_curve_json(void) {
   {
     static const char rq[] =
         "{\"kind\":\"transfer_curve\",\"family\":\"dynamics\",\"sampleRate\":48000,\"points\":5,"
-        "\"extents\":{\"min\":-60,\"max\":0},\"userOnly\":true,\"terms\":[{\"role\":\"threshold\",\"value\":-20,\"unit\":\"db\"},"
+        "\"extents\":{\"min\":-60,\"max\":0},\"userOnly\":true,\"terms\":[{\"role\":\"threshold\",\"value\":-20,\"unit\":\"dB\"},"
         "{\"role\":\"ratio\",\"value\":4,\"unit\":\"ratio\"}]}";
     static char dot[OMX_CURVE_JSON_OUT_MAX], comma[OMX_CURVE_JSON_OUT_MAX];
     const int a = omx_curve_points_json_point(rq, dot, sizeof dot, '.'), b = omx_curve_points_json_point(rq, comma, sizeof comma, ',');
@@ -132,7 +136,7 @@ static void arm_curve_json(void) {
       ok(r == a && strcmp(dot, comma) == 0, "under a comma-decimal locale the answer is the C locale's, byte for byte", r, a);
       char dec[OMX_CURVE_JSON_OUT_MAX];
       snprintf(dec, sizeof dec, "%s", "{\"kind\":\"transfer_curve\",\"family\":\"dynamics\",\"sampleRate\":48000,\"points\":3,"
-               "\"extents\":{\"min\":-60.5,\"max\":0},\"terms\":[{\"role\":\"threshold\",\"value\":-20.25,\"unit\":\"db\"},"
+               "\"extents\":{\"min\":-60.5,\"max\":0},\"terms\":[{\"role\":\"threshold\",\"value\":-20.25,\"unit\":\"dB\"},"
                "{\"role\":\"ratio\",\"value\":4,\"unit\":\"ratio\"}]}");
       ok(omx_curve_points_json(dec, comma, sizeof comma) > 0 && strstr(comma, "\"x\":-60.5,") != NULL,
          "under a comma-decimal locale a decimal number of the request is read as written", 0, 0);
@@ -151,16 +155,16 @@ static void arm_curve_json(void) {
   {
     static const char eq[] =
         "{\"kind\":\"eq_response\",\"family\":\"eq\",\"sampleRate\":48000,\"points\":16,\"userOnly\":true,\"terms\":["
-        "{\"role\":\"band_freq\",\"index\":0,\"value\":1000,\"unit\":\"hz\",\"shape\":\"bell\"},"
-        "{\"role\":\"band_gain\",\"index\":0,\"value\":6,\"unit\":\"db\"},"
+        "{\"role\":\"band_freq\",\"index\":0,\"value\":1000,\"unit\":\"Hz\",\"shape\":\"bell\"},"
+        "{\"role\":\"band_gain\",\"index\":0,\"value\":6,\"unit\":\"dB\"},"
         "{\"role\":\"band_q\",\"index\":0,\"value\":1,\"unit\":\"oct\"},"
-        "{\"role\":\"band_freq\",\"index\":1,\"value\":0.25,\"unit\":\"khz\",\"shape\":\"notch\",\"origin\":\"fbs-live\"},"
+        "{\"role\":\"band_freq\",\"index\":1,\"value\":0.25,\"unit\":\"kHz\",\"shape\":\"notch\",\"origin\":\"fbs-live\"},"
         "{\"role\":\"band_q\",\"index\":1,\"value\":8,\"unit\":\"none\"},"
-        "{\"role\":\"hpf_freq\",\"value\":40,\"unit\":\"hz\"},{\"role\":\"hpf_slope\",\"value\":24,\"unit\":\"db\"}]}";
+        "{\"role\":\"hpf_freq\",\"value\":40,\"unit\":\"Hz\"},{\"role\":\"hpf_slope\",\"value\":24,\"unit\":\"dB\"}]}";
     const struct omx_curve_term t[] = {
-        CT(BAND_FREQ, 0, 1000.0, HZ, OMX_CURVE_SHAPES_BELL), CT(BAND_GAIN, 0, 6.0, DB, CT_NS), CT(BAND_Q, 0, 1.0, OCT, CT_NS),
-        CTO(BAND_FREQ, 1, 0.25, KHZ, OMX_CURVE_SHAPES_NOTCH, FBS_LIVE), CT(BAND_Q, 1, 8.0, NONE, CT_NS),
-        CT(HPF_FREQ, 0, 40.0, HZ, CT_NS), CT(HPF_SLOPE, 0, 24.0, DB, CT_NS)};
+        CT(BAND_FREQ, 0, 1000.0, HZ, OMX_CURVE_SHAPES_BELL), CT(BAND_GAIN, 0, 6.0, D_B, CT_NS), CT(BAND_Q, 0, 1.0, OCT, CT_NS),
+        CTO(BAND_FREQ, 1, 0.25, K_HZ, OMX_CURVE_SHAPES_NOTCH, FBS_LIVE), CT(BAND_Q, 1, 8.0, NONE, CT_NS),
+        CT(HPF_FREQ, 0, 40.0, HZ, CT_NS), CT(HPF_SLOPE, 0, 24.0, D_B, CT_NS)};
     const struct omx_curve_request rq = {OMX_CURVE_DISPLAYS_EQ_RESPONSE, OMX_CURVE_FAMILIES_EQ, 48000.0, 16u, 0, 0.0, 0.0, t, 7u, 1, 0.0};
     double x[OMX_CURVE_POINTS_MAX], y[OMX_CURVE_POINTS_MAX], yu[OMX_CURVE_POINTS_MAX];
     struct omx_curve_mark mk[4];
@@ -197,8 +201,8 @@ static void arm_curve_json(void) {
         "\"extents\":{\"min\":3.3333333333333e-3,\"max\":7.7777777777777e4},\"terms\":[");
     for (uint32_t b = 0; b < 32u; b++)
       n += (size_t)snprintf(big + n, sizeof big - n,
-          "%s{\"role\":\"band_freq\",\"index\":%u,\"value\":%.17g,\"unit\":\"hz\",\"shape\":\"bell\",\"origin\":\"hrp\"},"
-          "{\"role\":\"band_gain\",\"index\":%u,\"value\":-1.2345678901234567,\"unit\":\"db\"},"
+          "%s{\"role\":\"band_freq\",\"index\":%u,\"value\":%.17g,\"unit\":\"Hz\",\"shape\":\"bell\",\"origin\":\"hrp\"},"
+          "{\"role\":\"band_gain\",\"index\":%u,\"value\":-1.2345678901234567,\"unit\":\"dB\"},"
           "{\"role\":\"band_q\",\"index\":%u,\"value\":1.2345678901234567,\"unit\":\"none\"}",
           b ? "," : "", b, 100.123456789012345 * (b + 1u), b, b);
     snprintf(big + n, sizeof big - n, "]}");

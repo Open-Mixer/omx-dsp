@@ -95,7 +95,7 @@
       },
       "value": 0.00001,
       "doc": "The detector floor, linear (−100 dBFS): below it both envelopes read the floor and the stage is unity.",
-      "unit": ""
+      "unit": "none"
     }
   ]
 }

@@ -19,7 +19,7 @@
           "ref": "MBC_MAX_BANDS"
         },
         "step": 1,
-        "unit": "",
+        "unit": "none",
         "default": 3,
         "defaultFrom": "desk"
       }
@@ -67,7 +67,7 @@
         "min": 1,
         "max": 20,
         "step": 0.1,
-        "unit": "",
+        "unit": "none",
         "default": 2,
         "defaultFrom": "desk"
       },
@@ -172,7 +172,7 @@
         "min": 0,
         "max": 100,
         "step": 1,
-        "unit": "%",
+        "unit": "percent",
         "default": 100,
         "defaultFrom": "desk"
       }
@@ -268,7 +268,7 @@
         "impl": "include/omxdsp/fx/omx_mbcomp.h#bands"
       },
       "doc": "The fewest bands the multiband compressor splits into: one crossover. omx_mbcomp_design and omx_mbcomp_process refuse a band count below it (`band-count-declared`), and a refused count reads as this floor.",
-      "unit": "",
+      "unit": "none",
       "value": 2
     },
     "MBC_MAX_BANDS": {
@@ -277,7 +277,7 @@
         "impl": "include/omxdsp/fx/omx_mbcomp.h#omx_mbcomp_come_up_hz"
       },
       "doc": "The most bands the multiband compressor splits into, and the capacity of its inline state: `struct omx_mbcomp_state` holds this many band compressors and one crossover fewer per leg, so the ceiling and the arrays are one fact.",
-      "unit": "",
+      "unit": "none",
       "value": 5
     },
     "MBC_MAX_XOVERS": {
@@ -286,7 +286,7 @@
         "impl": "include/omxdsp/fx/omx_mbcomp.h#OMX_MBC_COME_UP_HZ"
       },
       "doc": "The crossovers of a full tree, one fewer than MBC_MAX_BANDS: the count of the corner control and the capacity of each leg's crossover state.",
-      "unit": "",
+      "unit": "none",
       "value": 4
     },
     "MBC_CORNER_MAX_FRACTION": {
@@ -295,7 +295,7 @@
         "impl": "include/omxdsp/fx/omx_mbcomp.h#top"
       },
       "doc": "The highest crossover corner the multiband design builds, as a fraction of the live rate: a corner at or above `fraction x rate` is designed AT that line, because the LR4 section degenerates toward Nyquist. omx_mbcomp_design computes the line in double, so a C reader takes OMX_MBC_CORNER_MAX_FRACTION_DOUBLE. A 20 kHz corner is under the line from 48 kHz up; at 44.1 kHz the line is 19845 Hz and a 20 kHz corner is designed there.",
-      "unit": "",
+      "unit": "none",
       "value": 0.45
     },
     "MBC_CROSSOVER_DEFAULTS_2": {

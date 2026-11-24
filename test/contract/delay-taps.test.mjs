@@ -19,7 +19,7 @@ const header = () => renderC(resolveData(loadData(UNION))).find((f) => f.path ==
 const src = (p) => readFileSync(join(HERE, p), 'utf8');
 
 test('the tap count travels 1..4 step 1 and comes up at 1, rendered as the integer OMX_FX_DELAY_TAPS_RANGE_MAX; 3.0.0 dropped its float alias', () => {
-  assert.deepEqual(items().FX_DELAY_TAPS_RANGE.value, { min: 1, max: 4, step: 1, unit: '', default: 1, defaultFrom: 'desk' });
+  assert.deepEqual(items().FX_DELAY_TAPS_RANGE.value, { min: 1, max: 4, step: 1, unit: 'none', default: 1, defaultFrom: 'desk' });
   assert.match(header(), /^#define OMX_FX_DELAY_TAPS_RANGE_MAX 4$/m);
   assert.doesNotMatch(header(), /OMX_DELAY_TAPS_MAX/);
 });

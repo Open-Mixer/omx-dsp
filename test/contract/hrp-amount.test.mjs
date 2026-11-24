@@ -27,7 +27,7 @@ const header = (dir) => renderC(resolved(dir))[0].text;
 const dts = (dir) => renderTs(resolved(dir)).find((f) => f.path.endsWith('.d.ts')).text;
 
 /** The value both readers were checked against: the come-up value the console engine and omx-dsp use. */
-const CONSUMER = { min: 0, max: 1, step: 0, unit: '', default: 0.5, defaultFrom: 'desk' };
+const CONSUMER = { min: 0, max: 1, step: 0, unit: 'none', default: 0.5, defaultFrom: 'desk' };
 
 test('HRP_AMOUNT_RANGE declares its full travel, the come-up value 0.5 from the desk among it', () => {
   assert.deepEqual(items().HRP_AMOUNT_RANGE.value, CONSUMER);
@@ -42,6 +42,6 @@ test('the ts render types the travel with its default, the shape the console re-
   const m = /^export declare const HRP_AMOUNT_RANGE: \{\n([\s\S]*?)\n\};$/m.exec(dts());
   assert.ok(m, 'the d.ts declares HRP_AMOUNT_RANGE');
   assert.deepEqual(m[1].split('\n').map((l) => l.trim()), [
-    'readonly min: 0;', 'readonly max: 1;', 'readonly step: 0;', 'readonly unit: "";', 'readonly default: 0.5;', 'readonly defaultFrom: "desk";',
+    'readonly min: 0;', 'readonly max: 1;', 'readonly step: 0;', 'readonly unit: "none";', 'readonly default: 0.5;', 'readonly defaultFrom: "desk";',
   ]);
 });

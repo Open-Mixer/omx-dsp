@@ -27,7 +27,7 @@
         "impl": "include/omxdsp/analysis/omx_rta.h#omx_rta_fft_size_for"
       },
       "doc": "The largest RTA FFT the native ring holds — rendered into `omxdsp/omxdsp_definitions.h` as `OMX_RTA_FFT_SIZE_MAX`.",
-      "unit": "",
+      "unit": "none",
       "value": 32768
     },
     "RTA_BAND_F_MIN": {
@@ -153,7 +153,7 @@
         "impl": "tools/omx-rta-read/omx-rta-read.c#low_due"
       },
       "doc": "How far the low zoom's window must have advanced, as a fraction of that window, before it is recomputed; between recomputes the last zoom rides the fresh main spectrum unchanged.",
-      "unit": "",
+      "unit": "none",
       "value": 0.25
     },
     "RTA_TAP_GATE_DB": {

@@ -39,7 +39,7 @@
         "min": -1,
         "max": 1,
         "step": 0.01,
-        "unit": "",
+        "unit": "none",
         "default": 0,
         "defaultFrom": "desk"
       }
@@ -79,7 +79,7 @@
         "min": 0,
         "max": 100,
         "step": 0.1,
-        "unit": "%",
+        "unit": "percent",
         "default": 100,
         "defaultFrom": "desk"
       }
@@ -230,7 +230,7 @@
         "impl": "include/omxdsp/fx/omx_drive.h#b"
       },
       "doc": "The bias at `character = +1`, in the SHAPER's own input units — `OMX_DRIVE_BIAS_MAX`. DERIVED, not chosen. In the saturating limit every knee tends to `sgn`, the output is a rectangular wave of duty `d = ½ + asin(b)/π`, and its `n`th harmonic goes as `sin(nπd)/n` — so `|H2|` is maximal at `d = ¾`, which is `b = sin(π/4) = 1/√2` exactly. Measured too: the H2-maximising bias for a full-scale sine at unity drive is 0.712 (soft), 0.658 (tape), 0.645 (tube), and this one value costs 0.000 / 0.035 / 0.088 dB of H2 against each curve's own optimum. ONE normalised bias for all three knees, not three.",
-      "unit": "",
+      "unit": "none",
       "value": {
         "derive": "sqrt",
         "of": 0.5
