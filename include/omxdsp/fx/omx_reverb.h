@@ -597,8 +597,9 @@ static inline void omx_fv_comb_bank_block(float *const *comb, const uint32_t *co
  * @param len The line's length, samples, above 0.
  * @param pos The line's write position, advanced `n`; one past the line restarts at 0.
  * @param x The samples, filtered in place.
- * @param n Frames.
+ * @param n Frames, at most OMX_REVERB_CHUNK.
  * @pre `line-bound`: a line and a positive length.
+ * @pre `chunk-bound`: `n` at most OMX_REVERB_CHUNK.
  * @thread audio */
 static inline void omx_fv_allpass_block(float *buf, uint32_t len, uint32_t *pos, float *x, uint32_t n) {
   OMX_PRE(buf != NULL && len > 0u, "line-bound");
@@ -628,9 +629,11 @@ static inline void omx_fv_allpass_block(float *buf, uint32_t len, uint32_t *pos,
  * @param len The line's length, samples, above 0.
  * @param pos The line's write position, advanced `n`.
  * @param x The samples, diffused in place.
- * @param n Frames.
+ * @param n Frames, at most OMX_REVERB_CHUNK.
  * @param coef The allpass coefficient, inside (-1, 1).
  * @pre `line-bound`: a line and a positive length.
+ * @pre `chunk-bound`: `n` at most OMX_REVERB_CHUNK.
+ * @pre `coefficient-inside-unit-circle`: `coef` inside (-1, 1).
  * @thread audio */
 static inline void omx_plate_ap_block(float *buf, uint32_t len, uint32_t *pos, float *x, uint32_t n,
                                       float coef) {
