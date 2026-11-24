@@ -66,11 +66,15 @@ typedef struct {
   struct omx_pitch atom;
   /** The kernel's running state, carried from block to block and handed to its process with the atom. */
   struct omx_pitch_state state;
+  /** The left leg's ring, inline; the kernel's left line is armed over its first `cap` floats. */
   float ring_l[OMX_PITCH_INSTANCE_RING_FLOATS];
+  /** The right leg's ring, inline; the kernel's right line is armed over its first `cap` floats. */
   float ring_r[OMX_PITCH_INSTANCE_RING_FLOATS];
+  /** The floats of each ring the kernel uses, omx_pitch_instance_cap_for() at `sr`, set by init. */
   uint32_t cap;
   /** The clamped controls the atom was last resolved from; `resolved` 0 until the first. */
   float semitones, cents, mix;
+  /** Non-zero once resolve() ran the kernel's resolve; 0 until the first, which runs whatever the controls hold. */
   int resolved;
   /** The previous cycle's engaged flag, so a bypass->engaged edge can clear the rings. */
   int was_engaged;
@@ -78,7 +82,14 @@ typedef struct {
   int ready;
 } OmxPitchInstance;
 
+/** @var OmxPitchInstance::cents
+ * The cents control as last resolved, -50 to 50 cents. */
+/** @var OmxPitchInstance::mix
+ * The mix control as last resolved, percent, 0 to 100. */
+
 /** The ring, per leg, the window needs at `sr`: the floats of each inline ring the kernel uses.
+ * @param sr The sample rate, Hz.
+ * @return omx_pitch_cap_for() at `sr`, floats per leg.
  * @thread control */
 static inline uint32_t omx_pitch_instance_cap_for(float sr) { return omx_pitch_cap_for(sr); }
 

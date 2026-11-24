@@ -59,7 +59,9 @@
 
 /** One instance: the linear gain the last block ended on and the one the next block ramps to. */
 typedef struct {
-  float cur, tgt;
+  /** The linear gain the last engaged block ended on; init sets it to 1, run() ramps it to `tgt`. */
+  float cur, tgt; ///< tgt: the linear gain resolve() resolved from trimDb, the one the next block ramps to.
+  /** Non-zero while bypassed, as the last resolve() set it; run() then copies the input and leaves `cur` as is. */
   int bypass;
   /** Non-zero once init bound the instance to a usable rate; while zero, resolve() does nothing and run() leaves the output as the input. */
   int ready;

@@ -46,6 +46,7 @@
 struct omx_key {
   const float *src;  /**< the key source's block; NULL = self (this lane's own gate input) */
   float *buf;        /**< scratch the filtered detector copy is built in; NULL = no key */
+  /** Non-zero runs the high-pass section over the key; 0 = that edge is off (the row's 0 Hz). */
   int hp_on, lp_on;  /**< 0 = that edge is off (the row's 0 Hz) */
   float hp_c[5];     /**< {b0,b1,b2,a1,a2}, normalised — high-pass */
   float lp_c[5];     /**< the same, low-pass */

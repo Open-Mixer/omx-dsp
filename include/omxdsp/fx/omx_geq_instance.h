@@ -67,6 +67,7 @@
  * `ISO_THIRD_OCTAVE_CENTRES_HZ`, whose length the declarations generate as OMX_GEQ_BANDS. */
 #define OMX_GEQ_INSTANCE_CENTRES_HZ OMX_ISO_THIRD_OCTAVE_CENTRES_HZ_INIT
 
+/** The OMX_GEQ_BANDS section centres, Hz, ascending: OMX_GEQ_INSTANCE_CENTRES_HZ as a table. */
 static const double omx_geq_instance_centres_hz[] = OMX_GEQ_INSTANCE_CENTRES_HZ;
 _Static_assert(sizeof omx_geq_instance_centres_hz / sizeof omx_geq_instance_centres_hz[0] == OMX_GEQ_BANDS,
                "the ISO centre table is the declared band count long");
@@ -113,7 +114,10 @@ typedef struct {
   struct omx_geq_state state;
   /** The clamped gain each section was last designed at, dB; `designed` 0 until the first. */
   float gain_db[OMX_GEQ_BANDS];
+  /** Each section's `{b0, b1, b2, a1, a2}`, in double: resolve() redesigns a section whose gain moved, apply() copies a
+   * finished design's; both publish them to the atom with omx_geq_set(). */
   double coeffs[OMX_GEQ_BANDS][5];
+  /** Non-zero once resolve() designed every section; apply() sets it back to 0, so the next resolve redesigns all. */
   int designed;
   /** The previous cycle's engaged flag, so a bypass->engaged edge can clear the histories. */
   int was_engaged;

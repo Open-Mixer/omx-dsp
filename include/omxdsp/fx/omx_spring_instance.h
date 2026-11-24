@@ -35,12 +35,15 @@
 #define OMX_SPRING_INSTANCE_RING 13100u
 _Static_assert((double)OMX_SPRING_LENGTH_MS_RANGE_MAX * 192.0 * OMX_SPRING_RIGHT_RATIO_DOUBLE < (double)OMX_SPRING_INSTANCE_RING - 2.0,
                "the ring holds the longest spring at the top rate");
+/** The all-pass corner, Hz, at a tension of 0 and of 100 \%: SPRING_CHIRP_HZ; resolve() places it between them. */
 static const float OMX_SPRING_INSTANCE_CHIRP[OMX_SPRING_CHIRP_HZ_COUNT] = OMX_SPRING_CHIRP_HZ_INIT;
 _Static_assert(OMX_SPRING_CHIRP_HZ_COUNT == 2u, "a corner at each end of the tension");
 
 /** One leg's loop. */
 struct omx_spring_leg {
+  /** The loop's delay line, OMX_SPRING_INSTANCE_RING samples; the tick reads it `d` behind `pos`. */
   float ring[OMX_SPRING_INSTANCE_RING];
+  /** The SPRING_SECTIONS first-order all-pass sections the loop's read runs through, all at coefficient `a`. */
   struct omx_allpass1 chain[OMX_SPRING_SECTIONS];
   float lp;     /**< the loop's low-pass state */
   uint32_t pos; /**< the write position */
@@ -48,13 +51,16 @@ struct omx_spring_leg {
   float g;      /**< the loop gain */
 };
 
+/** @brief One instance: a spring loop per leg, the shared all-pass and low-pass coefficients and the blend. */
 typedef struct {
   /** The sample rate init bound the instance to, Hz. */
   float sr;
+  /** The two legs' loops: 0 the left, 1 the right, its delay SPRING_RIGHT_RATIO longer. */
   struct omx_spring_leg leg[2];
   float a;   /**< the all-pass coefficient */
   float pole; /**< the loop low-pass's pole */
-  float wet, dry;
+  /** The wet share, mixPct over 100, 0 to 1. */
+  float wet, dry; ///< dry: the dry share, 1 - wet.
   /** Non-zero while the effect is engaged, as the last resolve() set it; while zero, run() leaves the output as the input. */
   int enabled;
   /** Non-zero once init bound the instance to a usable rate; while zero, resolve() does nothing and run() leaves the output as the input. */
@@ -81,6 +87,9 @@ static inline int omx_spring_instance_init(OmxSpringInstance *s, float sr) {
 }
 
 /** The chain's group delay, samples, at angular frequency `w`, radians per sample, for coefficient `a`.
+ * @param a The all-pass coefficient.
+ * @param w The angular frequency, radians per sample.
+ * @return The group delay of the SPRING_SECTIONS sections, samples.
  * @thread audio */
 static inline double omx_spring_chain_delay(double a, double w) {
   return (double)OMX_SPRING_SECTIONS * (1.0 - a * a) / (1.0 + 2.0 * a * cos(w) + a * a);
@@ -149,6 +158,11 @@ static inline void omx_spring_instance_resolve(OmxSpringInstance *s, int bypass,
 #undef OMX_CONTRACT_STAGE
 
 /** One leg, one sample: the loop's read, the chain and the low-pass, and the input written back. RT-safe.
+ * @param l The leg; its ring, chain, low-pass state and write position advance.
+ * @param x The input sample.
+ * @param a The all-pass coefficient.
+ * @param pole The loop low-pass's pole.
+ * @return The loop's read through the chain, before the low-pass: the leg's wet sample.
  * @thread audio */
 static inline float omx_spring_leg_tick(struct omx_spring_leg *l, float x, float a, float pole) {
   uint32_t rd = l->pos + OMX_SPRING_INSTANCE_RING - l->d;

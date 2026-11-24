@@ -44,12 +44,19 @@
 /** Port defaults: the declaration's (ROTARY_*_RANGE.default). The speed set declares no default;
  * the stage comes up at `slow`. */
 #define OMX_ROTARY_INSTANCE_HORN_SLOW_HZ_DEFAULT ((float)OMX_ROTARY_HORN_SLOW_RANGE_DEFAULT)
+/** @brief The hornFastHz port's default, Hz (ROTARY_HORN_FAST_RANGE.default). */
 #define OMX_ROTARY_INSTANCE_HORN_FAST_HZ_DEFAULT ((float)OMX_ROTARY_HORN_FAST_RANGE_DEFAULT)
+/** @brief The drumSlowHz port's default, Hz (ROTARY_DRUM_SLOW_RANGE.default). */
 #define OMX_ROTARY_INSTANCE_DRUM_SLOW_HZ_DEFAULT ((float)OMX_ROTARY_DRUM_SLOW_RANGE_DEFAULT)
+/** @brief The drumFastHz port's default, Hz (ROTARY_DRUM_FAST_RANGE.default). */
 #define OMX_ROTARY_INSTANCE_DRUM_FAST_HZ_DEFAULT ((float)OMX_ROTARY_DRUM_FAST_RANGE_DEFAULT)
+/** @brief The accel port's default, a scale on the speed-change time constants (ROTARY_ACCEL_RANGE.default). */
 #define OMX_ROTARY_INSTANCE_ACCEL_DEFAULT ((float)OMX_ROTARY_ACCEL_RANGE_DEFAULT)
+/** @brief The balance port's default, percent (ROTARY_BALANCE_RANGE.default). */
 #define OMX_ROTARY_INSTANCE_BALANCE_DEFAULT ((float)OMX_ROTARY_BALANCE_RANGE_DEFAULT)
+/** @brief The mix port's default, percent (ROTARY_MIX_RANGE.default). */
 #define OMX_ROTARY_INSTANCE_MIX_DEFAULT ((float)OMX_ROTARY_MIX_RANGE_DEFAULT)
+/** @brief The speed the stage comes up at, and the one a speed outside the set reads as: `slow`. */
 #define OMX_ROTARY_INSTANCE_SPEED_DEFAULT OMX_ROTARY_SLOW
 
 /** One instance: the atom the host's ports resolve to and the state (rotors and inline rings). */

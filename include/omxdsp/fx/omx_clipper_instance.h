@@ -49,6 +49,7 @@ static inline float omx_clipper_sample(float u, float c, float a) {
   return u < 0.0f ? -y : y;
 }
 
+/** @brief One instance: the rate, the resolved drive, ceiling and knee, and the last block's reduction. */
 typedef struct {
   /** The sample rate init bound the instance to, Hz. */
   float sr;
@@ -147,6 +148,8 @@ static inline void omx_clipper_instance_run(OmxClipperInstance *s, const float *
 #undef OMX_CONTRACT_STAGE
 
 /** The gainReductionDb readout: the last block's reduction, dB, 0 or negative.
+ * @param s The instance; null reads 0.
+ * @return The reduction of the block's largest driven sample, dB, 0 or negative; 0 when bypassed or not ready.
  * @thread audio */
 static inline float omx_clipper_instance_gain_reduction_db(const OmxClipperInstance *s) { return s ? s->gr_db : 0.0f; }
 

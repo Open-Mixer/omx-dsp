@@ -118,6 +118,10 @@ static inline void omx_drive_design_lowpass(float freq_hz, uint32_t rate, float 
  * low-pass and the tilt pair at `band_hz`, the roll-off at `hf_hz` (20 000 when the row says
  * `off` — a section is still designed so the C never runs an uninitialised one; `hf_on` is what
  * decides whether it runs). Only the four coefficient arrays are written.
+ * @param o The drive atom; its band_c, tilt_c, tilt_inv_c and hf_c are written.
+ * @param band_hz The band split's and the tilt pair's frequency, Hz.
+ * @param hf_hz The roll-off's corner, Hz.
+ * @param rate The sample rate, Hz.
  * @thread audio
  */
 static inline void omx_drive_design_bank(struct omx_drive *o, float band_hz, float hf_hz,

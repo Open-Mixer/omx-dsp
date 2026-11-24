@@ -31,11 +31,15 @@
 /** @brief Audio legs in and out: TWO, a stereo pair. */
 #define OMX_LOUDLEVEL_INSTANCE_CHANNELS 2
 
+/** @brief One instance: the loudness meter, the resolved controls and the gain cursor it walks per tick. */
 typedef struct {
   /** The sample rate init bound the instance to, Hz. */
   float sr;
+  /** The BS.1770 loudness meter over both legs; run() feeds it the input before the gain. */
   struct omx_loudness meter;
+  /** targetLufs as resolved, LUFS: the loudness a tick walks the gain toward. */
   float target, range, step_db, gate; /**< the controls; step_db is the walk per tick */
+  /** The window choice's index, OMX_LOUDLEVEL_WINDOWS: momentary (400 ms) or short (3 s). */
   int win;
   float gain_db;  /**< the cursor, dB */
   float gain_lin; /**< the cursor, linear, where the running ramp stands */
@@ -51,10 +55,16 @@ typedef struct {
   int ready;
 } OmxLoudlevelInstance;
 
+/** @var OmxLoudlevelInstance::range
+ * rangeDb as resolved, dB, 0 to 24: the most a tick moves the gain either way; 0 keeps the instance disengaged. */
+/** @var OmxLoudlevelInstance::step_db
+ * The walk per tick, dB: speedDbPerS over OMX_LOUDNESS_SUBBLOCKS_PER_S ticks a second. */
+
 static inline void omx_loudlevel_instance_resolve(OmxLoudlevelInstance *s, int bypass, float target_lufs, float range_db,
                                                   float speed_db_per_s, float gate_lufs, int window);
 
 /** The meter and the gain from the start: the engage edge.
+ * @param s The instance; its meter, gain cursor, ramp, tick count and readout are reset.
  * @thread audio */
 static inline void omx_loudlevel_instance_restart(OmxLoudlevelInstance *s) {
   omx_loudness_reset(&s->meter);
@@ -129,6 +139,7 @@ static inline void omx_loudlevel_instance_resolve(OmxLoudlevelInstance *s, int b
 #undef OMX_CONTRACT_STAGE
 
 /** One tick's decision: read the window and open the next ramp. RT-safe: arithmetic and one log.
+ * @param s The instance; run() calls this as each tick's last sample is processed.
  * @thread audio */
 static inline void omx_loudlevel_tick(OmxLoudlevelInstance *s) {
   const uint32_t full = s->win == (int)OMX_LOUDLEVEL_WINDOWS_MOMENTARY ? OMX_LOUDNESS_MOMENTARY : OMX_LOUDNESS_SHORT_TERM;
@@ -184,10 +195,14 @@ static inline void omx_loudlevel_instance_run(OmxLoudlevelInstance *s, const flo
 #undef OMX_CONTRACT_STAGE
 
 /** The loudnessLufs readout: what the detector reads now, before the gain.
+ * @param s The instance; null reads 0.
+ * @return The window's loudness at the last tick, LUFS; OMX_LOUDNESS_ABSOLUTE_GATE_LUFS while it has read nothing.
  * @thread audio */
 static inline float omx_loudlevel_instance_loudness_lufs(const OmxLoudlevelInstance *s) { return s ? s->lufs : 0.0f; }
 
 /** The gainDb readout: the gain the running tick walks to, dB.
+ * @param s The instance; null reads 0.
+ * @return The gain cursor, dB; each tick walks it at most step_db toward a want held inside plus or minus rangeDb.
  * @thread audio */
 static inline float omx_loudlevel_instance_gain_db(const OmxLoudlevelInstance *s) { return s ? s->gain_db : 0.0f; }
 

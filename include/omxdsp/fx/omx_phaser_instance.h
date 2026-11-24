@@ -43,10 +43,15 @@
 
 /** Port defaults: the declaration's (PHASER_*_RANGE.default). */
 #define OMX_PHASER_INSTANCE_RATE_HZ_DEFAULT ((float)OMX_PHASER_RATE_RANGE_DEFAULT)
+/** @brief The baseHz port's default, Hz (PHASER_BASE_RANGE.default). */
 #define OMX_PHASER_INSTANCE_BASE_HZ_DEFAULT ((float)OMX_PHASER_BASE_RANGE_DEFAULT)
+/** @brief The depthOct port's default, octaves (PHASER_DEPTH_RANGE.default). */
 #define OMX_PHASER_INSTANCE_DEPTH_OCT_DEFAULT ((float)OMX_PHASER_DEPTH_RANGE_DEFAULT)
+/** @brief The stages port's default, sections per leg (PHASER_STAGES_RANGE.default). */
 #define OMX_PHASER_INSTANCE_STAGES_DEFAULT ((float)OMX_PHASER_STAGES_RANGE_DEFAULT)
+/** @brief The feedback port's default, signed (PHASER_FEEDBACK_RANGE.default). */
 #define OMX_PHASER_INSTANCE_FEEDBACK_DEFAULT ((float)OMX_PHASER_FEEDBACK_RANGE_DEFAULT)
+/** @brief The mix port's default, percent (PHASER_MIX_RANGE.default). */
 #define OMX_PHASER_INSTANCE_MIX_DEFAULT ((float)OMX_PHASER_MIX_RANGE_DEFAULT)
 
 /** One instance: the atom the host's ports resolve to and the state it drives. */

@@ -30,10 +30,15 @@
 /** @brief Audio legs in and out: TWO, a stereo pair. */
 #define OMX_UPWARD_INSTANCE_CHANNELS 2
 
+/** @brief One instance: one dynamics slot in upward mode, its state and the gainDb readout. */
 typedef struct {
   /** The sample rate init bound the instance to, Hz. */
   float sr;
+  /** The dynamics slot's controls as resolve() last built them (upward mode, RMS detect); run() hands them to
+   * omx_dynamics(). */
   struct omx_dyn atom;
+  /** The slot's running state, carried from block to block and handed to omx_dynamics() with the atom; init and the
+   * engage edge clear it. */
   struct omx_dyn_state st;
   float gain_db; /**< the gainDb readout */
   /** Non-zero while the effect is engaged, as the last resolve() set it; while zero, run() leaves the output as the input. */
@@ -145,6 +150,8 @@ static inline void omx_upward_instance_run(OmxUpwardInstance *s, const float *in
 }
 
 /** The gainDb readout: what the last block's loudest sample rose by, dB.
+ * @param s The instance; null reads 0.
+ * @return The rise of the block's loudest sample, dB, 0 or positive; 0 when disengaged or not ready.
  * @thread audio */
 static inline float omx_upward_instance_gain_db(const OmxUpwardInstance *s) { return s ? s->gain_db : 0.0f; }
 

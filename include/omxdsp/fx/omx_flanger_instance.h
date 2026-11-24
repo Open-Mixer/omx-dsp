@@ -48,8 +48,11 @@
 
 /** Port defaults: the declaration's (FLANGER_*_RANGE.default). */
 #define OMX_FLANGER_INSTANCE_DEPTH_MS_DEFAULT ((float)OMX_FLANGER_DEPTH_RANGE_DEFAULT)
+/** @brief The rate port's default, Hz (FLANGER_RATE_RANGE.default). */
 #define OMX_FLANGER_INSTANCE_RATE_HZ_DEFAULT ((float)OMX_FLANGER_RATE_RANGE_DEFAULT)
+/** @brief The feedback port's default, signed (FLANGER_FEEDBACK_RANGE.default). */
 #define OMX_FLANGER_INSTANCE_FEEDBACK_DEFAULT ((float)OMX_FLANGER_FEEDBACK_RANGE_DEFAULT)
+/** @brief The mix port's default, percent (FLANGER_MIX_RANGE.default). */
 #define OMX_FLANGER_INSTANCE_MIX_PCT_DEFAULT ((float)OMX_FLANGER_MIX_RANGE_DEFAULT)
 
 /** One instance. It owns its rings; the kernel is armed over the first `cap` floats of each. */
@@ -60,8 +63,11 @@ typedef struct {
   struct omx_flanger atom;
   /** The kernel's running state, carried from block to block and handed to its process with the atom. */
   struct omx_flanger_state state;
+  /** The left leg's ring, inline; the kernel's left line is armed over its first `cap` floats. */
   float ring_l[OMX_FLANGER_CAP];
+  /** The right leg's ring, inline; the kernel's right line is armed over its first `cap` floats. */
   float ring_r[OMX_FLANGER_CAP];
+  /** The floats of each ring the kernel uses, omx_flanger_instance_cap_for() at `sr`, set by init. */
   uint32_t cap;
   /** The previous cycle's engaged flag, so a bypass->engaged edge can clear the rings. */
   int was_engaged;
@@ -70,6 +76,8 @@ typedef struct {
 } OmxFlangerInstance;
 
 /** The ring, per leg, the deepest sweep needs at `sr`: the floats of each inline ring the kernel uses.
+ * @param sr The sample rate, Hz.
+ * @return The line's capacity, floats, for a delay of OMX_FLANGER_BASE_MS plus OMX_FLANGER_MAX_DEPTH_MS at `sr`.
  * @thread audio */
 static inline uint32_t omx_flanger_instance_cap_for(float sr) {
   return omx_fdelay_cap_for((OMX_FLANGER_BASE_MS + OMX_FLANGER_MAX_DEPTH_MS) * 0.001f * sr,

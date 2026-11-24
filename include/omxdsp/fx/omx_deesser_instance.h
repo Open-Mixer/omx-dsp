@@ -51,12 +51,19 @@
 /** Port defaults: the declaration's (DEESS_*_RANGE.default). The mode set declares no default;
  * the stage comes up at `split`, the set's first member. */
 #define OMX_DEESSER_INSTANCE_FREQ_DEFAULT ((float)OMX_DEESS_FREQ_RANGE_DEFAULT)
+/** @brief The deessWidth port's default, octaves (DEESS_WIDTH_RANGE.default). */
 #define OMX_DEESSER_INSTANCE_WIDTH_DEFAULT ((float)OMX_DEESS_WIDTH_RANGE_DEFAULT)
+/** @brief The deessThreshold port's default, dB (DEESS_THRESHOLD_RANGE.default). */
 #define OMX_DEESSER_INSTANCE_THRESHOLD_DEFAULT ((float)OMX_DEESS_THRESHOLD_RANGE_DEFAULT)
+/** @brief The deessRatio port's default (DEESS_RATIO_RANGE.default). */
 #define OMX_DEESSER_INSTANCE_RATIO_DEFAULT ((float)OMX_DEESS_RATIO_RANGE_DEFAULT)
+/** @brief The deessRange port's default, dB (DEESS_RANGE_RANGE.default). */
 #define OMX_DEESSER_INSTANCE_RANGE_DEFAULT ((float)OMX_DEESS_RANGE_RANGE_DEFAULT)
+/** @brief The deessAttack port's default, ms (DEESS_ATTACK_RANGE.default). */
 #define OMX_DEESSER_INSTANCE_ATTACK_DEFAULT ((float)OMX_DEESS_ATTACK_RANGE_DEFAULT)
+/** @brief The deessRelease port's default, ms (DEESS_RELEASE_RANGE.default). */
 #define OMX_DEESSER_INSTANCE_RELEASE_DEFAULT ((float)OMX_DEESS_RELEASE_RANGE_DEFAULT)
+/** @brief The mode resolve() reads for a deessMode outside the set: `split`, the set's first member. */
 #define OMX_DEESSER_INSTANCE_MODE_DEFAULT OMX_DEESS_SPLIT
 
 /** One instance: the atom the host's ports resolve to and the kernel's inline state. */
@@ -68,7 +75,8 @@ typedef struct {
   /** The kernel's running state, carried from block to block and handed to its process with the atom. */
   struct omx_deess_state state;
   /** The clamped frequency and width the band was last designed from; `designed` 0 until the first. */
-  float freq, width;
+  float freq, width; ///< width: the clamped deessWidth, octaves, the band was last designed from.
+  /** Non-zero once resolve() designed the band; resolve() redesigns when it is 0 or the frequency or width moved. */
   int designed;
   /** Non-zero once init bound the instance to a usable rate; while zero, resolve() does nothing and run() leaves the output as the input. */
   int ready;

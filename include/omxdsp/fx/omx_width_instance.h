@@ -34,10 +34,15 @@
 /** @brief Audio legs in and out: TWO, a stereo pair. */
 #define OMX_WIDTH_INSTANCE_CHANNELS 2
 
+/** @brief One instance: the omx_width design, its state and the controls it was designed from. */
 typedef struct {
   /** The sample rate init bound the instance to, Hz. */
   float sr;
+  /** The width word's design as resolve() last made it (omx_width_design()); run() hands it to omx_width_process(). */
   struct omx_width p;
+  /** The width word's running state (its crossover and ring), carried from block to block and handed to
+   * omx_width_process() with the design; resolve() clears it on the engage edge, and otherwise the crossover when bass
+   * mono comes on and the ring when the pseudo-stereo mode or delay changes. */
   struct omx_width_state st;
   float wpct;  /**< widthPct as resolved */
   int pmode;   /**< pseudo as resolved, an OMX_WIDTH_PSEUDOS_* member */

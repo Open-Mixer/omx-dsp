@@ -44,8 +44,11 @@
 
 /** Port defaults: the declaration's (TREMOLO_*_RANGE.default), the mode the stage comes up at. */
 #define OMX_TREMOLO_INSTANCE_MODE_DEFAULT OMX_TREMOLO_MODE_TREMOLO
+/** @brief The rateHz port's default, Hz (TREMOLO_RATE_RANGE.default). */
 #define OMX_TREMOLO_INSTANCE_RATE_HZ_DEFAULT ((float)OMX_TREMOLO_RATE_RANGE_DEFAULT)
+/** @brief The depth port's default, percent (TREMOLO_DEPTH_RANGE.default). */
 #define OMX_TREMOLO_INSTANCE_DEPTH_DEFAULT ((float)OMX_TREMOLO_DEPTH_RANGE_DEFAULT)
+/** @brief The mix port's default, percent (TREMOLO_MIX_RANGE.default). */
 #define OMX_TREMOLO_INSTANCE_MIX_DEFAULT ((float)OMX_TREMOLO_MIX_RANGE_DEFAULT)
 
 /** One instance: the atom the host's ports resolve to and the oscillator it drives. */

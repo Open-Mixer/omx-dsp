@@ -75,8 +75,8 @@
 #include <omxdsp/omx_band_dyn.h>
 #include <omxdsp/omx_contract.h>
 
-/*
- * Where the reduction lands. Members, never merged — the same law mix_reverb.h's algorithms and
+/**
+ * @brief Where the reduction lands. Members, never merged — the same law mix_reverb.h's algorithms and
  * mix_drive.h's curves carry.
  *
  * SPLIT subtracts the reduced band from the signal: `y = x + (g-1)*B`. It reconstructs EXACTLY at
@@ -86,12 +86,12 @@
  * (the header note above), so what split leaves is a convex mix of x and that complement.
  */
 enum omx_deess_mode {
-  OMX_DEESS_SPLIT = 0,
-  OMX_DEESS_WIDEBAND = 1,
+  OMX_DEESS_SPLIT = 0,     /**< the reduced band is subtracted: `y = x + (g-1)*B` */
+  OMX_DEESS_WIDEBAND = 1,  /**< the whole signal takes the gain: `y = g*x` */
 };
 
-/*
- * The resolved control atom — built once per block by the caller from the word-atomic controls
+/**
+ * @brief The resolved control atom — built once per block by the caller from the word-atomic controls
  * (mixer_rt.c's resolve_fx_deess), exactly as resolve_dyn builds the comp's.
  *
  * `dyn` IS the comp's own resolved atom, carried whole rather than copied field by field: mode
@@ -105,6 +105,7 @@ enum omx_deess_mode {
 struct omx_deess {
   int enabled; /**< 0 -> the whole stage is a no-op: no sample and no state word is touched */
   int mode;    /**< enum omx_deess_mode */
+  /** The comp's resolved atom, whole: the gain computer (ABOVE mode, floored at range_db) and the detector's poles. */
   struct omx_dyn dyn;
   float bp_c[5]; /**< the detector band: one cookbook bandpass at freqHz, its Q from widthOct */
 };
@@ -123,17 +124,21 @@ struct omx_deess_state {
 _Static_assert(sizeof(struct omx_deess_state) == sizeof(float) * (OMX_DYN_ENV_STAGES + 9u),
                "de-esser state must stay plain inline floats - nothing to allocate");
 
-/** Clear one lane's de-esser state. CONTROL thread only.
+/** @brief Clear one lane's de-esser state: a memset of plain floats, safe on the audio thread
+ * (omx_reverb_instance_clear() calls it there; omx_deesser_instance_init() on the control thread).
+ * @param st The state to zero, every word.
  * @thread audio */
 static inline void omx_deess_state_init(struct omx_deess_state *st) { memset(st, 0, sizeof(*st)); }
 
-/*
- * THE STAGE'S LATENCY, in base-rate samples: ZERO, at every rate and in both modes, engaged or not.
+/**
+ * @brief THE STAGE'S LATENCY, in base-rate samples: ZERO, at every rate and in both modes, engaged or not.
  *
  * It is a function rather than a constant so that every reader asks the same question of the same
  * place — the drive's `omx_drive_latency` is a function for the opposite reason (its answer moves)
  * and the console's latency basis must not learn to treat the two differently. The value is proved
  * from an IMPULSE in mix_deesser.test.c, never read off this line.
+ * @param p The stage's atom; not read.
+ * @return 0.
  * @thread audio
  */
 static inline int omx_deess_latency(const struct omx_deess *p) {
@@ -141,18 +146,22 @@ static inline int omx_deess_latency(const struct omx_deess *p) {
   return 0;
 }
 
-/*
- * The GAIN (dB, <= 0) this stage applies at detector level `level` (linear, the cascade's last
+#undef OMX_CONTRACT_STAGE
+#define OMX_CONTRACT_STAGE "deess/gain-db"
+/**
+ * @brief The GAIN (dB, <= 0) this stage applies at detector level `level` (linear, the cascade's last
  * stage in the detector's own domain — omx_env_level()).
  *
  * The shared ABOVE characteristic, FLOORED at `range_db` and capped at 0 dB. Pulled out so the RT
  * loop and the GR readout (`publish_lane_gr`, mixer_rt.c) cannot compute it differently: the
  * meter's whole claim is that it re-runs the SAME gain computer on the SAME level the last sample
  * used, and a second transcription is how a meter and a stage quietly stop agreeing.
+ * @param p The stage's atom; its `dyn.gc` is the gain computer.
+ * @param level The detector level, linear.
+ * @return The gain, dB, 0 or negative.
+ * @post The gain is finite and not above 0 dB.
  * @thread audio
  */
-#undef OMX_CONTRACT_STAGE
-#define OMX_CONTRACT_STAGE "deess/gain-db"
 static inline float omx_deess_gain_db(const struct omx_deess *p, float level) {
   float g = omx_band_dyn_offset_db(&p->dyn.gc, level);
   g = g > 0.0f ? 0.0f : g;
@@ -162,8 +171,10 @@ static inline float omx_deess_gain_db(const struct omx_deess *p, float level) {
 }
 #undef OMX_CONTRACT_STAGE
 
-/*
- * Apply one lane's de-esser to its leg(s) IN PLACE.
+#undef OMX_CONTRACT_STAGE
+#define OMX_CONTRACT_STAGE "deesser"
+/**
+ * @brief Apply one lane's de-esser to its leg(s) IN PLACE.
  *
  * `l` is always driven; `r` may be NULL (mono) or the second leg. ONE detector, ONE gain, both
  * legs — a stereo strip's image never shifts under de-essing.
@@ -180,10 +191,14 @@ static inline float omx_deess_gain_db(const struct omx_deess *p, float level) {
  * toward its band-notched complement by that much (split), and nothing else. So its laws are about
  * the coefficient's BOUND and about the state staying finite — the peak law needs the input peak,
  * which this function overwrites in place, so it is stated by the test battery around the call.
+ * @param l The left (or only) leg, `n` samples, processed in place.
+ * @param r The right leg, `n` samples, in place; NULL for a mono lane.
+ * @param n The block length, samples.
+ * @param p The stage's atom; `enabled` 0 leaves signal and state untouched.
+ * @param st The lane's state, advanced by the block when the stage is enabled.
+ * @pre When enabled: `dyn.gc.range_db` is 0 or negative and `dyn.gc.mode` is OMX_DYN_ABOVE.
  * @thread audio
  */
-#undef OMX_CONTRACT_STAGE
-#define OMX_CONTRACT_STAGE "deesser"
 static inline void omx_deess_process(float *l, float *r, uint32_t n, const struct omx_deess *p,
                                      struct omx_deess_state *st) {
   /* The config preconditions sit BEHIND the enable gate for the reason R-056 found on the drive

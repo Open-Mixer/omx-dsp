@@ -48,11 +48,14 @@
 
 /** The DJ filter's ends, Hz: TONE_FILTER_LOW_HZ and TONE_FILTER_HIGH_HZ. */
 #define OMX_TONE_INSTANCE_LOW_HZ ((double)OMX_TONE_FILTER_LOW_HZ)
+/** @brief The DJ filter's top end, Hz: TONE_FILTER_HIGH_HZ. */
 #define OMX_TONE_INSTANCE_HIGH_HZ ((double)OMX_TONE_FILTER_HIGH_HZ)
 
+/** @brief One instance: the tilt and the DJ filter as resolved, and each one's history per leg. */
 typedef struct {
   /** The sample rate init bound the instance to, Hz. */
   float sr;
+  /** The tilt's shelf pair, designed by resolve() from span_db and pivot_hz while the tilt is not flat. */
   struct omx_tilt tilt;
   double fc[5];       /**< the filter's section, `{b0, b1, b2, a1, a2}` */
   double ts[2][4];    /**< the tilt's history per leg */
@@ -75,6 +78,8 @@ typedef struct {
  * `TONE_FILTER_HIGH_HZ x (TONE_FILTER_LOW_HZ / TONE_FILTER_HIGH_HZ)^(-filter/100)`; above 0 the
  * high-pass, `TONE_FILTER_LOW_HZ x (TONE_FILTER_HIGH_HZ / TONE_FILTER_LOW_HZ)^(filter/100)`. Its
  * logarithm is linear in the word on each side. 0 returns 0 (open). RT-safe: one exp. Pure.
+ * @param filter The filter word, -100 to 100.
+ * @return The corner, Hz; 0 for a word of 0.
  * @thread audio
  */
 static inline double omx_tone_filter_hz(double filter) {
@@ -153,6 +158,9 @@ static inline void omx_tone_instance_resolve(OmxToneInstance *s, int bypass, flo
  * The face's magnitude at `freq_hz` as resolved, below Nyquist: the tilt's closed form
  * (omx_tilt_magnitude) times the filter section's `|H(e^jw)|`. What a host draws; 1 when flat and
  * open. RT-safe: a few trig calls. Thread-safe: reads `s`.
+ * @param s The instance; null or not ready reads 1.
+ * @param freq_hz The frequency, Hz, below Nyquist.
+ * @return The linear magnitude at `freq_hz`.
  * @thread audio
  */
 static inline double omx_tone_instance_magnitude(const OmxToneInstance *s, double freq_hz) {

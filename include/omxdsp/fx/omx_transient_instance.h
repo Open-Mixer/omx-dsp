@@ -64,12 +64,22 @@ typedef struct {
   struct omx_transient_state state;
   /** The clamped controls the atom was last resolved from; `resolved` 0 until the first. */
   float attack_db, sustain_db, attack_time_ms, sustain_time_ms, output_db;
+  /** Non-zero once resolve() ran the kernel's resolve; 0 until the first, which runs whatever the controls hold. */
   int resolved;
   /** The previous cycle's engaged flag, so a bypass->engaged edge can clear the state. */
   int was_engaged;
   /** Non-zero once init bound the instance to a usable rate; while zero, resolve() does nothing and run() leaves the output as the input. */
   int ready;
 } OmxTransientInstance;
+
+/** @var OmxTransientInstance::sustain_db
+ * sustainDb as last resolved, dB, -24 to 24. */
+/** @var OmxTransientInstance::attack_time_ms
+ * attackTimeMs as last resolved, ms, 2 to 50. */
+/** @var OmxTransientInstance::sustain_time_ms
+ * sustainTimeMs as last resolved, ms, 50 to 2000. */
+/** @var OmxTransientInstance::output_db
+ * outputDb as last resolved, dB, -24 to 12. */
 
 /**
  * Bind an instance to its rate. Returns 1 when usable, 0 when not: the rate must be one of the
@@ -173,12 +183,16 @@ static inline void omx_transient_instance_run(OmxTransientInstance *s, const flo
 #undef OMX_CONTRACT_STAGE
 
 /** The attackGainDb readout: the onset share of the last sample's gain, dB; 0 for a refused instance.
+ * @param s The instance; null or not ready reads 0.
+ * @return The kernel state's attack_gain_db, dB.
  * @thread audio */
 static inline float omx_transient_instance_attack_gain_db(const OmxTransientInstance *s) {
   return s && s->ready ? s->state.attack_gain_db : 0.0f;
 }
 
 /** The sustainGainDb readout: the decay share of the last sample's gain, dB; 0 for a refused instance.
+ * @param s The instance; null or not ready reads 0.
+ * @return The kernel state's sustain_gain_db, dB.
  * @thread audio */
 static inline float omx_transient_instance_sustain_gain_db(const OmxTransientInstance *s) {
   return s && s->ready ? s->state.sustain_gain_db : 0.0f;
