@@ -3,7 +3,7 @@
 # Copyright (C) 2026 Pau Aliagas <linuxnow@gmail.com>
 #
 # clipper_instance-perturb.sh — test/fx/clipper_instance.test.c sees each moved declaration of the clipper face and each
-# defect of its word. Each sabotage is applied to a COPY of the include directory placed ahead of the real
+# defect of its word (omx_clipper.h, the kernel's block both faces run). Each sabotage is applied to a COPY of the include directory placed ahead of the real
 # one, and the oracle built against it must go red in the named arm:
 #   span — CLIPPER_KNEE_SPAN moved from 0.5 to 0.4: arm C;
 #   hard — the straight line ends early: arm B;
@@ -47,15 +47,15 @@ sabotage() { # <name> <header under include/omxdsp> <sed expression> <arm>...
 
 sabotage span omxdsp_definitions.h 's|^#define OMX_CLIPPER_KNEE_SPAN 0.5f$|#define OMX_CLIPPER_KNEE_SPAN 0.4f|' C &
 pids+=($!)
-sabotage hard fx/omx_clipper_instance.h 's|  if (m <= a) return u;|  if (m <= a * 0.9f) return u;|' B &
+sabotage hard omx_clipper.h 's|  if (m <= a) return u;|  if (m <= a * 0.9f) return u;|' B &
 pids+=($!)
-sabotage bend fx/omx_clipper_instance.h 's|a + room \* d / (d + room) : c;|a + room * d / (d + 2.0f * room) : c;|' C &
+sabotage bend omx_clipper.h 's|a + room \* d / (d + room) : c;|a + room * d / (d + 2.0f * room) : c;|' C &
 pids+=($!)
-sabotage sign fx/omx_clipper_instance.h 's|  return u < 0.0f ? -y : y;|  return y;|' B C &
+sabotage sign omx_clipper.h 's|  return u < 0.0f ? -y : y;|  return y;|' B C &
 pids+=($!)
-sabotage drive fx/omx_clipper_instance.h 's|  const float g = s->drive_lin, c = s->ceiling_lin|  const float g = 1.0f, c = s->ceiling_lin|' B &
+sabotage drive omx_clipper.h 's|  const float g = drive_lin, c = ceiling_lin|  const float g = 1.0f, c = ceiling_lin|' B &
 pids+=($!)
-sabotage readout fx/omx_clipper_instance.h 's|omx_lin_to_db(kept / over) : 0.0f|0.5f * omx_lin_to_db(kept / over) : 0.0f|' D &
+sabotage readout omx_clipper.h 's|omx_lin_to_db(kept / over) : 0.0f|0.5f * omx_lin_to_db(kept / over) : 0.0f|' D &
 pids+=($!)
 sabotage bypass fx/omx_clipper_instance.h 's#  s->enabled = !bypass;#  s->enabled = !bypass || 1;#' A &
 pids+=($!)
