@@ -44,16 +44,23 @@
 
 #include <omxdsp/analysis/omx_hrp_pitch.h>
 
+/** @brief How many voices one tracker follows at once: one slot per voice the detector can report. */
 #define OMX_HRP_MAX_TRACKS OMX_HRP_MAX_VOICES
 
-/** One voice followed across frames. */
+/** @brief One voice followed across frames. */
 typedef struct {
   uint32_t id; /**< stable while the voice lives; never reused within a session */
+  /** The fundamental, Hz: the latest detection that matched or opened the track, folded into its own octave while an
+   *  octave flip is held. */
   float f0_hz;
+  /** The matched voice's `confidence` (0..1) from the latest frame that found it. */
   float confidence;
   float salience; /**< the voice's share of the pitched content — carried, never re-derived */
+  /** The matched voice's `amplitude_db` (dBFS of its strongest partial) from the latest frame that found it. */
   float amplitude_db;
+  /** The nearest equal-tempered note to `f0_hz`, A4 = 69. */
   int midi_note;
+  /** Signed distance of `f0_hz` from `midi_note`, cents, -50..+50. */
   float cents;
   /** Frames this voice has held its CURRENT note. Reset by a note change, not by a wobble. */
   uint32_t age_frames;
@@ -62,21 +69,26 @@ typedef struct {
   uint32_t missing_frames;
   /** §13: has this note held long enough to be acted on? The correction tier reads THIS. */
   int stable;
+  /** 1 while the slot follows a voice; 0 is a free slot (a retired track is zeroed). */
   int active;
   /** Consecutive frames the detector reported this note ONE OCTAVE away (see the fold in
    *  omx_hrp_track_update()), and which side (+1 above / −1 below). Crossing
    *  {@link OmxHrpTrackConfig.octave_hold_frames} migrates the track — a real leap. */
   uint32_t octave_frames;
+  /** The side `octave_frames` counts: +1 above, -1 below, 0 when no octave report is being counted. */
   int octave_dir;
 } OmxHrpTrack;
 
-/** Every voice the desk is currently following on one channel. */
+/** @brief Every voice the desk is currently following on one channel. */
 typedef struct {
+  /** The track slots, in no ranking order; a slot whose `active` is 0 is free. */
   OmxHrpTrack tracks[OMX_HRP_MAX_TRACKS];
+  /** The id the next new voice takes: 1 after omx_hrp_tracker_init(), raised by one per new voice; 0 is never
+   *  an id. */
   uint32_t next_id;
 } OmxHrpTracker;
 
-/** The tracker's thresholds. Every field is read by omx_hrp_track_update, which refuses a config
+/** @brief The tracker's thresholds. Every field is read by omx_hrp_track_update, which refuses a config
  *  whose `match_cents` or `steady_cents` is not finite and above 0. */
 typedef struct {
   /** How far a voice may move between frames and still be the SAME voice. A fifth by default:
@@ -96,15 +108,20 @@ typedef struct {
   uint32_t octave_hold_frames;
 } OmxHrpTrackConfig;
 
-/** 1 when `cfg` is a config omx_hrp_track_update accepts: non-NULL, `match_cents` and `steady_cents`
+/** @brief 1 when `cfg` is a config omx_hrp_track_update accepts: non-NULL, `match_cents` and `steady_cents`
  * finite and above 0. A caller that cannot report a refused update mid-stream checks this once up front.
+ * @param cfg The config; NULL is not valid.
+ * @return 1 when valid, else 0.
  * @thread worker */
 static inline int omx_hrp_track_config_valid(const OmxHrpTrackConfig *cfg) {
   return cfg && isfinite(cfg->match_cents) && cfg->match_cents > 0.0f && isfinite(cfg->steady_cents) &&
          cfg->steady_cents > 0.0f;
 }
 
-/** @thread worker */
+/** @brief The tracker's default thresholds: match 700 cents, steady 60 cents, promote after 3 frames, retire
+ *  after 6 missed frames, an octave leap after 4 frames.
+ * @return The default config.
+ * @thread worker */
 static inline OmxHrpTrackConfig omx_hrp_track_config_default(void) {
   OmxHrpTrackConfig c;
   c.match_cents = 700.0f;  /* a fifth */
@@ -119,15 +136,20 @@ static inline OmxHrpTrackConfig omx_hrp_track_config_default(void) {
   return c;
 }
 
-/** @thread worker */
+/** @brief An empty tracker: every slot free, the next id 1.
+ * @param t The tracker to clear; non-NULL (it is written unchecked).
+ * @thread worker */
 static inline void omx_hrp_tracker_init(OmxHrpTracker *t) {
   memset(t, 0, sizeof(*t));
   t->next_id = 1; /* 0 is "no track", so identities start at one */
 }
 
-/** Distance between two pitches, in cents. Musical distance, not hertz: a 10 Hz move is nothing
+/** @brief Distance between two pitches, in cents. Musical distance, not hertz: a 10 Hz move is nothing
  *  at 2 kHz and a minor third at 40 Hz, and a tracker that used hertz would follow the top of the
  *  range and lose the bottom of it.
+ * @param a_hz One pitch, Hz.
+ * @param b_hz The other pitch, Hz.
+ * @return `|1200·log2(a_hz/b_hz)|`, cents; 1e9 when either pitch is not above 0.
  * @thread worker */
 static inline float omx_hrp_cents_between(float a_hz, float b_hz) {
   if (!(a_hz > 0.0f) || !(b_hz > 0.0f)) return 1e9f;
@@ -292,7 +314,7 @@ static inline int omx_hrp_track_update(OmxHrpTracker *tracker, const OmxHrpVoice
 }
 
 /**
- * The tracker as a VOICE SET — the one projection both HRP tiers marshal through.
+ * @brief The tracker as a VOICE SET — the one projection both HRP tiers marshal through.
  *
  * Everything downstream of tracking (attribution, learning, the N-API result, the offline
  * report) works on an `OmxHrpVoiceSet`, so the tracker has to be read out as one. This is that
@@ -312,6 +334,9 @@ static inline int omx_hrp_track_update(OmxHrpTracker *tracker, const OmxHrpVoice
  *
  * The output is zeroed first, so the caller declares nothing and every unused slot — voice and
  * `by_slot` entry alike — is a zero rather than whatever the stack held.
+ * @param tracker The tracker; NULL leaves `out` empty.
+ * @param out The voice set, zeroed then filled; NULL does nothing.
+ * @param by_slot NULL, or `OMX_HRP_MAX_VOICES` entries: `by_slot[i]` is the track behind `out->voices[i]`.
  * @thread worker
  */
 static inline void omx_hrp_project_voices(const OmxHrpTracker *tracker, OmxHrpVoiceSet *out,
@@ -337,8 +362,11 @@ static inline void omx_hrp_project_voices(const OmxHrpTracker *tracker, OmxHrpVo
   }
 }
 
-/** The track carrying `id`, or NULL. Identity is the point of this module, so looking one up by
+/** @brief The track carrying `id`, or NULL. Identity is the point of this module, so looking one up by
  *  identity — rather than by slot, which moves — is how every caller should reach it.
+ * @param tracker The tracker; non-NULL.
+ * @param id The identity looked for; 0 finds nothing.
+ * @return The active track whose `id` is `id`, or NULL.
  * @thread worker */
 static inline const OmxHrpTrack *omx_hrp_track_by_id(const OmxHrpTracker *tracker, uint32_t id) {
   if (id == 0) return NULL;
@@ -348,7 +376,9 @@ static inline const OmxHrpTrack *omx_hrp_track_by_id(const OmxHrpTracker *tracke
   return NULL;
 }
 
-/** How many voices are being followed right now.
+/** @brief How many voices are being followed right now.
+ * @param tracker The tracker; non-NULL.
+ * @return The number of active tracks.
  * @thread worker */
 static inline uint32_t omx_hrp_track_count(const OmxHrpTracker *tracker) {
   uint32_t n = 0;

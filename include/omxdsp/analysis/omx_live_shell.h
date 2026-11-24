@@ -27,6 +27,7 @@
  * @param in The input block.
  * @param out The output block; may be `in`.
  * @param n Frames.
+ * @post `out` equals `in` byte for byte ("bit-exact").
  * @thread audio
  */
 static inline void omx_live_pass_through(const float *in, float *out, uint32_t n) {
@@ -35,12 +36,15 @@ static inline void omx_live_pass_through(const float *in, float *out, uint32_t n
 }
 #undef OMX_CONTRACT_STAGE
 
-/** A shell's feed: the analysis ring, the frames written and consumed, the passes asked and answered. */
+/** @brief A shell's feed: the analysis ring, the frames written and consumed, the passes asked and answered. */
 typedef struct {
-  struct omx_ring ring;
-  _Atomic uint64_t written;
+  struct omx_ring ring;       /**< the analysis ring the audio thread writes each input block into (omx_live_feed()) */
+  _Atomic uint64_t written;   /**< frames written to `ring`, counted by omx_live_feed() with release order */
+  /** Frames the worker's passes have consumed, advanced one hop per omx_live_take(); a reader the writer has
+   *  lapped jumps it forward to the newest whole hop. */
   _Atomic uint64_t consumed;
-  _Atomic uint32_t asked;
+  _Atomic uint32_t asked;     /**< passes asked for, counted by omx_live_count(); wraps at 2^32 */
+  /** Passes answered, counted by omx_live_count(); a pass is in flight while it differs from `asked`. */
   _Atomic uint32_t answered;
 } OmxLiveFeed;
 

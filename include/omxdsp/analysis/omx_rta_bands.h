@@ -30,40 +30,61 @@
 
 #include <omxdsp/omxdsp_definitions.h>
 
-/** One tier of a reading: linear magnitudes (bin 0 = DC) and the transform that produced them. */
+/** @brief One tier of a reading: linear magnitudes (bin 0 = DC) and the transform that produced them. */
 struct omx_rta_tier {
-  const float *mags;
-  uint32_t bins;
-  double rate;
-  uint32_t fft_size;
+  const float *mags; /**< the linear magnitudes, `bins` of them; bin k sits at `k · rate / fft_size` Hz */
+  uint32_t bins;     /**< how many entries `mags` holds; bin `bins - 1` is the highest a band reads */
+  double rate;       /**< the sample rate the transform ran at, Hz */
+  uint32_t fft_size; /**< the length of the FFT that produced `mags` */
 };
 
-/** One band: its geometric centre (Hz), the RMS across its bins and its loudest bin (dBFS; silence is -INFINITY). */
+/** @brief One band: its geometric centre (Hz), the RMS across its bins and its loudest bin (dBFS; silence is
+ *  -INFINITY). */
 struct omx_rta_band {
-  double hz;
-  double db;
-  double peak_db;
+  double hz;      /**< the band's geometric centre, Hz */
+  double db;      /**< the RMS across its bins, dBFS, plus the low-tier gain when the low tier answered it;
+                       -INFINITY for silence or when no band of the reading reaches the gate */
+  double peak_db; /**< its loudest bin, dBFS, never level-corrected; -INFINITY as for `db` */
 };
 
-/** The highest frequency a band covers at `rate`: OMX_RTA_BAND_F_MAX_CAP, or the Nyquist where that is lower. @thread control */
+/** @brief The highest frequency a band covers at `rate`: OMX_RTA_BAND_F_MAX_CAP, or the Nyquist where that is lower.
+ * @param rate The sample rate, Hz.
+ * @return The top band edge, Hz.
+ * @thread control */
 static inline double omx_rta_band_f_max(double rate) {
   const double nyquist = rate / 2.0;
   return (double)OMX_RTA_BAND_F_MAX_CAP < nyquist ? (double)OMX_RTA_BAND_F_MAX_CAP : nyquist;
 }
 
-/** The dB that level-matches a low-tier band to the high tier: the bin-density ratio; 0 for a degenerate tier. @thread control */
+/** @brief The dB that level-matches a low-tier band to the high tier: the bin-density ratio; 0 for a degenerate
+ *  tier.
+ * @param high The high (full-rate) tier.
+ * @param low The low (decimated) tier.
+ * @return `10·log10((low fft_size / low rate) / (high fft_size / high rate))`, dB; 0 when that ratio is not
+ *         finite and above 0.
+ * @thread control */
 static inline double omx_rta_low_gain_db(const struct omx_rta_tier *high, const struct omx_rta_tier *low) {
   const double ratio = (double)low->fft_size / low->rate / ((double)high->fft_size / high->rate);
   if (!isfinite(ratio) || ratio <= 0.0) return 0.0;
   return 10.0 * log10(ratio);
 }
 
-/** Linear amplitude to dB, silence as -INFINITY: the twin's linearGainToDb. @thread control */
+/** @brief Linear amplitude to dB, silence as -INFINITY: the twin's linearGainToDb.
+ * @param lin The linear amplitude.
+ * @return `20·log10(lin)`, or -INFINITY when `lin` is 0 or below.
+ * @thread control */
 static inline double omx_rta_band_db(double lin) {
   return lin <= 0.0 ? -INFINITY : 20.0 * log10(lin);
 }
 
-/** RMS and peak (linear) of `tier` over the bins covering [f0, f1); a band spanning none samples the nearest. @thread control */
+/** @brief RMS and peak (linear) of `tier` over the bins covering [f0, f1); a band spanning none samples the
+ *  nearest.
+ * @param tier The tier read.
+ * @param f0 The band's lower edge, Hz.
+ * @param f1 The band's upper edge, Hz.
+ * @param rms The RMS of the bins read, linear, out.
+ * @param peak The largest bin read, linear, out.
+ * @thread control */
 static inline void omx_rta_band_stats(const struct omx_rta_tier *tier, double f0, double f1, double *rms, double *peak) {
   const int64_t last = (int64_t)tier->bins - 1;
   int64_t i0 = (int64_t)floor(f0 * tier->fft_size / tier->rate);
@@ -83,7 +104,13 @@ static inline void omx_rta_band_stats(const struct omx_rta_tier *tier, double f0
   *peak = top;
 }
 
-/** Reduce `high` (and `low` under the crossover, when not NULL) to `n` bands into `out`; the count written. @thread control */
+/** @brief Reduce `high` (and `low` under the crossover, when not NULL) to `n` bands into `out`; the count written.
+ * @param high The full-rate tier.
+ * @param low The decimated tier read for bands centred under OMX_RTA_TIER_CROSSOVER_HZ, or NULL.
+ * @param n How many bands.
+ * @param out The bands, `n` of them, lowest first.
+ * @return `n`; 0 when `n` is 0.
+ * @thread control */
 static inline uint32_t omx_rta_bands(const struct omx_rta_tier *high, const struct omx_rta_tier *low, uint32_t n,
                                      struct omx_rta_band *out) {
   if (n < 1u) return 0u;
@@ -114,19 +141,27 @@ static inline uint32_t omx_rta_bands(const struct omx_rta_tier *high, const stru
  * its arithmetic, read in dB. Its TypeScript twin is ts/src/rta.ts bandDelta, held to it by vectors/rta-delta.json.
  */
 
-/** One wedge: bands `band` and `band + 1`, a boost or a cut, and its strength, 0 to 1. */
+/** @brief One wedge: bands `band` and `band + 1`, a boost or a cut, and its strength, 0 to 1. */
 struct omx_rta_wedge {
-  uint32_t band;
-  int boost;
-  double strength;
+  uint32_t band;   /**< the lower band of the pair; the wedge spans `band` and `band + 1` */
+  int boost;       /**< 1 when the pair's two differences sum to 0 or more (a boost), 0 for a cut */
+  double strength; /**< the pair's larger |difference| over the EQ gain limit, clamped to 0..1 */
 };
 
 /**
- * POST − PRE of n bands' levels (`db`): diff[i] in dB, NAN where either band is silent (-INFINITY). Then the wedges,
+ * @brief POST − PRE of n bands' levels (`db`): diff[i] in dB, NAN where either band is silent (-INFINITY).
+ * Then the wedges,
  * one per pair of neighbouring bands whose larger |difference| reaches OMX_RTA_DELTA_DEADBAND_DB, none across a silent
  * band: a boost when the pair's two differences sum to zero or more, else a cut, its strength the larger |difference|
  * over the EQ's own gain limit (omx-contract's EQ_GAIN_RANGE maximum), clamped to 1. `wedges` holds n − 1; returns how
- * many it wrote. @thread control
+ * many it wrote.
+ * @param pre The PRE bands, `n` of them.
+ * @param post The POST bands, `n` of them.
+ * @param n How many bands.
+ * @param diff The per-band differences out, `n` doubles, dB (NAN across a silent band).
+ * @param wedges The wedges out, room for `n - 1`.
+ * @return How many wedges were written.
+ * @thread control
  */
 static inline uint32_t omx_rta_band_delta(const struct omx_rta_band *pre, const struct omx_rta_band *post, uint32_t n,
                                           double *diff, struct omx_rta_wedge *wedges) {

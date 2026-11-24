@@ -47,15 +47,20 @@
 
 #include <omxdsp/analysis/omx_hrp_attribute.h>
 
-/** MIDI note range the model spans — the full byte, so no playable note falls outside it. */
+/** @brief MIDI note range the model spans — the full byte, so no playable note falls outside it. */
 #define OMX_HRP_BASELINE_NOTES 128
 
-/** One channel's learned model: a level and an update count per (note, harmonic). */
+/** @brief One channel's learned model: a level and an update count per (note, harmonic). */
 typedef struct {
+  /** The learned level per [MIDI note][harmonic - 1], dB, in the unit of the `level_db` values
+   *  omx_hrp_baseline_learn() is given; seeded by the first one, then moved by at most `step_db` each. */
   float base_db[OMX_HRP_BASELINE_NOTES][OMX_HRP_HARMONICS];
+  /** Accepted measurements per [MIDI note][harmonic - 1], saturating at UINT16_MAX; 0 is nothing learned,
+   *  and the row answers once it reaches `ripe_updates`. */
   uint16_t updates[OMX_HRP_BASELINE_NOTES][OMX_HRP_HARMONICS];
 } OmxHrpBaseline;
 
+/** @brief How the baseline learns: the bound on one step and the count that makes a row ripe. */
 typedef struct {
   /** The most one accepted measurement may move a learned level, in dB. */
   float step_db;
@@ -63,9 +68,10 @@ typedef struct {
   uint16_t ripe_updates;
 } OmxHrpBaselineConfig;
 
-/** step 0.5 dB / ripe 24: at the ~100 ms analysis tick, a note must hold (stable, confident,
+/** @brief The default config, step 0.5 dB / ripe 24: at the ~100 ms analysis tick, a note must hold (stable, confident,
  *  unambiguous) for ~2.4 s in total before its baseline speaks — soundcheck listening, not a
  *  snap judgement — and after that a full outlier costs half a decibel.
+ * @return `step_db` 0.5, `ripe_updates` 24.
  * @thread worker */
 static inline OmxHrpBaselineConfig omx_hrp_baseline_config_default(void) {
   OmxHrpBaselineConfig c;
@@ -74,11 +80,15 @@ static inline OmxHrpBaselineConfig omx_hrp_baseline_config_default(void) {
   return c;
 }
 
-/** Empty model: nothing learned, every row unripe. Also the §51 reset.
+/** @brief Empty model: nothing learned, every row unripe. Also the §51 reset.
+ * @param b The model to clear; non-NULL.
  * @thread worker */
 static inline void omx_hrp_baseline_init(OmxHrpBaseline *b) { memset(b, 0, sizeof(*b)); }
 
-/** How many (note, harmonic) rows currently answer — the "what has it learned" readout.
+/** @brief How many (note, harmonic) rows currently answer — the "what has it learned" readout.
+ * @param b The model; non-NULL.
+ * @param cfg The config whose `ripe_updates` decides ripeness; non-NULL.
+ * @return The number of rows whose `updates` count is at least `ripe_updates`.
  * @thread worker */
 static inline uint32_t omx_hrp_baseline_ripe_rows(const OmxHrpBaseline *b,
                                                   const OmxHrpBaselineConfig *cfg) {
@@ -90,10 +100,15 @@ static inline uint32_t omx_hrp_baseline_ripe_rows(const OmxHrpBaseline *b,
 }
 
 /**
- * Accept one gated measurement of harmonic `harmonic` (1-based; harmonic 1 IS the fundamental)
+ * @brief Accept one gated measurement of harmonic `harmonic` (1-based; harmonic 1 IS the fundamental)
  * of the note `midi_note`, at `level_db`. The caller has already applied §21's gates; a note or
  * harmonic outside the model is ignored rather than clamped — clamping would file a piccolo's
  * overflow under the highest note the model holds, which is a different note.
+ * @param b The model; non-NULL.
+ * @param midi_note The note, 0..OMX_HRP_BASELINE_NOTES-1; outside it the call does nothing.
+ * @param harmonic The harmonic, 1..OMX_HRP_HARMONICS; outside it the call does nothing.
+ * @param level_db The measured level, dB: the row's value on its first update, else a target moved toward.
+ * @param cfg The config whose `step_db` bounds the move; non-NULL.
  * @thread worker
  */
 static inline void omx_hrp_baseline_learn(OmxHrpBaseline *b, int midi_note, uint32_t harmonic,
@@ -115,8 +130,14 @@ static inline void omx_hrp_baseline_learn(OmxHrpBaseline *b, int midi_note, uint
 }
 
 /**
- * The learned level for (note, harmonic), when it is RIPE. Returns 1 and fills `out_db`, or
+ * @brief The learned level for (note, harmonic), when it is RIPE. Returns 1 and fills `out_db`, or
  * returns 0 — no baseline, and the caller does nothing (§54).
+ * @param b The model; non-NULL.
+ * @param midi_note The note, 0..OMX_HRP_BASELINE_NOTES-1; outside it there is no baseline.
+ * @param harmonic The harmonic, 1..OMX_HRP_HARMONICS; outside it there is no baseline.
+ * @param cfg The config whose `ripe_updates` decides ripeness; non-NULL.
+ * @param out_db The learned level, dB; written only when the call returns 1.
+ * @return 1 when the row is ripe and `out_db` was written, else 0.
  * @thread worker
  */
 static inline int omx_hrp_baseline_read(const OmxHrpBaseline *b, int midi_note, uint32_t harmonic,
