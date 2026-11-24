@@ -53,7 +53,7 @@ sabotage bend omx_clipper.h 's|a + room \* d / (d + room) : c;|a + room * d / (d
 pids+=($!)
 sabotage sign omx_clipper.h 's|  return u < 0.0f ? -y : y;|  return y;|' B C &
 pids+=($!)
-sabotage drive omx_clipper.h 's|  const float g = drive_lin, c = ceiling_lin|  const float g = 1.0f, c = ceiling_lin|' B &
+sabotage drive omx_clipper.h 's|  const float g = drive_lin, c = ceiling_lin|  const float g = 1.0f + 0.0f * drive_lin, c = ceiling_lin|' B &
 pids+=($!)
 sabotage readout omx_clipper.h 's|omx_lin_to_db(kept / over) : 0.0f|0.5f * omx_lin_to_db(kept / over) : 0.0f|' D &
 pids+=($!)
