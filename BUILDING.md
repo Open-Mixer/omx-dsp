@@ -22,6 +22,7 @@ Needs a C11 compiler, GNU make, binutils, awk, sed, grep and diffutils.
 | `make copy-check` | `tools/omx-dsp-copy-check.sh --self-test`: planted copies in a scratch consumer (an exact copy, a renamed one, a TypeScript twin, a literal copy, inline kernels) must be found, a legitimate caller, boilerplate, tests and fakes must pass, and a stale or reasonless allowlist entry must fail; then each rule is broken in turn and the self-test must go red (part of `make test`, which runs it alone before everything else, so no parallel job runs beside it) |
 | `make lint` | the doc check, the source scan, the log10f guard, tools/contract-single-source.sh (no name omx-contract defines is defined again here), tools/face-conformance.sh (every instance face's resolve takes its kernel's contract controls by name, order and kind), tools/travel-grid-check.sh (a travel's step reaches its maximum and default, a choice names its ids) and tools/clone-check.sh (a second copy of a body inside the library goes red); each checks its own sabotage |
 | `make test-tsan` | the thread arm under ThreadSanitizer, where the toolchain has it |
+| `make rtsan` | the per-block entry points under clang's RealtimeSanitizer, after a self-test that must see a planted blocking call (below); a dev tool, not part of `make test`, `CHECK_PACKAGE` or CI |
 | `make rt-gate` | omx-rt-gate, the one static real-time gate (`omx-rt-gate(1)`): its class table measured by the externals arm, its planted fixtures read red at their place and path and their clean twins green, its load refusals, the `@thread` tag of every function of the shipped headers under three sets of flags, the self-run (every tagged audio and worker function a root, joined to the compiled units' graphs, nothing red), and the installed gate judging a consumer joined to the shipped graphs; `make rt-gate-sabotage` breaks each guard in turn (part of `make test`) |
 | `make engine-kernels-identity OPENMIXER=<checkout>` | renders those digests again through the copies OpenMixer's engine still carries (`mix_src.h`, `mix_dsp.h`), and checks that each of its sabotages goes red; a desk check, not run in CI |
 | `make test-mix` | the mix module's golden digests at the nine oracle rates (`test/golden/mix.sha256`, written by the engine's own copies), and a break in each kernel and in each of the bus stages' contract checks that must turn its arm red; alone |
@@ -327,6 +328,38 @@ into a scratch directory, `make test`, and the kernel test that reads that value
 Moving the range is one commit of its own, in the spec and `debian/control` together. A value the
 kernels need is added to its definition in `data/` and the header rendered again; it is never typed
 in the code.
+
+## RealtimeSanitizer
+
+`make rtsan` (`tools/rtsan/rtsan.sh`) asks clang's RealtimeSanitizer whether any per-block entry point allocates,
+locks, sleeps or makes another unsafe libc or system call while the oracles run. It never edits the tree: it copies
+the tree (without `build/`) under `build/rtsan/`, and `tools/rtsan/annotate.py` marks `__attribute__((nonblocking))`
+on the copy's `static inline` definitions of `omx_*_{process*,run,run_keyed,block,render,render_window,render_network}`,
+skipping init, reset, size and validity queries and the reading helpers (the script's docstring lists the names).
+It needs clang with compiler-rt's rtsan runtime (Fedora: `dnf install clang compiler-rt llvm`); without it the run
+stops with `rtsan: UNJUDGED: no clang rtsan runtime`, exit 2, never a pass.
+
+1. Self-test: a second copy, marked and with a `usleep(1)` planted in `omx_gate_run`, runs the gate kernel test
+   (`fx-run-kernel-gate`). RTSan must report `usleep` with `omx_gate_run` on its stack (the run keeps `-g`); otherwise `rtsan: FAIL the sanitizer saw nothing it
+   should have`, and no clean result is claimed.
+2. The run: the marked copy builds and runs `fx-oracles mix-golden analysis-oracles engine-kernels-golden consumer`
+   and `suite` with `CC=clang CFLAGS="-Wall -O1 -fsanitize=realtime -g -fno-omit-frame-pointer -Wno-function-effects
+   -Wno-error" FASTMATH=off`, `make -k`, under
+   `RTSAN_OPTIONS=halt_on_error=false:abort_on_error=false:suppress_equal_stacks=true`. Each target prints its exit
+   and its report count; any report, or a target that does not exit 0, is red. The suite's exit is printed but not
+   judged: under clang -O1 four `clampf`/`clamp_or` checks fail on a signed zero, a separate item; its reports are
+   judged, and its summary line must print. Logs and `RESULT.txt` stay in `build/rtsan/`; `RTSAN_JOBS` (default 4)
+   sizes `make -j`, `RTSAN_CC` names the compiler.
+
+What it cannot see:
+
+- Only the paths the tests execute. Set-up in create and init is out of scope by design, and an allocation the
+  compiler elides (a `malloc`/`free` pair optimised away at -O1) is not reported; one that survives optimisation is.
+- `-Wno-function-effects` is set: clang's static effect analysis (a nonblocking function calling an unannotated one)
+  is not triaged, so paths the tests do not reach are not found.
+- `src/*.c` (room, sweep, oversampler, FBS and HRP placement, the alignment fit) is not marked, nor is an entry point
+  the rule skips or does not name (`omx_hrp_render_feed`, for one).
+- Fuzz, the thread arms, the perturbation, sabotage and install targets of `make test` are not run.
 
 ## Packages
 
