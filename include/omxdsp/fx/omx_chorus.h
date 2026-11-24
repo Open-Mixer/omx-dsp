@@ -118,6 +118,7 @@ struct omx_chorus_state {
  * @param cap Each ring's length, floats; omx_fdelay_cap_for() of the longest delay at the order.
  * @return The line's own code, so a ring the caller sized wrongly is a FACT it is told rather than a
  *         stage that quietly does nothing: OMX_FDELAY_OK, else the first leg's refusal.
+ * @post `an-armed-chorus-reads-at-order-three`: a line armed with OMX_FDELAY_OK reads at OMX_CHORUS_ORDER.
  * @thread audio
  */
 static inline enum omx_fdelay_code omx_chorus_state_init(struct omx_chorus_state *s, float *ring_l,
@@ -235,6 +236,11 @@ static inline float omx_chorus_longest_delay(const struct omx_chorus *p) {
  * @param n The block length, frames.
  * @param p The resolved atom, times in samples at the live rate.
  * @param s The state armed by omx_chorus_state_init().
+ * @pre `a-voice-count-is-inside-the-ensemble`: 1 to OMX_CHORUS_MAX_VOICES voices; `a-spread-is-inside-half-a-turn`:
+ *      the spread inside [0, OMX_CHORUS_SPREAD_MAX]; `both-legs-share-one-geometry`: both lines share one length,
+ *      order and write cursor.
+ * @post `finite-out`: both legs are finite.
+ * @invariant `the-oscillator-stays-in-its-turn`: the oscillator's phase stays inside [0, 1).
  * @thread audio
  */
 static inline void omx_chorus_process(float *l, float *r, uint32_t n, const struct omx_chorus *p,

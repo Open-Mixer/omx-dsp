@@ -129,6 +129,7 @@ static inline int omx_pitch_instance_init(OmxPitchInstance *s, float sr) {
 /** Clear the rings and restart the ramp — the re-enable recipe. A bounded memset over the
  * instance's own rings, no allocation.
  * @param s The instance; null or not ready is ignored.
+ * @post `cleared-ring-is-silent`: both rings read 0 at their ends and the ramp is back at 0.
  * @thread audio */
 static inline void omx_pitch_instance_clear(OmxPitchInstance *s) {
   if (!s || !s->ready) return;
@@ -150,6 +151,8 @@ static inline void omx_pitch_instance_clear(OmxPitchInstance *s) {
  * @param semitones semitones, -12 to 12 st, default 0.
  * @param cents cents, -50 to 50 cents, default 0.
  * @param mix mix, 0 to 100 \%, default 100.
+ * @post `atom-meets-the-kernel-preconditions`: the mix inside [0, 1], the step below 2^31, and the ring holds the
+ *       order's shortest delay plus the window.
  * @thread audio
  */
 static inline void omx_pitch_instance_resolve(OmxPitchInstance *s, int bypass, float semitones, float cents,

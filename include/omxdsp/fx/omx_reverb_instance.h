@@ -140,6 +140,10 @@ static inline int omx_reverb_instance_init(OmxReverbInstance *s, float sr) {
 /** Lay the pool out again — every line handed back silent, every cursor and filter at rest:
  * the re-enable recipe. Bounded work over the instance's own pool, no allocation.
  * @param s The instance; null or not ready is ignored.
+ * @pre `clear-layout-cannot-refuse`: the instance's rate is above 0 and at most OMX_REVERB_MAX_RATE, so the layout it
+ *      repeats cannot refuse.
+ * @post `cleared-pool-is-silent`: the pool is not exhausted, the state is at the instance's rate, the predelay cursor
+ *       and the gate's envelope are at 0, and the pool reads 0.
  * @thread audio */
 static inline void omx_reverb_instance_clear(OmxReverbInstance *s) {
   if (!s || !s->ready) return;
@@ -220,6 +224,9 @@ static inline void omx_reverb_instance_clear(OmxReverbInstance *s) {
  *        The wet de-esser's band, Hz: the de-esser's frequency travel by reference.
  * @param deess_threshold_db deessThresholdDb, DEESS_THRESHOLD_RANGE.min to DEESS_THRESHOLD_RANGE.max dB, default
  *        DEESS_THRESHOLD_RANGE.default: The wet de-esser's threshold, dB: the de-esser's threshold travel by reference.
+ * @post `atom-meets-the-kernel-preconditions`: the algorithm ROOM to GATED, the size, damping, width and mix inside
+ *       [0, 1], the predelay inside [0, OMX_REVERB_PREDELAY_MAX_MS] and the reverse window inside
+ *       [OMX_REVERB_REVERSE_MIN_MS, OMX_REVERB_REVERSE_MAX_MS].
  * @thread audio
  */
 static inline void omx_reverb_instance_resolve(OmxReverbInstance *s, int bypass, float plate_mod_depth,

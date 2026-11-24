@@ -544,6 +544,11 @@ static inline int omx_reverb_state_layout(struct omx_reverb_state *s, float *poo
  * @param n Frames, at most OMX_REVERB_CHUNK.
  * @param feedback The comb feedback, below 1.
  * @param damp_pole The damping pole at the live rate, omx_reverb_damp_pole().
+ * @pre `chunk-bound`: `n` at most OMX_REVERB_CHUNK; `feedback-below-unity`: the feedback inside [0, 1);
+ *      `pole-in-declared-range`: the damping pole inside [0, 1); `line-bound`: every comb has a line and a positive
+ *      length.
+ * @post `position-inside-line`: every comb's position is below its length; `finite-damping-state`: every comb's
+ *       damping state is finite.
  * @thread audio */
 static inline void omx_fv_comb_bank_block(float *const *comb, const uint32_t *comb_len,
                                           uint32_t *comb_pos, float *comb_damp, const float *in,
@@ -600,6 +605,7 @@ static inline void omx_fv_comb_bank_block(float *const *comb, const uint32_t *co
  * @param n Frames, at most OMX_REVERB_CHUNK.
  * @pre `line-bound`: a line and a positive length.
  * @pre `chunk-bound`: `n` at most OMX_REVERB_CHUNK.
+ * @post `position-inside-line`: `*pos` is below `len`.
  * @thread audio */
 static inline void omx_fv_allpass_block(float *buf, uint32_t len, uint32_t *pos, float *x, uint32_t n) {
   OMX_PRE(buf != NULL && len > 0u, "line-bound");
@@ -634,6 +640,7 @@ static inline void omx_fv_allpass_block(float *buf, uint32_t len, uint32_t *pos,
  * @pre `line-bound`: a line and a positive length.
  * @pre `chunk-bound`: `n` at most OMX_REVERB_CHUNK.
  * @pre `coefficient-inside-unit-circle`: `coef` inside (-1, 1).
+ * @post `position-inside-line`: `*pos` is below `len`.
  * @thread audio */
 static inline void omx_plate_ap_block(float *buf, uint32_t len, uint32_t *pos, float *x, uint32_t n,
                                       float coef) {
@@ -673,6 +680,8 @@ static inline void omx_plate_ap_block(float *buf, uint32_t len, uint32_t *pos, f
  * @param sr        the live rate, Hz.
  * @param shortest  the shortest modulated line, samples.
  * @return the excursion in samples, in `[0, (shortest - 2) / 2]`.
+ * @pre `rate-positive`: `sr` above 0.
+ * @post `swing-inside-line`: the excursion is 0 or `2 * exc + 2` fits in `shortest`.
  * @thread audio
  */
 static inline float omx_reverb_plate_excursion(float depth_pct, float sr, float shortest) {
@@ -786,6 +795,10 @@ static inline void omx_fv_leg_block(float *const *comb, const uint32_t *comb_len
  * @param xs The return's state, or NULL with `x`.
  * @param s The caller-owned pool's lines and the RT state, laid out by omx_reverb_state_layout().
  * @param sr The live rate, Hz; the rate the lines were laid out at.
+ * @pre `finite-in`: both legs are finite; `rate-is-declared`: `sr` is a declared rate; `width-in-unit-range`,
+ *      `size-in-unit-range`, `damping-in-unit-range`, `mix-in-unit-range`: the width, size, damping and mix inside
+ *      [0, 1]; `predelay-not-negative`: the predelay not negative.
+ * @post `finite-out`: both legs are finite; `gate-envelope-in-unit-range`: the gate's envelope is inside [0, 1].
  * @thread audio
  */
 static inline void omx_reverb_process_return(float *l, float *r, uint32_t n, const struct omx_reverb *p,

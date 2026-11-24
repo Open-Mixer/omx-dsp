@@ -92,6 +92,7 @@ static inline int omx_clipper_instance_init(OmxClipperInstance *s, float sr) {
  * @param ceiling_db ceilingDb, -24 to 0 dB, default 0: The ceiling, dBFS: no sample leaves above it.
  * @param softness_pct softnessPct, 0 to 100 \%, default 0: How far under the ceiling the bend starts, percent of
  *        CLIPPER_KNEE_SPAN of the ceiling.
+ * @post `knee-under-the-ceiling`: the knee, linear, is above 0 and at most the ceiling.
  * @thread audio
  */
 static inline void omx_clipper_instance_resolve(OmxClipperInstance *s, int bypass, float drive_db, float ceiling_db,
@@ -121,6 +122,8 @@ static inline void omx_clipper_instance_resolve(OmxClipperInstance *s, int bypas
  * @param out_l The left output, `n` frames, may be `in_l`.
  * @param out_r The right output, `n` frames, may be `in_r`.
  * @param n The block length, frames; a null port or 0 touches nothing.
+ * @pre `finite-in`: the input, copied through to the output legs, is finite.
+ * @post `finite-out`: both output legs are finite.
  * @thread audio
  */
 static inline void omx_clipper_instance_run(OmxClipperInstance *s, const float *in_l, const float *in_r, float *out_l,

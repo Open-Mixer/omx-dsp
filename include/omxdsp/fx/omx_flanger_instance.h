@@ -107,6 +107,8 @@ static inline int omx_flanger_instance_init(OmxFlangerInstance *s, float sr) {
 /** Clear the rings and restart the oscillator — the re-enable recipe. A bounded memset over the
  * instance's own rings, no allocation.
  * @param s The instance; null or not ready is ignored.
+ * @post `cleared-ring-is-silent`: both rings read 0 at their ends, the oscillator's phase and both feedback words are
+ *       back at 0.
  * @thread audio */
 static inline void omx_flanger_instance_clear(OmxFlangerInstance *s) {
   if (!s || !s->ready) return;
@@ -132,6 +134,9 @@ static inline void omx_flanger_instance_clear(OmxFlangerInstance *s) {
  * @param feedback feedback, -0.95 to 0.95, default 0.6: The flanger's SIGNED resonance.
  * @param mix mix, 0 to 100 \%, default 50: The flanger's wet/dry, as an instance of DRIVE_MIX_RANGE: 50 \%, equal dry
  *        and wet, where the comb is deepest.
+ * @post `atom-meets-the-kernel-preconditions`: the mix inside [0, 1], the feedback inside ±OMX_FLANGER_FB_MAX, the
+ *       depth not negative, the oscillator's increment inside [0, 1), and the base plus the depth inside the line's
+ *       longest delay.
  * @thread audio
  */
 static inline void omx_flanger_instance_resolve(OmxFlangerInstance *s, int bypass, float rate,

@@ -103,6 +103,7 @@ struct omx_flanger_state {
  *  control; this is the enforcement half, at the last line before a recursion.
  * @param fb The feedback, signed.
  * @return `fb` inside [−OMX_FLANGER_FB_MAX, +OMX_FLANGER_FB_MAX].
+ * @post `a-clamped-feedback-is-strictly-inside-unity`: the feedback returned is inside (-1, 1).
  * @thread audio */
 static inline float omx_flanger_clamp_fb(float fb) {
   const float f = omx_clamp_or(fb, -OMX_FLANGER_FB_MAX, OMX_FLANGER_FB_MAX, 0.0f); /* non-finite: none */
@@ -165,6 +166,7 @@ static inline float omx_flanger_longest_delay(const struct omx_flanger *p) {
  * @param ring_r The right ring, `cap` floats, caller-owned.
  * @param cap Each ring's length, floats; omx_fdelay_cap_for() of the longest delay at the order.
  * @return The line's own code: OMX_FDELAY_OK, else the first leg's refusal, and the stage is a passthrough.
+ * @post `an-armed-flanger-reads-at-order-three`: a line armed with OMX_FDELAY_OK reads at OMX_FLANGER_ORDER.
  * @thread audio */
 static inline enum omx_fdelay_code omx_flanger_state_init(struct omx_flanger_state *s,
                                                           float *ring_l, float *ring_r,
@@ -204,6 +206,9 @@ static inline float omx_flanger_delay(const struct omx_flanger *p, const struct 
  * @param n The block length, frames.
  * @param p The resolved atom, times in samples at the live rate, the feedback clamped on read.
  * @param s The state armed by omx_flanger_state_init().
+ * @post `finite-out`: both legs are finite.
+ * @invariant `feedback-state-finite`: both legs' feedback words stay finite; `the-oscillator-stays-in-its-turn`: the
+ *            oscillator's phase stays inside [0, 1).
  * @thread audio
  */
 static inline void omx_flanger_process(float *l, float *r, uint32_t n, const struct omx_flanger *p,

@@ -4,7 +4,8 @@
 #
 # doc-check.sh — what doxygen cannot check: a function's doc block states the contracts its body evaluates.
 #
-# For every `include/omxdsp/*.h` and `include/omxdsp/mix/*.h` (or the files given as arguments), but
+# For every `include/omxdsp/*.h`, `include/omxdsp/mix/*.h`, `include/omxdsp/fx/*.h` and `include/omxdsp/analysis/*.h`
+# (or the files given as arguments), but
 # include/omxdsp/omxdsp_definitions.h and include/omxdsp/omx_dsp_vocabulary.h, which `omx-contract render` writes from
 # data/: a function named omx_*/omxdsp_* whose body evaluates OMX_PRE carries @pre in the `/** … */` block right
 # before it, OMX_POST @post, OMX_INVARIANT @invariant. Doxygen cannot relate a body to its block.
@@ -75,7 +76,7 @@ fi
 
 if [ $# -gt 0 ]; then check "$@"; else
   bash "$0" --self-test
-  set -- "$PKG"/include/omxdsp/*.h "$PKG"/include/omxdsp/mix/*.h
+  set -- "$PKG"/include/omxdsp/*.h "$PKG"/include/omxdsp/mix/*.h "$PKG"/include/omxdsp/fx/*.h "$PKG"/include/omxdsp/analysis/*.h
   for f; do shift; case "$f" in "$PKG/include/omxdsp/omxdsp_definitions.h"|"$PKG/include/omxdsp/omx_dsp_vocabulary.h") ;; *) set -- "$@" "$f" ;; esac; done
   check "$@" && echo "doc-check: every function in include/omxdsp states the contracts its body evaluates"
 fi

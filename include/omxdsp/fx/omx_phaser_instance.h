@@ -106,6 +106,9 @@ static inline int omx_phaser_instance_init(OmxPhaserInstance *s, float sr) {
  * @param feedback feedback, -0.9 to 0.9, default 0.4: The phaser's SIGNED resonance.
  * @param mix mix, 0 to 100 \%, default 50: The phaser's wet/dry, as an instance of DRIVE_MIX_RANGE: 50 \%, where the
  *        notch is complete.
+ * @post `atom-meets-the-kernel-preconditions`: a legal stage count, the feedback's magnitude at most
+ *       OMX_PHASER_FB_MAX, the mix inside [0, 1], the base above 0 Hz, the depth not negative and the oscillator's
+ *       increment inside [0, 1).
  * @thread audio
  */
 static inline void omx_phaser_instance_resolve(OmxPhaserInstance *s, int bypass, float rate_hz,

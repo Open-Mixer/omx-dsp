@@ -112,6 +112,8 @@ static inline int omx_limiter_instance_init(OmxLimiterInstance *s, float sr) {
  * @param ceiling_db The ceiling, dBFS true peak, inside LIMITER_CEILING_DB's travel.
  * @param lookahead_ms The look-ahead, ms, inside LIMITER_LOOKAHEAD_MS's travel; the latency follows it.
  * @param release_ms The release, ms, inside LIMITER_RELEASE_MS's travel.
+ * @post `atom-meets-the-kernel-preconditions`: the ceiling and the release inside their travels, and the ring at
+ *       least two samples longer than the look-ahead.
  * @thread audio
  */
 static inline void omx_limiter_instance_resolve(OmxLimiterInstance *s, int bypass, float ceiling_db,

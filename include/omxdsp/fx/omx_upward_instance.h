@@ -83,6 +83,7 @@ static inline int omx_upward_instance_init(OmxUpwardInstance *s, float sr) {
  *        away.
  * @param release_ms releaseMs, 5 to 3000 ms, default 200: How fast the detector follows a fall, ms; a fall brings the
  *        lift in.
+ * @post `atom-inside-the-law`: the ratio at least 1 and the range not negative.
  * @thread audio
  */
 static inline void omx_upward_instance_resolve(OmxUpwardInstance *s, int bypass, float threshold_db, float ratio,

@@ -110,6 +110,7 @@ static inline double omx_spring_chain_delay(double a, double w) {
  *        dispersion's corner from SPRING_CHIRP_HZ, and with it the drip of the low notes arriving after the high ones.
  * @param damp_hz dampHz, 1000 to 10000 Hz, default 4000: The loop's low-pass corner, Hz: the tail darkens as it falls.
  * @param mix_pct mixPct, 0 to 100 \%, default 0: The wet against the dry, percent.
+ * @post `loop-under-unity`: both legs' loop gains are inside (0, 1).
  * @thread audio
  */
 static inline void omx_spring_instance_resolve(OmxSpringInstance *s, int bypass, float decay_s, float length_ms,
@@ -185,6 +186,8 @@ static inline float omx_spring_leg_tick(struct omx_spring_leg *l, float x, float
  * @param out_l The left output, `n` frames, may be `in_l`.
  * @param out_r The right output, `n` frames, may be `in_r`.
  * @param n The block length, frames; a null port or 0 touches nothing.
+ * @pre `finite-in`: the input, copied through to the output legs, is finite.
+ * @post `finite-out`: both output legs are finite.
  * @thread audio
  */
 static inline void omx_spring_instance_run(OmxSpringInstance *s, const float *in_l, const float *in_r, float *out_l,

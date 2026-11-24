@@ -189,6 +189,7 @@ static inline void omx_leveler_slot(struct omx_dyn *d, int mode, float t, float 
  * @param speed speed, the place in slow, medium, fast (0 to 2), default medium: How fast the leveler follows, in the
  *        order of the integer the kernel reads: slow, medium, fast; each an attack and a release from
  *        LEVELER_SPEED_ATTACK_MS and LEVELER_SPEED_RELEASE_MS.
+ * @post `row-inside-the-laws`: both ratios at least 1 and the upward range not negative.
  * @thread audio
  */
 static inline void omx_leveler_instance_resolve(OmxLevelerInstance *s, int bypass, float amount, int direction, int speed) {

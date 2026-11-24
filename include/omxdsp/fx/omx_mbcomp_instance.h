@@ -124,6 +124,7 @@ static inline int omx_mbcomp_instance_init(OmxMbcompInstance *s, float sr) {
  *        other value is off.
  * @param mix_pct mixPct, 0 to 100 \%, default 100: the share of the compressed bands, each band blending its own input.
  * @param output_db outputDb, -24 to 24 dB, default 0: the stage's output gain after the sum; 0 dB touches no sample.
+ * @post `band-count-declared`: the band count is inside [OMX_MBC_MIN_BANDS, OMX_MBC_MAX_BANDS].
  * @thread audio
  */
 static inline void omx_mbcomp_instance_resolve(OmxMbcompInstance *s, int bypass, float bands,

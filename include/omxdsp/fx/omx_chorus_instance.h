@@ -102,6 +102,7 @@ static inline int omx_chorus_instance_init(OmxChorusInstance *s, float sr) {
 /** @brief Clear the rings and restart the oscillator — the re-enable recipe. A bounded memset over the
  * instance's own rings, no allocation.
  * @param s The instance; null or not ready is ignored.
+ * @post `cleared-ring-is-silent`: both rings read 0 at their ends and the oscillator's phase is back at 0.
  * @thread audio */
 static inline void omx_chorus_instance_clear(OmxChorusInstance *s) {
   if (!s || !s->ready) return;

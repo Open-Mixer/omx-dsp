@@ -112,6 +112,7 @@ static inline int omx_rotary_instance_init(OmxRotaryInstance *s, float sr) {
  *        rotary on an insert IS the sound (it replaces the cabinet) and an `fxReturn` wants it wet too.
  * @param speed speed, the place in stop, slow, fast (0 to 2): The rotary speaker's speed settings, in the order of the
  *        integer the kernel reads: the rotors stopped, at their chorale (slow) rate, or at their tremolo (fast) rate.
+ * @post `atom-meets-the-kernel-preconditions`: the mix inside [0, 1] and both rotors' target rates not negative.
  * @thread audio
  */
 static inline void omx_rotary_instance_resolve(OmxRotaryInstance *s, int bypass, float horn_slow_hz,

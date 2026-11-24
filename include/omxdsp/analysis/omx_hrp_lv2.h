@@ -516,6 +516,7 @@ static inline void omx_hrp_lv2_restart(OmxHrpLv2 *s) {
  * @param in The input, `n` frames.
  * @param out The output, `n` frames, may be `in`.
  * @param n The block length, frames; 0 or a null port touches nothing.
+ * @post `bypass-identity`: not ready, `out` is `in`, byte for byte.
  * @thread audio
  */
 static inline void omx_hrp_lv2_run(OmxHrpLv2 *s, const float *in, float *out, uint32_t n) {

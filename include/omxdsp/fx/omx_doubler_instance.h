@@ -229,6 +229,8 @@ static inline void omx_doubler_instance_resolve(OmxDoublerInstance *s, int bypas
  * @param out_l The left output, `n` frames, may be `in_l`.
  * @param out_r The right output, `n` frames, may be `in_r`.
  * @param n The block length, frames; a null port or 0 touches nothing.
+ * @pre `finite-in`: the input, copied through to the output legs, is finite.
+ * @post `finite-out`: both output legs are finite.
  * @thread audio
  */
 static inline void omx_doubler_instance_run(OmxDoublerInstance *s, const float *in_l, const float *in_r, float *out_l,
