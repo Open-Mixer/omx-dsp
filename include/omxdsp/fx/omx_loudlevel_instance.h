@@ -112,6 +112,7 @@ static inline int omx_loudlevel_instance_init(OmxLoudlevelInstance *s, float sr)
  *        is not a quiet passage, and the leveler must not ride up the room between sentences.
  * @param window window, the place in momentary, short (0 to 1), default short: What the loudness is measured over, in
  *        the order of the integer the kernel reads: momentary, 400 ms; short, 3 s.
+ * @post `controls-inside-the-travels`: the per-tick step above 0 and the range not negative.
  * @thread audio
  */
 static inline void omx_loudlevel_instance_resolve(OmxLoudlevelInstance *s, int bypass, float target_lufs, float range_db,
@@ -169,6 +170,7 @@ static inline void omx_loudlevel_tick(OmxLoudlevelInstance *s) {
  * @param out_l The left output, `n` frames, may be `in_l`.
  * @param out_r The right output, `n` frames, may be `in_r`.
  * @param n The block length, frames; a null port or 0 touches nothing.
+ * @pre `finite-in`: the input, copied through to the output legs, is finite.
  * @thread audio
  */
 static inline void omx_loudlevel_instance_run(OmxLoudlevelInstance *s, const float *in_l, const float *in_r, float *out_l,

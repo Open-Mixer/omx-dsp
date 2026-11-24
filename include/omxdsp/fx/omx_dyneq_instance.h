@@ -199,6 +199,8 @@ static inline int omx_dyneq_instance_init(OmxDyneqInstance *s, float sr) {
  *        one band listening, their sum.
  * @param mix_pct mixPct, 0 to 100 \%, default 100: The share of the processed output, in percent: 100 is the dynamic EQ
  *        alone, bit for bit, 0 the input.
+ * @post `one-bank-entry-per-band-that-is-on`: each leg's EQ bank holds one section per band that is on;
+ *       `mix-in-unit-range`: the mix inside [0, 1].
  * @thread audio
  */
 static inline void omx_dyneq_instance_resolve(OmxDyneqInstance *s, int bypass, const int band_on[OMX_DYNEQ_INSTANCE_BANDS],
@@ -317,6 +319,7 @@ static inline void omx_dyneq_instance_resolve(OmxDyneqInstance *s, int bypass, c
  * @param l The left leg, `m` frames, processed in place.
  * @param r The right leg, `m` frames, processed in place.
  * @param m The chunk length, frames.
+ * @post `finite-out`: both legs' `m` frames are finite.
  * @thread audio */
 static inline void omx_dyneq_instance_chunk(OmxDyneqInstance *s, float *l, float *r, uint32_t m) {
   struct omx_eq_lv2 *el = &s->eq.leg[0], *er = &s->eq.leg[1];
@@ -368,6 +371,7 @@ static inline void omx_dyneq_instance_chunk(OmxDyneqInstance *s, float *l, float
  * @param out_l The left output, `n` frames, may be `in_l`.
  * @param out_r The right output, `n` frames, may be `in_r`.
  * @param n The block length, frames; a null port or 0 touches nothing.
+ * @pre `finite-in`: the input, copied through to the output legs, is finite.
  * @thread audio
  */
 static inline void omx_dyneq_instance_run(OmxDyneqInstance *s, const float *in_l, const float *in_r, float *out_l,

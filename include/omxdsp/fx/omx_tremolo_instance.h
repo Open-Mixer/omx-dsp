@@ -101,6 +101,8 @@ static inline int omx_tremolo_instance_init(OmxTremoloInstance *s, float sr) {
  * @param mode mode, the place in tremolo, pan (0 to 1), default tremolo: What the tremolo's one oscillator modulates,
  *        in the order of the integer the kernel reads: the level of both legs in phase (tremolo), or the balance law's
  *        position with the legs in opposition (pan).
+ * @post `atom-meets-the-kernel-preconditions`: the depth and the mix inside [0, 1], the oscillator's increment inside
+ *       [0, 1), and the mode tremolo or pan.
  * @thread audio
  */
 static inline void omx_tremolo_instance_resolve(OmxTremoloInstance *s, int bypass, float rate_hz,

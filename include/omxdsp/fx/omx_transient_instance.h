@@ -102,6 +102,7 @@ static inline int omx_transient_instance_init(OmxTransientInstance *s, float sr)
 /** The engage-edge clear: the three followers back to silence, the gain meter to 0 dB. One
  * memset over a few dozen bytes; RT-safe.
  * @param s The instance; null or not ready is ignored.
+ * @post `cleared-state-is-silent`: the gain meter is back at 0 dB and the fast follower's first stage at 0.
  * @thread audio */
 static inline void omx_transient_instance_clear(OmxTransientInstance *s) {
   if (!s || !s->ready) return;
@@ -124,6 +125,7 @@ static inline void omx_transient_instance_clear(OmxTransientInstance *s) {
  * @param attack_time_ms attackTimeMs, 2 to 50 ms, default 10.
  * @param sustain_time_ms sustainTimeMs, 50 to 2000 ms, default 250.
  * @param output_db outputDb, -24 to 12 dB, default 0.
+ * @post `atom-meets-the-kernel-preconditions`: the attack, sustain and output gains inside their travels, dB.
  * @thread audio
  */
 static inline void omx_transient_instance_resolve(OmxTransientInstance *s, int bypass, float attack_db,

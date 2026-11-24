@@ -208,6 +208,8 @@ static inline void omx_plosive_poles(const struct omx_env_params *fe, float slow
  * @param pop_recovery_ms popRecoveryMs, 10 to 200 ms, default 40: The pop detector's slow attack, ms.
  * @param pop_hz popHz, 60 to 300 Hz, default 150: The pop split's corner, Hz: the first-order allpass (omx_allpass1)
  *        whose halves are the pop band and the rest.
+ * @post `designs-inside-their-laws`: the pop split's allpass coefficient inside (-1, 1) and the consonant band's upper
+ *       edge above its lower one.
  * @thread audio
  */
 static inline void omx_plosive_instance_resolve(OmxPlosiveInstance *s, int bypass, float consonant_db, float sensitivity_db,
@@ -255,6 +257,8 @@ static inline void omx_plosive_instance_resolve(OmxPlosiveInstance *s, int bypas
  * @param out_l The left output, `n` frames, may be `in_l`.
  * @param out_r The right output, `n` frames, may be `in_r`.
  * @param n The block length, frames; a null port or 0 touches nothing.
+ * @pre `finite-in`: the input, copied through to the output legs, is finite.
+ * @post `finite-out`: both output legs are finite.
  * @thread audio
  */
 static inline void omx_plosive_instance_run(OmxPlosiveInstance *s, const float *in_l, const float *in_r, float *out_l,

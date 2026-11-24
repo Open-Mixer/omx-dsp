@@ -154,6 +154,7 @@ static inline void omx_delay_instance_set_tempo(OmxDelayInstance *s, float bpm) 
 /** @brief The engage-edge clear: both rings and the per-leg damping back to silence. RT-safe: a bounded
  * memset over the inline rings.
  * @param s The instance; null or not ready is ignored.
+ * @post `cleared-ring-is-silent`: both rings read 0 at their ends and the write cursor is back at 0.
  * @thread audio */
 static inline void omx_delay_instance_clear(OmxDelayInstance *s) {
   if (!s || !s->ready) return;

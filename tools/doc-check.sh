@@ -18,8 +18,13 @@
 # RT-safety prose a @note carried). Every header, fx/ and analysis/ included, is held to the one tag
 # by `omx-rt-gate --thread-tags` (make rt-gate-tags).
 #
-# Exit 1 with one line per missing item. `--self-test` runs the checker over a scratch header
-# with an undocumented function and a documented one and requires the first to be refused.
+# `include/omxdsp/fx/*.h` and `include/omxdsp/analysis/*.h` are held to the contract tags alone
+# (`--contracts`, part of the default run): a function whose body evaluates OMX_PRE, OMX_POST or
+# OMX_INVARIANT carries @pre, @post or @invariant. Their other doc rules are the doxygen gate's.
+#
+# Exit 1 with one line per missing item. `--self-test` runs the checker over scratch headers: an
+# undocumented function and an untagged one must be refused, a documented one accepted, and under
+# `--contracts` a body's OMX_POST without @post refused, with it accepted.
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 PKG="$(cd "$HERE/.." && pwd)"
@@ -43,6 +48,14 @@ function param_names(sig,   inner, n, parts, i, p, m, k, name) {
   return names
 }
 function check_block(line, kind, sig, body, docok, blk,   want, i, n, w) {
+  if (contracts) {
+    if (kind != "function") return
+    if (!docok) blk = ""
+    if (body ~ /OMX_PRE/ && blk !~ /@pre/) report(line, "body evaluates OMX_PRE but the doc block has no @pre")
+    if (body ~ /OMX_POST/ && blk !~ /@post/) report(line, "body evaluates OMX_POST but the doc block has no @post")
+    if (body ~ /OMX_INVARIANT/ && blk !~ /@invariant/) report(line, "body evaluates OMX_INVARIANT but the doc block has no @invariant")
+    return
+  }
   if (!docok) { report(line, kind " has no /** doc block immediately before it"); return }
   if (blk !~ /@brief/) report(line, kind " doc block carries no @brief")
   if (kind == "function") {
@@ -95,7 +108,8 @@ FNR == 1 { depth = 0; in_doc = 0; in_comment = 0; block = ""; block_end = -1; la
 END { if (bad) { printf("doc-check: %d missing item(s)\n", bad); exit 1 } }
 '
 
-check() { awk "$AWK_PROG" "$@"; }
+check() { awk -v contracts=0 "$AWK_PROG" "$@"; }
+check_contracts() { awk -v contracts=1 "$AWK_PROG" "$@"; }
 
 if [ "${1:-}" = "--self-test" ]; then
   t="$(mktemp -d)"; trap 'rm -rf "$t"' EXIT
@@ -135,13 +149,44 @@ EOF
   if check "$t/bad.h" >/dev/null 2>&1; then echo "doc-check --self-test: FAIL — an undocumented function was accepted"; exit 1; fi
   if [ "$(check "$t/untagged.h" 2>&1 | grep -c '@thread')" != 2 ]; then echo "doc-check --self-test: FAIL — a function without its one @thread tag was accepted"; exit 1; fi
   if ! check "$t/good.h"; then echo "doc-check --self-test: FAIL — a documented function was refused"; exit 1; fi
-  echo "doc-check --self-test: ok (refuses the undocumented, the untagged and the twice tagged, accepts the documented)"
+  cat > "$t/contract.h" <<'EOF'
+#ifndef CONTRACT_H
+#define CONTRACT_H
+/** Identity, no @brief: the contract arm does not ask for one.
+ * @thread audio */
+static inline float omx_contract_untagged(float x) {
+  OMX_POST(x - x == 0.0f, "finite");
+  return x;
+}
+#endif
+EOF
+  if [ "$(check_contracts "$t/contract.h" 2>&1 | grep -c 'no @post')" != 1 ]; then echo "doc-check --self-test: FAIL — --contracts accepted a body's OMX_POST without @post"; exit 1; fi
+  cat > "$t/contract-tagged.h" <<'EOF'
+#ifndef CONTRACT_TAGGED_H
+#define CONTRACT_TAGGED_H
+/** Identity, no @brief: the contract arm does not ask for one.
+ * @post `finite`: the sample is finite.
+ * @thread audio */
+static inline float omx_contract_tagged(float x) {
+  OMX_POST(x - x == 0.0f, "finite");
+  return x;
+}
+#endif
+EOF
+  if ! check_contracts "$t/contract-tagged.h"; then echo "doc-check --self-test: FAIL — --contracts refused a function that states its @post"; exit 1; fi
+  echo "doc-check --self-test: ok (refuses the undocumented, the untagged and the twice tagged, accepts the documented; --contracts refuses an OMX_POST without @post, accepts it with one)"
   exit 0
 fi
+
+if [ "${1:-}" = "--contracts" ]; then shift; check_contracts "$@"; exit; fi
 
 if [ $# -gt 0 ]; then check "$@"; else
   bash "$0" --self-test
   set -- "$PKG"/include/omxdsp/*.h "$PKG"/include/omxdsp/mix/*.h
   for f; do shift; case "$f" in "$PKG/include/omxdsp/omxdsp_definitions.h"|"$PKG/include/omxdsp/omx_dsp_vocabulary.h") ;; *) set -- "$@" "$f" ;; esac; done
-  check "$@" && echo "doc-check: every public symbol in include/omxdsp carries its doc comment"
+  rc=0
+  check "$@" || rc=1
+  check_contracts "$PKG"/include/omxdsp/fx/*.h "$PKG"/include/omxdsp/analysis/*.h || rc=1
+  [ "$rc" = 0 ] && echo "doc-check: every public symbol in include/omxdsp carries its doc comment, and every contract in fx/ and analysis/ its tag"
+  exit "$rc"
 fi

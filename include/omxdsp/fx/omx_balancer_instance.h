@@ -138,6 +138,7 @@ static inline int omx_balancer_instance_init(OmxBalancerInstance *s, float sr) {
  * @param speed_db_per_s speedDbPerS, 0.1 to 6 dB, default 0.5: How fast each band walks, dB per second: slow enough
  *        that a mix's tone drifts into place and no note is chased.
  * @param slope_db_oct slopeDbOct, -6 to 0 dB/oct, default -3: The target spectrum's slope, dB per octave of density.
+ * @post `controls-inside-the-travels`: the amount inside [0, 1], the range and the per-tick step above 0.
  * @thread audio
  */
 static inline void omx_balancer_instance_resolve(OmxBalancerInstance *s, int bypass, float amount_pct, float range_db,
@@ -200,6 +201,7 @@ static inline void omx_balancer_tick(OmxBalancerInstance *s) {
  * @param out_l The left output, `n` frames, may be `in_l`.
  * @param out_r The right output, `n` frames, may be `in_r`.
  * @param n The block length, frames; a null port or 0 touches nothing.
+ * @pre `finite-in`: the input, copied through to the output legs, is finite.
  * @thread audio
  */
 static inline void omx_balancer_instance_run(OmxBalancerInstance *s, const float *in_l, const float *in_r, float *out_l,

@@ -220,6 +220,7 @@ static inline uint32_t omx_fxdelay_ms_to_samples(float ms, float sr) {
  * @param d The delay, samples.
  * @param cap The ring's length, samples, above 0.
  * @return `d`, or cap-1 when it reaches the ring.
+ * @post `clamped-tap-is-inside-the-ring`: with a ring (`cap` above 0) the result is below `cap`.
  * @thread audio */
 static inline uint32_t omx_fxdelay_clamp(uint32_t d, uint32_t cap) {
   /* CONTRACT (omx_contract.h). The enforcement half of omx_fx_delay_process's
@@ -253,6 +254,8 @@ static inline uint32_t omx_fxdelay_clamp(uint32_t d, uint32_t cap) {
  * @param clamped out, may be NULL: 1 when the tap was asked past the travel's top and was clamped
  *        to it, else 0
  * @return the tap's time, ms, in [0, OMX_FXDELAY_MAX_MS]
+ * @pre `factor-denominator-is-not-zero`: `den` is not 0.
+ * @post `a-tap-is-inside-the-time-travel`: the tap is inside [0, OMX_FXDELAY_MAX_MS] ms.
  * @thread audio
  */
 static inline float omx_fxdelay_tap_ms(float base_ms, uint32_t num, uint32_t den, int *clamped) {
@@ -282,6 +285,7 @@ static inline float omx_fxdelay_tap_ms(float base_ms, uint32_t num, uint32_t den
  * @param pan the tap's pan, -1..+1 (omx_clamp_pan's travel); a non-finite pan is centre
  * @param gl out: the left leg's gain, in [0, 1]
  * @param gr out: the right leg's gain, in [0, 1]
+ * @post `a-tap-gain-is-inside-unity`: both legs' gains are inside [0, 1].
  * @thread audio
  */
 static inline void omx_fxdelay_tap_legs(float gain, float pan, float *gl, float *gr) {
@@ -302,6 +306,7 @@ static inline void omx_fxdelay_tap_legs(float gain, float pan, float *gl, float 
  *
  * @param g the control thread's `gain_k x b_k,leg`
  * @return `g` clamped to [0, 1]; a non-finite gain is 0
+ * @post `a-tap-gain-is-inside-unity`: the gain returned is inside [0, 1].
  * @thread audio
  */
 static inline float omx_fxdelay_tap_gain(float g) {
@@ -320,6 +325,8 @@ static inline float omx_fxdelay_tap_gain(float g) {
  * @param d the clamped taps, `d[k]` for `k = 1 .. nt-1`
  * @param nt engaged taps, 1..OMX_FXDELAY_MAX_TAPS
  * @return k of the largest delay; the first on a tie, so one tap is tap 0
+ * @pre `tap-count-inside-the-array`: `nt` is 1 to OMX_FXDELAY_MAX_TAPS.
+ * @post `the-feedback-tap-is-engaged`: the tap returned is below `nt`.
  * @thread audio
  */
 static inline uint32_t omx_fxdelay_longest_tap(uint32_t d0, const uint32_t *d, uint32_t nt) {
@@ -360,6 +367,13 @@ static inline uint32_t omx_fxdelay_longest_tap(uint32_t d0, const uint32_t *d, u
  * @param cs the colour's state, or NULL with `c`
  * @param s the caller-owned rings and the RT state
  * @param sr the live rate, Hz
+ * @pre `finite-in`: both legs are finite; `feedback-strictly-below-unity`: the feedback inside [0, 1);
+ *      `mix-in-unit-range`, `tone-in-unit-range`: the mix and the tone inside [0, 1]; `tap-count-inside-the-array`: at
+ *      most OMX_FXDELAY_MAX_TAPS taps; `taps-inside-the-ring`: tap 0's `d_l`/`d_r` and every `t->d[k]` below the
+ *      ring's length; `rate-is-declared`: a positive `sr` is a declared rate.
+ * @post `finite-out`: both legs are finite; `write-cursor-inside-the-ring`: the write cursor is below the ring's
+ *       length.
+ * @invariant `damping-state-finite`: both legs' damping states stay finite.
  * @thread audio
  */
 static inline void omx_fx_delay_process_color(float *l, float *r, uint32_t n, const struct omx_fx_delay *p,

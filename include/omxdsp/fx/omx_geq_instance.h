@@ -148,6 +148,7 @@ static inline int omx_geq_instance_init(OmxGeqInstance *s, double sr) {
 /** The engage-edge clear: every section's history on both legs back to silence. RT-safe: one
  * memset over the inline state.
  * @param s The instance; null or not ready is ignored.
+ * @post `cleared-state-is-silent`: the first and the last section's history read 0.
  * @thread audio */
 static inline void omx_geq_instance_clear(OmxGeqInstance *s) {
   if (!s || !s->ready) return;
@@ -184,6 +185,8 @@ static inline int omx_geq_instance_engage(OmxGeqInstance *s, int bypass) {
  * @param bypass Non-zero makes run() the identity.
  * @param band Per band, band, -15 to 15 dB, default 0: One graphic-EQ fader's travel: EQ_GAIN_RANGE by reference (a
  *        graphic fader is an EQ gain), with the come-up value it needs as a row field — flat, 0 dB.
+ * @post `sections-inside-the-declared-travel-and-stable`: every band's gain is inside the declared travel and every
+ *       section is stable.
  * @thread audio
  */
 static inline void omx_geq_instance_resolve(OmxGeqInstance *s, int bypass, const float band[OMX_GEQ_BANDS]) {

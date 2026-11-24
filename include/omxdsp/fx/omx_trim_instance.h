@@ -93,6 +93,7 @@ static inline int omx_trim_instance_init(OmxTrimInstance *s, float sr) {
  * @param trim_db trimDb, -24 to 24 dB, default 0: The digital input trim, in dB: the console's fine head gain, applied
  *        first in a channel's lane as a click-free ramp from the last block's gain to this one (the console's trim
  *        range, -24..+24 dB in 0.1 dB steps, spelled minDb/maxDb/stepDb there).
+ * @post `a-finite-positive-gain`: the target gain is finite and above 0.
  * @thread audio
  */
 static inline void omx_trim_instance_resolve(OmxTrimInstance *s, int bypass, float trim_db) {

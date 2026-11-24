@@ -121,6 +121,8 @@ static inline int omx_deesser_instance_init(OmxDeesserInstance *s, float sr) {
  * @param deess_mode deessMode, the place in split, wideband (0 to 1): The de-esser's modes, in the order of the integer
  *        the kernel reads: split attenuates the detected band only, wideband the whole signal while the sibilance
  *        lasts.
+ * @post `atom-meets-the-kernel-preconditions`: the range at most 0 dB, the ratio at least 1, the gain computer
+ *       working above the threshold, the mode split or wideband.
  * @thread audio
  */
 static inline void omx_deesser_instance_resolve(OmxDeesserInstance *s, int bypass, float deess_freq,

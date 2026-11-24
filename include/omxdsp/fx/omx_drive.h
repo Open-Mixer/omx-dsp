@@ -213,6 +213,8 @@ struct omx_drive_state {
  * caller that rebuilds a state the RT may be walking.
  * @param s The state; every word of it is written.
  * @param factor The oversampling factor, 1, 2 or 4 (omx_drive_factor_of()).
+ * @post `factor-is-1-2-or-4`: the state's factor is 1, 2 or 4; `ramp-starts-at-unity`: both legs' gain ramps start at
+ *       1.
  * @thread audio */
 static inline void omx_drive_state_init(struct omx_drive_state *s, int factor) {
   /* CONTRACT (omx_contract.h). Whatever factor is asked for, the state is built for one the
@@ -277,6 +279,7 @@ static inline int omx_drive_latency(const struct omx_drive *p) {
  * @param curve An ::omx_drive_curve value; EXCITER shapes as SOFT.
  * @param u The input, in the shaper's units.
  * @return F(u), inside (-1, 1).
+ * @post `finite`: F(u) is finite.
  * @thread audio
  */
 static inline OMX_FM_ALWAYS float omx_drive_shape(int curve, float u) {
@@ -459,6 +462,7 @@ static inline void omx_drive_delay_read(const float *line, uint32_t w, uint32_t 
  * @param sum_in The sum of the squared input samples, written.
  * @param sum_out The sum of the squared shaped samples, written.
  * @pre `finite-in`.
+ * @post `finite-out`: the `n` shaped samples are finite.
  * @thread audio
  */
 static inline void omx_drive_leg_chunk(struct omx_drive_leg *g, const struct omx_drive *p,
@@ -619,6 +623,7 @@ static inline void omx_drive_time_constants(struct omx_drive *o, float sr) {
  * @param sum_out The chunk's sum of squared shaped samples.
  * @param n The chunk's samples.
  * @return The gain to apply, linear.
+ * @post `finite-clamped-gain`: the gain is finite and inside [OMX_DRIVE_AG_MIN, OMX_DRIVE_AG_MAX].
  * @thread audio */
 static inline float omx_drive_auto_gain(struct omx_drive_ag *ag, const struct omx_drive *p,
                                         double sum_in, double sum_out, uint32_t n) {
@@ -681,6 +686,10 @@ static inline float omx_drive_auto_gain(struct omx_drive_ag *ag, const struct om
  * @param n Frames in the block; any length, walked in OMX_DRIVE_CHUNK pieces.
  * @param p The atom.
  * @param s The state, built by omx_drive_state_init() for `p->os_factor`; NULL is a passthrough.
+ * @pre `finite-in`: both legs are finite; `factor-is-1-2-or-4`: `p->os_factor` is 1, 2 or 4; `mix-in-unit-range`: the
+ *      mix inside [0, 1].
+ * @post `finite-out`: both legs are finite; `auto-gain-state-finite`: both legs' last gains are finite.
+ * @invariant `state-built-for-the-factor`: the state's factor is omx_drive_factor_of(`p->os_factor`).
  * @thread audio
  */
 static inline void omx_drive_process(float *l, float *r, uint32_t n, const struct omx_drive *p,
