@@ -113,13 +113,25 @@ static inline void omx_suboct_lp24(double c[2][5], double hz, double sr) {
   omx_eq_design(OMX_EQ_LOWPASS, hz, q[1], 0.0, sr, c[1]);
 }
 
+#define OMX_CONTRACT_STAGE "suboct/instance-resolve"
 /**
  * Resolve the host's control values for one cycle. `bypass` non-zero makes run() the identity. The
  * arguments are the suboct kernel's contract controls in their declared order: the range (a
  * SUBOCT_RANGES index), oct1, oct2 and dry (percent) and trackGateDb (dBFS).
+ * @param s The instance; null or not ready leaves it as it is.
+ * @param bypass Non-zero makes run() the identity.
+ * @param range range, the place in low, mid, high (0 to 2), default low: The tracking range, in the order of the
+ *        integer the kernel reads: low (a bass, 35 to 140 Hz), mid (70 to 280 Hz), high (140 to 560 Hz); each a row of
+ *        SUBOCT_RANGE_LO_HZ, SUBOCT_RANGE_HI_HZ, SUBOCT_POST1_HZ and SUBOCT_POST2_HZ.
+ * @param oct1 oct1, 0 to 100 \%, default 100: The octave below, percent of the tracked band divided once (omx_divider)
+ *        and low-passed at the range's post1.
+ * @param oct2 oct2, 0 to 100 \%, default 0: Two octaves below, percent: the first octave divided again and low-passed
+ *        at the range's post2.
+ * @param dry dry, 0 to 100 \%, default 100: The input, percent.
+ * @param track_gate_db trackGateDb, -80 to -20 dBFS, default -50: The tracked band's level, dBFS of its peak envelope,
+ *        under which the octaves fade out over SUBOCT_GATE_RAMP_MS and trackedHz reads 0.
  * @thread audio
  */
-#define OMX_CONTRACT_STAGE "suboct/instance-resolve"
 static inline void omx_suboct_instance_resolve(OmxSuboctInstance *s, int bypass, int range, float oct1, float oct2, float dry,
                                                float track_gate_db) {
   if (!s || !s->ready) return;

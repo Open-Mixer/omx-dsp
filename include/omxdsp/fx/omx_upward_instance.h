@@ -58,13 +58,24 @@ static inline int omx_upward_instance_init(OmxUpwardInstance *s, float sr) {
   return 1;
 }
 
+#define OMX_CONTRACT_STAGE "upward/instance-resolve"
 /**
  * Resolve the host's control values for one cycle. `bypass` non-zero makes run() the identity. The
  * arguments are the upward kernel's contract controls in their declared order, each clamped into its
  * travel, a non-finite one reading as its default.
+ * @param s The instance; null or not ready leaves it as it is.
+ * @param bypass Non-zero makes run() the identity.
+ * @param threshold_db thresholdDb, -70 to 0 dB, default -40: The level, dBFS, under which the face starts to lift.
+ * @param ratio ratio, 1 to 10, default 1: The upward ratio: the lift is (1 - 1/ratio) of the distance under the
+ *        threshold.
+ * @param range_db rangeDb, 0 to 24 dB, default 6: The largest lift, dB: a signal far under the threshold, the room's
+ *        noise included, rises by this and no more.
+ * @param attack_ms attackMs, 0.1 to 100 ms, default 5: How fast the detector follows a rise, ms; a rise takes the lift
+ *        away.
+ * @param release_ms releaseMs, 5 to 3000 ms, default 200: How fast the detector follows a fall, ms; a fall brings the
+ *        lift in.
  * @thread audio
  */
-#define OMX_CONTRACT_STAGE "upward/instance-resolve"
 static inline void omx_upward_instance_resolve(OmxUpwardInstance *s, int bypass, float threshold_db, float ratio,
                                                float range_db, float attack_ms, float release_ms) {
   if (!s || !s->ready) return;

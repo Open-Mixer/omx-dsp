@@ -96,6 +96,7 @@ static inline int omx_mbcomp_instance_init(OmxMbcompInstance *s, float sr) {
   return 1;
 }
 
+#define OMX_CONTRACT_STAGE "mbcomp/instance-resolve"
 /**
  * Resolve the host's control values for one cycle. `bypass` non-zero makes run() the identity. The
  * arguments are the mbcomp kernel's contract controls in their declared order: the band count, the
@@ -104,7 +105,6 @@ static inline int omx_mbcomp_instance_init(OmxMbcompInstance *s, float sr) {
  * (MBCOMP_SOLOS, MBCOMP_BAND_BYPASSES indices), then the mix (percent) and the output gain (dB).
  * @thread audio
  */
-#define OMX_CONTRACT_STAGE "mbcomp/instance-resolve"
 static inline void omx_mbcomp_instance_resolve(OmxMbcompInstance *s, int bypass, float bands,
                                                const float xover_hz[OMX_MBC_MAX_XOVERS],
                                                const float threshold_db[OMX_MBC_MAX_BANDS],

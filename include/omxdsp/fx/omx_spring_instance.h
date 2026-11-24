@@ -82,14 +82,23 @@ static inline double omx_spring_chain_delay(double a, double w) {
   return (double)OMX_SPRING_SECTIONS * (1.0 - a * a) / (1.0 + 2.0 * a * cos(w) + a * a);
 }
 
+#define OMX_CONTRACT_STAGE "spring/instance-resolve"
 /**
  * Resolve the host's control values for one cycle. `bypass` non-zero makes run() the identity. The
  * arguments are the spring kernel's contract controls in their declared order, each clamped into its
  * travel, a non-finite one reading as its default. A length or tension change clears the tank, as does
  * the engage edge: the old tail is at another pitch.
+ * @param s The instance; null or not ready leaves it as it is.
+ * @param bypass Non-zero makes run() the identity.
+ * @param decay_s decayS, 0.5 to 8 s, default 2: The time the tail takes to fall 60 dB, seconds.
+ * @param length_ms lengthMs, 20 to 60 ms, default 35: The spring's delay, ms: the time of one trip along it, the first
+ *        return.
+ * @param tension_pct tensionPct, 0 to 100 \%, default 50: How hard the spring is drawn, percent: it sets the
+ *        dispersion's corner from SPRING_CHIRP_HZ, and with it the drip of the low notes arriving after the high ones.
+ * @param damp_hz dampHz, 1000 to 10000 Hz, default 4000: The loop's low-pass corner, Hz: the tail darkens as it falls.
+ * @param mix_pct mixPct, 0 to 100 \%, default 0: The wet against the dry, percent.
  * @thread audio
  */
-#define OMX_CONTRACT_STAGE "spring/instance-resolve"
 static inline void omx_spring_instance_resolve(OmxSpringInstance *s, int bypass, float decay_s, float length_ms,
                                                float tension_pct, float damp_hz, float mix_pct) {
   if (!s || !s->ready) return;

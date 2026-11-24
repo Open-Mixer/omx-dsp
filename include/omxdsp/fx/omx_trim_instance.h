@@ -78,13 +78,18 @@ static inline int omx_trim_instance_init(OmxTrimInstance *s, float sr) {
   return 1;
 }
 
+#define OMX_CONTRACT_STAGE "trim-instance/resolve"
 /**
  * Resolve the host's control value for one cycle. `bypass` non-zero makes run() the identity.
  * The argument is the trim kernel's contract control, in its user unit: `trim_db` (dB), clamped
  * into TRIM_RANGE, a non-finite word reading as its default.
+ * @param s The instance; null or not ready leaves it as it is.
+ * @param bypass Non-zero makes run() the identity.
+ * @param trim_db trimDb, -24 to 24 dB, default 0: The digital input trim, in dB: the console's fine head gain, applied
+ *        first in a channel's lane as a click-free ramp from the last block's gain to this one (the console's trim
+ *        range, -24..+24 dB in 0.1 dB steps, spelled minDb/maxDb/stepDb there).
  * @thread audio
  */
-#define OMX_CONTRACT_STAGE "trim-instance/resolve"
 static inline void omx_trim_instance_resolve(OmxTrimInstance *s, int bypass, float trim_db) {
   if (!s || !s->ready) return;
   s->bypass = bypass ? 1 : 0;

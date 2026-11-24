@@ -97,13 +97,25 @@ static inline int omx_tone_instance_init(OmxToneInstance *s, float sr) {
   return 1;
 }
 
+#define OMX_CONTRACT_STAGE "tone/instance-resolve"
 /**
  * Resolve the host's control values for one cycle. `bypass` non-zero makes run() the identity. The
  * arguments are the tone kernel's contract controls in their declared order: the tilt's span (dB),
  * its pivot (Hz), the DJ filter (-100 to +100) and its resonance.
+ * @param s The instance; null or not ready leaves it as it is.
+ * @param bypass Non-zero makes run() the identity.
+ * @param tilt_db tiltDb, -6 to 6 dB, default 0: The tilt's span, dB: one first-order complementary shelf pair about
+ *        pivotHz (omx_tilt, a = 10^(tiltDb/40)), -tiltDb/2 at DC, +tiltDb/2 at Nyquist and 0 dB at the pivot.
+ * @param pivot_hz pivotHz, 200 to 5000 Hz, default 1000: The tilt's pivot, Hz: the frequency the tilt leaves at 0 dB,
+ *        at every rate (the section is prewarped there).
+ * @param filter filter, -100 to 100, default 0: The DJ filter: below 0 a low-pass whose corner falls from
+ *        TONE_FILTER_HIGH_HZ toward TONE_FILTER_LOW_HZ at -100, above 0 a high-pass whose corner rises from
+ *        TONE_FILTER_LOW_HZ toward TONE_FILTER_HIGH_HZ at +100, on a log map; the EQ's own low-pass and high-pass
+ *        sections.
+ * @param resonance resonance, 0.5 to 4, default 0.71: The DJ filter's resonance, its section's Q: the magnitude at the
+ *        corner.
  * @thread audio
  */
-#define OMX_CONTRACT_STAGE "tone/instance-resolve"
 static inline void omx_tone_instance_resolve(OmxToneInstance *s, int bypass, float tilt_db, float pivot_hz, float filter,
                                              float resonance) {
   if (!s || !s->ready) return;

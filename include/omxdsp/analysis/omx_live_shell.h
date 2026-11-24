@@ -21,6 +21,7 @@
 #include <omxdsp/analysis/omx_rta.h>
 #include <omxdsp/omx_contract.h>
 
+#define OMX_CONTRACT_STAGE "live-shell/pass-through"
 /**
  * @brief The audio as it came: `out` is `in`, byte for byte (a shell not ready, or in `report`).
  * @param in The input block.
@@ -28,7 +29,6 @@
  * @param n Frames.
  * @thread audio
  */
-#define OMX_CONTRACT_STAGE "live-shell/pass-through"
 static inline void omx_live_pass_through(const float *in, float *out, uint32_t n) {
   if (out != in) memcpy(out, in, (size_t)n * sizeof(float));
   OMX_POST(out == in || memcmp(out, in, (size_t)n * sizeof(float)) == 0, "bit-exact");

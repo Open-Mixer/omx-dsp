@@ -133,14 +133,23 @@ static inline void omx_leveler_slot(struct omx_dyn *d, int mode, float t, float 
   d->release_coeff = omx_pole_from_time_ms(rel_ms, sr);
 }
 
+#define OMX_CONTRACT_STAGE "leveler/instance-resolve"
 /**
  * Resolve the host's control values for one cycle. `bypass` non-zero makes run() the identity. The
  * arguments are the leveler kernel's contract controls in their declared order: the amount (percent),
  * the direction (a LEVELER_DIRECTIONS index) and the speed (a LEVELER_SPEEDS index); an index outside
  * its set reads as its default.
+ * @param s The instance; null or not ready leaves it as it is.
+ * @param bypass Non-zero makes run() the identity.
+ * @param amount amount, 0 to 100 \%, default 0: How hard the leveler works, percent: the one knob.
+ * @param direction direction, the place in down, up, both (0 to 2), default both: Which way the leveler works, in the
+ *        order of the integer the kernel reads: down, a compressor over the loud passages; up, an upward compressor
+ *        under the quiet ones (omx_dyn's UPWARD law); both, the two in series, down first.
+ * @param speed speed, the place in slow, medium, fast (0 to 2), default medium: How fast the leveler follows, in the
+ *        order of the integer the kernel reads: slow, medium, fast; each an attack and a release from
+ *        LEVELER_SPEED_ATTACK_MS and LEVELER_SPEED_RELEASE_MS.
  * @thread audio
  */
-#define OMX_CONTRACT_STAGE "leveler/instance-resolve"
 static inline void omx_leveler_instance_resolve(OmxLevelerInstance *s, int bypass, float amount, int direction, int speed) {
   if (!s || !s->ready) return;
   s->amt = omx_clamp_or(amount, (float)OMX_LEVELER_AMOUNT_RANGE_MIN, (float)OMX_LEVELER_AMOUNT_RANGE_MAX,

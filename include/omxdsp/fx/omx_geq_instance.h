@@ -163,6 +163,7 @@ static inline int omx_geq_instance_engage(OmxGeqInstance *s, int bypass) {
   return engaged;
 }
 
+#define OMX_CONTRACT_STAGE "geq/instance-resolve"
 /**
  * Resolve the host's band gains into the kernel's atom for one cycle.
  *
@@ -171,9 +172,12 @@ static inline int omx_geq_instance_engage(OmxGeqInstance *s, int bypass) {
  * OMX_GEQ_BANDS gains, the contract's own count, in ISO centre order. Each gain is clamped (see
  * the header note); a section is redesigned only when its clamped gain moved, and the atom is
  * rebuilt only when one did.
+ * @param s The instance; null or not ready leaves it as it is.
+ * @param bypass Non-zero makes run() the identity.
+ * @param band Per band, band, -15 to 15 dB, default 0: One graphic-EQ fader's travel: EQ_GAIN_RANGE by reference (a
+ *        graphic fader is an EQ gain), with the come-up value it needs as a row field — flat, 0 dB.
  * @thread audio
  */
-#define OMX_CONTRACT_STAGE "geq/instance-resolve"
 static inline void omx_geq_instance_resolve(OmxGeqInstance *s, int bypass, const float band[OMX_GEQ_BANDS]) {
   if (!s || !s->ready || !band) return;
   /* CONTRACT (omx_contract.h). Every section the atom carries was designed from a gain inside the

@@ -78,6 +78,7 @@ static inline int omx_rotary_instance_init(OmxRotaryInstance *s, float sr) {
   return 1;
 }
 
+#define OMX_CONTRACT_STAGE "rotary/instance-resolve"
 /**
  * Resolve the host's control-port values into the kernel's atom for one cycle. `bypass` non-zero
  * disables the atom. The arguments are the kernel's contract controls, in their declared order and
@@ -85,9 +86,22 @@ static inline int omx_rotary_instance_init(OmxRotaryInstance *s, float sr) {
  * scale), `balance` and `mix` (percent), each clamped into its declared travel, a non-finite word
  * reading as the declared default; `speed` is the ROTARY_SPEEDS index, an `enum omx_rotary_speed`
  * member (any other value reads as `slow`).
+ * @param s The instance; null or not ready leaves it as it is.
+ * @param bypass Non-zero makes run() the identity.
+ * @param horn_slow_hz hornSlowHz, 0.1 to 2 Hz, default 0.8: The horn's chorale (slow) rate, Hz.
+ * @param horn_fast_hz hornFastHz, 3 to 10 Hz, default 6.8: The horn's tremolo (fast) rate, Hz.
+ * @param drum_slow_hz drumSlowHz, 0.1 to 2 Hz, default 0.7: The drum's chorale (slow) rate, Hz.
+ * @param drum_fast_hz drumFastHz, 3 to 10 Hz, default 5.9: The drum's tremolo (fast) rate, Hz.
+ * @param accel accel, 0.25 to 4 coef, default 1: The scale on every speed-change time constant
+ *        (`ROTARY_*_ACCEL_MS`/`_DECEL_MS`): 2 is twice as slow.
+ * @param balance balance, -100 to 100 \%, default 0: The drum/horn balance, percent: −100 drum only, +100 horn only;
+ *        the law attenuates, never boosts.
+ * @param mix mix, 0 to 100 \%, default 100: The rotary's wet/dry, as an instance of DRIVE_MIX_RANGE: 100 \%, because a
+ *        rotary on an insert IS the sound (it replaces the cabinet) and an `fxReturn` wants it wet too.
+ * @param speed speed, the place in stop, slow, fast (0 to 2): The rotary speaker's speed settings, in the order of the
+ *        integer the kernel reads: the rotors stopped, at their chorale (slow) rate, or at their tremolo (fast) rate.
  * @thread audio
  */
-#define OMX_CONTRACT_STAGE "rotary/instance-resolve"
 static inline void omx_rotary_instance_resolve(OmxRotaryInstance *s, int bypass, float horn_slow_hz,
                                                float horn_fast_hz, float drum_slow_hz, float drum_fast_hz,
                                                float accel, float balance, float mix, int speed) {

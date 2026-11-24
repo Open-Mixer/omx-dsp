@@ -132,13 +132,33 @@ static inline void omx_plosive_poles(const struct omx_env_params *fe, float slow
   omx_env_stage_poles(&sa, 1u, &p->slow_attack, &p->slow_release);
 }
 
+#define OMX_CONTRACT_STAGE "plosive/instance-resolve"
 /**
  * Resolve the host's control values for one cycle. `bypass` non-zero makes run() the identity. The
  * arguments are the plosive kernel's contract controls in their declared order (dB, dB, ms, Hz,
  * octaves, dB, dB, ms, Hz).
+ * @param s The instance; null or not ready leaves it as it is.
+ * @param bypass Non-zero makes run() the identity.
+ * @param consonant_db consonantDb, 0 to 24 dB, default 6: How far a hard consonant (t, k) is cut in its band, dB, at
+ *        full contrast: y = x1 + (g - 1) B, the de-esser's split, so no gain is added at any frequency.
+ * @param sensitivity_db sensitivityDb, 0 to 30 dB, default 16: The contrast, dB between the band's fast and slow
+ *        envelopes (omx_envdiff), a burst must pass before the consonant cut starts; the cut is full TRANSIENT_REF_DB
+ *        past it (omx_envdiff_ramp).
+ * @param recovery_ms recoveryMs, 2 to 50 ms, default 8: The consonant detector's slow attack, ms: how long a burst's
+ *        contrast lasts, so how long the cut does.
+ * @param band_hz bandHz, 1000 to 12000 Hz, default 4000: The consonant band's centre, Hz: the de-esser's cookbook
+ *        bandpass section.
+ * @param band_width_oct bandWidthOct, 0.5 to 4 oct, default 2: The consonant band's width, octaves; its top edge is
+ *        held under PLOSIVE_BAND_EDGE_FRACTION of the rate.
+ * @param pop_db popDb, 0 to 24 dB, default 12: How far a p pop is cut below popHz, dB, at full contrast: x1 = x - (1 -
+ *        g) LP, the low half of a first-order power-complementary split, so no gain is added.
+ * @param pop_sensitivity_db popSensitivityDb, 0 to 30 dB, default 16: The contrast, dB, the pop band's burst must pass
+ *        before the pop cut starts.
+ * @param pop_recovery_ms popRecoveryMs, 10 to 200 ms, default 40: The pop detector's slow attack, ms.
+ * @param pop_hz popHz, 60 to 300 Hz, default 150: The pop split's corner, Hz: the first-order allpass (omx_allpass1)
+ *        whose halves are the pop band and the rest.
  * @thread audio
  */
-#define OMX_CONTRACT_STAGE "plosive/instance-resolve"
 static inline void omx_plosive_instance_resolve(OmxPlosiveInstance *s, int bypass, float consonant_db, float sensitivity_db,
                                                 float recovery_ms, float band_hz, float band_width_oct, float pop_db,
                                                 float pop_sensitivity_db, float pop_recovery_ms, float pop_hz) {

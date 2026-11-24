@@ -85,6 +85,7 @@ static inline int omx_deesser_instance_init(OmxDeesserInstance *s, float sr) {
   return 1;
 }
 
+#define OMX_CONTRACT_STAGE "deesser/instance-resolve"
 /**
  * Resolve the host's control-port values into the kernel's atom for one cycle. `bypass` non-zero
  * disables the atom. The arguments are the kernel's contract controls, in their declared order and
@@ -92,9 +93,23 @@ static inline int omx_deesser_instance_init(OmxDeesserInstance *s, float sr) {
  * `deess_range` (dB, an attenuation), `deess_attack` and `deess_release` (ms), each clamped into
  * its declared travel, a non-finite word reading as the declared default; `deess_mode` is the
  * DEESS_MODES index, an `enum omx_deess_mode` member (any other value reads as `split`).
+ * @param s The instance; null or not ready leaves it as it is.
+ * @param bypass Non-zero makes run() the identity.
+ * @param deess_freq deessFreq, 2000 to 16000 Hz, default 7000: The detector band's CENTRE, in Hz.
+ * @param deess_width deessWidth, 0.25 to 4 oct, default 1: The band's WIDTH, in OCTAVES around the centre: the edges
+ *        are `f / 2^(w/2)` and `f · 2^(w/2)`, which is what makes the centre the geometric middle at every width.
+ * @param deess_threshold deessThreshold, -60 to 0 dB, default -30: Where reduction starts — the level of the BAND, not
+ *        of the strip, which is why the come-up is so much lower than the compressor's.
+ * @param deess_ratio deessRatio, 1 to 20, default 4: How hard the band is held once it is over the threshold.
+ * @param deess_range deessRange, -24 to 0 dB, default -12: The FLOOR on the reduction, in dB and never positive — the
+ *        deepest cut the stage may reach however loud the sibilant is (`mix_deesser.h`'s clamp).
+ * @param deess_attack deessAttack, 0.1 to 50 ms, default 1: The detector's ATTACK, in ms.
+ * @param deess_release deessRelease, 5 to 500 ms, default 60: The detector's RELEASE, in ms.
+ * @param deess_mode deessMode, the place in split, wideband (0 to 1): The de-esser's modes, in the order of the integer
+ *        the kernel reads: split attenuates the detected band only, wideband the whole signal while the sibilance
+ *        lasts.
  * @thread audio
  */
-#define OMX_CONTRACT_STAGE "deesser/instance-resolve"
 static inline void omx_deesser_instance_resolve(OmxDeesserInstance *s, int bypass, float deess_freq,
                                                 float deess_width, float deess_threshold, float deess_ratio,
                                                 float deess_range, float deess_attack, float deess_release,

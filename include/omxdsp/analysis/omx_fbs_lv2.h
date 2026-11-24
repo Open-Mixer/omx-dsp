@@ -220,6 +220,7 @@ static inline void omx_fbs_lv2_set_mode(OmxFbsLv2 *s, float word) {
  */
 static inline int omx_fbs_lv2_mode(const OmxFbsLv2 *s) { return s ? s->mode : OMX_FBS_LV2_CUT; }
 
+#define OMX_CONTRACT_STAGE "fbs/lv2-run"
 /**
  * @brief The audio callback's whole share: the input into the ring, then the bands (cut) or nothing (report).
  * @param s The instance; NULL or not ready passes the audio bit-exact.
@@ -229,7 +230,6 @@ static inline int omx_fbs_lv2_mode(const OmxFbsLv2 *s) { return s ? s->mode : OM
  * @note No FFT, no detector, no placement, no allocation, no lock: those are the worker's.
  * @thread audio
  */
-#define OMX_CONTRACT_STAGE "fbs/lv2-run"
 static inline void omx_fbs_lv2_run(OmxFbsLv2 *s, const float *in, float *out, uint32_t n) {
   if (!omx_live_block(s && s->ready, in, out, n)) return;
   omx_live_feed(&s->feed.ring, &s->feed.written, in, n);

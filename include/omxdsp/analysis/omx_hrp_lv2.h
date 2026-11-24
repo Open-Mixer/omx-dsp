@@ -469,6 +469,7 @@ static inline void omx_hrp_lv2_restart(OmxHrpLv2 *s) {
   atomic_store_explicit(&s->consumed, 0u, memory_order_relaxed);
 }
 
+#define OMX_CONTRACT_STAGE "hrp/lv2-run"
 /**
  * THE AUDIO CALLBACK'S WHOLE SHARE OF HRP. One memcpy into the ring, one biquad cascade.
  *
@@ -479,9 +480,12 @@ static inline void omx_hrp_lv2_restart(OmxHrpLv2 *s) {
  *
  * Note what is NOT here: no FFT, no allocation, no lock, no logging, no decision that depends
  * on what the audio contains. §2, and the reason it is a law rather than a preference.
+ * @param s The instance; null or not ready copies `in` to `out`.
+ * @param in The input, `n` frames.
+ * @param out The output, `n` frames, may be `in`.
+ * @param n The block length, frames; 0 or a null port touches nothing.
  * @thread audio
  */
-#define OMX_CONTRACT_STAGE "hrp/lv2-run"
 static inline void omx_hrp_lv2_run(OmxHrpLv2 *s, const float *in, float *out, uint32_t n) {
   if (!in || !out || n == 0u) return;
   if (!s || !s->ready) {

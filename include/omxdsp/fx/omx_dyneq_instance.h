@@ -124,6 +124,7 @@ static inline int omx_dyneq_instance_init(OmxDyneqInstance *s, float sr) {
   return 1;
 }
 
+#define OMX_CONTRACT_STAGE "dyneq/instance-resolve"
 /**
  * Resolve the host's control values for one cycle. `bypass` non-zero makes run() the identity. The
  * arguments are the dyneq kernel's contract controls in their declared order: per band (arrays of
@@ -131,9 +132,42 @@ static inline int omx_dyneq_instance_init(OmxDyneqInstance *s, float sr) {
  * centre (Hz), the static gain (dB), the Q, the dynMode (off, down, up), the threshold (dB), the
  * ratio, the signed range (dB), the attack and the release (ms) and the listen switch; then the
  * mix (percent).
+ * @param s The instance; null or not ready leaves it as it is.
+ * @param bypass Non-zero makes run() the identity.
+ * @param band_on Per band, bandOn, the place in off, on (0 to 1), default off: A band's switch.
+ * @param band_type Per band, bandType, the place in bell, lowShelf, highShelf (0 to 2), default bell: The band's shape,
+ *        in the order of the integer the kernel reads, which is the order of the first three EQ_BAND_TYPES: a bell, a
+ *        low shelf, a high shelf.
+ * @param freq Per band, freq, EQ_FREQ_RANGE.min to EQ_FREQ_RANGE.max Hz: The band's centre or corner, the EQ band's
+ *        travel by reference.
+ * @param gain Per band, gain, EQ_GAIN_RANGE.min to EQ_GAIN_RANGE.max dB, default 0: The band's static gain, the EQ
+ *        band's travel by reference: the curve the band draws with its dynamics at rest.
+ * @param q Per band, q, EQ_Q_RANGE.min to EQ_Q_RANGE.max, default 1: The bell's Q, the EQ band's travel by reference;
+ *        the dynamics' bandpass takes the same Q.
+ * @param dyn_mode Per band, dynMode, the place in off, down, up (0 to 2), default off: Whether and when the band's
+ *        dynamics act, in the order of the integer the kernel reads: off, the band is its static section alone; down,
+ *        it acts above its threshold, when the band is loud (band_dyn's above); up, it acts below its threshold, when
+ *        the band is quiet (band_dyn's below).
+ * @param threshold Per band, threshold, DEESS_THRESHOLD_RANGE.min to DEESS_THRESHOLD_RANGE.max dB, default
+ *        DEESS_THRESHOLD_RANGE.default: Where the band's dynamics start, in dB of the band's own level after its static
+ *        section: band_dyn's threshold travel by reference.
+ * @param ratio Per band, ratio, DEESS_RATIO_RANGE.min to DEESS_RATIO_RANGE.max, default 2: How hard the band is held
+ *        past its threshold: band_dyn's ratio travel by reference.
+ * @param range Per band, range, DEESS_RANGE_RANGE.min to 12 dB, default -6: The most the dynamics add to the band's
+ *        static gain, signed: below zero the deepest cut, above zero the largest boost.
+ * @param attack Per band, attack, OMX_DETECTOR_OVERSAMPLE_AUTO_MS to COMP_LIMITS.attackMs.max ms, default 5: The band
+ *        detector's attack, in ms: band_dyn's attack travel by reference, which stops at the oversampling floor; a step
+ *        reaches 56.65 \% at the attack time (the 4-stage cascade).
+ * @param release Per band, release, DEESS_RELEASE_RANGE.min to COMP_LIMITS.releaseMs.max ms, default 100: The band
+ *        detector's release, in ms: band_dyn's release travel by reference; a step falls to 43.35 \% at the release
+ *        time (the 4-stage cascade).
+ * @param listen Per band, listen, the place in off, on (0 to 1), default off: While on, the output is what the band's
+ *        detector hears, its section B over the signal reaching the band, in place of the EQ's output; with more than
+ *        one band listening, their sum.
+ * @param mix_pct mixPct, 0 to 100 \%, default 100: The share of the processed output, in percent: 100 is the dynamic EQ
+ *        alone, bit for bit, 0 the input.
  * @thread audio
  */
-#define OMX_CONTRACT_STAGE "dyneq/instance-resolve"
 static inline void omx_dyneq_instance_resolve(OmxDyneqInstance *s, int bypass, const int band_on[OMX_DYNEQ_INSTANCE_BANDS],
                                               const int band_type[OMX_DYNEQ_INSTANCE_BANDS],
                                               const float freq[OMX_DYNEQ_INSTANCE_BANDS],
@@ -243,10 +277,14 @@ static inline void omx_dyneq_instance_resolve(OmxDyneqInstance *s, int bypass, c
 }
 #undef OMX_CONTRACT_STAGE
 
+#define OMX_CONTRACT_STAGE "dyneq/instance-chunk"
 /** One chunk, in place over `l` and `r`: band by band, the static section and the dynamics; the
  * listened bands' sum, or the mix.
+ * @param s The instance, ready.
+ * @param l The left leg, `m` frames, processed in place.
+ * @param r The right leg, `m` frames, processed in place.
+ * @param m The chunk length, frames.
  * @thread audio */
-#define OMX_CONTRACT_STAGE "dyneq/instance-chunk"
 static inline void omx_dyneq_instance_chunk(OmxDyneqInstance *s, float *l, float *r, uint32_t m) {
   struct omx_eq_lv2 *el = &s->eq.leg[0], *er = &s->eq.leg[1];
   int listening = 0;

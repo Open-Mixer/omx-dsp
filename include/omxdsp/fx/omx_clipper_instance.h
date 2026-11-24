@@ -76,13 +76,19 @@ static inline int omx_clipper_instance_init(OmxClipperInstance *s, float sr) {
   return 1;
 }
 
+#define OMX_CONTRACT_STAGE "clipper/instance-resolve"
 /**
  * Resolve the host's control values for one cycle. `bypass` non-zero makes run() the identity. The
  * arguments are the clipper kernel's contract controls in their declared order, each clamped into its
  * travel, a non-finite one reading as its default.
+ * @param s The instance; null or not ready leaves it as it is.
+ * @param bypass Non-zero makes run() the identity.
+ * @param drive_db driveDb, 0 to 24 dB, default 0: The gain before the clip, dB.
+ * @param ceiling_db ceilingDb, -24 to 0 dB, default 0: The ceiling, dBFS: no sample leaves above it.
+ * @param softness_pct softnessPct, 0 to 100 \%, default 0: How far under the ceiling the bend starts, percent of
+ *        CLIPPER_KNEE_SPAN of the ceiling.
  * @thread audio
  */
-#define OMX_CONTRACT_STAGE "clipper/instance-resolve"
 static inline void omx_clipper_instance_resolve(OmxClipperInstance *s, int bypass, float drive_db, float ceiling_db,
                                                 float softness_pct) {
   if (!s || !s->ready) return;

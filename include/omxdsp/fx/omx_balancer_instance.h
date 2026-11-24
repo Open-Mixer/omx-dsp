@@ -103,13 +103,21 @@ static inline int omx_balancer_instance_init(OmxBalancerInstance *s, float sr) {
   return 1;
 }
 
+#define OMX_CONTRACT_STAGE "balancer/instance-resolve"
 /**
  * Resolve the host's control values for one cycle. `bypass` non-zero makes run() the identity. The
  * arguments are the kernel's contract controls in their declared order, each clamped into its travel, a
  * non-finite one reading as its default. A face that comes back into use starts over.
+ * @param s The instance; null or not ready leaves it as it is.
+ * @param bypass Non-zero makes run() the identity.
+ * @param amount_pct amountPct, 0 to 100 \%, default 0: How much of each band's distance from the target tone the face
+ *        takes out, percent.
+ * @param range_db rangeDb, 1 to 12 dB, default 3: The most any one band moves, dB, either way.
+ * @param speed_db_per_s speedDbPerS, 0.1 to 6 dB, default 0.5: How fast each band walks, dB per second: slow enough
+ *        that a mix's tone drifts into place and no note is chased.
+ * @param slope_db_oct slopeDbOct, -6 to 0 dB/oct, default -3: The target spectrum's slope, dB per octave of density.
  * @thread audio
  */
-#define OMX_CONTRACT_STAGE "balancer/instance-resolve"
 static inline void omx_balancer_instance_resolve(OmxBalancerInstance *s, int bypass, float amount_pct, float range_db,
                                                  float speed_db_per_s, float slope_db_oct) {
   if (!s || !s->ready) return;

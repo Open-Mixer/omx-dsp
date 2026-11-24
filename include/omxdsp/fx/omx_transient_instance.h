@@ -96,15 +96,22 @@ static inline void omx_transient_instance_clear(OmxTransientInstance *s) {
 }
 #undef OMX_CONTRACT_STAGE
 
+#define OMX_CONTRACT_STAGE "transient/instance-resolve"
 /**
  * Resolve the host's control-port values into the kernel's atom for one cycle.
  *
  * `bypass` non-zero -> the atom is disabled and the kernel passes through. Every word is clamped
  * into its declared travel first (see the header note), so the kernel's `control-inside-travel`
  * PRE never sees a foreign value; the kernel's resolve runs only when a clamped word moved.
+ * @param s The instance; null or not ready leaves it as it is.
+ * @param bypass Non-zero makes run() the identity.
+ * @param attack_db attackDb, -24 to 24 dB, default 0.
+ * @param sustain_db sustainDb, -24 to 24 dB, default 0.
+ * @param attack_time_ms attackTimeMs, 2 to 50 ms, default 10.
+ * @param sustain_time_ms sustainTimeMs, 50 to 2000 ms, default 250.
+ * @param output_db outputDb, -24 to 12 dB, default 0.
  * @thread audio
  */
-#define OMX_CONTRACT_STAGE "transient/instance-resolve"
 static inline void omx_transient_instance_resolve(OmxTransientInstance *s, int bypass, float attack_db,
                                                   float sustain_db, float attack_time_ms, float sustain_time_ms,
                                                   float output_db) {

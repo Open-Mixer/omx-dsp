@@ -123,14 +123,19 @@ static inline void omx_pitch_instance_clear(OmxPitchInstance *s) {
 }
 #undef OMX_CONTRACT_STAGE
 
+#define OMX_CONTRACT_STAGE "pitch/instance-resolve"
 /**
  * Resolve the host's control-port values into the kernel's atom for one cycle. `bypass` non-zero
  * disables the atom. The arguments are the kernel's contract controls, in their declared order and
  * user units: `semitones`, `cents` and `mix` (percent), each clamped into its declared travel, a
  * non-finite word reading as the declared default.
+ * @param s The instance; null or not ready leaves it as it is.
+ * @param bypass Non-zero makes run() the identity.
+ * @param semitones semitones, -12 to 12 st, default 0.
+ * @param cents cents, -50 to 50 cents, default 0.
+ * @param mix mix, 0 to 100 \%, default 100.
  * @thread audio
  */
-#define OMX_CONTRACT_STAGE "pitch/instance-resolve"
 static inline void omx_pitch_instance_resolve(OmxPitchInstance *s, int bypass, float semitones, float cents,
                                               float mix) {
   if (!s || !s->ready) return;

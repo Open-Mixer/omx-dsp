@@ -104,15 +104,22 @@ static inline void omx_flanger_instance_clear(OmxFlangerInstance *s) {
 }
 #undef OMX_CONTRACT_STAGE
 
+#define OMX_CONTRACT_STAGE "flanger/instance-resolve"
 /**
  * Resolve the host's control-port values into the kernel's atom for one cycle. `bypass` non-zero
  * disables the atom. The arguments are the kernel's contract controls, in their declared order and
  * user units: `rate` (Hz), `depth` (ms), `feedback` (signed) and `mix` (percent), each clamped
  * into its declared travel, a non-finite word reading as the declared default; the kernel's own
  * feedback clamp stays the last line before the recursion.
+ * @param s The instance; null or not ready leaves it as it is.
+ * @param bypass Non-zero makes run() the identity.
+ * @param rate rate, 0.05 to 5 Hz, default 0.25: The flanger's jet sweep.
+ * @param depth depth, 0 to 5 ms, default 2: The flanger's peak-to-peak excursion above its declared 0.5 ms base.
+ * @param feedback feedback, -0.95 to 0.95, default 0.6: The flanger's SIGNED resonance.
+ * @param mix mix, 0 to 100 \%, default 50: The flanger's wet/dry, as an instance of DRIVE_MIX_RANGE: 50 \%, equal dry
+ *        and wet, where the comb is deepest.
  * @thread audio
  */
-#define OMX_CONTRACT_STAGE "flanger/instance-resolve"
 static inline void omx_flanger_instance_resolve(OmxFlangerInstance *s, int bypass, float rate,
                                                 float depth, float feedback, float mix) {
   if (!s || !s->ready) return;

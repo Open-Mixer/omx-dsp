@@ -82,14 +82,24 @@ static inline int omx_loudlevel_instance_init(OmxLoudlevelInstance *s, float sr)
   return 1;
 }
 
+#define OMX_CONTRACT_STAGE "loudlevel/instance-resolve"
 /**
  * Resolve the host's control values for one cycle. `bypass` non-zero makes run() the identity. The
  * arguments are the kernel's contract controls in their declared order: a travel clamped, a non-finite one
  * reading as its default; the window its index, one outside the set reading as its default. A face that
  * comes back into use starts over.
+ * @param s The instance; null or not ready leaves it as it is.
+ * @param bypass Non-zero makes run() the identity.
+ * @param target_lufs targetLufs, -40 to -6 dB, default -23: The loudness the face holds the signal at, LUFS (BS.1770,
+ *        K-weighted).
+ * @param range_db rangeDb, 0 to 24 dB, default 0: The most the face moves the signal, dB, either way.
+ * @param speed_db_per_s speedDbPerS, 0.1 to 6 dB, default 1: How fast the gain walks, dB per second.
+ * @param gate_lufs gateLufs, OMX_BS1770_ABSOLUTE_GATE_LUFS to -30 dB, default -50: Under this the gain holds: a pause
+ *        is not a quiet passage, and the leveler must not ride up the room between sentences.
+ * @param window window, the place in momentary, short (0 to 1), default short: What the loudness is measured over, in
+ *        the order of the integer the kernel reads: momentary, 400 ms; short, 3 s.
  * @thread audio
  */
-#define OMX_CONTRACT_STAGE "loudlevel/instance-resolve"
 static inline void omx_loudlevel_instance_resolve(OmxLoudlevelInstance *s, int bypass, float target_lufs, float range_db,
                                                   float speed_db_per_s, float gate_lufs, int window) {
   if (!s || !s->ready) return;

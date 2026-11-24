@@ -46,12 +46,18 @@
  *  BUTTERWORTH_Q in double (dsp-primitives §7), the value console-rig.ts designs with. */
 #define OMX_DRIVE_DESIGN_Q OMX_BUTTERWORTH_Q_DOUBLE
 
+#define OMX_CONTRACT_STAGE "drive/design-highshelf"
 /**
- * `rbjSection('highShelf', freq_hz, SQRT1_2, gain_db, rate)`, normalised to `{b0,b1,b2,a1,a2}`.
+ * `rbjSection("highShelf", freq_hz, SQRT1_2, gain_db, rate)`, normalised to `{b0,b1,b2,a1,a2}`.
  * A 0 dB shelf is EXACTLY identity (both pairs come from the same call with the same arguments).
+ * @param freq_hz The shelf's corner, Hz, finite.
+ * @param gain_db The shelf's gain, dB, finite.
+ * @param rate The sample rate, Hz; 0 writes nothing.
+ * @param out The section, `{b0,b1,b2,a1,a2}`; NULL writes nothing.
+ * @pre `finite-corner-and-gain`.
+ * @post `finite-section`, `stable-poles`.
  * @thread audio
  */
-#define OMX_CONTRACT_STAGE "drive/design-highshelf"
 static inline void omx_drive_design_highshelf(float freq_hz, float gain_db, uint32_t rate,
                                               float out[5]) {
   /* CONTRACT (omx_contract.h). A finite corner and gain at a positive rate give five finite
@@ -69,13 +75,18 @@ static inline void omx_drive_design_highshelf(float freq_hz, float gain_db, uint
 }
 #undef OMX_CONTRACT_STAGE
 
+#define OMX_CONTRACT_STAGE "drive/design-lowpass"
 /**
- * `rbjSection('lowpass', freq_hz, SQRT1_2, 0, rate)`, normalised. The numerator is fitted to
+ * `rbjSection("lowpass", freq_hz, SQRT1_2, 0, rate)`, normalised. The numerator is fitted to
  * the prototype's magnitude-squared at DC (1), at `f0` (Q^2) and at Nyquist, then `b0,b1,b2`
  * are recovered from `N(1)`, `N(-1)` and the `sin^2(w/2)` expansion — eq.ts, line for line.
+ * @param freq_hz The low-pass corner, Hz, finite.
+ * @param rate The sample rate, Hz; 0 writes nothing.
+ * @param out The section, `{b0,b1,b2,a1,a2}`; NULL writes nothing.
+ * @pre `finite-corner`.
+ * @post `finite-section`, `stable-poles`.
  * @thread audio
  */
-#define OMX_CONTRACT_STAGE "drive/design-lowpass"
 static inline void omx_drive_design_lowpass(float freq_hz, uint32_t rate, float out[5]) {
   /* CONTRACT (omx_contract.h). Same laws as the shelf: finite in, five finite coefficients
    * over a stable pole pair out, nothing written for a NULL out or a zero rate. */

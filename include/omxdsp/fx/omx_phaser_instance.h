@@ -77,15 +77,26 @@ static inline int omx_phaser_instance_init(OmxPhaserInstance *s, float sr) {
   return 1;
 }
 
+#define OMX_CONTRACT_STAGE "phaser/instance-resolve"
 /**
  * Resolve the host's control-port values into the kernel's atom for one cycle. `bypass` non-zero
  * disables the atom. The arguments are the kernel's contract controls, in their declared order and
  * user units: `rate_hz` (Hz), `base_hz` (Hz), `depth_oct` (octaves), `stages` (a section count,
  * rounded to the nearest even member), `feedback` (signed) and `mix` (percent), each clamped into
  * its declared travel, a non-finite word reading as the declared default.
+ * @param s The instance; null or not ready leaves it as it is.
+ * @param bypass Non-zero makes run() the identity.
+ * @param rate_hz rateHz, 0.05 to 5 Hz, default 0.5: The phaser's sweep speed.
+ * @param base_hz baseHz, 50 to 2000 Hz, default 200: The phaser's lowest centre frequency; the sweep runs upward from
+ *        it.
+ * @param depth_oct depthOct, 0 to 6 oct, default 4: The sweep's span above `base`, in octaves; 0 is a static phaser at
+ *        `base`.
+ * @param stages stages, 2 to 12, default 6: The phaser's section count per leg — EVEN, 2 … 12 (two sections per notch).
+ * @param feedback feedback, -0.9 to 0.9, default 0.4: The phaser's SIGNED resonance.
+ * @param mix mix, 0 to 100 \%, default 50: The phaser's wet/dry, as an instance of DRIVE_MIX_RANGE: 50 \%, where the
+ *        notch is complete.
  * @thread audio
  */
-#define OMX_CONTRACT_STAGE "phaser/instance-resolve"
 static inline void omx_phaser_instance_resolve(OmxPhaserInstance *s, int bypass, float rate_hz,
                                                float base_hz, float depth_oct, float stages,
                                                float feedback, float mix) {
