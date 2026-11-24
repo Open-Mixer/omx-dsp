@@ -134,11 +134,11 @@ MVEC_LIBS   = -lmvec
 override CFLAGS += $(MVEC_CFLAGS)
 endif
 # The limits come from Open-Mixer/omx-contract: the installed omx-contract-devel / libomx-contract-dev
-# at or above the floor packaging/omx-dsp.spec declares, found by pkg-config in tools/contract-include.sh
+# (the published package this level builds against, no version typed), found by pkg-config in tools/contract-include.sh
 # (nothing is downloaded); this tree commits no copy of them. Every sub-script that compiles gets the
 # directory as CONTRACT_INC. The goals below compile nothing against it; it is found unless every goal
 # named is one of them (no goal is `all`, which needs it), so `make copy-check test-parallel` finds it too.
-NO_CONTRACT_GOALS = rtsan install-confined version clean docs docs-site docs-check docs-baseline docs-sabotage public-sources private-refs exports copy-check deps deps-check
+NO_CONTRACT_GOALS = rtsan install-confined version clean docs docs-site docs-check docs-baseline docs-sabotage public-sources private-refs exports copy-check deps-check
 ifneq ($(if $(MAKECMDGOALS),$(filter-out $(NO_CONTRACT_GOALS),$(MAKECMDGOALS)),all),)
 CONTRACT_INC := $(shell sh tools/contract-include.sh)
 ifeq ($(CONTRACT_INC),)
@@ -147,8 +147,6 @@ endif
 export CONTRACT_INC
 endif
 INC      = -Iinclude -isystem $(CONTRACT_INC)
-# The floor the spec declares, rendered into omxdsp.pc's Requires, (no ceiling).
-CONTRACT_FLOOR   := $(shell sh tools/contract-include.sh --floor)
 BUILD    = build
 DOCS_BASELINE = docs/doxygen-baseline.txt
 DOCS_WARNINGS = $(BUILD)/docs/warnings.txt
@@ -205,7 +203,7 @@ VERSION    := $(shell sed -n 's/^\#define OMXDSP_VERSION_\(MAJOR\|MINOR\|PATCH\)
 
 
 
-.PHONY: curve-vectors-wasm wasm wasm-check wasm-sabotage install-wasm npm-stage wasm-loader-check wasm-loader-sabotage fuzz fuzz-run fuzz-sabotage fuzz-records fuzz-coverage fuzz-corpus all lib test lint docs docs-check docs-baseline docs-sabotage clean contract-dir definitions definitions-check contract-proof contract-tests units-check test-tsan suite negative consumer gen-once perturb fdelay-sabotage doppler-sabotage onepole-sabotage threads threads-sabotage checks cost-prel test-fx test-analysis install version golden-write flavours bench-mixmatrix bench-gate bench-drive bench-flanger check-log10f strip-input-identity analysis-engine-identity test-mix mix-engine-identity test-engine-kernels engine-kernels-identity magnitude-sabotage eq-sabotage curve-golden curve-sabotage curve-json-sabotage curve-vectors curve-vectors-write curve-vectors-sabotage meter-view-golden rta-bands-golden meter-view-sabotage rta-bands-sabotage geq-true-sabotage delay-taps-sabotage align-fdelay-sabotage pitch-rates-sabotage instance-rates-sabotage bandwidth-q-table bandwidth-q-sabotage eq-default-bands eq-defaults-table public-sources private-refs deps deps-check cost-deesser note-map-sabotage exports copy-check eq-q-range-sabotage rtsan
+.PHONY: curve-vectors-wasm wasm wasm-check wasm-sabotage install-wasm npm-stage wasm-loader-check wasm-loader-sabotage fuzz fuzz-run fuzz-sabotage fuzz-records fuzz-coverage fuzz-corpus all lib test lint docs docs-check docs-baseline docs-sabotage clean contract-dir definitions definitions-check contract-proof contract-tests units-check test-tsan suite negative consumer gen-once perturb fdelay-sabotage doppler-sabotage onepole-sabotage threads threads-sabotage checks cost-prel test-fx test-analysis install version golden-write flavours bench-mixmatrix bench-gate bench-drive bench-flanger check-log10f strip-input-identity analysis-engine-identity test-mix mix-engine-identity test-engine-kernels engine-kernels-identity magnitude-sabotage eq-sabotage curve-golden curve-sabotage curve-json-sabotage curve-vectors curve-vectors-write curve-vectors-sabotage meter-view-golden rta-bands-golden meter-view-sabotage rta-bands-sabotage geq-true-sabotage delay-taps-sabotage align-fdelay-sabotage pitch-rates-sabotage instance-rates-sabotage bandwidth-q-table bandwidth-q-sabotage eq-default-bands eq-defaults-table public-sources private-refs deps-check cost-deesser note-map-sabotage exports copy-check eq-q-range-sabotage rtsan
 
 all: lib
 
@@ -531,6 +529,8 @@ checks:
 	bash tools/pole-rescale-guard.sh include src
 	bash tools/pole-rescale-guard.sh --self-test
 	sh tools/contract-include-selftest.sh
+	bash tools/no-floor-check.sh
+	bash tools/no-floor-check.sh --self-test
 	bash tools/contract-single-source.sh
 	bash tools/contract-single-source.sh --self-test
 	bash tools/travel-grid-check.sh
@@ -614,16 +614,14 @@ copy-check: | $(BUILD)
 # make private-refs DOTGITHUB=<checkout>.
 public-sources: private-refs
 
-# make deps renders the floors of packaging/deps.txt with that checkout's deps-render, make deps-check refuses drift.
+# make deps-check runs that checkout's deps-render: with no packaging/deps.txt it renders nothing and refuses a
+# ceiling or pin anywhere (no hand-kept floors either: tools/no-floor-check.sh).
 DOTGITHUB ?=
-.PHONY: private-refs deps deps-check
+.PHONY: private-refs deps-check
 private-refs:
 	@test -n "$(DOTGITHUB)" || { echo "$@: name a checkout of Open-Mixer/.github: make $@ DOTGITHUB=<dir>" >&2; exit 2; }
 	$(DOTGITHUB)/.github/actions/private-refs-check/check.sh --self-test
 	$(DOTGITHUB)/.github/actions/private-refs-check/check.sh .
-deps:
-	@test -n "$(DOTGITHUB)" || { echo "$@: name a checkout of Open-Mixer/.github: make $@ DOTGITHUB=<dir>" >&2; exit 2; }
-	$(DOTGITHUB)/.github/actions/deps-render/render.sh --write .
 deps-check:
 	@test -n "$(DOTGITHUB)" || { echo "$@: name a checkout of Open-Mixer/.github: make $@ DOTGITHUB=<dir>" >&2; exit 2; }
 	$(DOTGITHUB)/.github/actions/deps-render/render.sh --check .
@@ -1167,7 +1165,7 @@ version:
 	@echo $(VERSION)
 
 PC_SED = -e 's|@PREFIX@|$(PREFIX)|' -e 's|@LIBDIR@|$(LIBDIR)|' -e 's|@INCLUDEDIR@|$(INCLUDEDIR)|' -e 's|@DATADIR@|$(DATADIR)|' \
-	 -e 's|@VERSION@|$(VERSION)|' -e 's|@CONTRACTFLOOR@|$(CONTRACT_FLOOR)|' -e 's|@FPFLAGS@|$(FPFLAGS)|'
+	 -e 's|@VERSION@|$(VERSION)|' -e 's|@FPFLAGS@|$(FPFLAGS)|'
 
 $(BUILD)/omxdsp.pc: omxdsp.pc.in include/omxdsp/omxdsp.h Makefile packaging/omx-dsp.spec | $(BUILD)
 	sed $(PC_SED) -e 's|@NAME@|omxdsp|' -e 's|@FLAVOUR@|release, contracts compiled out|' \
