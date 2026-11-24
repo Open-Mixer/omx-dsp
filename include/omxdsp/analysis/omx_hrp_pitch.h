@@ -67,16 +67,16 @@
 /** One musical fundamental the analyser believes is sounding. */
 typedef struct {
   float f0_hz;
-  float confidence;   /* 0..1 — this comb's share of the WHOLE spectrum (the detector's gate) */
+  float confidence;   /**< 0..1 — this comb's share of the WHOLE spectrum (the detector's gate) */
   /** 0..1 — this voice's share of the PITCHED content: its explained energy over every
    * detected voice's. The display's percentage: a solo over an orchestra bed can only ever
    * explain its own slice of the whole spectrum (confidence tops out low however clearly the
    * note is heard), but among what is PITCHED it dominates — which is the question an
    * operator's "how sure are we of this note" actually asks. */
   float salience;
-  float amplitude_db; /* dBFS of the strongest partial credited to this voice */
-  int midi_note;      /* nearest equal-tempered note, A4 = 69 */
-  float cents;        /* signed distance from that note, −50..+50 */
+  float amplitude_db; /**< dBFS of the strongest partial credited to this voice */
+  int midi_note;      /**< nearest equal-tempered note, A4 = 69 */
+  float cents;        /**< signed distance from that note, −50..+50 */
   int valid;
 } OmxHrpVoice;
 
@@ -90,14 +90,14 @@ typedef struct {
 typedef struct {
   float f0_min_hz;
   float f0_max_hz;
-  uint32_t harmonics;        /* clamped to OMX_HRP_HARMONICS */
-  uint32_t max_voices;       /* clamped to OMX_HRP_MAX_VOICES */
+  uint32_t harmonics;        /**< clamped to OMX_HRP_HARMONICS */
+  uint32_t max_voices;       /**< clamped to OMX_HRP_MAX_VOICES */
   /** Below this a candidate is not admitted as a voice. Derive it from `max_voices` with
    * omx_hrp_min_confidence_for() — a floor typed independently of the budget it is a
    * fraction of goes wrong in whichever direction the budget last moved. */
   float min_confidence;
-  float subharmonic_accept;  /* §55's octave guard — see omx_hrp_detect */
-  float cents_step;          /* search resolution; smaller is finer and slower */
+  float subharmonic_accept;  /**< §55's octave guard — see omx_hrp_detect */
+  float cents_step;          /**< search resolution; smaller is finer and slower */
 } OmxHrpConfig;
 
 /** The confidence floor that goes with a voice budget — the DERIVATION, not a tuned number.

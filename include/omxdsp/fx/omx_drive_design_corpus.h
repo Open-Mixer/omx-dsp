@@ -34,7 +34,7 @@
 
 /** 0 = lowpass (Q = SQRT1_2, gain unused), 1 = highShelf (Q = SQRT1_2). */
 typedef struct {
-  /* The row's reason LEADS the row (unlike hrp_peaking_corpus.h): with the sections' argument
+  /** The row's reason LEADS the row (unlike hrp_peaking_corpus.h): with the sections' argument
    * order otherwise alike, two literal tables of the same shape token-match line for line and
    * a token-based clone detector reads generated data as a clone. */
   const char *why;

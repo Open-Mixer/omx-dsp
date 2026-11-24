@@ -71,7 +71,7 @@ typedef struct {
   double p1[2][5], p2[2][5];    /**< the octaves' low-passes, two sections each */
   struct omx_env_params ep;     /**< the envelope's poles, peak */
   float ac, rc;                 /**< its per-stage poles */
-  /* state */
+  /** state */
   double hs[4], ls[4], p1s[2][4], p2s[2][4];
   struct omx_env e0, e1;
   struct omx_divider d1, d2;

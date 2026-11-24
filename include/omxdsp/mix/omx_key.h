@@ -44,17 +44,17 @@
  * filter the detector's copy and nothing else.
  */
 struct omx_key {
-  const float *src;  /* the key source's block; NULL = self (this lane's own gate input) */
-  float *buf;        /* scratch the filtered detector copy is built in; NULL = no key */
-  int hp_on, lp_on;  /* 0 = that edge is off (the row's 0 Hz) */
-  float hp_c[5];     /* {b0,b1,b2,a1,a2}, normalised — high-pass */
-  float lp_c[5];     /* the same, low-pass */
-  /* Whether this key FEEDS THE DETECTOR (a source other than self, or an engaged filter edge)
+  const float *src;  /**< the key source's block; NULL = self (this lane's own gate input) */
+  float *buf;        /**< scratch the filtered detector copy is built in; NULL = no key */
+  int hp_on, lp_on;  /**< 0 = that edge is off (the row's 0 Hz) */
+  float hp_c[5];     /**< {b0,b1,b2,a1,a2}, normalised — high-pass */
+  float lp_c[5];     /**< the same, low-pass */
+  /** Whether this key FEEDS THE DETECTOR (a source other than self, or an engaged filter edge)
    * or is only being LISTENED to. A listen-only key still fills `buf` — that is what the
    * operator hears — but the gate detects exactly as it would with no key at all, so latching
    * a monitor can never move the strip's gain reduction. */
   int to_detector;
-  /* SET BY THE WALK, read by the caller: 1 once `buf` holds this block's filtered detector
+  /** SET BY THE WALK, read by the caller: 1 once `buf` holds this block's filtered detector
    * copy. The gate STEP is what builds it, so a lane whose published order carries no gate
    * step has no detector this block — and KEY LISTEN must then feed the cue bus nothing rather
    * than whatever the previous strip left in the shared scratch. An out-field, not a control:

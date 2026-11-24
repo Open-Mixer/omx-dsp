@@ -94,7 +94,7 @@ typedef struct {
   int origin;   /**< enum omx_curve_origins; OMX_CURVE_ORIGINS_USER is a free slot */
   int shape;    /**< enum omx_curve_shapes */
   uint64_t seq; /**< plant order: the console's band order */
-  /* the live band's release (the console's LiveBand) */
+  /** the live band's release (the console's LiveBand) */
   int live;
   double planted_db;
   double last_ring_ms;
@@ -102,7 +102,7 @@ typedef struct {
   int dwelling;
   double dwell_start_ms;
   uint32_t reclamps;
-  /* the stage ramp in flight (the console's interval timer) */
+  /** the stage ramp in flight (the console's interval timer) */
   int ramping;
   uint32_t ramp_step;
   uint32_t ramp_stage;

@@ -97,16 +97,16 @@ typedef struct {
   uint32_t fft;
   uint32_t hop;
 
-  /* audio -> worker */
+  /** audio -> worker */
   OmxLiveFeed feed;
 
-  /* the audio side */
+  /** the audio side */
   OmxHrpCascade live;
   int mode;
   int analysing;
   OmxBandReport report[OMX_FBS_LV2_SLOTS];
 
-  /* the worker side */
+  /** the worker side */
   OmxFbsDetector det;
   OmxFbsResult res;
   OmxFbsPlace place;

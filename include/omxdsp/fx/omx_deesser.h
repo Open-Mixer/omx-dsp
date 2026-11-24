@@ -103,10 +103,10 @@ enum omx_deess_mode {
  * the live rate) — the C only RUNS them. `{b0,b1,b2,a1,a2}`, normalised, a-terms subtracted.
  */
 struct omx_deess {
-  int enabled; /* 0 -> the whole stage is a no-op: no sample and no state word is touched */
-  int mode;    /* enum omx_deess_mode */
+  int enabled; /**< 0 -> the whole stage is a no-op: no sample and no state word is touched */
+  int mode;    /**< enum omx_deess_mode */
   struct omx_dyn dyn;
-  float bp_c[5]; /* the detector band: one cookbook bandpass at freqHz, its Q from widthOct */
+  float bp_c[5]; /**< the detector band: one cookbook bandpass at freqHz, its Q from widthOct */
 };
 
 /**

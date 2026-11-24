@@ -52,18 +52,18 @@
 
 /** One harmonic of one voice, measured. */
 typedef struct {
-  uint32_t harmonic; /* n, 1-based: harmonic 1 IS the fundamental */
-  float freq_hz;     /* where the grid says it should be — n · f0 */
+  uint32_t harmonic; /**< n, 1-based: harmonic 1 IS the fundamental */
+  float freq_hz;     /**< where the grid says it should be — n · f0 */
   float level_db;
-  float confidence; /* 0..1; reduced when another voice claims the same region */
-  int ambiguous;    /* another voice's grid lands within OMX_HRP_ATTRIBUTION_CENTS */
-  int present;      /* is there anything here at all? */
+  float confidence; /**< 0..1; reduced when another voice claims the same region */
+  int ambiguous;    /**< another voice's grid lands within OMX_HRP_ATTRIBUTION_CENTS */
+  int present;      /**< is there anything here at all? */
 } OmxHrpPartial;
 
 /** One voice's whole harmonic grid, measured and attributed. */
 typedef struct {
   OmxHrpPartial partials[OMX_HRP_HARMONICS];
-  uint32_t count; /* how many fitted below Nyquist */
+  uint32_t count; /**< how many fitted below Nyquist */
 } OmxHrpVoiceHarmonics;
 
 /** Is a partial audible at all, judged against this voice's own mean partial? Self-relative for

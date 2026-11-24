@@ -63,7 +63,7 @@ struct omx_plosive_detector {
 
 typedef struct {
   float sr;
-  /* the resolved controls */
+  /** the resolved controls */
   float cons_db, cons_s, cons_rec, band_hz, band_oct, pop_db, pop_s, pop_rec, pop_hz;
   /* the designs */
   float a;                       /**< the pop split's allpass coefficient */

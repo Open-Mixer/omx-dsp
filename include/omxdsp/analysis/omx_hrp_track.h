@@ -48,10 +48,10 @@
 
 /** One voice followed across frames. */
 typedef struct {
-  uint32_t id; /* stable while the voice lives; never reused within a session */
+  uint32_t id; /**< stable while the voice lives; never reused within a session */
   float f0_hz;
   float confidence;
-  float salience; /* the voice's share of the pitched content — carried, never re-derived */
+  float salience; /**< the voice's share of the pitched content — carried, never re-derived */
   float amplitude_db;
   int midi_note;
   float cents;

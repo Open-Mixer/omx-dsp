@@ -90,18 +90,19 @@ static inline uint32_t omx_rta_fft_size_for(uint32_t rate) {
 /** One leg's capture ring (MAIN gets two instances, L+R; a watched strip likewise). */
 struct omx_ring {
   float buf[OMX_RTA_RING_SIZE];
-  _Atomic uint32_t pos; /* next write index, mod OMX_RTA_RING_SIZE — RELEASE-stored after buf */
-  /* How many samples have been written since omx_ring_reset(), SATURATING at the ring's
+  _Atomic uint32_t pos; /**< next write index, mod OMX_RTA_RING_SIZE — RELEASE-stored after buf */
+  /** How many samples have been written since omx_ring_reset(), SATURATING at the ring's
    * capacity. It is what tells a reader whether the window it is about to take is audio or a
    * ring that is still part silence — see omx_ring_has(). Written by the RT thread with
    * a RELEASE store, after `buf` and `pos` (single writer, no read-modify-write), read by the
    * JS thread with ACQUIRE so a `filled` a reader trusts has the samples it counts behind it. */
   _Atomic uint32_t filled;
-  /* How many samples the writer has CLAIMED since the ring was made — monotonic, wrapping at
+  /** How many samples the writer has CLAIMED since the ring was made — monotonic, wrapping at
    * 2^32, never reset. Advanced by `n` and fenced BEFORE omx_ring_write() touches `buf`
    * (the seqlock writer's "odd first", per ring), so a reader that copied any sample of a write
-   * sees that write's claim once it fences after the copy. {@link omx_ring_latch4} latches it
-   * beside `pos`; {@link omx_ring_window_intact} re-reads it after the copy — the check that the
+   * sees that write's claim once it fences after the copy. The console's reader (pipewire-native
+   * mix_dsp.h) latches it beside `pos` in omx_ring_latch4 and re-reads it after the copy in
+   * omx_ring_window_intact — the check that the
    * window the latch proved was not LAPPED while the reader was copying it ("the copy is inside the proof"). */
   _Atomic uint32_t head;
 };
@@ -146,7 +147,7 @@ static inline void omx_ring_write(struct omx_ring *ring, const float *in, uint32
   if (n == 0) return;
   /* THE CLAIM BEFORE THE SAMPLES — the one store that has to lead `buf` rather than follow it:
    * a reader whose copy overlaps these samples must be able to tell, after its copy, that the
-   * writer got there ({@link omx_ring_window_intact}). The release FENCE orders the claim ahead
+   * writer got there (the console's omx_ring_window_intact). The release FENCE orders the claim ahead
    * of every store below it (a release store alone orders only what came BEFORE it). */
   atomic_store_explicit(&ring->head, atomic_load_explicit(&ring->head, memory_order_relaxed) + n,
                         memory_order_relaxed);
