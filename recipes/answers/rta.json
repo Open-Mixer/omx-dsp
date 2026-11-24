@@ -25,7 +25,7 @@
       },
       "value": 32768,
       "doc": "The largest RTA FFT the native ring holds — generated into `omx_contract_limits.h` as `OMX_RTA_FFT_SIZE_MAX`.",
-      "unit": ""
+      "unit": "none"
     },
     {
       "name": "RTA_BAND_F_MIN",
@@ -115,7 +115,7 @@
       },
       "value": 0.25,
       "doc": "How far the low zoom's window must have advanced, as a fraction of that window, before it is recomputed; between recomputes the last zoom rides the fresh main spectrum unchanged.",
-      "unit": ""
+      "unit": "none"
     },
     {
       "name": "RTA_TAP_GATE_DB",

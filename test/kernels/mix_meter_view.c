@@ -171,12 +171,12 @@ static void arm_mix_meter_view(void) {
 
   /* the unit of each kind and measurement */
   static const enum omx_meter_units UNIT_OF[OMX_METER_MEASUREMENTS_COUNT] = {
-      OMX_METER_UNITS_DBFS, OMX_METER_UNITS_DBTP, OMX_METER_UNITS_LUFS,
+      OMX_METER_UNITS_D_BFS, OMX_METER_UNITS_D_BTP, OMX_METER_UNITS_LUFS,
       OMX_METER_UNITS_LUFS, OMX_METER_UNITS_LUFS, OMX_METER_UNITS_LU};
   uint32_t wrong = 0;
   for (uint32_t i = 0; i < OMX_METER_MEASUREMENTS_COUNT; i++) {
     if (omx_meter_view_unit_of(OMX_METER_KINDS_LEVEL, (enum omx_meter_measurements)i) != UNIT_OF[i]) wrong++;
-    if (omx_meter_view_unit_of(OMX_METER_KINDS_GAIN_REDUCTION, (enum omx_meter_measurements)i) != OMX_METER_UNITS_DB) wrong++;
+    if (omx_meter_view_unit_of(OMX_METER_KINDS_GAIN_REDUCTION, (enum omx_meter_measurements)i) != OMX_METER_UNITS_D_B) wrong++;
   }
   if (omx_meter_view_unit_of((enum omx_meter_kinds)OMX_METER_KINDS_COUNT, OMX_METER_MEASUREMENTS_PEAK) != OMX_METER_UNITS_COUNT) wrong++;
   ok(wrong == 0, "unit: dBFS, dBTP, LUFS, LU for a level's measurements, dB for a reduction, none past the set", wrong, 0);

@@ -7,7 +7,7 @@ import { readFileSync } from 'node:fs';
 import { WASI_IMPORTS, loadCurve, wasiStandIns } from '../dist/index.js';
 
 const bytes = readFileSync(new URL('../wasm/omx-dsp.wasm', import.meta.url));
-const DYN = { kind: 'transfer_curve', family: 'dynamics', sampleRate: 48000, points: 3, extents: { min: -40, max: 0 }, terms: [{ role: 'threshold', value: -20, unit: 'db' }, { role: 'ratio', value: 4, unit: 'ratio' }] };
+const DYN = { kind: 'transfer_curve', family: 'dynamics', sampleRate: 48000, points: 3, extents: { min: -40, max: 0 }, terms: [{ role: 'threshold', value: -20, unit: 'dB' }, { role: 'ratio', value: 4, unit: 'ratio' }] };
 
 describe('the curve module', () => {
   it('imports only stdio WASI functions the loader stands in for (a build links the subset its wasi-libc needs: three on debian trixie, five on fedora)', async () => {

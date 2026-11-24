@@ -103,7 +103,7 @@
         "step": {
           "ref": "EQ_Q_RANGE.step"
         },
-        "unit": "",
+        "unit": "none",
         "default": 1,
         "defaultFrom": "desk"
       },
@@ -171,7 +171,7 @@
         "step": {
           "ref": "DEESS_RATIO_RANGE.step"
         },
-        "unit": "",
+        "unit": "none",
         "default": 2,
         "defaultFrom": "desk"
       },
@@ -273,7 +273,7 @@
         "min": 0,
         "max": 100,
         "step": 1,
-        "unit": "%",
+        "unit": "percent",
         "default": 100,
         "defaultFrom": "desk"
       }
@@ -378,7 +378,7 @@
         "impl": "include/omxdsp/fx/omx_dyneq_instance.h#OMX_DYNEQ_INSTANCE_BANDS"
       },
       "doc": "How many bands the dynamic EQ carries, each a static EQ section and its dynamics: six, the floating bands of the reference desks' dynamic EQs. Its state holds this many band-dynamics states.",
-      "unit": "",
+      "unit": "none",
       "value": 6
     }
   }

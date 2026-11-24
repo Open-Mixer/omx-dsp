@@ -29,7 +29,7 @@ const CONSUMER = {
   HRP_HARMONIC_COUNT: ['data/kernels/hrp.json', 12],
   // omx-dsp include/omxdsp/omx_oversampler.h OMX_OVS_LATENCY_4X 72
   DETECTOR_OVERSAMPLE_LATENCY_SAMPLES: ['data/kernels/comp.json', 72],
-  DIVERGENCE_RANGE: ['data/kernels/balance.json', { min: 0, max: 1, step: 0, unit: '' }],
+  DIVERGENCE_RANGE: ['data/kernels/balance.json', { min: 0, max: 1, step: 0, unit: 'none' }],
   OSCILLATOR_FREQ_RANGE: ['data/kernels/generator.json', { min: 20, max: 20000, step: 10, unit: 'Hz' }],
   // omx-dsp include/omxdsp/omx_align.h OMX_ALIGN_MAX_MS 100
   INPUT_ALIGN_DELAY_RANGE: ['data/kernels/align.json', { min: 0, max: 100, step: 0.0001, unit: 'ms' }],

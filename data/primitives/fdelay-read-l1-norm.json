@@ -9,7 +9,7 @@
       "impl": "include/omxdsp/fx/omx_flanger.h#loop"
     },
     "doc": "`Λ` for the chorus/flanger read — ONE value; the header and every law read this.",
-    "unit": "",
+    "unit": "none",
     "value": {
       "derive": "lagrangeReadL1",
       "order": {

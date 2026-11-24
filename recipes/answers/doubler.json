@@ -16,7 +16,7 @@
         "min": 1,
         "max": 4,
         "step": 1,
-        "unit": "",
+        "unit": "none",
         "default": 2,
         "defaultFrom": "desk"
       },
@@ -91,7 +91,7 @@
         "min": 0,
         "max": 100,
         "step": 1,
-        "unit": "%",
+        "unit": "percent",
         "default": 60,
         "defaultFrom": "desk"
       },
@@ -106,7 +106,7 @@
         "min": 0,
         "max": 100,
         "step": 1,
-        "unit": "%",
+        "unit": "percent",
         "default": 50,
         "defaultFrom": "desk"
       },
@@ -118,7 +118,7 @@
         "origin": "first declared in omx-dsp data/kernels/doubler.json at e9ae3925cae7, shipped in omx-dsp 0.27.0; implemented at include/omxdsp/fx/omx_doubler_instance.h#OMX_DOUBLER_INSTANCE_VOICES"
       },
       "value": 4,
-      "unit": "",
+      "unit": "none",
       "doc": "The most voices the doubler carries; its state holds this many heads."
     },
     {
@@ -132,7 +132,7 @@
         0.5,
         -0.5
       ],
-      "unit": "",
+      "unit": "none",
       "doc": "Each voice's share of detuneCents, signed: the first up, the second down, the third and fourth half as far, up and down."
     },
     {
@@ -146,7 +146,7 @@
         0.78,
         1.17
       ],
-      "unit": "",
+      "unit": "none",
       "doc": "Each voice's share of delayMs, so the voices never land on one sample: two singers do not breathe together."
     },
     {
@@ -160,7 +160,7 @@
         -0.5,
         0.5
       ],
-      "unit": "",
+      "unit": "none",
       "doc": "Each voice's place at a spread of 100 %, -1 hard left to +1 hard right."
     },
     {
@@ -178,7 +178,7 @@
         "origin": "first declared in omx-dsp data/kernels/doubler.json at e9ae3925cae7, shipped in omx-dsp 0.27.0; implemented at include/omxdsp/fx/omx_doubler_instance.h#OMX_DOUBLER_INSTANCE_FADE"
       },
       "value": 0.25,
-      "unit": "",
+      "unit": "none",
       "doc": "The share of the head's sweep the crossfade to the next head takes."
     }
   ]

@@ -20,23 +20,23 @@
  * a linear factor, a high shelf in kHz from a band_type choice, a notch, a 24 dB/oct high-pass, a 12 dB/oct low-pass (each slope resolved to dB per octave). */
 static const struct omx_curve_term CURVE_GOLDEN_EQ_TERMS[] = {
     CT(BAND_FREQ, 0, 1000.0, HZ, OMX_CURVE_SHAPES_BELL),
-    CT(BAND_GAIN, 0, 6.0, DB, CT_NS),
+    CT(BAND_GAIN, 0, 6.0, D_B, CT_NS),
     CT(BAND_Q, 0, 1.0, OCT, CT_NS),
     CT(BAND_TYPE, 1, 2.0, NONE, OMX_CURVE_SHAPES_LOWSHELF),
     CT(BAND_FREQ, 1, 100.0, HZ, CT_NS),
     CT(BAND_GAIN, 1, 2.0, COEF, CT_NS),
     CT(BAND_Q, 1, 0.7071, NONE, CT_NS),
     CT(BAND_TYPE, 2, 3.0, NONE, OMX_CURVE_SHAPES_HIGHSHELF),
-    CT(BAND_FREQ, 2, 8.0, KHZ, CT_NS),
-    CT(BAND_GAIN, 2, -4.0, DB, CT_NS),
+    CT(BAND_FREQ, 2, 8.0, K_HZ, CT_NS),
+    CT(BAND_GAIN, 2, -4.0, D_B, CT_NS),
     CT(BAND_Q, 2, 0.7071, COEF, CT_NS),
     CT(BAND_FREQ, 3, 3000.0, HZ, OMX_CURVE_SHAPES_NOTCH),
     CT(BAND_Q, 3, 8.0, NONE, CT_NS),
     CT(BAND_ON, 3, 1.0, NONE, CT_NS),
     CT(HPF_FREQ, 0, 40.0, HZ, CT_NS),
-    CT(HPF_SLOPE, 0, 24.0, DB, CT_NS),
-    CT(LPF_FREQ, 0, 16.0, KHZ, CT_NS),
-    CT(LPF_SLOPE, 0, 12.0, DB, CT_NS),
+    CT(HPF_SLOPE, 0, 24.0, D_B, CT_NS),
+    CT(LPF_FREQ, 0, 16.0, K_HZ, CT_NS),
+    CT(LPF_SLOPE, 0, 12.0, D_B, CT_NS),
     CT(LPF_ON, 0, 1.0, NONE, CT_NS),
 };
 static const struct omx_curve_request CURVE_GOLDEN_EQ = {
@@ -45,10 +45,10 @@ static const struct omx_curve_request CURVE_GOLDEN_EQ = {
 
 /* A compressor at 96 kHz: -20 dBFS, 4:1, a 6 dB knee, 3 dB of make-up. */
 static const struct omx_curve_term CURVE_GOLDEN_COMP_TERMS[] = {
-    CT(THRESHOLD, 0, -20.0, DBFS, CT_NS),
+    CT(THRESHOLD, 0, -20.0, D_BFS, CT_NS),
     CT(RATIO, 0, 4.0, RATIO, CT_NS),
-    CT(KNEE, 0, 6.0, DB, CT_NS),
-    CT(MAKEUP, 0, 3.0, DB, CT_NS),
+    CT(KNEE, 0, 6.0, D_B, CT_NS),
+    CT(MAKEUP, 0, 3.0, D_B, CT_NS),
 };
 static const struct omx_curve_request CURVE_GOLDEN_COMP = {
     OMX_CURVE_DISPLAYS_TRANSFER_CURVE, OMX_CURVE_FAMILIES_DYNAMICS, 96000.0, 41u, 0, 0.0, 0.0,
@@ -56,11 +56,11 @@ static const struct omx_curve_request CURVE_GOLDEN_COMP = {
 
 /* A gate at 44.1 kHz: -40 dB, a -60 dB range, 4:1 below, the knee range -46 to -38 dB, off the threshold. */
 static const struct omx_curve_term CURVE_GOLDEN_GATE_TERMS[] = {
-    CT(THRESHOLD, 0, -40.0, DB, CT_NS),
-    CT(RANGE, 0, -60.0, DB, CT_NS),
+    CT(THRESHOLD, 0, -40.0, D_B, CT_NS),
+    CT(RANGE, 0, -60.0, D_B, CT_NS),
     CT(RATIO, 0, 4.0, COEF, CT_NS),
-    CT(KNEE_START, 0, -46.0, DB, CT_NS),
-    CT(KNEE_END, 0, -38.0, DB, CT_NS),
+    CT(KNEE_START, 0, -46.0, D_B, CT_NS),
+    CT(KNEE_END, 0, -38.0, D_B, CT_NS),
 };
 static const struct omx_curve_request CURVE_GOLDEN_GATE = {
     OMX_CURVE_DISPLAYS_TRANSFER_CURVE, OMX_CURVE_FAMILIES_GATE, 44100.0, 41u, 0, 0.0, 0.0,
@@ -72,21 +72,21 @@ static const struct omx_curve_request CURVE_GOLDEN_GATE = {
  * asked for beside the marks. */
 static const struct omx_curve_term CURVE_GOLDEN_FBS_TERMS[] = {
     CT(BAND_FREQ, 0, 120.0, HZ, OMX_CURVE_SHAPES_BELL),
-    CT(BAND_GAIN, 0, 3.0, DB, CT_NS),
+    CT(BAND_GAIN, 0, 3.0, D_B, CT_NS),
     CT(BAND_Q, 0, 0.8, NONE, CT_NS),
     CT(BAND_FREQ, 1, 4000.0, HZ, OMX_CURVE_SHAPES_HIGHSHELF),
-    CT(BAND_GAIN, 1, 2.0, DB, CT_NS),
+    CT(BAND_GAIN, 1, 2.0, D_B, CT_NS),
     CT(BAND_Q, 1, 0.7071, NONE, CT_NS),
     CTO(BAND_FREQ, 2, 2500.0, HZ, OMX_CURVE_SHAPES_NOTCH, FBS_FIXED),
     CTO(BAND_Q, 2, 30.0, NONE, CT_NS, FBS_FIXED),
     CTO(BAND_FREQ, 3, 630.0, HZ, OMX_CURVE_SHAPES_BELL, FBS_LIVE),
-    CTO(BAND_GAIN, 3, -9.0, DB, CT_NS, FBS_LIVE),
+    CTO(BAND_GAIN, 3, -9.0, D_B, CT_NS, FBS_LIVE),
     CTO(BAND_Q, 3, 16.0, NONE, CT_NS, FBS_LIVE),
     CTO(BAND_FREQ, 4, 1800.0, HZ, OMX_CURVE_SHAPES_BELL, HRP),
-    CTO(BAND_GAIN, 4, -4.5, DB, CT_NS, HRP),
+    CTO(BAND_GAIN, 4, -4.5, D_B, CT_NS, HRP),
     CTO(BAND_Q, 4, 24.0, NONE, CT_NS, HRP),
     CT(HPF_FREQ, 0, 60.0, HZ, CT_NS),
-    CT(HPF_SLOPE, 0, 12.0, DB, CT_NS),
+    CT(HPF_SLOPE, 0, 12.0, D_B, CT_NS),
 };
 static const struct omx_curve_request CURVE_GOLDEN_FBS = {
     OMX_CURVE_DISPLAYS_EQ_RESPONSE, OMX_CURVE_FAMILIES_EQ, 48000.0, 48u, 0, 0.0, 0.0,

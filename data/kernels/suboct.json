@@ -34,7 +34,7 @@
         "min": 0,
         "max": 100,
         "step": 0.1,
-        "unit": "%",
+        "unit": "percent",
         "default": 100,
         "defaultFrom": "desk"
       }
@@ -50,7 +50,7 @@
         "min": 0,
         "max": 100,
         "step": 0.1,
-        "unit": "%",
+        "unit": "percent",
         "default": 0,
         "defaultFrom": "desk"
       }
@@ -66,7 +66,7 @@
         "min": 0,
         "max": 100,
         "step": 0.1,
-        "unit": "%",
+        "unit": "percent",
         "default": 100,
         "defaultFrom": "desk"
       }
@@ -160,7 +160,7 @@
         "impl": "include/omxdsp/fx/omx_suboct_instance.h#omx_suboct_arm_level"
       },
       "doc": "The arming threshold as a share of the tracked peak: a toggle needs a dip under -1/4 of the peak, which a fundamental-dominant note makes once a cycle and noise under half of it never makes.",
-      "unit": "",
+      "unit": "none",
       "value": 0.25
     },
     "SUBOCT_ENV_ATTACK_MS": {
