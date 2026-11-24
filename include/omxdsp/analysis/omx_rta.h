@@ -52,7 +52,7 @@
  * omxdsp_definitions.h (declared once, in core). */
 
 /** The FFT length for `rate`: the smallest power of two whose bins are at or under
- * {@link OMX_RTA_TARGET_BIN_HZ} (44.1/48 kHz → 8192, 88.2/96 kHz → 16384, 176.4/192 kHz →
+ * OMX_RTA_TARGET_BIN_HZ (44.1/48 kHz → 8192, 88.2/96 kHz → 16384, 176.4/192 kHz →
  * 32768). Window time stays ~171 ms at every rate — resolution AND responsiveness are both
  * rate-invariant, which is the point of deriving.
  * @thread audio */
@@ -83,7 +83,7 @@ static inline uint32_t omx_rta_fft_size_for(uint32_t rate) {
 
 /** Ring capacity per leg: 2× the LARGER of the two readers' windows — the LOW zoom's
  * {@link OMX_RTA_LOW_WINDOW} (65536) exceeds even the 192 kHz main window
- * ({@link OMX_RTA_FFT_SIZE_MAX}), the same "a read never races a write all the way around
+ * (OMX_RTA_FFT_SIZE_MAX), the same "a read never races a write all the way around
  * the buffer" margin the ring always carried. */
 #define OMX_RTA_RING_SIZE (OMX_RTA_LOW_WINDOW * 2)
 

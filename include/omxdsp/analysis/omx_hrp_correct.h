@@ -86,7 +86,7 @@
  * cannot tell which voice owns the energy, so it is the analyser's resolution and follows the
  * ±1 bin `omx_hrp_bin_peak` reads over. This one is §30's SELECTION window: how close two
  * CORRECTIONS must sit before planting both merely deepens one bell, so it follows
- * {@link OMX_HRP_BAND_Q} — a Q-5 bell's -3 dB half-width is ~170 cents, and a semitone apart
+ * OMX_HRP_BAND_Q — a Q-5 bell's -3 dB half-width is ~170 cents, and a semitone apart
  * they overlap over most of their travel. Different laws, different derivations, different
  * numbers; they shared a name for one commit and the build now refuses that (-Werror on the
  * two binaries that include both headers). */
@@ -350,9 +350,9 @@ static inline void omx_hrp_cascade_apply(OmxHrpCascade *c, const float *in, floa
  * The cut a positive deviation authorises, as a POSITIVE magnitude in dB — the C twin of
  * `harmonicDeviationGainsDb`'s per-harmonic rule.
  *
- * Only the part ABOVE {@link OMX_HRP_EXCESS_THRESHOLD_DB} is a resonance; the threshold itself
+ * Only the part ABOVE OMX_HRP_EXCESS_THRESHOLD_DB is a resonance; the threshold itself
  * is the instrument's expression and is never corrected. The operator's `amount` scales what
- * remains, and {@link OMX_HRP_MAX_CUT_DB} caps it. A deviation at or below the threshold, a
+ * remains, and OMX_HRP_MAX_CUT_DB caps it. A deviation at or below the threshold, a
  * non-positive amount, or a non-finite input authorises NOTHING — zero, which callers read as
  * "no band", never as "a band of zero dB".
  *

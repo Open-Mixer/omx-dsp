@@ -231,7 +231,7 @@ typedef struct {
  * The defaults a take of `rate` Hz is analysed with.
  *
  * The window LENGTH is the RTA's own, derived from the rate (omx_rta_fft_size_for()) so
- * that a bin is about {@link OMX_RTA_TARGET_BIN_HZ} wide whatever the take was recorded at —
+ * that a bin is about OMX_RTA_TARGET_BIN_HZ wide whatever the take was recorded at —
  * §45 forbids hard-coding bin frequencies for one rate, and deriving the length is how the live
  * tier already obeys it.
  *

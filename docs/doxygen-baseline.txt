@@ -158,9 +158,6 @@ include/omxdsp/analysis/omx_hrp_correct.h: warning: return type of member omx_hr
 include/omxdsp/analysis/omx_hrp_correct.h: warning: return type of member omx_hrp_family_search is not documented
 include/omxdsp/analysis/omx_hrp_correct.h: warning: return type of member omx_hrp_resonance_score is not documented
 include/omxdsp/analysis/omx_hrp_correct.h: warning: return type of member omx_hrp_select is not documented
-include/omxdsp/analysis/omx_hrp_correct.h: warning: unable to resolve link to 'OMX_HRP_BAND_Q' for \link command
-include/omxdsp/analysis/omx_hrp_correct.h: warning: unable to resolve link to 'OMX_HRP_EXCESS_THRESHOLD_DB' for \link command
-include/omxdsp/analysis/omx_hrp_correct.h: warning: unable to resolve link to 'OMX_HRP_MAX_CUT_DB' for \link command
 include/omxdsp/analysis/omx_hrp_lv2.h: warning: Member OMX_HRP_LV2_REPORT (macro definition) of file omx_hrp_lv2.h is not documented.
 include/omxdsp/analysis/omx_hrp_lv2.h: warning: Member analysing (variable) of struct OmxHrpLv2 is not documented.
 include/omxdsp/analysis/omx_hrp_lv2.h: warning: Member answered (variable) of struct OmxHrpLv2 is not documented.
@@ -270,7 +267,6 @@ include/omxdsp/analysis/omx_hrp_render.h: warning: return type of member omx_hrp
 include/omxdsp/analysis/omx_hrp_render.h: warning: return type of member omx_hrp_render_init is not documented
 include/omxdsp/analysis/omx_hrp_render.h: warning: return type of member omx_hrp_render_peak_excess_db is not documented
 include/omxdsp/analysis/omx_hrp_render.h: warning: return type of member omx_hrp_render_voice_confidence is not documented
-include/omxdsp/analysis/omx_hrp_render.h: warning: unable to resolve link to 'OMX_RTA_TARGET_BIN_HZ' for \link command
 include/omxdsp/analysis/omx_hrp_track.h: warning: Member OMX_HRP_MAX_TRACKS (macro definition) of file omx_hrp_track.h is not documented.
 include/omxdsp/analysis/omx_hrp_track.h: warning: Member active (variable) of struct OmxHrpTrack is not documented.
 include/omxdsp/analysis/omx_hrp_track.h: warning: Member amplitude_db (variable) of struct OmxHrpTrack is not documented.
@@ -318,8 +314,6 @@ include/omxdsp/analysis/omx_rta.h: warning: parameters of member omx_rta_spectru
 include/omxdsp/analysis/omx_rta.h: warning: return type of member omx_ring_filled is not documented
 include/omxdsp/analysis/omx_rta.h: warning: return type of member omx_ring_has is not documented
 include/omxdsp/analysis/omx_rta.h: warning: return type of member omx_rta_fft_size_for is not documented
-include/omxdsp/analysis/omx_rta.h: warning: unable to resolve link to 'OMX_RTA_FFT_SIZE_MAX' for \link command
-include/omxdsp/analysis/omx_rta.h: warning: unable to resolve link to 'OMX_RTA_TARGET_BIN_HZ' for \link command
 include/omxdsp/analysis/omx_rta_bands.h: warning: Member band (variable) of struct omx_rta_wedge is not documented.
 include/omxdsp/analysis/omx_rta_bands.h: warning: Member bins (variable) of struct omx_rta_tier is not documented.
 include/omxdsp/analysis/omx_rta_bands.h: warning: Member boost (variable) of struct omx_rta_wedge is not documented.
