@@ -15,9 +15,10 @@
 # include tools/contract-include.sh finds). The kernel file is read as text (the data files are written two
 # spaces deep, one key per line) and rendered to the dump's rows:
 #   - a travel: its min, max and default, a {"ref": NAME} read as the scalar constant NAME declares in data/,
-#     and its unit as the PARAM_UNITS id whose symbol (x-symbol) it is, in omx-contract's param domain;
+#     and its unit, which data/ states as the PARAM_UNITS id (percent, dBPerOct), read as that id; one that is no
+#     PARAM_UNITS id of omx-contract's param domain (a symbol such as % included) is UNKNOWN-UNIT, never mapped;
 #   - a choice: 0, its last index and its default's index, unit none;
-#   - a readout: its name, its unit's PARAM_UNITS id, its min and max.
+#   - a readout: its name, its unit (a PARAM_UNITS id, read the same way), its min and max.
 # A control the descriptor cannot carry yet (a `count`, an `of`) is rendered as such, so it is named.
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
@@ -26,11 +27,11 @@ CC="${CC:-cc}"
 PARAM_JSON="$(pkg-config --variable=datadir omx-contract 2>/dev/null || true)/contract.d/param/param.json"
 [ -f "$PARAM_JSON" ] || { echo "face-descriptor-check: no omx-contract param domain at $PARAM_JSON" >&2; exit 2; }
 
-# units: "<symbol> <PARAM_UNITS id>" per unit of the param domain, the empty symbol as "-"
+# units: the PARAM_UNITS ids of the param domain, one per line (a unit word is the one that carries an x-symbol)
 units() {
   awk '
     /"const": "/ { c = $0; sub(/.*"const": "/, "", c); sub(/".*/, "", c) }
-    /"x-symbol": "/ { s = $0; sub(/.*"x-symbol": "/, "", s); sub(/".*/, "", s); if (s == "") s = "-"; if (!(s in seen)) { seen[s] = 1; print s, c } }
+    /"x-symbol": "/ { if (!(c in seen)) { seen[c] = 1; print c } }
   ' "$PARAM_JSON"
 }
 
@@ -47,12 +48,12 @@ constants() {
 rows() {
   awk -v UF="$2" -v CF="$3" '
     BEGIN {
-      while ((getline l < UF) > 0) { split(l, a, " "); unit[a[1]] = a[2] }
+      while ((getline l < UF) > 0) unit[l] = 1
       while ((getline l < CF) > 0) { split(l, a, " "); if (!(a[1] in cst)) cst[a[1]] = a[2] }
     }
     function str(s) { sub(/^[^:]*: "/, "", s); sub(/",?$/, "", s); return s }
     function num(s) { sub(/^[^:]*: /, "", s); sub(/,$/, "", s); return s + 0 }
-    function uid(s) { if (s == "") s = "-"; return (s in unit) ? unit[s] : "UNKNOWN-UNIT(" s ")" }
+    function uid(s) { return (s in unit) ? s : "UNKNOWN-UNIT(" s ")" }
     function f(x) { return sprintf("%.7g", x) }
     /^  "controls": \[/ { sect = "c"; next }
     /^  "readouts": \[/ { sect = "r"; next }
@@ -141,8 +142,13 @@ if [ "${1:-}" = --self-test ]; then
   sed -i 's/^      "name": "gainReductionDb",$/      "name": "reductionDb",/' "$s/data/kernels/clipper.json"
   name "the clipper's readout renamed in its kernel file" "kernel file: meter reductionDb dB -60 0"
   cp "$HERE/data/kernels/clipper.json" "$s/data/kernels/clipper.json"
+  # data/ states a unit as its PARAM_UNITS id: the clipper's softness spelled as its symbol % is no id, and is named
+  sed -i '/"softnessPct"/,/"unit"/s/^\(        "unit": \)"percent"/\1"%"/' "$s/data/kernels/clipper.json"
+  grep -q '"unit": "%"' "$s/data/kernels/clipper.json" || { echo "face-descriptor-check self-test: the % plant did not land" >&2; exit 1; }
+  name "the clipper's softness unit spelled as a symbol" "kernel file: param softnessPct travel 0 100 0 UNKNOWN-UNIT(%)"
+  cp "$HERE/data/kernels/clipper.json" "$s/data/kernels/clipper.json"
   check "$s/include" "$s/data" "$s/w" >/dev/null || { echo "face-descriptor-check self-test: the restored tree does not pass" >&2; exit 1; }
-  echo "face-descriptor-check self-test: two rows swapped, a default moved, a unit changed and a readout renamed in a kernel file were each named"
+  echo "face-descriptor-check self-test: two rows swapped, a default moved, a unit changed, a unit spelled as a symbol and a readout renamed in a kernel file were each named"
   exit 0
 fi
 
