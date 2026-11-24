@@ -18,7 +18,8 @@
 //       bandwidthOctavesQ against the C law's table test/golden/eq_bandwidth_q.json: prints the
 //       largest gap in ulps, exits 1 past MAX_ULPS (FreeMixer/omx-dsp#41)
 //
-// <contract-ts> is omx-contract's TypeScript render (`omx-contract render --target ts --out <dir>`).
+// <contract-ts> is omx-contract's TypeScript render (`omx-contract render --target ts --out <dir>`), which the openmixer
+// sources import; the oracle rates are this library's own (data/primitives/rates.json).
 import { execFileSync, spawnSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { register } from 'node:module';
@@ -42,11 +43,12 @@ const pkgs = `${openmixer}/packages`;
 const eq = await import(pathToFileURL(`${pkgs}/core/src/eq.ts`).href);
 const commit = execFileSync('git', ['-C', openmixer, 'rev-parse', 'HEAD']).toString().trim();
 
-/** The nine rates every oracle runs at, read from the contract render the tool is given
- * (omx-contract's ORACLE_FULL_RATES): never a list typed here. */
-const { ORACLE_FULL_RATES } = await import(pathToFileURL(`${contractTs}/omx-contract.js`).href);
+/** The nine rates every oracle runs at, read from this library's own data/primitives/rates.json
+ * (ORACLE_FULL_RATES, sorting pass V25): never a list typed here, never omx-contract's render. */
+const RATES_JSON = new URL('../data/primitives/rates.json', import.meta.url);
+const ORACLE_FULL_RATES = JSON.parse(readFileSync(RATES_JSON, 'utf8')).ORACLE_FULL_RATES?.values;
 if (!Array.isArray(ORACLE_FULL_RATES) || ORACLE_FULL_RATES.length === 0) {
-  console.error(`ts-golden: ${contractTs}/omx-contract.js exports no ORACLE_FULL_RATES (omx-contract 2.16.0 or later)`);
+  console.error('ts-golden: data/primitives/rates.json holds no ORACLE_FULL_RATES values');
   process.exit(2);
 }
 

@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2026 Pau Aliagas <linuxnow@gmail.com>
 Name: omx-dsp
-Version: 0.33.1
+Version: 0.34.0
 Release: 1%{?dist}
 License: GPL-3.0-or-later
 Summary: The audio toolbox of the OpenMixer console, as a real-time-safe C library
@@ -20,7 +20,7 @@ BuildRequires: lld
 BuildRequires: wasi-libc-devel
 BuildRequires: wasi-libc-static
 BuildRequires: pkgconfig
-BuildRequires: omx-contract-devel >= 3.18.0
+BuildRequires: omx-contract-devel >= 3.21.0
 # The JACK headers by pkgconfig(jack), so a host with PipeWire's JACK (the build image preinstalls its devel package)
 # builds this; and jack2's RUNTIME by name, jackd and its libjack, which check-package's omx-rt-gate host-buffer arm
 # starts and loads, failing by name on PipeWire's. It installs beside PipeWire's JACK libraries. A build requirement
@@ -49,7 +49,7 @@ Its documentation is on openmixer.org.
 %package devel
 Summary: Headers and static library to build on the OpenMixer audio toolbox
 Provides: %{name}-static = %{version}-%{release}
-Requires: omx-contract-devel >= 3.18.0
+Requires: omx-contract-devel >= 3.21.0
 Requires: %{name}-contract = %{version}-%{release}
 
 %package -n omx-rt-gate
@@ -85,7 +85,7 @@ Its documentation is on openmixer.org.
 Summary: omx-dsp's kernel and instance declarations, for programs that read them at run time
 BuildArch: noarch
 # the declarations live in omx-contract's contract directory and are read against its schema; a floor only
-Requires: omx-contract-data >= 3.18.0
+Requires: omx-contract-data >= 3.21.0
 
 %package -n omx-dsp-wasm
 Summary: omx-dsp's curve function as a WebAssembly module, with its JavaScript loader
@@ -174,8 +174,24 @@ Its documentation is on openmixer.org.
 %license LICENSE
 %doc README.md
 %{_datadir}/omx-contract/contract.d/3/omx-dsp/
+%{_datadir}/omx-dsp/catalogs/
 
 %changelog
+* Sat Nov 21 2026 Pau Aliagas <linuxnow@gmail.com> - 0.34.0-1
+- Sorting pass: RT_HARD_TARGET, ORACLE_FLOOR_RATES and ORACLE_FULL_RATES (V25),
+  CURVE_AXES and CURVE_KINDS with their translations (V26 and its
+  catalogs, installed in /usr/share/omx-dsp/catalogs) and READOUT_RATE_HZ
+  (V22) are this library's data, rendered into omxdsp_definitions.h and
+  omx_dsp_vocabulary.h; the install no longer excludes codes.json (V20
+  follow-up). The floors on omx-contract rise to 3.21.0.
+- CURVE_UNITS names the standard unit each curve word stands for (`standard`,
+  a PARAM_UNITS const), rendered as OMX_CURVE_UNITS_STANDARD.
+- The rotary reports the sweep's shortest read as its latency at full mix,
+  and 0 below it (#117).
+- OMX_ROTARY_INSTANCE_LATENCY_FRAMES is removed: the latency is the face's
+  latency function, the sweep's shortest read at full mix and 0 below it.
+- The rotary publishes its sweep (omx_rotary_sweep, omx_rotary_instance_sweep)
+  and ROTARY_LONGEST_MS, its far end.
 * Thu Nov 19 2026 Pau Aliagas <linuxnow@gmail.com> - 0.33.1-1
 - ts: the TypeScript twins no Open-Mixer repository consumes are deleted
   (hrp-place and fbs-place, the gaincomp, gate, meter and eq helpers named in

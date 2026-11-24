@@ -9,6 +9,7 @@ omx_band_dyn.h
 omx_curve.h
 omx_curve_json.h
 omx_doppler.h
+omx_dsp_vocabulary.h
 omx_duck.h
 omx_dyn.h
 omx_gate.h

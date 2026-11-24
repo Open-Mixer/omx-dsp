@@ -12,7 +12,7 @@ import { main } from './oc.mjs';
 import { loadData, resolveData } from './oc.mjs';
 import { renderC } from './oc.mjs';
 import { renderJson } from './oc.mjs';
-import { RENDERS, UNION, editData, scratchData } from './helpers.mjs';
+import { RENDERS, UNION, editData, scratchData, withoutMemberDocs } from './helpers.mjs';
 
 // omx-dsp's enum, verbatim: the consumer the contract's ids must agree with, index for index.
 const OMX_DSP_GEQ_MODE = `enum omx_geq_mode {
@@ -22,7 +22,7 @@ const OMX_DSP_GEQ_MODE = `enum omx_geq_mode {
 const dspModes = () => [...OMX_DSP_GEQ_MODE.matchAll(/OMX_GEQ_MODE_([A-Z]+) = (\d+)/g)].map((m) => [m[1].toLowerCase(), Number(m[2])]);
 
 const json = (dir = UNION) => JSON.parse(renderJson(resolveData(loadData(dir)), '0.0.0')[0].text);
-const header = (dir = UNION) => renderC(resolveData(loadData(dir)))[0].text;
+const header = (dir = UNION) => withoutMemberDocs(renderC(resolveData(loadData(dir)))[0].text);
 const rendered = (dir) => [...header(dir).matchAll(/^ {2}OMX_GEQ_MODES_([A-Z]+) = (\d+),$/gm)].map((m) => [m[1].toLowerCase(), Number(m[2])]);
 
 test('geq: mode is a choice appended after the band faders, standard | true, coming up standard', () => {

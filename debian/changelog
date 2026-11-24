@@ -1,3 +1,26 @@
+omx-dsp (0.34.0) unstable; urgency=medium
+
+  * Sorting pass: RT_HARD_TARGET, ORACLE_FLOOR_RATES and ORACLE_FULL_RATES
+    (V25), CURVE_AXES and CURVE_KINDS (V26) and READOUT_RATE_HZ (V22) are
+    this library's data, rendered into omxdsp_definitions.h and the new
+    omx_dsp_vocabulary.h.
+  * The curve words' translations (ca, de, es, fr, it, pt) are this
+    library's catalogs, installed in /usr/share/omx-dsp/catalogs and shipped
+    in omx-dsp-contract.
+  * The install of omx-contract's data no longer excludes codes.json (V20
+    follow-up); the floors on omx-contract rise to 3.21.0.
+  * CURVE_UNITS names the standard unit each curve word stands for
+    (`standard`, a PARAM_UNITS const), rendered as OMX_CURVE_UNITS_STANDARD:
+    a host takes a standard id to its curve word through that table.
+  * The rotary reports the sweep's shortest read as its latency at full
+    mix, and 0 below it (#117).
+  * OMX_ROTARY_INSTANCE_LATENCY_FRAMES is removed: the latency is the face's
+    latency function, the sweep's shortest read at full mix and 0 below it.
+  * The rotary publishes its sweep (omx_rotary_sweep,
+    omx_rotary_instance_sweep) and ROTARY_LONGEST_MS, its far end.
+
+ -- Pau Aliagas <linuxnow@gmail.com>  Sat, 21 Nov 2026 09:00:00 +0100
+
 omx-dsp (0.33.1) unstable; urgency=medium
 
   * ts: the TypeScript twins no Open-Mixer repository consumes are deleted
