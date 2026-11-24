@@ -20,7 +20,7 @@ BuildRequires: lld
 BuildRequires: wasi-libc-devel
 BuildRequires: wasi-libc-static
 BuildRequires: pkgconfig
-BuildRequires: omx-contract-devel >= 3.21.0
+BuildRequires: omx-contract-devel >= 3.22.0
 # The JACK headers by pkgconfig(jack), so a host with PipeWire's JACK (the build image preinstalls its devel package)
 # builds this; and jack2's RUNTIME by name, jackd and its libjack, which check-package's omx-rt-gate host-buffer arm
 # starts and loads, failing by name on PipeWire's. It installs beside PipeWire's JACK libraries. A build requirement
@@ -49,7 +49,7 @@ Its documentation is on openmixer.org.
 %package devel
 Summary: Headers and static library to build on the OpenMixer audio toolbox
 Provides: %{name}-static = %{version}-%{release}
-Requires: omx-contract-devel >= 3.21.0
+Requires: omx-contract-devel >= 3.22.0
 Requires: %{name}-contract = %{version}-%{release}
 
 %package -n omx-rt-gate
@@ -85,7 +85,7 @@ Its documentation is on openmixer.org.
 Summary: omx-dsp's kernel and instance declarations, for programs that read them at run time
 BuildArch: noarch
 # the declarations live in omx-contract's contract directory and are read against its schema; a floor only
-Requires: omx-contract-data >= 3.21.0
+Requires: omx-contract-data >= 3.22.0
 
 %package -n omx-dsp-wasm
 Summary: omx-dsp's curve function as a WebAssembly module, with its JavaScript loader
@@ -179,7 +179,8 @@ Its documentation is on openmixer.org.
 %changelog
 * Mon Nov 23 2026 Pau Aliagas <linuxnow@gmail.com> - 0.34.1-1
 - ROTARY_ACCEL_RANGE travels in coef, the standard unit omx-contract 3.22.0
-  (V23d) names for a plain multiplier, no longer "x" (#134).
+  (V23d) names for a plain multiplier, no longer "x" (#134). The floors on
+  omx-contract rise to 3.22.0, the first that has coef (#156).
 
 * Sat Nov 21 2026 Pau Aliagas <linuxnow@gmail.com> - 0.34.0-1
 - Sorting pass: RT_HARD_TARGET, ORACLE_FLOOR_RATES and ORACLE_FULL_RATES (V25),

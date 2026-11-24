@@ -34,8 +34,8 @@ export function scratchUnion() {
   cpSync(DATA, join(dir, 'data'), { recursive: true });
   cpSync(join(HERE, 'data'), join(dir, 'data'), { recursive: true });
   cpSync(join(ROOT, 'schema'), join(dir, 'schema'), { recursive: true });
-  // the domains omx-contract reads beside data/: contract.d/param holds PARAM_SCALES and PARAM_UNITS (the floor, 3.21.0)
-  if (!existsSync(join(ROOT, 'contract.d/param/param.json'))) throw new Error(`${ROOT} has no contract.d/param/param.json: the omx-contract floor is 3.21.0, whose param domain holds PARAM_SCALES and PARAM_UNITS`);
+  // the domains omx-contract reads beside data/: contract.d/param holds PARAM_SCALES and PARAM_UNITS (from 3.21.0 on)
+  if (!existsSync(join(ROOT, 'contract.d/param/param.json'))) throw new Error(`${ROOT} has no contract.d/param/param.json: omx-contract 3.21.0 on holds PARAM_SCALES and PARAM_UNITS`);
   cpSync(join(ROOT, 'contract.d'), join(dir, 'contract.d'), { recursive: true });
   return join(dir, 'data');
 }

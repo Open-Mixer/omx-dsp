@@ -1,7 +1,8 @@
 omx-dsp (0.34.1) unstable; urgency=medium
 
   * ROTARY_ACCEL_RANGE travels in coef, the standard unit omx-contract 3.22.0
-    (V23d) names for a plain multiplier, no longer "x" (#134).
+    (V23d) names for a plain multiplier, no longer "x" (#134). The floors on
+    omx-contract rise to 3.22.0, the first that has coef (#156).
 
  -- Pau Aliagas <linuxnow@gmail.com>  Mon, 23 Nov 2026 22:30:00 +0100
 
