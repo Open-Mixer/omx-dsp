@@ -137,7 +137,7 @@ endif
 # (nothing is downloaded); this tree commits no copy of them. Every sub-script that compiles gets the
 # directory as CONTRACT_INC. The goals below compile nothing against it; it is found unless every goal
 # named is one of them (no goal is `all`, which needs it), so `make copy-check test-parallel` finds it too.
-NO_CONTRACT_GOALS = install-confined version clean docs docs-check docs-baseline docs-sabotage public-sources private-refs exports copy-check deps deps-check
+NO_CONTRACT_GOALS = install-confined version clean docs docs-site docs-check docs-baseline docs-sabotage public-sources private-refs exports copy-check deps deps-check
 ifneq ($(if $(MAKECMDGOALS),$(filter-out $(NO_CONTRACT_GOALS),$(MAKECMDGOALS)),all),)
 CONTRACT_INC := $(shell sh tools/contract-include.sh)
 ifeq ($(CONTRACT_INC),)
@@ -1307,6 +1307,21 @@ docs-baseline: docs
 # add a row. The tree is never edited.
 docs-sabotage: Doxyfile Makefile test/docs-sabotage.sh $(DOCS_BASELINE)
 	bash test/docs-sabotage.sh $(BUILD)/docs-sabotage
+
+# The published reference: Open-Mixer/.github's docs-publish.yml runs this with DOCS_OUT, an empty absolute directory,
+# then renders the Markdown and the man pages and, at a release tag, publishes the tree under
+# https://www.openmixer.org/reference/omx-dsp/<version>/. Only what the tree generates or keeps: the API reference
+# doxygen renders from the installed headers (api/), the overview pages, the man pages. The documentation gate
+# (docs-check, against its base) runs in ci.yml and release.yml, never skipped by this target.
+.PHONY: docs-site
+docs-site: docs
+	@case "$(DOCS_OUT)" in /*) ;; *) echo "docs-site: FAIL — DOCS_OUT '$(DOCS_OUT)' is not an absolute directory: name the directory the reference is written to" >&2; exit 1;; esac
+	@test -f $(BUILD)/docs/html/index.html || { echo "docs-site: FAIL — doxygen wrote no $(BUILD)/docs/html/index.html" >&2; exit 1; }
+	mkdir -p $(DOCS_OUT)/api $(DOCS_OUT)/docs $(DOCS_OUT)/man
+	cp -a $(BUILD)/docs/html/. $(DOCS_OUT)/api/
+	cp README.md BUILDING.md LICENSE $(DOCS_OUT)/
+	cp docs/*.md $(DOCS_OUT)/docs/
+	cp omx-dsp-copy-check.1 tools/omx-rta-read/omx-rta-read.1 $(DOCS_OUT)/man/
 
 clean:
 	rm -rf $(BUILD)
