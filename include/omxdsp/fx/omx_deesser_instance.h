@@ -42,6 +42,7 @@
 #include <omxdsp/fx/omx_instance_io.h>
 #include <omxdsp/omx_param.h>
 
+/** @brief Audio legs in and out: TWO, a stereo pair. */
 #define OMX_DEESSER_INSTANCE_CHANNELS 2
 
 /** The detector band's centre is held under this share of Nyquist (DEESS_NYQUIST_FRACTION). */
@@ -50,22 +51,34 @@
 /** Port defaults: the declaration's (DEESS_*_RANGE.default). The mode set declares no default;
  * the stage comes up at `split`, the set's first member. */
 #define OMX_DEESSER_INSTANCE_FREQ_DEFAULT ((float)OMX_DEESS_FREQ_RANGE_DEFAULT)
+/** @brief The deessWidth port's default, octaves (DEESS_WIDTH_RANGE.default). */
 #define OMX_DEESSER_INSTANCE_WIDTH_DEFAULT ((float)OMX_DEESS_WIDTH_RANGE_DEFAULT)
+/** @brief The deessThreshold port's default, dB (DEESS_THRESHOLD_RANGE.default). */
 #define OMX_DEESSER_INSTANCE_THRESHOLD_DEFAULT ((float)OMX_DEESS_THRESHOLD_RANGE_DEFAULT)
+/** @brief The deessRatio port's default (DEESS_RATIO_RANGE.default). */
 #define OMX_DEESSER_INSTANCE_RATIO_DEFAULT ((float)OMX_DEESS_RATIO_RANGE_DEFAULT)
+/** @brief The deessRange port's default, dB (DEESS_RANGE_RANGE.default). */
 #define OMX_DEESSER_INSTANCE_RANGE_DEFAULT ((float)OMX_DEESS_RANGE_RANGE_DEFAULT)
+/** @brief The deessAttack port's default, ms (DEESS_ATTACK_RANGE.default). */
 #define OMX_DEESSER_INSTANCE_ATTACK_DEFAULT ((float)OMX_DEESS_ATTACK_RANGE_DEFAULT)
+/** @brief The deessRelease port's default, ms (DEESS_RELEASE_RANGE.default). */
 #define OMX_DEESSER_INSTANCE_RELEASE_DEFAULT ((float)OMX_DEESS_RELEASE_RANGE_DEFAULT)
+/** @brief The mode resolve() reads for a deessMode outside the set: `split`, the set's first member. */
 #define OMX_DEESSER_INSTANCE_MODE_DEFAULT OMX_DEESS_SPLIT
 
 /** One instance: the atom the host's ports resolve to and the kernel's inline state. */
 typedef struct {
+  /** The sample rate init bound the instance to, Hz. */
   float sr;
+  /** The kernel's controls as resolve() last resolved them; run() hands them to the kernel's process. */
   struct omx_deess atom;
+  /** The kernel's running state, carried from block to block and handed to its process with the atom. */
   struct omx_deess_state state;
   /** The clamped frequency and width the band was last designed from; `designed` 0 until the first. */
-  float freq, width;
+  float freq, width; ///< width: the clamped deessWidth, octaves, the band was last designed from.
+  /** Non-zero once resolve() designed the band; resolve() redesigns when it is 0 or the frequency or width moved. */
   int designed;
+  /** Non-zero once init bound the instance to a usable rate; while zero, resolve() does nothing and run() leaves the output as the input. */
   int ready;
 } OmxDeesserInstance;
 
@@ -85,6 +98,7 @@ static inline int omx_deesser_instance_init(OmxDeesserInstance *s, float sr) {
   return 1;
 }
 
+#define OMX_CONTRACT_STAGE "deesser/instance-resolve"
 /**
  * Resolve the host's control-port values into the kernel's atom for one cycle. `bypass` non-zero
  * disables the atom. The arguments are the kernel's contract controls, in their declared order and
@@ -92,9 +106,23 @@ static inline int omx_deesser_instance_init(OmxDeesserInstance *s, float sr) {
  * `deess_range` (dB, an attenuation), `deess_attack` and `deess_release` (ms), each clamped into
  * its declared travel, a non-finite word reading as the declared default; `deess_mode` is the
  * DEESS_MODES index, an `enum omx_deess_mode` member (any other value reads as `split`).
+ * @param s The instance; null or not ready leaves it as it is.
+ * @param bypass Non-zero makes run() the identity.
+ * @param deess_freq deessFreq, 2000 to 16000 Hz, default 7000: The detector band's CENTRE, in Hz.
+ * @param deess_width deessWidth, 0.25 to 4 oct, default 1: The band's WIDTH, in OCTAVES around the centre: the edges
+ *        are `f / 2^(w/2)` and `f · 2^(w/2)`, which is what makes the centre the geometric middle at every width.
+ * @param deess_threshold deessThreshold, -60 to 0 dB, default -30: Where reduction starts — the level of the BAND, not
+ *        of the strip, which is why the come-up is so much lower than the compressor's.
+ * @param deess_ratio deessRatio, 1 to 20, default 4: How hard the band is held once it is over the threshold.
+ * @param deess_range deessRange, -24 to 0 dB, default -12: The FLOOR on the reduction, in dB and never positive — the
+ *        deepest cut the stage may reach however loud the sibilant is (`mix_deesser.h`'s clamp).
+ * @param deess_attack deessAttack, 0.1 to 50 ms, default 1: The detector's ATTACK, in ms.
+ * @param deess_release deessRelease, 5 to 500 ms, default 60: The detector's RELEASE, in ms.
+ * @param deess_mode deessMode, the place in split, wideband (0 to 1): The de-esser's modes, in the order of the integer
+ *        the kernel reads: split attenuates the detected band only, wideband the whole signal while the sibilance
+ *        lasts.
  * @thread audio
  */
-#define OMX_CONTRACT_STAGE "deesser/instance-resolve"
 static inline void omx_deesser_instance_resolve(OmxDeesserInstance *s, int bypass, float deess_freq,
                                                 float deess_width, float deess_threshold, float deess_ratio,
                                                 float deess_range, float deess_attack, float deess_release,

@@ -29,17 +29,21 @@
 #include <omxdsp/omx_param.h>
 #include <omxdsp/omxdsp_definitions.h>
 
+/** @brief Audio legs in and out: TWO, a stereo pair. */
 #define OMX_SPRING_INSTANCE_CHANNELS 2
 /** The ring: the longest spring at the top rate, the longer leg. */
 #define OMX_SPRING_INSTANCE_RING 13100u
 _Static_assert((double)OMX_SPRING_LENGTH_MS_RANGE_MAX * 192.0 * OMX_SPRING_RIGHT_RATIO_DOUBLE < (double)OMX_SPRING_INSTANCE_RING - 2.0,
                "the ring holds the longest spring at the top rate");
+/** The all-pass corner, Hz, at a tension of 0 and of 100 \%: SPRING_CHIRP_HZ; resolve() places it between them. */
 static const float OMX_SPRING_INSTANCE_CHIRP[OMX_SPRING_CHIRP_HZ_COUNT] = OMX_SPRING_CHIRP_HZ_INIT;
 _Static_assert(OMX_SPRING_CHIRP_HZ_COUNT == 2u, "a corner at each end of the tension");
 
 /** One leg's loop. */
 struct omx_spring_leg {
+  /** The loop's delay line, OMX_SPRING_INSTANCE_RING samples; the tick reads it `d` behind `pos`. */
   float ring[OMX_SPRING_INSTANCE_RING];
+  /** The SPRING_SECTIONS first-order all-pass sections the loop's read runs through, all at coefficient `a`. */
   struct omx_allpass1 chain[OMX_SPRING_SECTIONS];
   float lp;     /**< the loop's low-pass state */
   uint32_t pos; /**< the write position */
@@ -47,13 +51,19 @@ struct omx_spring_leg {
   float g;      /**< the loop gain */
 };
 
+/** @brief One instance: a spring loop per leg, the shared all-pass and low-pass coefficients and the blend. */
 typedef struct {
+  /** The sample rate init bound the instance to, Hz. */
   float sr;
+  /** The two legs' loops: 0 the left, 1 the right, its delay SPRING_RIGHT_RATIO longer. */
   struct omx_spring_leg leg[2];
   float a;   /**< the all-pass coefficient */
   float pole; /**< the loop low-pass's pole */
-  float wet, dry;
+  /** The wet share, mixPct over 100, 0 to 1. */
+  float wet, dry; ///< dry: the dry share, 1 - wet.
+  /** Non-zero while the effect is engaged, as the last resolve() set it; while zero, run() leaves the output as the input. */
   int enabled;
+  /** Non-zero once init bound the instance to a usable rate; while zero, resolve() does nothing and run() leaves the output as the input. */
   int ready;
 } OmxSpringInstance;
 
@@ -77,19 +87,31 @@ static inline int omx_spring_instance_init(OmxSpringInstance *s, float sr) {
 }
 
 /** The chain's group delay, samples, at angular frequency `w`, radians per sample, for coefficient `a`.
+ * @param a The all-pass coefficient.
+ * @param w The angular frequency, radians per sample.
+ * @return The group delay of the SPRING_SECTIONS sections, samples.
  * @thread audio */
 static inline double omx_spring_chain_delay(double a, double w) {
   return (double)OMX_SPRING_SECTIONS * (1.0 - a * a) / (1.0 + 2.0 * a * cos(w) + a * a);
 }
 
+#define OMX_CONTRACT_STAGE "spring/instance-resolve"
 /**
  * Resolve the host's control values for one cycle. `bypass` non-zero makes run() the identity. The
  * arguments are the spring kernel's contract controls in their declared order, each clamped into its
  * travel, a non-finite one reading as its default. A length or tension change clears the tank, as does
  * the engage edge: the old tail is at another pitch.
+ * @param s The instance; null or not ready leaves it as it is.
+ * @param bypass Non-zero makes run() the identity.
+ * @param decay_s decayS, 0.5 to 8 s, default 2: The time the tail takes to fall 60 dB, seconds.
+ * @param length_ms lengthMs, 20 to 60 ms, default 35: The spring's delay, ms: the time of one trip along it, the first
+ *        return.
+ * @param tension_pct tensionPct, 0 to 100 \%, default 50: How hard the spring is drawn, percent: it sets the
+ *        dispersion's corner from SPRING_CHIRP_HZ, and with it the drip of the low notes arriving after the high ones.
+ * @param damp_hz dampHz, 1000 to 10000 Hz, default 4000: The loop's low-pass corner, Hz: the tail darkens as it falls.
+ * @param mix_pct mixPct, 0 to 100 \%, default 0: The wet against the dry, percent.
  * @thread audio
  */
-#define OMX_CONTRACT_STAGE "spring/instance-resolve"
 static inline void omx_spring_instance_resolve(OmxSpringInstance *s, int bypass, float decay_s, float length_ms,
                                                float tension_pct, float damp_hz, float mix_pct) {
   if (!s || !s->ready) return;
@@ -136,6 +158,11 @@ static inline void omx_spring_instance_resolve(OmxSpringInstance *s, int bypass,
 #undef OMX_CONTRACT_STAGE
 
 /** One leg, one sample: the loop's read, the chain and the low-pass, and the input written back. RT-safe.
+ * @param l The leg; its ring, chain, low-pass state and write position advance.
+ * @param x The input sample.
+ * @param a The all-pass coefficient.
+ * @param pole The loop low-pass's pole.
+ * @return The loop's read through the chain, before the low-pass: the leg's wet sample.
  * @thread audio */
 static inline float omx_spring_leg_tick(struct omx_spring_leg *l, float x, float a, float pole) {
   uint32_t rd = l->pos + OMX_SPRING_INSTANCE_RING - l->d;

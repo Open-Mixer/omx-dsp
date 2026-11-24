@@ -29,6 +29,7 @@
 #include <omxdsp/omx_units.h>
 #include <omxdsp/omxdsp_definitions.h>
 
+/** @brief Audio legs in and out: TWO, a stereo pair. */
 #define OMX_CLIPPER_INSTANCE_CHANNELS 2
 
 /**
@@ -48,13 +49,17 @@ static inline float omx_clipper_sample(float u, float c, float a) {
   return u < 0.0f ? -y : y;
 }
 
+/** @brief One instance: the rate, the resolved drive, ceiling and knee, and the last block's reduction. */
 typedef struct {
+  /** The sample rate init bound the instance to, Hz. */
   float sr;
   float drive_lin;   /**< the gain before the clip */
   float ceiling_lin; /**< the ceiling */
   float knee_lin;    /**< where the bend starts */
   float gr_db;       /**< the last block's reduction, dB, negative or 0 */
+  /** Non-zero while the effect is engaged, as the last resolve() set it; while zero, run() leaves the output as the input. */
   int enabled;
+  /** Non-zero once init bound the instance to a usable rate; while zero, resolve() does nothing and run() leaves the output as the input. */
   int ready;
 } OmxClipperInstance;
 
@@ -76,13 +81,19 @@ static inline int omx_clipper_instance_init(OmxClipperInstance *s, float sr) {
   return 1;
 }
 
+#define OMX_CONTRACT_STAGE "clipper/instance-resolve"
 /**
  * Resolve the host's control values for one cycle. `bypass` non-zero makes run() the identity. The
  * arguments are the clipper kernel's contract controls in their declared order, each clamped into its
  * travel, a non-finite one reading as its default.
+ * @param s The instance; null or not ready leaves it as it is.
+ * @param bypass Non-zero makes run() the identity.
+ * @param drive_db driveDb, 0 to 24 dB, default 0: The gain before the clip, dB.
+ * @param ceiling_db ceilingDb, -24 to 0 dB, default 0: The ceiling, dBFS: no sample leaves above it.
+ * @param softness_pct softnessPct, 0 to 100 \%, default 0: How far under the ceiling the bend starts, percent of
+ *        CLIPPER_KNEE_SPAN of the ceiling.
  * @thread audio
  */
-#define OMX_CONTRACT_STAGE "clipper/instance-resolve"
 static inline void omx_clipper_instance_resolve(OmxClipperInstance *s, int bypass, float drive_db, float ceiling_db,
                                                 float softness_pct) {
   if (!s || !s->ready) return;
@@ -137,6 +148,8 @@ static inline void omx_clipper_instance_run(OmxClipperInstance *s, const float *
 #undef OMX_CONTRACT_STAGE
 
 /** The gainReductionDb readout: the last block's reduction, dB, 0 or negative.
+ * @param s The instance; null reads 0.
+ * @return The reduction of the block's largest driven sample, dB, 0 or negative; 0 when bypassed or not ready.
  * @thread audio */
 static inline float omx_clipper_instance_gain_reduction_db(const OmxClipperInstance *s) { return s ? s->gr_db : 0.0f; }
 

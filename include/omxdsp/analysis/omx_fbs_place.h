@@ -87,65 +87,77 @@ static const char *const OMX_FBS_ACTION_WORDS[OMX_FBS_ACTIONS_COUNT] = {"notched
 
 /** One slot: the band it holds (the report) and, for a live band, its release state. */
 typedef struct {
-  double freq_hz;
+  double freq_hz; /**< Hz: the band's frequency, held in EQ_FREQ_RANGE when planted or seated */
+  /** dB: the band's gain now, held by its origin's cap; a fixed plant is 0, a live one the find's depth. */
   double gain_db;
-  double q;
-  int on;
+  double q;       /**< the band's Q, held in its shape's extent (notch for fixed, bell for live) */
+  int on;         /**< 1 for a planted or seated band, 0 for a free slot */
   int origin;   /**< enum omx_curve_origins; OMX_CURVE_ORIGINS_USER is a free slot */
   int shape;    /**< enum omx_curve_shapes */
   uint64_t seq; /**< plant order: the console's band order */
-  /* the live band's release (the console's LiveBand) */
+  /** the live band's release (the console's LiveBand) */
   int live;
+  /** dB: the full depth the release stages scale from; a re-clamp deepens it by FBS_RECLAMP_DEEPEN_DB. */
   double planted_db;
+  /** ms, the placement clock: when the band was planted, adopted or last heard ringing; the hold counts from it. */
   double last_ring_ms;
+  /** The release stage last landed: 0 at full depth; a re-arm returns it to 0. */
   uint32_t stage;
+  /** 1 while the band listens after a landed stage; the first tick FBS_RELEASE_DWELL_MS on begins the next. */
   int dwelling;
+  /** ms, the placement clock: when the current dwell began. */
   double dwell_start_ms;
+  /** Re-clamps so far, ring memory included; each doubles the hold, up to FBS_RECLAMP_BACKOFF_CAP doublings. */
   uint32_t reclamps;
-  /* the stage ramp in flight (the console's interval timer) */
+  /** the stage ramp in flight (the console's interval timer) */
   int ramping;
-  uint32_t ramp_step;
-  uint32_t ramp_stage;
-  double ramp_from_db;
+  uint32_t ramp_step;  /**< steps the ramp has taken, out of FBS_LIFT_RAMP_STEPS */
+  uint32_t ramp_stage; /**< the stage the ramp eases toward; `stage` takes it when the last step lands */
+  double ramp_from_db; /**< dB: the gain when the ramp began */
+  /** dB: planted_db x FBS_RELEASE_RATIO^ramp_stage. Under FBS_RELEASE_DONE_DB in magnitude, the last step frees
+   *  the slot. */
   double ramp_to_db;
-  double ramp_due_ms;
-  uint64_t ramp_seq;
+  double ramp_due_ms;  /**< ms, the placement clock: when the next step fires */
+  uint64_t ramp_seq;   /**< the placement's `timer_seq` when the ramp began: orders steps due at the same time */
   /** A band seated or re-tagged fbs-live, adopted at the next tick if it is still fbs-live then. */
   int adopt;
 } OmxFbsPlaceSlot;
 
 /** A fully released find's escalation, kept for the cooldown. */
 typedef struct {
-  double freq_hz;
-  uint32_t reclamps;
+  double freq_hz;     /**< Hz: the released band's frequency */
+  uint32_t reclamps;  /**< its re-clamp count, given back to a live plant or an adoption in the same region */
+  /** ms, the placement clock: when it was released. A read of the memory forgets entries older than the cooldown. */
   double released_ms;
 } OmxFbsMemory;
 
 /** One action, as the console's onAction hook reports it, with the slot it concerned. */
 typedef struct {
   int action; /**< OmxFbsAction */
-  double freq_hz;
+  double freq_hz; /**< Hz: the find's frequency for a plant or a refusal, the band's for re-armed, easing and lifted */
   int slot; /**< the slot, or -1 for a refusal that planted nothing */
 } OmxFbsPlaceEvent;
 
 /** One corrector's placement. Plain data: a copy is a copy. */
 typedef struct {
-  OmxFbsPool pool;
+  OmxFbsPool pool; /**< where new finds go: fixed plants a notch at 0 dB, live a bell at the find's depth */
   double hold_s; /**< seconds, or OMX_FBS_HOLD_NEVER */
-  uint32_t max_bands;
-  double notch_q;
-  double merge_cents;
-  double cooldown_s;
-  OmxFbsPlaceSlot slot[OMX_FBS_PLACE_SLOTS];
+  uint32_t max_bands; /**< the pool cap: a new find with this many slots or more occupied is refused pool-full */
+  double notch_q;     /**< the Q a plant takes, then held in its shape's extent */
+  double merge_cents; /**< cents: a find this close to a planted band is that band's find */
+  double cooldown_s;  /**< seconds a released find's re-clamp count can be taken back; 0 takes none back */
+  OmxFbsPlaceSlot slot[OMX_FBS_PLACE_SLOTS]; /**< the slots; OMX_CURVE_ORIGINS_USER marks a free one */
+  /** The ring memory, oldest first: released finds that had re-clamped. */
   OmxFbsMemory memory[OMX_FBS_RING_MEMORY_SLOTS];
-  uint32_t n_memory;
-  uint32_t memory_dropped;
-  uint64_t seq;
-  uint64_t timer_seq;
+  uint32_t n_memory;       /**< entries filled in `memory` */
+  uint32_t memory_dropped; /**< oldest entries a full memory forgot to make room */
+  uint64_t seq;            /**< plants and seats so far; each band takes the next value as its `seq` */
+  uint64_t timer_seq;      /**< ramps begun so far; each ramp takes the next value as its `ramp_seq` */
+  /** ms: the placement clock; each fired step sets it to its due time, then a later `now_ms` moves it on. */
   double now_ms;
-  OmxFbsPlaceEvent log[OMX_FBS_PLACE_LOG];
-  uint32_t n_log;
-  uint32_t log_dropped;
+  OmxFbsPlaceEvent log[OMX_FBS_PLACE_LOG]; /**< the events, oldest first, until the caller clears `n_log` */
+  uint32_t n_log;       /**< entries filled in `log` */
+  uint32_t log_dropped; /**< events a full log did not keep */
   /** Bands the strip's EQ holds that are not the placement's (the operator's, the defaults, other correctors). */
   uint32_t others;
 } OmxFbsPlace;

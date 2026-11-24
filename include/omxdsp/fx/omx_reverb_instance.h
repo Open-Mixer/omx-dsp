@@ -43,27 +43,42 @@
 #include <omxdsp/fx/omx_instance_io.h>
 #include <omxdsp/omx_param.h>
 
+/** @brief Audio legs in and out: TWO, a stereo pair. */
 #define OMX_REVERB_INSTANCE_CHANNELS 2
+/** @brief The latency the instance reports to its host, frames: none. */
 #define OMX_REVERB_INSTANCE_LATENCY_FRAMES 0.0f
 
 /** Port defaults: the declaration's (REVERB_*_RANGE.default); the algorithm comes up as ROOM. */
 #define OMX_REVERB_INSTANCE_PLATE_MOD_DEPTH_DEFAULT ((float)OMX_REVERB_PLATE_MOD_DEPTH_RANGE_DEFAULT)
+/** The mix a non-finite word reads as, 0..1: REVERB_MIX_RANGE's default; init also puts it in the atom. */
 #define OMX_REVERB_INSTANCE_MIX_DEFAULT ((float)OMX_REVERB_MIX_RANGE_DEFAULT)
+/** The size a non-finite word reads as, 0..1: REVERB_SIZE_RANGE's default; init also puts it in the atom. */
 #define OMX_REVERB_INSTANCE_SIZE_DEFAULT ((float)OMX_REVERB_SIZE_RANGE_DEFAULT)
+/** The damping a non-finite word reads as, 0..1: REVERB_DAMPING_RANGE's default; init also puts it in the atom. */
 #define OMX_REVERB_INSTANCE_DAMPING_DEFAULT ((float)OMX_REVERB_DAMPING_RANGE_DEFAULT)
+/** The width a non-finite word reads as, 0..1: REVERB_WIDTH_RANGE's default; init also puts it in the atom. */
 #define OMX_REVERB_INSTANCE_WIDTH_DEFAULT ((float)OMX_REVERB_WIDTH_RANGE_DEFAULT)
+/** The pre-delay a non-finite word reads as, ms: REVERB_PREDELAY_RANGE's default. */
 #define OMX_REVERB_INSTANCE_PREDELAY_DEFAULT ((float)OMX_REVERB_PREDELAY_RANGE_DEFAULT)
+/** The low cut a non-finite word reads as, Hz: REVERB_LOWCUT_RANGE's default. */
 #define OMX_REVERB_INSTANCE_LOWCUT_DEFAULT ((float)OMX_REVERB_LOWCUT_RANGE_DEFAULT)
+/** The high cut a non-finite word reads as, Hz: REVERB_HIGHCUT_RANGE's default. */
 #define OMX_REVERB_INSTANCE_HIGHCUT_DEFAULT ((float)OMX_REVERB_HIGHCUT_RANGE_DEFAULT)
+/** The reverse window a non-finite word reads as, ms: REVERB_REVERSE_RANGE's default. */
 #define OMX_REVERB_INSTANCE_REVERSE_DEFAULT ((float)OMX_REVERB_REVERSE_RANGE_DEFAULT)
+/** The gated hold a non-finite word reads as, ms: REVERB_HOLD_RANGE's default. */
 #define OMX_REVERB_INSTANCE_HOLD_DEFAULT ((float)OMX_REVERB_HOLD_RANGE_DEFAULT)
+/** The gated release a non-finite word reads as, ms: REVERB_RELEASE_RANGE's default. */
 #define OMX_REVERB_INSTANCE_RELEASE_DEFAULT ((float)OMX_REVERB_RELEASE_RANGE_DEFAULT)
+/** The gated arm threshold a non-finite word reads as, dBFS: REVERB_GATE_THRESHOLD_RANGE's default. */
 #define OMX_REVERB_INSTANCE_GATE_THRESHOLD_DEFAULT ((float)OMX_REVERB_GATE_THRESHOLD_RANGE_DEFAULT)
+/** The algorithm an index outside REVERB_ALGORITHMS reads as: ROOM. */
 #define OMX_REVERB_INSTANCE_ALGORITHM_DEFAULT OMX_REVERB_ROOM
 
-/** One instance. It owns its pool; the kernel's lines are laid out over it at init. */
-/** The early reflections' table, REVERB_EARLY_TAP_MS and REVERB_EARLY_TAP_GAINS. */
+/** The early reflections' times, ms, at the table's own size: REVERB_EARLY_TAP_MS; resolve() scales them by
+ * earlySizePct. */
 static const float OMX_REVERB_INSTANCE_TAP_MS[OMX_REVERB_EARLY_TAPS] = OMX_REVERB_EARLY_TAP_MS_INIT;
+/** The early reflections' gains, linear, one per tap: REVERB_EARLY_TAP_GAINS. */
 static const float OMX_REVERB_INSTANCE_TAP_GAINS[OMX_REVERB_EARLY_TAPS] = OMX_REVERB_EARLY_TAP_GAINS_INIT;
 
 /** The early ring, floats: the pre-delay's ceiling, which holds the longest tap at REVERB_EARLY_SIZE_MAX
@@ -73,17 +88,25 @@ static const float OMX_REVERB_INSTANCE_TAP_GAINS[OMX_REVERB_EARLY_TAPS] = OMX_RE
 /** The early line's Lagrange order. */
 #define OMX_REVERB_INSTANCE_EARLY_ORDER 3
 
+/** One instance. It owns its pool; the kernel's lines are laid out over it at init. */
 typedef struct {
+  /** The sample rate init bound the instance to, Hz. */
   float sr;
+  /** The kernel's controls as resolve() last resolved them; run() hands them to the kernel's process. */
   struct omx_reverb atom;
+  /** The kernel's running state, laid out over `pool` by init and again by clear(), handed to its process with the
+   * atom. */
   struct omx_reverb_state state;
   struct omx_reverb_return ret;         /**< the early taps, the tail's level, the duck, the de-esser */
   struct omx_reverb_return_state rstate; /**< the early line, the duck's and the de-esser's state */
   OmxDeesserInstance deess;              /**< the wet de-esser's design (its atom; its state is rstate's) */
+  /** The early line's ring, OMX_REVERB_INSTANCE_EARLY_CAP floats: `rstate`'s line runs over it; clear() zeroes it. */
   float early_ring[OMX_REVERB_INSTANCE_EARLY_CAP];
+  /** The pool the kernel's lines are laid out over, OMX_REVERB_POOL_FLOATS floats; `state` points into it. */
   float pool[OMX_REVERB_POOL_FLOATS];
   /** The previous cycle's engaged flag, so a bypass->engaged edge can clear the lines. */
   int was_engaged;
+  /** Non-zero once init bound the instance to a usable rate; while zero, resolve() does nothing and run() leaves the output as the input. */
   int ready;
 } OmxReverbInstance;
 
@@ -139,6 +162,7 @@ static inline void omx_reverb_instance_clear(OmxReverbInstance *s) {
 }
 #undef OMX_CONTRACT_STAGE
 
+#define OMX_CONTRACT_STAGE "reverb/instance-resolve"
 /**
  * Resolve the host's control-port values into the kernel's atom for one cycle. `bypass` non-zero
  * disables the atom. The arguments are the kernel's contract controls, in their declared order and
@@ -150,9 +174,54 @@ static inline void omx_reverb_instance_clear(OmxReverbInstance *s) {
  * `tail_db` (dB, each travel's floor off), `early_size_pct` (percent), the duck's `duck_db`,
  * `duck_threshold_db` and `duck_release_ms`, `wet_deess` (REVERB_WET_DEESSES: off, on) and the wet
  * de-esser's `deess_freq_hz` and `deess_threshold_db`, clamped likewise.
+ * @param s The instance; null or not ready leaves it as it is.
+ * @param bypass Non-zero makes run() the identity.
+ * @param plate_mod_depth plateModDepth, 0 to 400 \%, default 100: PLATE's tank MODULATION DEPTH, in percent of
+ *        Dattorro's own excursion (±8 samples at his 29 761 Hz tuning rate, scaled to the live rate the way the tank
+ *        lengths are).
+ * @param mix mix, 0 to 1, default 0.3: The REVERB's wet/dry.
+ * @param size size, 0 to 1, default 0.7: The reverb's SIZE/DAMPING/WIDTH — each a NORMALIZED_RANGE instance with its
+ *        own come-up value, matching `DEFAULT_REVERB_STATE`.
+ * @param damping damping, 0 to 1, default 0.5: The reverb's DAMPING — a NORMALIZED_RANGE instance with its own come-up
+ *        value, matching `DEFAULT_REVERB_STATE`.
+ * @param width width, 0 to 1, default 1: The reverb's stereo WIDTH — a NORMALIZED_RANGE instance with its own come-up
+ *        value, matching `DEFAULT_REVERB_STATE`.
+ * @param predelay predelay, 0 to 100 ms, default 0: The reverb's PRE-DELAY travel — the gap before the first
+ *        reflection, in milliseconds.
+ * @param lowcut lowcut, 0 to 20000 Hz, default 0: The reverb's LOW cut, as an instance of REVERB_CUT_RANGE — same
+ *        bounds, its own come-up value.
+ * @param highcut highcut, 0 to 20000 Hz, default 20000: The reverb's HIGH cut, as an instance of REVERB_CUT_RANGE —
+ *        same bounds, its own come-up value.
+ * @param reverse reverse, 50 to 500 ms, default 300: REVERSE's MIRROR WINDOW — how long a slice of the wet is played
+ *        backward, in milliseconds.
+ * @param hold hold, 10 to 2000 ms, default 120: GATED's HOLD — how long the wet stays at full level after the key falls
+ *        away, in milliseconds.
+ * @param release release, 1 to 500 ms, default 20: GATED's RELEASE — how long the held wet takes to reach zero, in
+ *        milliseconds.
+ * @param gate_threshold gateThreshold, -80 to 0 dBFS, default -40: GATED's ARM THRESHOLD — the level the reverb's own
+ *        mono feed must reach to arm the hold, in dBFS.
+ * @param algorithm algorithm, the place in room, plate, hall, reverse, gated (0 to 4): The reverb's algorithms, in the
+ *        order of the integer the kernel reads.
+ * @param early_db earlyDb, -60 to 0 dB, default -60: The early reflections' level, dB: the declared tap set
+ *        (REVERB_EARLY_TAP_MS, REVERB_EARLY_TAP_GAINS) read from the pre-delayed feed, even taps on the left, odd on
+ *        the right, beside the tail.
+ * @param tail_db tailDb, -60 to 0 dB, default 0: The tail's level, dB: the reverb network's output.
+ * @param early_size_pct earlySizePct, 0 to 100 \%, default 50: The early reflections' room, percent: every tap's time
+ *        scaled from REVERB_EARLY_SIZE_MIN of the table at 0 \% to REVERB_EARLY_SIZE_MAX at 100 \%, linearly.
+ * @param duck_db duckDb, -24 to 0 dB, default 0: The wet's ducking depth, dB, the delay's duck (omx_duck): the tail and
+ *        its reflections pull down while the dry is loud.
+ * @param duck_threshold_db duckThresholdDb, -60 to 0 dB, default -30: The dry level the ducking starts at, dBFS.
+ * @param duck_release_ms duckReleaseMs, 20 to 2000 ms, default 250: How fast the wet comes back once the dry falls, ms;
+ *        the attack is FX_DUCK_ATTACK_MS.
+ * @param wet_deess wetDeess, the place in off, on (0 to 1), default off: The wet's de-esser: on, the de-esser kernel in
+ *        split mode on the wet, at deessFreqHz and deessThresholdDb with the de-esser's own come-up width, ratio,
+ *        range, attack and release, so an s does not splash the tail.
+ * @param deess_freq_hz deessFreqHz, DEESS_FREQ_RANGE.min to DEESS_FREQ_RANGE.max Hz, default DEESS_FREQ_RANGE.default:
+ *        The wet de-esser's band, Hz: the de-esser's frequency travel by reference.
+ * @param deess_threshold_db deessThresholdDb, DEESS_THRESHOLD_RANGE.min to DEESS_THRESHOLD_RANGE.max dB, default
+ *        DEESS_THRESHOLD_RANGE.default: The wet de-esser's threshold, dB: the de-esser's threshold travel by reference.
  * @thread audio
  */
-#define OMX_CONTRACT_STAGE "reverb/instance-resolve"
 static inline void omx_reverb_instance_resolve(OmxReverbInstance *s, int bypass, float plate_mod_depth,
                                                float mix, float size, float damping, float width,
                                                float predelay, float lowcut, float highcut, float reverse,

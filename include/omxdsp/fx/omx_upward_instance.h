@@ -27,14 +27,23 @@
 #include <omxdsp/omx_units.h>
 #include <omxdsp/omxdsp_definitions.h>
 
+/** @brief Audio legs in and out: TWO, a stereo pair. */
 #define OMX_UPWARD_INSTANCE_CHANNELS 2
 
+/** @brief One instance: one dynamics slot in upward mode, its state and the gainDb readout. */
 typedef struct {
+  /** The sample rate init bound the instance to, Hz. */
   float sr;
+  /** The dynamics slot's controls as resolve() last built them (upward mode, RMS detect); run() hands them to
+   * omx_dynamics(). */
   struct omx_dyn atom;
+  /** The slot's running state, carried from block to block and handed to omx_dynamics() with the atom; init and the
+   * engage edge clear it. */
   struct omx_dyn_state st;
   float gain_db; /**< the gainDb readout */
+  /** Non-zero while the effect is engaged, as the last resolve() set it; while zero, run() leaves the output as the input. */
   int enabled;
+  /** Non-zero once init bound the instance to a usable rate; while zero, resolve() does nothing and run() leaves the output as the input. */
   int ready;
 } OmxUpwardInstance;
 
@@ -58,13 +67,24 @@ static inline int omx_upward_instance_init(OmxUpwardInstance *s, float sr) {
   return 1;
 }
 
+#define OMX_CONTRACT_STAGE "upward/instance-resolve"
 /**
  * Resolve the host's control values for one cycle. `bypass` non-zero makes run() the identity. The
  * arguments are the upward kernel's contract controls in their declared order, each clamped into its
  * travel, a non-finite one reading as its default.
+ * @param s The instance; null or not ready leaves it as it is.
+ * @param bypass Non-zero makes run() the identity.
+ * @param threshold_db thresholdDb, -70 to 0 dB, default -40: The level, dBFS, under which the face starts to lift.
+ * @param ratio ratio, 1 to 10, default 1: The upward ratio: the lift is (1 - 1/ratio) of the distance under the
+ *        threshold.
+ * @param range_db rangeDb, 0 to 24 dB, default 6: The largest lift, dB: a signal far under the threshold, the room's
+ *        noise included, rises by this and no more.
+ * @param attack_ms attackMs, 0.1 to 100 ms, default 5: How fast the detector follows a rise, ms; a rise takes the lift
+ *        away.
+ * @param release_ms releaseMs, 5 to 3000 ms, default 200: How fast the detector follows a fall, ms; a fall brings the
+ *        lift in.
  * @thread audio
  */
-#define OMX_CONTRACT_STAGE "upward/instance-resolve"
 static inline void omx_upward_instance_resolve(OmxUpwardInstance *s, int bypass, float threshold_db, float ratio,
                                                float range_db, float attack_ms, float release_ms) {
   if (!s || !s->ready) return;
@@ -130,6 +150,8 @@ static inline void omx_upward_instance_run(OmxUpwardInstance *s, const float *in
 }
 
 /** The gainDb readout: what the last block's loudest sample rose by, dB.
+ * @param s The instance; null reads 0.
+ * @return The rise of the block's loudest sample, dB, 0 or positive; 0 when disengaged or not ready.
  * @thread audio */
 static inline float omx_upward_instance_gain_db(const OmxUpwardInstance *s) { return s ? s->gain_db : 0.0f; }
 

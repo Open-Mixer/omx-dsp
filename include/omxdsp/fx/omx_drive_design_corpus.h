@@ -34,18 +34,19 @@
 
 /** 0 = lowpass (Q = SQRT1_2, gain unused), 1 = highShelf (Q = SQRT1_2). */
 typedef struct {
-  /* The row's reason LEADS the row (unlike hrp_peaking_corpus.h): with the sections' argument
+  /** The row's reason LEADS the row (unlike hrp_peaking_corpus.h): with the sections' argument
    * order otherwise alike, two literal tables of the same shape token-match line for line and
    * a token-based clone detector reads generated data as a clone. */
   const char *why;
-  int kind;
-  double freq_hz;
-  double gain_db;
-  uint32_t rate;
+  int kind;        /**< The section: 0 the lowpass, 1 the high shelf. */
+  double freq_hz;  /**< The section's frequency, Hz. */
+  double gain_db;  /**< The shelf's gain, dB; 0 and unused for a lowpass row. */
+  uint32_t rate;   /**< The sample rate the row is designed at, Hz. */
   /** {b0, b1, b2, a1, a2}, normalised by a0. */
   double coeffs[5];
 } OmxDriveDesignRow;
 
+/** The corpus: OMX_DRIVE_DESIGN_CORPUS_ROWS rows, each a section core's `rbjSection` designed, over four rates. */
 /* BEGIN CORPUS (parsed by drive-lv2-design-twins.test.ts — one row per line, do not reflow):
  * { "why", kind, freq_hz, gain_db, rate, { b0, b1, b2, a1, a2 } } */
 static const OmxDriveDesignRow OMX_DRIVE_DESIGN_CORPUS[] = {
@@ -111,6 +112,7 @@ static const OmxDriveDesignRow OMX_DRIVE_DESIGN_CORPUS[] = {
   { "the HF roll-off", 0, 20000, 0, 192000, { 0.19390227838542889, 0.080151366280887870, -0.0043536172113872174, -1.1265933015523097, 0.39629332900723929 } },
 };
 /* END CORPUS */
+/** The number of rows in OMX_DRIVE_DESIGN_CORPUS. */
 #define OMX_DRIVE_DESIGN_CORPUS_ROWS 60u
 
 #endif /* OMX_MIX_DRIVE_DESIGN_CORPUS_H */

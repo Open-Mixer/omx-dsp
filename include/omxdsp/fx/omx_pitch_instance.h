@@ -49,6 +49,7 @@
 #include <omxdsp/fx/omx_instance_io.h>
 #include <omxdsp/omx_param.h>
 
+/** @brief Audio legs in and out: TWO, a stereo pair. */
 #define OMX_PITCH_INSTANCE_CHANNELS 2
 
 /** The highest rate, Hz, the inline rings are sized for: the top of the nine accepted rates. */
@@ -59,21 +60,36 @@
 
 /** One instance. It owns its rings; the kernel is armed over the first `cap` floats of each. */
 typedef struct {
+  /** The sample rate init bound the instance to, Hz. */
   float sr;
+  /** The kernel's controls as resolve() last resolved them; run() hands them to the kernel's process. */
   struct omx_pitch atom;
+  /** The kernel's running state, carried from block to block and handed to its process with the atom. */
   struct omx_pitch_state state;
+  /** The left leg's ring, inline; the kernel's left line is armed over its first `cap` floats. */
   float ring_l[OMX_PITCH_INSTANCE_RING_FLOATS];
+  /** The right leg's ring, inline; the kernel's right line is armed over its first `cap` floats. */
   float ring_r[OMX_PITCH_INSTANCE_RING_FLOATS];
+  /** The floats of each ring the kernel uses, omx_pitch_instance_cap_for() at `sr`, set by init. */
   uint32_t cap;
   /** The clamped controls the atom was last resolved from; `resolved` 0 until the first. */
   float semitones, cents, mix;
+  /** Non-zero once resolve() ran the kernel's resolve; 0 until the first, which runs whatever the controls hold. */
   int resolved;
   /** The previous cycle's engaged flag, so a bypass->engaged edge can clear the rings. */
   int was_engaged;
+  /** Non-zero once init bound the instance to a usable rate; while zero, resolve() does nothing and run() leaves the output as the input. */
   int ready;
 } OmxPitchInstance;
 
+/** @var OmxPitchInstance::cents
+ * The cents control as last resolved, -50 to 50 cents. */
+/** @var OmxPitchInstance::mix
+ * The mix control as last resolved, percent, 0 to 100. */
+
 /** The ring, per leg, the window needs at `sr`: the floats of each inline ring the kernel uses.
+ * @param sr The sample rate, Hz.
+ * @return omx_pitch_cap_for() at `sr`, floats per leg.
  * @thread control */
 static inline uint32_t omx_pitch_instance_cap_for(float sr) { return omx_pitch_cap_for(sr); }
 
@@ -123,14 +139,19 @@ static inline void omx_pitch_instance_clear(OmxPitchInstance *s) {
 }
 #undef OMX_CONTRACT_STAGE
 
+#define OMX_CONTRACT_STAGE "pitch/instance-resolve"
 /**
  * Resolve the host's control-port values into the kernel's atom for one cycle. `bypass` non-zero
  * disables the atom. The arguments are the kernel's contract controls, in their declared order and
  * user units: `semitones`, `cents` and `mix` (percent), each clamped into its declared travel, a
  * non-finite word reading as the declared default.
+ * @param s The instance; null or not ready leaves it as it is.
+ * @param bypass Non-zero makes run() the identity.
+ * @param semitones semitones, -12 to 12 st, default 0.
+ * @param cents cents, -50 to 50 cents, default 0.
+ * @param mix mix, 0 to 100 \%, default 100.
  * @thread audio
  */
-#define OMX_CONTRACT_STAGE "pitch/instance-resolve"
 static inline void omx_pitch_instance_resolve(OmxPitchInstance *s, int bypass, float semitones, float cents,
                                               float mix) {
   if (!s || !s->ready) return;

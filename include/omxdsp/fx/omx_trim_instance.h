@@ -49,7 +49,9 @@
 #include <omxdsp/omx_ramp.h>
 #include <omxdsp/omx_units.h>
 
+/** @brief Audio legs in and out: TWO, a stereo pair. */
 #define OMX_TRIM_INSTANCE_CHANNELS 2
+/** @brief The latency the instance reports to its host, frames: none. */
 #define OMX_TRIM_INSTANCE_LATENCY_FRAMES 0.0f
 
 /** The port default: the declaration's (TRIM_RANGE.default, dB). */
@@ -57,8 +59,11 @@
 
 /** One instance: the linear gain the last block ended on and the one the next block ramps to. */
 typedef struct {
-  float cur, tgt;
+  /** The linear gain the last engaged block ended on; init sets it to 1, run() ramps it to `tgt`. */
+  float cur, tgt; ///< tgt: the linear gain resolve() resolved from trimDb, the one the next block ramps to.
+  /** Non-zero while bypassed, as the last resolve() set it; run() then copies the input and leaves `cur` as is. */
   int bypass;
+  /** Non-zero once init bound the instance to a usable rate; while zero, resolve() does nothing and run() leaves the output as the input. */
   int ready;
 } OmxTrimInstance;
 
@@ -78,13 +83,18 @@ static inline int omx_trim_instance_init(OmxTrimInstance *s, float sr) {
   return 1;
 }
 
+#define OMX_CONTRACT_STAGE "trim-instance/resolve"
 /**
  * Resolve the host's control value for one cycle. `bypass` non-zero makes run() the identity.
  * The argument is the trim kernel's contract control, in its user unit: `trim_db` (dB), clamped
  * into TRIM_RANGE, a non-finite word reading as its default.
+ * @param s The instance; null or not ready leaves it as it is.
+ * @param bypass Non-zero makes run() the identity.
+ * @param trim_db trimDb, -24 to 24 dB, default 0: The digital input trim, in dB: the console's fine head gain, applied
+ *        first in a channel's lane as a click-free ramp from the last block's gain to this one (the console's trim
+ *        range, -24..+24 dB in 0.1 dB steps, spelled minDb/maxDb/stepDb there).
  * @thread audio
  */
-#define OMX_CONTRACT_STAGE "trim-instance/resolve"
 static inline void omx_trim_instance_resolve(OmxTrimInstance *s, int bypass, float trim_db) {
   if (!s || !s->ready) return;
   s->bypass = bypass ? 1 : 0;

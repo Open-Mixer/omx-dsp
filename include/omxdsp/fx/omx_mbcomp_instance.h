@@ -41,25 +41,27 @@
 #include <omxdsp/fx/omx_instance_io.h>
 #include <omxdsp/omx_param.h>
 
+/** @brief Audio legs in and out: TWO, a stereo pair. */
 #define OMX_MBCOMP_INSTANCE_CHANNELS 2
 
 /** One instance: the atom, the stage's state, the corners the tree was designed at and the output gain. */
 typedef struct {
+  /** The sample rate init bound the instance to, Hz. */
   float sr;
+  /** The kernel's controls as resolve() last resolved them; run() hands them to the kernel's process. */
   struct omx_mbcomp atom;
+  /** The stage's running state, carried from block to block and handed to its process with the atom; resolve()
+   * re-arms its band compressors when the oversampling factor changes. */
   struct omx_mbcomp_state st;
   float hz[OMX_MBC_MAX_XOVERS]; /**< The corners in use as the tree was last designed. */
+  /** Non-zero once resolve() designed the tree; redesigned while 0 or when the bands or a corner move. */
   int designed;
   uint32_t factor; /**< The factor the band compressors were armed at. */
   float out_lin;   /**< The output gain, linear; exactly 1 at 0 dB. */
+  /** Non-zero once init bound the instance to a usable rate; while zero, resolve() does nothing and run() leaves the output as the input. */
   int ready;
 } OmxMbcompInstance;
 
-/**
- * Bind an instance to its rate. Returns 1 when usable, 0 when not: the rate must be one of the oracle
- * set. The stage comes up at its declared defaults (three bands at the come-up corners, every band at
- * its come-up compressor), engaged. Allocates nothing.
- */
 static inline void omx_mbcomp_instance_resolve(OmxMbcompInstance *s, int bypass, float bands,
                                                const float xover_hz[OMX_MBC_MAX_XOVERS],
                                                const float threshold_db[OMX_MBC_MAX_BANDS],
@@ -70,6 +72,9 @@ static inline void omx_mbcomp_instance_resolve(OmxMbcompInstance *s, int bypass,
                                                const int band_bypass[OMX_MBC_MAX_BANDS], float mix_pct, float output_db);
 
 /**
+ * Bind an instance to its rate. Returns 1 when usable, 0 when not: the rate must be one of the oracle
+ * set. The stage comes up at its declared defaults (three bands at the come-up corners, every band at
+ * its come-up compressor), engaged. Allocates nothing.
  * @param s The instance; every word of it is written.
  * @param sr The sample rate, Hz, one of the oracle set.
  * @return 1 when usable, 0 when not: a rate the console does not declare (the oracle set, 32 to 192 kHz) is refused, `ready` stays clear and run() is the identity.
@@ -96,15 +101,31 @@ static inline int omx_mbcomp_instance_init(OmxMbcompInstance *s, float sr) {
   return 1;
 }
 
+#define OMX_CONTRACT_STAGE "mbcomp/instance-resolve"
 /**
  * Resolve the host's control values for one cycle. `bypass` non-zero makes run() the identity. The
  * arguments are the mbcomp kernel's contract controls in their declared order: the band count, the
  * corners (Hz, OMX_MBC_MAX_XOVERS of them, the first `bands - 1` in use), per band (OMX_MBC_MAX_BANDS
  * of each) the threshold (dB), ratio, attack and release (ms), make-up (dB), solo and bypass
  * (MBCOMP_SOLOS, MBCOMP_BAND_BYPASSES indices), then the mix (percent) and the output gain (dB).
+ * @param s The instance; null, not ready or any null array leaves it as it is.
+ * @param bypass Non-zero makes run() the identity.
+ * @param bands bands, MBC_MIN_BANDS to MBC_MAX_BANDS, default 3, rounded: how many bands the stage splits into.
+ * @param xover_hz xoverHz per crossover, 40 to 16000 Hz, ascending, the first `bands - 1` in use: a corner at or below
+ *        the one before it is moved just above it, a non-finite one reads as the come-up corner.
+ * @param threshold_db thresholdDb per band, -60 to 0 dB, default -20.
+ * @param ratio ratio per band, 1 to 20, default 2; a hard knee.
+ * @param attack_ms attackMs per band, 0.1 to 200 ms, default 10.
+ * @param release_ms releaseMs per band, 10 to 2000 ms, default 150.
+ * @param makeup_db makeupDb per band, 0 to 24 dB, default 0.
+ * @param solo solo per band, the MBCOMP_SOLOS index: `on` solos the band, any other value is off; a solo past the
+ *        band count mutes nothing.
+ * @param band_bypass bandBypass per band, the MBCOMP_BAND_BYPASSES index: `on` disables the band's compressor, any
+ *        other value is off.
+ * @param mix_pct mixPct, 0 to 100 \%, default 100: the share of the compressed bands, each band blending its own input.
+ * @param output_db outputDb, -24 to 24 dB, default 0: the stage's output gain after the sum; 0 dB touches no sample.
  * @thread audio
  */
-#define OMX_CONTRACT_STAGE "mbcomp/instance-resolve"
 static inline void omx_mbcomp_instance_resolve(OmxMbcompInstance *s, int bypass, float bands,
                                                const float xover_hz[OMX_MBC_MAX_XOVERS],
                                                const float threshold_db[OMX_MBC_MAX_BANDS],
@@ -209,6 +230,9 @@ static inline void omx_mbcomp_instance_run(OmxMbcompInstance *s, const float *in
 
 /** Band `k`'s readout, band<k+1>GainReductionDb, dB, at most 0: 0 past the band count, for a bypassed
  * band and for a refused instance.
+ * @param s The instance; null or not ready reads 0.
+ * @param k The band, 0 to the band count - 1.
+ * @return omx_mbcomp_band_gr_db() for band `k`, dB; 0 past the band count.
  * @thread audio */
 static inline float omx_mbcomp_instance_band_gr_db(const OmxMbcompInstance *s, uint32_t k) {
   if (!s || !s->ready || k >= s->atom.bands) return 0.0f;

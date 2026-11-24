@@ -46,38 +46,43 @@
 /* The attribution window is OMX_HRP_ATTRIBUTION_CENTS from the generated omxdsp_definitions.h (declared
  * once, in the declarations package; §11) — two partials closer than it are one spectral event. */
 
-/** What ambiguity does to a measurement's confidence. Not zero: the partial IS there and the
+/** @brief What ambiguity does to a measurement's confidence. Not zero: the partial IS there and the
  *  analyser should show it. Low enough that a correction tier honouring §54 will decline. */
 #define OMX_HRP_AMBIGUOUS_CONFIDENCE 0.25f
 
-/** One harmonic of one voice, measured. */
+/** @brief One harmonic of one voice, measured. */
 typedef struct {
-  uint32_t harmonic; /* n, 1-based: harmonic 1 IS the fundamental */
-  float freq_hz;     /* where the grid says it should be — n · f0 */
-  float level_db;
-  float confidence; /* 0..1; reduced when another voice claims the same region */
-  int ambiguous;    /* another voice's grid lands within OMX_HRP_ATTRIBUTION_CENTS */
-  int present;      /* is there anything here at all? */
+  uint32_t harmonic; /**< n, 1-based: harmonic 1 IS the fundamental */
+  float freq_hz;     /**< where the grid says it should be — n · f0 */
+  float level_db;    /**< 20·log10 of the spectrum's peak near `freq_hz` (omx_hrp_bin_peak()); -999 when it is 0 */
+  float confidence; /**< 0..1; reduced when another voice claims the same region */
+  int ambiguous;    /**< another voice's grid lands within OMX_HRP_ATTRIBUTION_CENTS */
+  int present;      /**< is there anything here at all? */
 } OmxHrpPartial;
 
-/** One voice's whole harmonic grid, measured and attributed. */
+/** @brief One voice's whole harmonic grid, measured and attributed. */
 typedef struct {
-  OmxHrpPartial partials[OMX_HRP_HARMONICS];
-  uint32_t count; /* how many fitted below Nyquist */
+  OmxHrpPartial partials[OMX_HRP_HARMONICS]; /**< harmonic 1 upward; the first `count` are written */
+  uint32_t count; /**< how many fitted below Nyquist */
 } OmxHrpVoiceHarmonics;
 
-/** Is a partial audible at all, judged against this voice's own mean partial? Self-relative for
+/** @brief Is a partial audible at all, judged against this voice's own mean partial? Self-relative for
  *  the same reason everywhere else in HRP is: a quiet voice inside a loud chord must be held to
  *  its own shape, not to the chord's level.
+ * @param level The partial's linear magnitude.
+ * @param voice_mean The voice's mean partial magnitude, linear.
+ * @param accept The fraction of `voice_mean` a present partial reaches.
+ * @return 1 when `voice_mean` is above 0 and `level` is at least `accept · voice_mean`, else 0.
  * @thread worker */
 static inline int omx_hrp_partial_present(float level, float voice_mean, float accept) {
   return voice_mean > 0.0f && level >= accept * voice_mean;
 }
 
 /**
- * Measure every voice's harmonic grid, and mark the partials that cannot be told apart.
+ * @brief Measure every voice's harmonic grid, and mark the partials that cannot be told apart.
  *
  * @param mag     magnitude spectrum
+ * @param nbins   bins in `mag`; bin `nbins - 1` is taken as Nyquist; 0 does nothing
  * @param bin_hz  hertz per bin
  * @param voices  the frame's voice set
  * @param cfg     the search config (harmonics, and the presence yardstick)
@@ -141,7 +146,10 @@ static inline void omx_hrp_attribute(const float *mag, uint32_t nbins, float bin
   }
 }
 
-/** The measured partial for harmonic `n` of one voice, or NULL if it was never measured.
+/** @brief The measured partial for one harmonic of one voice, or NULL if it was never measured.
+ * @param grid The voice's grid; NULL gives NULL.
+ * @param harmonic The harmonic, 1-based.
+ * @return The first of the grid's `count` partials whose `harmonic` matches, or NULL.
  * @thread worker */
 static inline const OmxHrpPartial *omx_hrp_partial_of(const OmxHrpVoiceHarmonics *grid,
                                                       uint32_t harmonic) {
@@ -151,8 +159,10 @@ static inline const OmxHrpPartial *omx_hrp_partial_of(const OmxHrpVoiceHarmonics
   return NULL;
 }
 
-/** How many of a voice's partials could be attributed to it ALONE — the ones a correction may
+/** @brief How many of a voice's partials could be attributed to it ALONE — the ones a correction may
  *  safely act on. A voice whose every partial is shared has nothing HRP can honestly cut.
+ * @param grid The voice's grid; NULL counts 0.
+ * @return The number of partials that are present and not ambiguous.
  * @thread worker */
 static inline uint32_t omx_hrp_unambiguous_count(const OmxHrpVoiceHarmonics *grid) {
   uint32_t n = 0;

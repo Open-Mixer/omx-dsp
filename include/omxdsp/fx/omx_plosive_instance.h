@@ -50,6 +50,7 @@
 #include <omxdsp/omx_units.h>
 #include <omxdsp/omxdsp_definitions.h>
 
+/** @brief Audio legs in and out: TWO, a stereo pair. */
 #define OMX_PLOSIVE_INSTANCE_CHANNELS 2
 
 /** The consonant band's top edge, as a share of the rate: PLOSIVE_BAND_EDGE_FRACTION. */
@@ -57,12 +58,34 @@
 
 /** One half's detector: the transient designer's fast follower and a slow one differing in its attack. */
 struct omx_plosive_detector {
+  /** @var omx_plosive_detector::slow
+   * The slow follower's envelope: omx_envdiff_step() steps it, its attack the half's recovery time. */
+  /** The fast follower's envelope: omx_env_step() steps it with the half's fast poles. */
   struct omx_env fast, slow;
 };
 
+/** One instance: the resolved controls, the pop split's and the consonant band's designs, each half's detector and
+ * the deepest gain of each half in the last block. */
 typedef struct {
+  /** The sample rate init bound the instance to, Hz. */
   float sr;
-  /* the resolved controls */
+  /** @var OmxPlosiveInstance::cons_s
+   * sensitivityDb as resolve() clamped it, dB, 0 to 30: the consonant detector's contrast offset. */
+  /** @var OmxPlosiveInstance::cons_rec
+   * recoveryMs as resolve() clamped it, ms, 2 to 50: the consonant detector's slow attack. */
+  /** @var OmxPlosiveInstance::band_hz
+   * bandHz as resolve() clamped it, Hz, 1000 to 12000: the consonant band's centre before the edge hold. */
+  /** @var OmxPlosiveInstance::band_oct
+   * bandWidthOct as resolve() clamped it, octaves, 0.5 to 4: the consonant band's width before the edge hold. */
+  /** @var OmxPlosiveInstance::pop_db
+   * popDb as resolve() clamped it, dB, 0 to 24: the pop half's cut at full contrast. */
+  /** @var OmxPlosiveInstance::pop_s
+   * popSensitivityDb as resolve() clamped it, dB, 0 to 30: the pop detector's contrast offset. */
+  /** @var OmxPlosiveInstance::pop_rec
+   * popRecoveryMs as resolve() clamped it, ms, 10 to 200: the pop detector's slow attack. */
+  /** @var OmxPlosiveInstance::pop_hz
+   * popHz as resolve() clamped it, Hz, 60 to 300: the pop split's corner. */
+  /** consonantDb as resolve() clamped it, dB, 0 to 24: the consonant half's cut at full contrast. */
   float cons_db, cons_s, cons_rec, band_hz, band_oct, pop_db, pop_s, pop_rec, pop_hz;
   /* the designs */
   float a;                       /**< the pop split's allpass coefficient */
@@ -73,13 +96,25 @@ typedef struct {
   /* the state */
   struct omx_allpass1 ap[2];     /**< the pop split's allpass, per leg */
   float bs[2][4];                /**< the band section's history, per leg */
+  /** @var OmxPlosiveInstance::cd
+   * The consonant half's detector, reading the legs' fold of the band section's output. */
+  /** The pop half's detector, reading the legs' fold of the pop band. */
   struct omx_plosive_detector pd, cd;
-  float pop_min, cons_min;       /**< the deepest gain of each half in the last block, linear */
+  /** @var OmxPlosiveInstance::cons_min
+   * The consonant half's deepest gain in the last block run() ran, linear, 1 when it cut nothing; init sets 1. */
+  /** The pop half's deepest gain in the last block run() ran, linear, 1 when it cut nothing; init sets 1. */
+  float pop_min, cons_min;
+  /** Non-zero while the effect is engaged, as the last resolve() set it; while zero, run() leaves the output as the input. */
   int enabled;
+  /** Non-zero once init bound the instance to a usable rate; while zero, resolve() does nothing and run() leaves the output as the input. */
   int ready;
 } OmxPlosiveInstance;
 
 /** The half's gain for a contrast: 10^(-amount ramp(delta, s)/20), exactly 1 below the offset.
+ * @param amount_db The half's cut at full contrast, dB; 0 or less gives 1.
+ * @param delta The detector's contrast, dB, from omx_envdiff_step().
+ * @param s_db The half's sensitivity, dB: the ramp's offset.
+ * @return The gain, linear, in (0, 1]; exactly 1 while the ramp reads 0 or the amount is 0.
  * @thread audio */
 static inline float omx_plosive_gain(float amount_db, float delta, float s_db) {
   const float u = omx_envdiff_ramp(delta, s_db);
@@ -87,16 +122,28 @@ static inline float omx_plosive_gain(float amount_db, float delta, float s_db) {
 }
 
 /** One leg's pop band, LP = (x + A x)/2, the allpass's word advanced.
+ * @param ap The leg's first-order allpass state; advanced by one sample.
+ * @param a The allpass coefficient, from omx_allpass1_coef() at popHz.
+ * @param x The leg's input sample.
+ * @return The pop band's sample, LP.
  * @thread audio */
 static inline float omx_plosive_pop_band(struct omx_allpass1 *ap, float a, float x) {
   return 0.5f * (x + omx_allpass1_tick(ap, x, a));
 }
 
 /** The pop half at gain g: x - (1 - g) LP, the input itself at g = 1 (L2).
+ * @param x The leg's input sample.
+ * @param lp The leg's pop band sample, from omx_plosive_pop_band().
+ * @param g The pop half's gain, linear.
+ * @return x1, the sample with its pop band cut to `g`.
  * @thread audio */
 static inline float omx_plosive_pop_apply(float x, float lp, float g) { return g != 1.0f ? x - (1.0f - g) * lp : x; }
 
 /** The consonant half at gain g: x1 + (g - 1) B, x1 itself at g = 1 (L2).
+ * @param x1 The leg's sample after the pop half.
+ * @param b The leg's consonant band sample, the band section over `x1`.
+ * @param g The consonant half's gain, linear.
+ * @return The output sample, the consonant band cut to `g`.
  * @thread audio */
 static inline float omx_plosive_cons_apply(float x1, float b, float g) { return g != 1.0f ? x1 + (g - 1.0f) * b : x1; }
 
@@ -124,6 +171,10 @@ static inline int omx_plosive_instance_init(OmxPlosiveInstance *s, float sr) {
 }
 
 /** The detector poles of a half whose slow follower attacks in `slow_attack_ms`.
+ * @param fe The fast follower's parameters; the slow follower takes its release.
+ * @param slow_attack_ms The slow follower's attack, ms: the half's recovery time.
+ * @param sr The sample rate, Hz.
+ * @param p The half's poles, written: the fast attack and release, the slow attack and release.
  * @thread audio */
 static inline void omx_plosive_poles(const struct omx_env_params *fe, float slow_attack_ms, float sr,
                                      struct omx_envdiff_poles *p) {
@@ -132,13 +183,33 @@ static inline void omx_plosive_poles(const struct omx_env_params *fe, float slow
   omx_env_stage_poles(&sa, 1u, &p->slow_attack, &p->slow_release);
 }
 
+#define OMX_CONTRACT_STAGE "plosive/instance-resolve"
 /**
  * Resolve the host's control values for one cycle. `bypass` non-zero makes run() the identity. The
  * arguments are the plosive kernel's contract controls in their declared order (dB, dB, ms, Hz,
  * octaves, dB, dB, ms, Hz).
+ * @param s The instance; null or not ready leaves it as it is.
+ * @param bypass Non-zero makes run() the identity.
+ * @param consonant_db consonantDb, 0 to 24 dB, default 6: How far a hard consonant (t, k) is cut in its band, dB, at
+ *        full contrast: y = x1 + (g - 1) B, the de-esser's split, so no gain is added at any frequency.
+ * @param sensitivity_db sensitivityDb, 0 to 30 dB, default 16: The contrast, dB between the band's fast and slow
+ *        envelopes (omx_envdiff), a burst must pass before the consonant cut starts; the cut is full TRANSIENT_REF_DB
+ *        past it (omx_envdiff_ramp).
+ * @param recovery_ms recoveryMs, 2 to 50 ms, default 8: The consonant detector's slow attack, ms: how long a burst's
+ *        contrast lasts, so how long the cut does.
+ * @param band_hz bandHz, 1000 to 12000 Hz, default 4000: The consonant band's centre, Hz: the de-esser's cookbook
+ *        bandpass section.
+ * @param band_width_oct bandWidthOct, 0.5 to 4 oct, default 2: The consonant band's width, octaves; its top edge is
+ *        held under PLOSIVE_BAND_EDGE_FRACTION of the rate.
+ * @param pop_db popDb, 0 to 24 dB, default 12: How far a p pop is cut below popHz, dB, at full contrast: x1 = x - (1 -
+ *        g) LP, the low half of a first-order power-complementary split, so no gain is added.
+ * @param pop_sensitivity_db popSensitivityDb, 0 to 30 dB, default 16: The contrast, dB, the pop band's burst must pass
+ *        before the pop cut starts.
+ * @param pop_recovery_ms popRecoveryMs, 10 to 200 ms, default 40: The pop detector's slow attack, ms.
+ * @param pop_hz popHz, 60 to 300 Hz, default 150: The pop split's corner, Hz: the first-order allpass (omx_allpass1)
+ *        whose halves are the pop band and the rest.
  * @thread audio
  */
-#define OMX_CONTRACT_STAGE "plosive/instance-resolve"
 static inline void omx_plosive_instance_resolve(OmxPlosiveInstance *s, int bypass, float consonant_db, float sensitivity_db,
                                                 float recovery_ms, float band_hz, float band_width_oct, float pop_db,
                                                 float pop_sensitivity_db, float pop_recovery_ms, float pop_hz) {
@@ -223,12 +294,16 @@ static inline void omx_plosive_instance_run(OmxPlosiveInstance *s, const float *
 #undef OMX_CONTRACT_STAGE
 
 /** The consonantReductionDb readout: the deepest consonant cut of the last block, dB, at most 0.
+ * @param s The instance; null or not ready reads 0.
+ * @return The consonant half's deepest gain in the last block, dB, at most 0; 0 when it cut nothing.
  * @thread audio */
 static inline float omx_plosive_instance_consonant_reduction_db(const OmxPlosiveInstance *s) {
   return s && s->ready && s->cons_min < 1.0f ? omx_lin_to_db(s->cons_min) : 0.0f;
 }
 
 /** The popReductionDb readout: the deepest pop cut of the last block, dB, at most 0.
+ * @param s The instance; null or not ready reads 0.
+ * @return The pop half's deepest gain in the last block, dB, at most 0; 0 when it cut nothing.
  * @thread audio */
 static inline float omx_plosive_instance_pop_reduction_db(const OmxPlosiveInstance *s) {
   return s && s->ready && s->pop_min < 1.0f ? omx_lin_to_db(s->pop_min) : 0.0f;

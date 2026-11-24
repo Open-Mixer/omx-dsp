@@ -35,74 +35,94 @@ typedef enum { OMX_FBS_POOL_FIXED = 0, OMX_FBS_POOL_LIVE = 1 } OmxFbsPool;
 /** Every gate a push confirms on — core's `DetectThresholds`, field for field. The three
  * opt-in routes are off while their `*_on` flag is 0. */
 typedef struct {
+  /** dB: a candidate's level over the spectrum average outside its guard band must reach this. */
   double papr_db;
+  /** dB: a candidate's level over the average of its near neighbours (guard excluded) must reach this. */
   double pnpr_db;
+  /** dB: a candidate's level over its strongest harmonic must reach this. */
   double phpr_db;
+  /** Frames: the ramp route needs a streak this long; the plateau route checks this many latest levels. */
   uint32_t persist_frames;
+  /** Pushes in a row omx_fbs_is_growing() must hold for the ramp route. */
   uint32_t growth_confirm_frames;
+  /** Pushes in a row the bin must pass `pshr_min_db` for the ramp and plateau routes. */
   uint32_t sub_clean_frames;
+  /** dB: omx_fbs_is_growing() needs the newest level minus the oldest to reach this. */
   double growth_min_total_rise_db;
+  /** Fraction: omx_fbs_is_growing() fails when one frame-to-frame rise exceeds this share of the total rise. */
   double growth_max_single_frame_share;
+  /** dB per frame: omx_fbs_is_growing() needs the least-squares slope of the history to reach this. */
   double growth_min_db_per_frame;
+  /** dB: the largest frame-to-frame drop the ramp, plateau and trend routes allow; the deep plateau allows half. */
   double growth_max_dip_db;
+  /** dB: a push whose omx_fbs_pshr() reaches this counts toward the slot's `sub_clean_run`. */
   double pshr_min_db;
+  /** Nonzero enables the plateau route; 0 (the default) leaves it off. */
   int plateau_on;
+  /** dB: the plateau route needs each of the last `persist_frames` levels at or above this. */
   double plateau_floor_db;
+  /** Nonzero enables the deep-plateau route; 0 (the default) leaves it off. */
   int deep_plateau_on;
+  /** dB: the deep-plateau route needs each of the last OMX_DEEP_PLATEAU_FRAMES levels at or above this. */
   double deep_plateau_floor_db;
+  /** Nonzero enables the trend route; 0 (the default) leaves it off. */
   int trend_on;
+  /** dB: the trend route needs the deep history's newest level minus its oldest to reach this. */
   double trend_min_rise_db;
 } OmxFbsThresholds;
 
 /** One confirmed ring — core's `NotchCandidate` less its pool, which is the detector's. */
 typedef struct {
-  uint32_t bin;
-  double freq_hz;
-  double depth_db;
-  double q;
-  uint32_t persistence;
-  double level_db;
+  uint32_t bin;          /**< the spectrum bin */
+  double freq_hz;        /**< Hz: bin * sample_rate / fft_size */
+  double depth_db;       /**< dB: minus the bin's papr rounded half up, capped at OMX_FBS_MAX_NOTCH_DEPTH_DB */
+  double q;              /**< the notch Q: always OMX_FBS_DEFAULT_NOTCH_Q */
+  uint32_t persistence;  /**< frames: the slot's streak when this candidate was built */
+  double level_db;       /**< dB: the bin's level on this frame */
 } OmxFbsCandidate;
 
 /** One tracked candidate bin's memory. Caller-owned; the detector lays nothing out itself. */
 typedef struct {
-  int32_t bin;
-  uint32_t streak;
-  uint32_t growing_run;
-  uint32_t sub_clean_run;
-  uint32_t n_hist;
-  uint32_t n_deep;
+  int32_t bin;            /**< the bin this slot tracks, or -1 when the slot is free */
+  uint32_t streak;        /**< frames the bin has been a candidate since the slot was taken */
+  uint32_t growing_run;   /**< consecutive pushes omx_fbs_is_growing() held over `hist`; 0 on a miss */
+  uint32_t sub_clean_run; /**< consecutive pushes the bin passed the pshr gate; 0 on a miss */
+  uint32_t n_hist;        /**< filled entries of `hist` */
+  uint32_t n_deep;        /**< filled entries of `deep` */
+  /** dB: the bin's latest levels, oldest first; the ramp and plateau routes read it. */
   double hist[OMX_GROWTH_WINDOW_FRAMES];
+  /** dB: the bin's latest levels, oldest first; the deep-plateau and trend routes read it. */
   double deep[OMX_DEEP_PLATEAU_FRAMES];
-  int confirmed;
-  uint64_t confirm_seq;
+  int confirmed;          /**< 1 once the bin has confirmed; it confirms once per slot */
+  uint64_t confirm_seq;   /**< the detector's `seq` at confirmation; orders the snapshot */
+  /** The detector `frame` on which the bin was last a candidate; a push frees every slot not seen on its frame. */
   uint64_t seen_frame;
 } OmxFbsSlot;
 
 /** One channel's detector. Every pointer is caller-owned memory of the stated size. */
 typedef struct {
-  OmxFbsThresholds t;
-  OmxFbsPool pool;
-  double sample_rate;
-  uint32_t fft_size;
+  OmxFbsThresholds t;  /**< the gates, set by the caller before omx_fbs_init() */
+  OmxFbsPool pool;     /**< the pool this detector finds for, set by the caller; omx_fbs_push() does not read it */
+  double sample_rate;  /**< Hz, > 0: turns a bin into `freq_hz` */
+  uint32_t fft_size;   /**< the FFT length in samples, > 0: turns a bin into `freq_hz` */
   int32_t *bin_slot;  /**< nbins_cap entries: the slot tracking each bin, or −1 */
-  uint32_t nbins_cap;
+  uint32_t nbins_cap;  /**< entries of `bin_slot`; omx_fbs_push() scores at most this many bins */
   OmxFbsSlot *slots;  /**< n_slots entries */
   uint32_t *free_stack; /**< n_slots entries */
-  uint32_t n_slots;
-  uint32_t n_free;
-  uint64_t frame;
-  uint64_t seq;
+  uint32_t n_slots;    /**< entries of `slots` and `free_stack`: how many bins may be tracked at once */
+  uint32_t n_free;     /**< free slots left on `free_stack`; omx_fbs_init() sets it to n_slots */
+  uint64_t frame;      /**< pushes since omx_fbs_init(); omx_fbs_push() counts it up first */
+  uint64_t seq;        /**< confirmations since omx_fbs_init(); each confirmation takes the next value */
 } OmxFbsDetector;
 
 /** What one push concluded. Every array is caller-owned with room for the detector's n_slots. */
 typedef struct {
   OmxFbsCandidate *confirmed; /**< newly confirmed on this frame, ascending bin */
-  uint32_t n_confirmed;
+  uint32_t n_confirmed;       /**< entries filled in `confirmed` */
   OmxFbsCandidate *snapshot;  /**< every confirmed bin still ringing, in confirmation order */
-  uint32_t n_snapshot;
+  uint32_t n_snapshot;        /**< entries filled in `snapshot` */
   uint32_t *active;           /**< every candidate bin this frame, ascending */
-  uint32_t n_active;
+  uint32_t n_active;          /**< entries filled in `active` */
   uint32_t untracked;         /**< candidate bins this frame that found no free slot */
 } OmxFbsResult;
 
