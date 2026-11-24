@@ -1,8 +1,5 @@
 {
   "$schema": "../../schema/omx-contract.schema.json",
-  "requires": {
-    "omx-contract-schema": ">= 3.0.0"
-  },
   "constants": {
     "RTA_TARGET_BIN_HZ": {
       "kind": "scalar",
