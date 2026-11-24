@@ -2,10 +2,10 @@
 // Copyright (C) 2026 Pau Aliagas <linuxnow@gmail.com>
 /*
  * room_ts.test.c — the room analysis, the Farina sweep and the alignment fit against core's
- * TypeScript: the parity table fixtures/room_ts.h, which tools/room-ts-golden.mjs wrote by
- * running core's room-*.ts and smart-align.ts on fixed
- * inputs. This program rebuilds the same inputs bit for bit (an integer PRNG and exact sums,
- * products and quotients of the table's constants) and runs the C kernels on them.
+ * TypeScript: the parity table fixtures/room_ts.h, written by running core's room-*.ts and
+ * smart-align.ts on fixed inputs before they called these kernels (the table is frozen). This
+ * program rebuilds the same inputs bit for bit (an integer PRNG and exact sums, products and
+ * quotients of the table's constants) and runs the C kernels on them.
  *
  * The bounds:
  *   - every integer result is exact: refusal codes, frame counts, band bins, the direct arrival,
@@ -68,7 +68,7 @@ static void *xmalloc(size_t n) {
   return p;
 }
 
-/* ---- the inputs, as tools/room-ts-golden.mjs builds them --------------------------------------- */
+/* ---- the inputs, as the table's writer built them -------------------------------------------- */
 
 typedef struct {
   uint32_t a;

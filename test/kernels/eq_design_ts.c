@@ -39,9 +39,9 @@ static double eq_ts_ulps(double a, double b) {
 }
 
 /* omx-dsp#105 moved the low-pass past the start of its hand-over band off the matched design the
- * TypeScript still runs: a row, run or composite holding such a section is counted and left out,
- * and every other row is held as before. openmixer's TypeScript follows when its EQ design reads
- * the C; this exception goes when the fixture is regenerated from that TypeScript. */
+ * TypeScript then ran: a row, run or composite holding such a section is counted and left out,
+ * and every other row is held as before. The fixture is frozen (openmixer's EQ design now reads
+ * the C), so this exception stays with it. */
 static int eq_ts_lp_moved(enum omx_eq_kind kind, double freq_hz, double q, double sr) {
   double band[2];
   omx_eq_lowpass_handover(q <= 0.0 ? 1e-3 : q, band);
