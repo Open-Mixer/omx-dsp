@@ -538,6 +538,8 @@ checks:
 	sh tools/no-host-nproc.sh
 	sh tools/ci-install-options.sh --self-test
 	sh tools/ci-install-options.sh
+	sh tools/ci-node-26.sh --self-test
+	sh tools/ci-node-26.sh
 	bash tools/check-package-derived.sh
 	bash tools/check-package-derived.sh --self-test
 	bash tools/release-binaries-check.sh

@@ -193,7 +193,7 @@ jobs:
           sh tools/contract-include.sh
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 26
       - name: make wasm, wasm-check and wasm-sabotage
         run: |
           set -euo pipefail
@@ -244,7 +244,7 @@ jobs:
         run: make -j"$OMX_JOBS" lib
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 26
       - name: The shared curve vectors, native
         run: |
           apt-get -o Dpkg::Options::=--force-unsafe-io install -y --no-install-recommends python3
@@ -355,7 +355,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 26
 
       - name: Fetch omx-contract at OMX_CONTRACT_REF and install it
         run: |
@@ -542,8 +542,10 @@ jobs:
       - name: The packaged loader loads the packaged module, in a clean root
         run: |
           set -euo pipefail
-          # fedora:45: an earlier step may have installed node as nodejs22-bin, which conflicts with the nodejs package
-          dnf install -y --setopt=tsflags=nodocs --setopt=install_weak_deps=False $(command -v node >/dev/null || echo nodejs) rpms/omx-dsp-wasm-[0-9]*.noarch.rpm
+          # Node 26 (#130): Fedora 45's plain nodejs is Node 22, and the build's nodejs22-bin holds /usr/bin/node, so
+          # nodejs26-bin takes it over (--allowerasing)
+          dnf install -y --setopt=tsflags=nodocs --setopt=install_weak_deps=False --allowerasing nodejs26 nodejs26-bin rpms/omx-dsp-wasm-[0-9]*.noarch.rpm
+          node --version | grep -q '^v26\.'
           node tools/wasm-loader-check.mjs /usr/share/omx-dsp
 
       - uses: actions/upload-artifact@v4
@@ -616,10 +618,15 @@ jobs:
           gcc $(pkg-config --cflags omxdsp-contracts) -O2 -o /tmp/flavour test/omxdsp_flavour.c $(pkg-config --libs omxdsp-contracts)
           /tmp/flavour
 
+      # Node 26 (#130): Debian's archive carries no Node 26
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 26
       - name: The packaged loader loads the packaged module, in a clean root
         run: |
           set -euo pipefail
-          apt-get -o Dpkg::Options::=--force-unsafe-io install -y --no-install-recommends ./debs/omx-dsp-wasm_*.deb nodejs
+          apt-get -o Dpkg::Options::=--force-unsafe-io install -y --no-install-recommends ./debs/omx-dsp-wasm_*.deb
+          node --version | grep -q '^v26\.'
           dpkg -L omx-dsp-wasm > listing.txt
           grep -q '^/usr/share/omx-dsp/dist/index.js$' listing.txt
           grep -q '^/usr/share/omx-dsp/wasm/omx-dsp.wasm$' listing.txt
