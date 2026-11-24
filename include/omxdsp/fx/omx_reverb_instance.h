@@ -50,22 +50,35 @@
 
 /** Port defaults: the declaration's (REVERB_*_RANGE.default); the algorithm comes up as ROOM. */
 #define OMX_REVERB_INSTANCE_PLATE_MOD_DEPTH_DEFAULT ((float)OMX_REVERB_PLATE_MOD_DEPTH_RANGE_DEFAULT)
+/** The mix a non-finite word reads as, 0..1: REVERB_MIX_RANGE's default; init also puts it in the atom. */
 #define OMX_REVERB_INSTANCE_MIX_DEFAULT ((float)OMX_REVERB_MIX_RANGE_DEFAULT)
+/** The size a non-finite word reads as, 0..1: REVERB_SIZE_RANGE's default; init also puts it in the atom. */
 #define OMX_REVERB_INSTANCE_SIZE_DEFAULT ((float)OMX_REVERB_SIZE_RANGE_DEFAULT)
+/** The damping a non-finite word reads as, 0..1: REVERB_DAMPING_RANGE's default; init also puts it in the atom. */
 #define OMX_REVERB_INSTANCE_DAMPING_DEFAULT ((float)OMX_REVERB_DAMPING_RANGE_DEFAULT)
+/** The width a non-finite word reads as, 0..1: REVERB_WIDTH_RANGE's default; init also puts it in the atom. */
 #define OMX_REVERB_INSTANCE_WIDTH_DEFAULT ((float)OMX_REVERB_WIDTH_RANGE_DEFAULT)
+/** The pre-delay a non-finite word reads as, ms: REVERB_PREDELAY_RANGE's default. */
 #define OMX_REVERB_INSTANCE_PREDELAY_DEFAULT ((float)OMX_REVERB_PREDELAY_RANGE_DEFAULT)
+/** The low cut a non-finite word reads as, Hz: REVERB_LOWCUT_RANGE's default. */
 #define OMX_REVERB_INSTANCE_LOWCUT_DEFAULT ((float)OMX_REVERB_LOWCUT_RANGE_DEFAULT)
+/** The high cut a non-finite word reads as, Hz: REVERB_HIGHCUT_RANGE's default. */
 #define OMX_REVERB_INSTANCE_HIGHCUT_DEFAULT ((float)OMX_REVERB_HIGHCUT_RANGE_DEFAULT)
+/** The reverse window a non-finite word reads as, ms: REVERB_REVERSE_RANGE's default. */
 #define OMX_REVERB_INSTANCE_REVERSE_DEFAULT ((float)OMX_REVERB_REVERSE_RANGE_DEFAULT)
+/** The gated hold a non-finite word reads as, ms: REVERB_HOLD_RANGE's default. */
 #define OMX_REVERB_INSTANCE_HOLD_DEFAULT ((float)OMX_REVERB_HOLD_RANGE_DEFAULT)
+/** The gated release a non-finite word reads as, ms: REVERB_RELEASE_RANGE's default. */
 #define OMX_REVERB_INSTANCE_RELEASE_DEFAULT ((float)OMX_REVERB_RELEASE_RANGE_DEFAULT)
+/** The gated arm threshold a non-finite word reads as, dBFS: REVERB_GATE_THRESHOLD_RANGE's default. */
 #define OMX_REVERB_INSTANCE_GATE_THRESHOLD_DEFAULT ((float)OMX_REVERB_GATE_THRESHOLD_RANGE_DEFAULT)
+/** The algorithm an index outside REVERB_ALGORITHMS reads as: ROOM. */
 #define OMX_REVERB_INSTANCE_ALGORITHM_DEFAULT OMX_REVERB_ROOM
 
-/** One instance. It owns its pool; the kernel's lines are laid out over it at init. */
-/** The early reflections' table, REVERB_EARLY_TAP_MS and REVERB_EARLY_TAP_GAINS. */
+/** The early reflections' times, ms, at the table's own size: REVERB_EARLY_TAP_MS; resolve() scales them by
+ * earlySizePct. */
 static const float OMX_REVERB_INSTANCE_TAP_MS[OMX_REVERB_EARLY_TAPS] = OMX_REVERB_EARLY_TAP_MS_INIT;
+/** The early reflections' gains, linear, one per tap: REVERB_EARLY_TAP_GAINS. */
 static const float OMX_REVERB_INSTANCE_TAP_GAINS[OMX_REVERB_EARLY_TAPS] = OMX_REVERB_EARLY_TAP_GAINS_INIT;
 
 /** The early ring, floats: the pre-delay's ceiling, which holds the longest tap at REVERB_EARLY_SIZE_MAX
@@ -75,15 +88,21 @@ static const float OMX_REVERB_INSTANCE_TAP_GAINS[OMX_REVERB_EARLY_TAPS] = OMX_RE
 /** The early line's Lagrange order. */
 #define OMX_REVERB_INSTANCE_EARLY_ORDER 3
 
+/** One instance. It owns its pool; the kernel's lines are laid out over it at init. */
 typedef struct {
   /** The sample rate init bound the instance to, Hz. */
   float sr;
+  /** The kernel's controls as resolve() last resolved them; run() hands them to the kernel's process. */
   struct omx_reverb atom;
+  /** The kernel's running state, laid out over `pool` by init and again by clear(), handed to its process with the
+   * atom. */
   struct omx_reverb_state state;
   struct omx_reverb_return ret;         /**< the early taps, the tail's level, the duck, the de-esser */
   struct omx_reverb_return_state rstate; /**< the early line, the duck's and the de-esser's state */
   OmxDeesserInstance deess;              /**< the wet de-esser's design (its atom; its state is rstate's) */
+  /** The early line's ring, OMX_REVERB_INSTANCE_EARLY_CAP floats: `rstate`'s line runs over it; clear() zeroes it. */
   float early_ring[OMX_REVERB_INSTANCE_EARLY_CAP];
+  /** The pool the kernel's lines are laid out over, OMX_REVERB_POOL_FLOATS floats; `state` points into it. */
   float pool[OMX_REVERB_POOL_FLOATS];
   /** The previous cycle's engaged flag, so a bypass->engaged edge can clear the lines. */
   int was_engaged;

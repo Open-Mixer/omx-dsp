@@ -39,8 +39,11 @@
 #define OMX_BALANCER_INSTANCE_BANDS OMX_BALANCER_BAND_HZ_COUNT
 /** The ticks a second: every 10 ms. */
 #define OMX_BALANCER_INSTANCE_TICKS_PER_S 100u
+/** Each band's centre, Hz: BALANCER_BAND_HZ, lowest first; band `k`'s bandpass and peaking section sit there. */
 static const float OMX_BALANCER_INSTANCE_HZ[OMX_BALANCER_BAND_HZ_COUNT] = OMX_BALANCER_BAND_HZ_INIT;
 
+/** One instance: each band's detector bandpass and power average, each band's peaking section per leg, the gains
+ * the walk has reached and the tick's counters. */
 typedef struct {
   /** The sample rate init bound the instance to, Hz. */
   float sr;
@@ -53,7 +56,21 @@ typedef struct {
   float gain[OMX_BALANCER_INSTANCE_BANDS];      /**< each band's gain now, dB */
   float pole;     /**< the power average's pole per tick */
   float offset[OMX_BALANCER_INSTANCE_BANDS]; /**< each band's octaves from the bands' mean */
-  float amount, range, step_db, slope; /**< the controls; step_db is the walk per tick */
+  /** @var OmxBalancerInstance::range
+   * The most a band's gain moves either way, dB: rangeDb as resolve() clamped it, 1 to 12. */
+  /** @var OmxBalancerInstance::step_db
+   * The walk per tick, dB: speedDbPerS as resolve() clamped it, over the ticks a second. */
+  /** @var OmxBalancerInstance::slope
+   * The target spectrum's slope, dB per octave: slopeDbOct as resolve() clamped it, -6 to 0. */
+  /** The amount as resolve() last set it, a share 0 to 1: amountPct over 100. */
+  float amount, range, step_db, slope;
+  /** @var OmxBalancerInstance::left
+   * Frames left before the next tick: restart() sets it to `tick`, run() counts it down and refills it. */
+  /** @var OmxBalancerInstance::settled
+   * Ticks since the last restart(), counted up to `settle`; the gains hold until it gets there. */
+  /** @var OmxBalancerInstance::settle
+   * The ticks the detector takes to settle, 5 BALANCER_DETECT_MS time constants over the 10 ms tick; set by init. */
+  /** Frames per tick: the rate over the ticks a second, set by init. */
   uint32_t tick, left, settled, settle;
   /** Non-zero while the effect is engaged, as the last resolve() set it; while zero, run() leaves the output as the input. */
   int enabled;
@@ -65,6 +82,7 @@ static inline void omx_balancer_instance_resolve(OmxBalancerInstance *s, int byp
                                                  float speed_db_per_s, float slope_db_oct);
 
 /** Each section flat and the detector empty: the engage edge.
+ * @param s The instance, ready.
  * @thread audio */
 static inline void omx_balancer_instance_restart(OmxBalancerInstance *s) {
   memset(s->det_s, 0, sizeof s->det_s);
@@ -146,6 +164,7 @@ static inline void omx_balancer_instance_resolve(OmxBalancerInstance *s, int byp
 
 /** One tick's decision: average the power, read the target, step each gain, design what moved. RT-safe: the
  * designer's exp, cos, sin and sqrt, each, classified maths.
+ * @param s The instance, ready; its `sum` holds the tick's squares and is cleared.
  * @thread audio */
 static inline void omx_balancer_tick(OmxBalancerInstance *s) {
   float db[OMX_BALANCER_INSTANCE_BANDS], mean = 0.0f;
@@ -214,6 +233,9 @@ static inline void omx_balancer_instance_run(OmxBalancerInstance *s, const float
 #undef OMX_CONTRACT_STAGE
 
 /** The band<n>GainDb readouts: band `k`'s gain now, dB, `k` from 0.
+ * @param s The instance; null reads 0.
+ * @param k The band, 0 to OMX_BALANCER_INSTANCE_BANDS - 1; any other reads 0.
+ * @return The band's gain, dB, inside the range travel either way; 0 for a null instance or a band out of range.
  * @thread audio */
 static inline float omx_balancer_instance_band_gain_db(const OmxBalancerInstance *s, uint32_t k) {
   return s && k < OMX_BALANCER_INSTANCE_BANDS ? s->gain[k] : 0.0f;

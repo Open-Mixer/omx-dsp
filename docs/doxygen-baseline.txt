@@ -108,19 +108,6 @@ include/omxdsp/analysis/omx_rta_bands.h: warning: return type of member omx_rta_
 include/omxdsp/analysis/omx_rta_bands.h: warning: return type of member omx_rta_band_f_max is not documented
 include/omxdsp/analysis/omx_rta_bands.h: warning: return type of member omx_rta_bands is not documented
 include/omxdsp/analysis/omx_rta_bands.h: warning: return type of member omx_rta_low_gain_db is not documented
-include/omxdsp/fx/omx_balancer_instance.h: warning: Compound OmxBalancerInstance is not documented.
-include/omxdsp/fx/omx_balancer_instance.h: warning: Member OMX_BALANCER_INSTANCE_HZ[OMX_BALANCER_BAND_HZ_COUNT] (variable) of file omx_balancer_instance.h is not documented.
-include/omxdsp/fx/omx_balancer_instance.h: warning: Member amount (variable) of struct OmxBalancerInstance is not documented.
-include/omxdsp/fx/omx_balancer_instance.h: warning: Member left (variable) of struct OmxBalancerInstance is not documented.
-include/omxdsp/fx/omx_balancer_instance.h: warning: Member range (variable) of struct OmxBalancerInstance is not documented.
-include/omxdsp/fx/omx_balancer_instance.h: warning: Member settle (variable) of struct OmxBalancerInstance is not documented.
-include/omxdsp/fx/omx_balancer_instance.h: warning: Member settled (variable) of struct OmxBalancerInstance is not documented.
-include/omxdsp/fx/omx_balancer_instance.h: warning: Member step_db (variable) of struct OmxBalancerInstance is not documented.
-include/omxdsp/fx/omx_balancer_instance.h: warning: Member tick (variable) of struct OmxBalancerInstance is not documented.
-include/omxdsp/fx/omx_balancer_instance.h: warning: parameters of member omx_balancer_instance_band_gain_db are not documented
-include/omxdsp/fx/omx_balancer_instance.h: warning: parameters of member omx_balancer_instance_restart are not documented
-include/omxdsp/fx/omx_balancer_instance.h: warning: parameters of member omx_balancer_tick are not documented
-include/omxdsp/fx/omx_balancer_instance.h: warning: return type of member omx_balancer_instance_band_gain_db is not documented
 include/omxdsp/fx/omx_clipper_instance.h: warning: Compound OmxClipperInstance is not documented.
 include/omxdsp/fx/omx_clipper_instance.h: warning: parameters of member omx_clipper_instance_gain_reduction_db are not documented
 include/omxdsp/fx/omx_clipper_instance.h: warning: return type of member omx_clipper_instance_gain_reduction_db is not documented
@@ -158,28 +145,6 @@ include/omxdsp/fx/omx_drive_design_corpus.h: warning: Member freq_hz (variable) 
 include/omxdsp/fx/omx_drive_design_corpus.h: warning: Member gain_db (variable) of struct OmxDriveDesignRow is not documented.
 include/omxdsp/fx/omx_drive_design_corpus.h: warning: Member kind (variable) of struct OmxDriveDesignRow is not documented.
 include/omxdsp/fx/omx_drive_design_corpus.h: warning: Member rate (variable) of struct OmxDriveDesignRow is not documented.
-include/omxdsp/fx/omx_dyneq_instance.h: warning: Member band[OMX_DYNEQ_INSTANCE_BANDS] (variable) of struct OmxDyneqInstance is not documented.
-include/omxdsp/fx/omx_dyneq_instance.h: warning: Member designed[OMX_DYNEQ_INSTANCE_BANDS] (variable) of struct OmxDyneqInstance is not documented.
-include/omxdsp/fx/omx_dyneq_instance.h: warning: Member dry_l[OMX_DYNEQ_INSTANCE_CHUNK] (variable) of struct OmxDyneqInstance is not documented.
-include/omxdsp/fx/omx_dyneq_instance.h: warning: Member dry_r[OMX_DYNEQ_INSTANCE_CHUNK] (variable) of struct OmxDyneqInstance is not documented.
-include/omxdsp/fx/omx_dyneq_instance.h: warning: Member eq (variable) of struct OmxDyneqInstance is not documented.
-include/omxdsp/fx/omx_dyneq_instance.h: warning: Member freq[OMX_DYNEQ_INSTANCE_BANDS] (variable) of struct OmxDyneqInstance is not documented.
-include/omxdsp/fx/omx_dyneq_instance.h: warning: Member listen[OMX_DYNEQ_INSTANCE_BANDS] (variable) of struct OmxDyneqInstance is not documented.
-include/omxdsp/fx/omx_dyneq_instance.h: warning: Member listen_r[OMX_DYNEQ_INSTANCE_BANDS][4] (variable) of struct OmxDyneqInstance is not documented.
-include/omxdsp/fx/omx_dyneq_instance.h: warning: Member mix (variable) of struct OmxDyneqInstance is not documented.
-include/omxdsp/fx/omx_dyneq_instance.h: warning: Member on[OMX_DYNEQ_INSTANCE_BANDS] (variable) of struct OmxDyneqInstance is not documented.
-include/omxdsp/fx/omx_dyneq_instance.h: warning: Member q[OMX_DYNEQ_INSTANCE_BANDS] (variable) of struct OmxDyneqInstance is not documented.
-include/omxdsp/fx/omx_dyneq_instance.h: warning: Member st[OMX_DYNEQ_INSTANCE_BANDS] (variable) of struct OmxDyneqInstance is not documented.
-include/omxdsp/fx/omx_dyneq_instance.h: warning: Member sum_l[OMX_DYNEQ_INSTANCE_CHUNK] (variable) of struct OmxDyneqInstance is not documented.
-include/omxdsp/fx/omx_dyneq_instance.h: warning: Member sum_r[OMX_DYNEQ_INSTANCE_CHUNK] (variable) of struct OmxDyneqInstance is not documented.
-include/omxdsp/fx/omx_dyneq_instance.h: warning: Member tap_l[OMX_DYNEQ_INSTANCE_CHUNK] (variable) of struct OmxDyneqInstance is not documented.
-include/omxdsp/fx/omx_dyneq_instance.h: warning: Member tap_r[OMX_DYNEQ_INSTANCE_CHUNK] (variable) of struct OmxDyneqInstance is not documented.
-include/omxdsp/fx/omx_dyneq_instance.h: warning: parameters of member omx_dyneq_instance_band_gain_db are not documented
-include/omxdsp/fx/omx_dyneq_instance.h: warning: parameters of member omx_dyneq_instance_choice are not documented
-include/omxdsp/fx/omx_dyneq_instance.h: warning: parameters of member omx_dyneq_instance_kind are not documented
-include/omxdsp/fx/omx_dyneq_instance.h: warning: return type of member omx_dyneq_instance_band_gain_db is not documented
-include/omxdsp/fx/omx_dyneq_instance.h: warning: return type of member omx_dyneq_instance_choice is not documented
-include/omxdsp/fx/omx_dyneq_instance.h: warning: return type of member omx_dyneq_instance_kind is not documented
 include/omxdsp/fx/omx_flanger_instance.h: warning: Member OMX_FLANGER_INSTANCE_FEEDBACK_DEFAULT (macro definition) of file omx_flanger_instance.h is not documented.
 include/omxdsp/fx/omx_flanger_instance.h: warning: Member OMX_FLANGER_INSTANCE_MIX_PCT_DEFAULT (macro definition) of file omx_flanger_instance.h is not documented.
 include/omxdsp/fx/omx_flanger_instance.h: warning: Member OMX_FLANGER_INSTANCE_RATE_HZ_DEFAULT (macro definition) of file omx_flanger_instance.h is not documented.
@@ -201,25 +166,6 @@ include/omxdsp/fx/omx_glue_instance.h: warning: parameters of member omx_glue_in
 include/omxdsp/fx/omx_glue_instance.h: warning: parameters of member omx_glue_instance_resolve are not documented
 include/omxdsp/fx/omx_glue_instance.h: warning: return type of member omx_glue_instance_effective_attack_ms is not documented
 include/omxdsp/fx/omx_glue_instance.h: warning: return type of member omx_glue_instance_gain_reduction_db is not documented
-include/omxdsp/fx/omx_leveler_instance.h: warning: Compound OmxLevelerInstance is not documented.
-include/omxdsp/fx/omx_leveler_instance.h: warning: Member OMX_LEVELER_INSTANCE_ATTACK[OMX_LEVELER_SPEED_ATTACK_MS_COUNT] (variable) of file omx_leveler_instance.h is not documented.
-include/omxdsp/fx/omx_leveler_instance.h: warning: Member OMX_LEVELER_INSTANCE_DOWN_M[OMX_LEVELER_DOWN_MAKEUP_DB_COUNT] (variable) of file omx_leveler_instance.h is not documented.
-include/omxdsp/fx/omx_leveler_instance.h: warning: Member OMX_LEVELER_INSTANCE_DOWN_R[OMX_LEVELER_DOWN_RATIO_COUNT] (variable) of file omx_leveler_instance.h is not documented.
-include/omxdsp/fx/omx_leveler_instance.h: warning: Member OMX_LEVELER_INSTANCE_DOWN_T[OMX_LEVELER_DOWN_THRESHOLD_DB_COUNT] (variable) of file omx_leveler_instance.h is not documented.
-include/omxdsp/fx/omx_leveler_instance.h: warning: Member OMX_LEVELER_INSTANCE_KNEE (macro definition) of file omx_leveler_instance.h is not documented.
-include/omxdsp/fx/omx_leveler_instance.h: warning: Member OMX_LEVELER_INSTANCE_RELEASE[OMX_LEVELER_SPEED_RELEASE_MS_COUNT] (variable) of file omx_leveler_instance.h is not documented.
-include/omxdsp/fx/omx_leveler_instance.h: warning: Member OMX_LEVELER_INSTANCE_UP_RANGE[OMX_LEVELER_UP_RANGE_DB_COUNT] (variable) of file omx_leveler_instance.h is not documented.
-include/omxdsp/fx/omx_leveler_instance.h: warning: Member OMX_LEVELER_INSTANCE_UP_R[OMX_LEVELER_UP_RATIO_COUNT] (variable) of file omx_leveler_instance.h is not documented.
-include/omxdsp/fx/omx_leveler_instance.h: warning: Member OMX_LEVELER_INSTANCE_UP_T[OMX_LEVELER_UP_THRESHOLD_DB_COUNT] (variable) of file omx_leveler_instance.h is not documented.
-include/omxdsp/fx/omx_leveler_instance.h: warning: Member OMX_LEVELER_LERP(t) (macro definition) of file omx_leveler_instance.h is not documented.
-include/omxdsp/fx/omx_leveler_instance.h: warning: Member down_r (variable) of struct omx_leveler_row is not documented.
-include/omxdsp/fx/omx_leveler_instance.h: warning: Member down_t (variable) of struct omx_leveler_row is not documented.
-include/omxdsp/fx/omx_leveler_instance.h: warning: Member up_r (variable) of struct omx_leveler_row is not documented.
-include/omxdsp/fx/omx_leveler_instance.h: warning: Member up_st (variable) of struct OmxLevelerInstance is not documented.
-include/omxdsp/fx/omx_leveler_instance.h: warning: Member up_t (variable) of struct omx_leveler_row is not documented.
-include/omxdsp/fx/omx_leveler_instance.h: warning: parameters of member omx_leveler_slot are not documented
-include/omxdsp/fx/omx_leveler_instance.h: warning: parameters of member omx_leveler_table are not documented
-include/omxdsp/fx/omx_leveler_instance.h: warning: return type of member omx_leveler_table is not documented
 include/omxdsp/fx/omx_limiter.h: warning: Member omx_limiter_lookahead_frames(float lookahead_ms, float rate) (function) of file omx_limiter.h is not documented.
 include/omxdsp/fx/omx_loudlevel_instance.h: warning: Compound OmxLoudlevelInstance is not documented.
 include/omxdsp/fx/omx_loudlevel_instance.h: warning: Member meter (variable) of struct OmxLoudlevelInstance is not documented.
@@ -251,49 +197,6 @@ include/omxdsp/fx/omx_pitch_instance.h: warning: Member ring_l[OMX_PITCH_INSTANC
 include/omxdsp/fx/omx_pitch_instance.h: warning: Member ring_r[OMX_PITCH_INSTANCE_RING_FLOATS] (variable) of struct OmxPitchInstance is not documented.
 include/omxdsp/fx/omx_pitch_instance.h: warning: parameters of member omx_pitch_instance_cap_for are not documented
 include/omxdsp/fx/omx_pitch_instance.h: warning: return type of member omx_pitch_instance_cap_for is not documented
-include/omxdsp/fx/omx_plosive_instance.h: warning: Compound OmxPlosiveInstance is not documented.
-include/omxdsp/fx/omx_plosive_instance.h: warning: Member band_hz (variable) of struct OmxPlosiveInstance is not documented.
-include/omxdsp/fx/omx_plosive_instance.h: warning: Member band_oct (variable) of struct OmxPlosiveInstance is not documented.
-include/omxdsp/fx/omx_plosive_instance.h: warning: Member cd (variable) of struct OmxPlosiveInstance is not documented.
-include/omxdsp/fx/omx_plosive_instance.h: warning: Member cons_rec (variable) of struct OmxPlosiveInstance is not documented.
-include/omxdsp/fx/omx_plosive_instance.h: warning: Member cons_s (variable) of struct OmxPlosiveInstance is not documented.
-include/omxdsp/fx/omx_plosive_instance.h: warning: Member pop_db (variable) of struct OmxPlosiveInstance is not documented.
-include/omxdsp/fx/omx_plosive_instance.h: warning: Member pop_hz (variable) of struct OmxPlosiveInstance is not documented.
-include/omxdsp/fx/omx_plosive_instance.h: warning: Member pop_min (variable) of struct OmxPlosiveInstance is not documented.
-include/omxdsp/fx/omx_plosive_instance.h: warning: Member pop_rec (variable) of struct OmxPlosiveInstance is not documented.
-include/omxdsp/fx/omx_plosive_instance.h: warning: Member pop_s (variable) of struct OmxPlosiveInstance is not documented.
-include/omxdsp/fx/omx_plosive_instance.h: warning: Member slow (variable) of struct omx_plosive_detector is not documented.
-include/omxdsp/fx/omx_plosive_instance.h: warning: parameters of member omx_plosive_cons_apply are not documented
-include/omxdsp/fx/omx_plosive_instance.h: warning: parameters of member omx_plosive_gain are not documented
-include/omxdsp/fx/omx_plosive_instance.h: warning: parameters of member omx_plosive_instance_consonant_reduction_db are not documented
-include/omxdsp/fx/omx_plosive_instance.h: warning: parameters of member omx_plosive_instance_pop_reduction_db are not documented
-include/omxdsp/fx/omx_plosive_instance.h: warning: parameters of member omx_plosive_poles are not documented
-include/omxdsp/fx/omx_plosive_instance.h: warning: parameters of member omx_plosive_pop_apply are not documented
-include/omxdsp/fx/omx_plosive_instance.h: warning: parameters of member omx_plosive_pop_band are not documented
-include/omxdsp/fx/omx_plosive_instance.h: warning: return type of member omx_plosive_cons_apply is not documented
-include/omxdsp/fx/omx_plosive_instance.h: warning: return type of member omx_plosive_gain is not documented
-include/omxdsp/fx/omx_plosive_instance.h: warning: return type of member omx_plosive_instance_consonant_reduction_db is not documented
-include/omxdsp/fx/omx_plosive_instance.h: warning: return type of member omx_plosive_instance_pop_reduction_db is not documented
-include/omxdsp/fx/omx_plosive_instance.h: warning: return type of member omx_plosive_pop_apply is not documented
-include/omxdsp/fx/omx_plosive_instance.h: warning: return type of member omx_plosive_pop_band is not documented
-include/omxdsp/fx/omx_reverb_instance.h: warning: Compound OmxReverbInstance is not documented.
-include/omxdsp/fx/omx_reverb_instance.h: warning: Member OMX_REVERB_INSTANCE_ALGORITHM_DEFAULT (macro definition) of file omx_reverb_instance.h is not documented.
-include/omxdsp/fx/omx_reverb_instance.h: warning: Member OMX_REVERB_INSTANCE_DAMPING_DEFAULT (macro definition) of file omx_reverb_instance.h is not documented.
-include/omxdsp/fx/omx_reverb_instance.h: warning: Member OMX_REVERB_INSTANCE_GATE_THRESHOLD_DEFAULT (macro definition) of file omx_reverb_instance.h is not documented.
-include/omxdsp/fx/omx_reverb_instance.h: warning: Member OMX_REVERB_INSTANCE_HIGHCUT_DEFAULT (macro definition) of file omx_reverb_instance.h is not documented.
-include/omxdsp/fx/omx_reverb_instance.h: warning: Member OMX_REVERB_INSTANCE_HOLD_DEFAULT (macro definition) of file omx_reverb_instance.h is not documented.
-include/omxdsp/fx/omx_reverb_instance.h: warning: Member OMX_REVERB_INSTANCE_LOWCUT_DEFAULT (macro definition) of file omx_reverb_instance.h is not documented.
-include/omxdsp/fx/omx_reverb_instance.h: warning: Member OMX_REVERB_INSTANCE_MIX_DEFAULT (macro definition) of file omx_reverb_instance.h is not documented.
-include/omxdsp/fx/omx_reverb_instance.h: warning: Member OMX_REVERB_INSTANCE_PREDELAY_DEFAULT (macro definition) of file omx_reverb_instance.h is not documented.
-include/omxdsp/fx/omx_reverb_instance.h: warning: Member OMX_REVERB_INSTANCE_RELEASE_DEFAULT (macro definition) of file omx_reverb_instance.h is not documented.
-include/omxdsp/fx/omx_reverb_instance.h: warning: Member OMX_REVERB_INSTANCE_REVERSE_DEFAULT (macro definition) of file omx_reverb_instance.h is not documented.
-include/omxdsp/fx/omx_reverb_instance.h: warning: Member OMX_REVERB_INSTANCE_SIZE_DEFAULT (macro definition) of file omx_reverb_instance.h is not documented.
-include/omxdsp/fx/omx_reverb_instance.h: warning: Member OMX_REVERB_INSTANCE_TAP_GAINS[OMX_REVERB_EARLY_TAPS] (variable) of file omx_reverb_instance.h is not documented.
-include/omxdsp/fx/omx_reverb_instance.h: warning: Member OMX_REVERB_INSTANCE_WIDTH_DEFAULT (macro definition) of file omx_reverb_instance.h is not documented.
-include/omxdsp/fx/omx_reverb_instance.h: warning: Member atom (variable) of struct OmxReverbInstance is not documented.
-include/omxdsp/fx/omx_reverb_instance.h: warning: Member early_ring[OMX_REVERB_INSTANCE_EARLY_CAP] (variable) of struct OmxReverbInstance is not documented.
-include/omxdsp/fx/omx_reverb_instance.h: warning: Member pool[OMX_REVERB_POOL_FLOATS] (variable) of struct OmxReverbInstance is not documented.
-include/omxdsp/fx/omx_reverb_instance.h: warning: Member state (variable) of struct OmxReverbInstance is not documented.
 include/omxdsp/fx/omx_reverse_render.h: warning: Member tmp_l (variable) of struct omx_reverse_render_scratch is not documented.
 include/omxdsp/fx/omx_reverse_render.h: warning: Member wet_l (variable) of struct omx_reverse_render_scratch is not documented.
 include/omxdsp/fx/omx_rotary_instance.h: warning: Member OMX_ROTARY_INSTANCE_ACCEL_DEFAULT (macro definition) of file omx_rotary_instance.h is not documented.
@@ -314,26 +217,6 @@ include/omxdsp/fx/omx_spring_instance.h: warning: parameters of member omx_sprin
 include/omxdsp/fx/omx_spring_instance.h: warning: parameters of member omx_spring_leg_tick are not documented
 include/omxdsp/fx/omx_spring_instance.h: warning: return type of member omx_spring_chain_delay is not documented
 include/omxdsp/fx/omx_spring_instance.h: warning: return type of member omx_spring_leg_tick is not documented
-include/omxdsp/fx/omx_suboct_instance.h: warning: Compound OmxSuboctInstance is not documented.
-include/omxdsp/fx/omx_suboct_instance.h: warning: Member OMX_SUBOCT_INSTANCE_HI[OMX_SUBOCT_RANGE_HI_HZ_COUNT] (variable) of file omx_suboct_instance.h is not documented.
-include/omxdsp/fx/omx_suboct_instance.h: warning: Member OMX_SUBOCT_INSTANCE_POST1[OMX_SUBOCT_POST1_HZ_COUNT] (variable) of file omx_suboct_instance.h is not documented.
-include/omxdsp/fx/omx_suboct_instance.h: warning: Member OMX_SUBOCT_INSTANCE_POST2[OMX_SUBOCT_POST2_HZ_COUNT] (variable) of file omx_suboct_instance.h is not documented.
-include/omxdsp/fx/omx_suboct_instance.h: warning: Member ac (variable) of struct OmxSuboctInstance is not documented.
-include/omxdsp/fx/omx_suboct_instance.h: warning: Member d2 (variable) of struct OmxSuboctInstance is not documented.
-include/omxdsp/fx/omx_suboct_instance.h: warning: Member dr (variable) of struct OmxSuboctInstance is not documented.
-include/omxdsp/fx/omx_suboct_instance.h: warning: Member e1 (variable) of struct OmxSuboctInstance is not documented.
-include/omxdsp/fx/omx_suboct_instance.h: warning: Member hp[5] (variable) of struct OmxSuboctInstance is not documented.
-include/omxdsp/fx/omx_suboct_instance.h: warning: Member ls[4] (variable) of struct OmxSuboctInstance is not documented.
-include/omxdsp/fx/omx_suboct_instance.h: warning: Member o1 (variable) of struct OmxSuboctInstance is not documented.
-include/omxdsp/fx/omx_suboct_instance.h: warning: Member o2 (variable) of struct OmxSuboctInstance is not documented.
-include/omxdsp/fx/omx_suboct_instance.h: warning: Member p1[2][5] (variable) of struct OmxSuboctInstance is not documented.
-include/omxdsp/fx/omx_suboct_instance.h: warning: Member p1s[2][4] (variable) of struct OmxSuboctInstance is not documented.
-include/omxdsp/fx/omx_suboct_instance.h: warning: Member p2s[2][4] (variable) of struct OmxSuboctInstance is not documented.
-include/omxdsp/fx/omx_suboct_instance.h: warning: parameters of member omx_suboct_arm_level are not documented
-include/omxdsp/fx/omx_suboct_instance.h: warning: parameters of member omx_suboct_instance_tracked_hz are not documented
-include/omxdsp/fx/omx_suboct_instance.h: warning: parameters of member omx_suboct_lp24 are not documented
-include/omxdsp/fx/omx_suboct_instance.h: warning: return type of member omx_suboct_arm_level is not documented
-include/omxdsp/fx/omx_suboct_instance.h: warning: return type of member omx_suboct_instance_tracked_hz is not documented
 include/omxdsp/fx/omx_tone_instance.h: warning: Compound OmxToneInstance is not documented.
 include/omxdsp/fx/omx_tone_instance.h: warning: Member OMX_TONE_INSTANCE_HIGH_HZ (macro definition) of file omx_tone_instance.h is not documented.
 include/omxdsp/fx/omx_tone_instance.h: warning: Member tilt (variable) of struct OmxToneInstance is not documented.

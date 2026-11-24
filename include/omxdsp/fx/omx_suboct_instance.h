@@ -48,8 +48,11 @@
 
 /** The range table, a row per SUBOCT_RANGES member. */
 static const float OMX_SUBOCT_INSTANCE_LO[OMX_SUBOCT_RANGE_LO_HZ_COUNT] = OMX_SUBOCT_RANGE_LO_HZ_INIT;
+/** Each range's top, Hz: SUBOCT_RANGE_HI_HZ, the tracking band's low-pass corner. */
 static const float OMX_SUBOCT_INSTANCE_HI[OMX_SUBOCT_RANGE_HI_HZ_COUNT] = OMX_SUBOCT_RANGE_HI_HZ_INIT;
+/** Each range's post1, Hz: SUBOCT_POST1_HZ, the corner of the octave below's low-pass. */
 static const float OMX_SUBOCT_INSTANCE_POST1[OMX_SUBOCT_POST1_HZ_COUNT] = OMX_SUBOCT_POST1_HZ_INIT;
+/** Each range's post2, Hz: SUBOCT_POST2_HZ, the corner of the second octave's low-pass. */
 static const float OMX_SUBOCT_INSTANCE_POST2[OMX_SUBOCT_POST2_HZ_COUNT] = OMX_SUBOCT_POST2_HZ_INIT;
 _Static_assert(OMX_SUBOCT_RANGE_LO_HZ_COUNT == OMX_SUBOCT_RANGES_COUNT && OMX_SUBOCT_RANGE_HI_HZ_COUNT == OMX_SUBOCT_RANGES_COUNT &&
                    OMX_SUBOCT_POST1_HZ_COUNT == OMX_SUBOCT_RANGES_COUNT && OMX_SUBOCT_POST2_HZ_COUNT == OMX_SUBOCT_RANGES_COUNT,
@@ -58,23 +61,55 @@ _Static_assert(OMX_SUBOCT_RANGE_LO_HZ_COUNT == OMX_SUBOCT_RANGES_COUNT && OMX_SU
 #define OMX_SUBOCT_INSTANCE_ENV ((float)OMX_SUBOCT_ENV_ATTACK_MS), ((float)OMX_SUBOCT_ENV_RELEASE_MS)
 
 /** The divider's arming level for a tracked peak `e`: SUBOCT_HYSTERESIS e.
+ * @param e The peak envelope of the signal the divider reads.
+ * @return SUBOCT_HYSTERESIS times `e`.
  * @thread audio */
 static inline float omx_suboct_arm_level(float e) { return OMX_SUBOCT_HYSTERESIS * e; }
 
+/** One instance: the resolved controls, the range's designs, the filter histories, the envelopes, the dividers, the
+ * gate's ramp and the tracked period. */
 typedef struct {
   /** The sample rate init bound the instance to, Hz. */
   float sr;
   int rng;                      /**< the range as resolved, an OMX_SUBOCT_RANGES_* member */
-  float o1, o2, dr, gate_db;    /**< the levels (shares) and the gate (dBFS) as resolved */
+  /** @var OmxSuboctInstance::o2
+   * oct2 as resolve() clamped it, a share 0 to 1: percent over 100. */
+  /** @var OmxSuboctInstance::dr
+   * dry as resolve() clamped it, a share 0 to 1: percent over 100. */
+  /** @var OmxSuboctInstance::gate_db
+   * trackGateDb as resolve() clamped it, dBFS, -80 to -20. */
+  /** oct1 as resolve() clamped it, a share 0 to 1: percent over 100. */
+  float o1, o2, dr, gate_db;
   float gate_lin;               /**< the gate, linear */
   float ramp_step;              /**< the gate ramp's step a sample */
-  double hp[5], lp[5];          /**< the tracking band */
-  double p1[2][5], p2[2][5];    /**< the octaves' low-passes, two sections each */
+  /** @var OmxSuboctInstance::lp
+   * The tracking band's low-pass section, at the range's SUBOCT_RANGE_HI_HZ, Q 1/sqrt(2). */
+  /** The tracking band's high-pass section, at half the range's SUBOCT_RANGE_LO_HZ, Q 1/sqrt(2). */
+  double hp[5], lp[5];
+  /** @var OmxSuboctInstance::p2
+   * The second octave's low-pass, two sections of the 24 dB Butterworth at the range's post2. */
+  /** The octave below's low-pass, two sections of the 24 dB Butterworth at the range's post1. */
+  double p1[2][5], p2[2][5];
   struct omx_env_params ep;     /**< the envelope's poles, peak */
-  float ac, rc;                 /**< its per-stage poles */
-  /** state */
+  /** @var OmxSuboctInstance::rc
+   * The envelope's per-stage release pole, from `ep`. */
+  /** The envelope's per-stage attack pole, from `ep`. */
+  float ac, rc;
+  /** @var OmxSuboctInstance::ls
+   * The tracking band's low-pass history. */
+  /** @var OmxSuboctInstance::p1s
+   * The octave below's low-pass histories, one per section. */
+  /** @var OmxSuboctInstance::p2s
+   * The second octave's low-pass histories, one per section. */
+  /** The tracking band's high-pass history. */
   double hs[4], ls[4], p1s[2][4], p2s[2][4];
+  /** @var OmxSuboctInstance::e1
+   * The peak envelope of the octave below, |s1|: it sets the second divider's arming level. */
+  /** The peak envelope of the tracking band, |x_t|: it sets the first divider's arming level and opens the gate. */
   struct omx_env e0, e1;
+  /** @var OmxSuboctInstance::d2
+   * The second divider, over the octave below: it makes the second octave. */
+  /** The first divider, over the tracking band: it makes the octave below and its toggles time `period`. */
   struct omx_divider d1, d2;
   float g;                      /**< the gate's ramp, in [0, 1] */
   uint64_t n;                   /**< samples run */
@@ -109,6 +144,9 @@ static inline int omx_suboct_instance_init(OmxSuboctInstance *s, float sr) {
 }
 
 /** Two sections of the 24 dB Butterworth low-pass at `hz`.
+ * @param c The two sections' coefficients, written.
+ * @param hz The corner, Hz.
+ * @param sr The sample rate, Hz.
  * @thread audio */
 static inline void omx_suboct_lp24(double c[2][5], double hz, double sr) {
   double q[2];
@@ -212,6 +250,8 @@ static inline void omx_suboct_instance_run(OmxSuboctInstance *s, const float *in
 
 /** The trackedHz readout: the rate over the samples between the divider's last two toggles; 0 while
  * gated or before two toggles.
+ * @param s The instance; null or not ready reads 0.
+ * @return The tracked rate, Hz: the sample rate over `period`; 0 while the gate's ramp is at 0 or before two toggles.
  * @thread audio */
 static inline float omx_suboct_instance_tracked_hz(const OmxSuboctInstance *s) {
   return s && s->ready && s->g > 0.0f && s->period > 0u ? s->sr / (float)s->period : 0.0f;

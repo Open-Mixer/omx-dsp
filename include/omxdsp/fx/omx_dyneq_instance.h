@@ -72,34 +72,63 @@ _Static_assert((int)OMX_DYNEQ_BAND_ONS_DEFAULT == (int)OMX_EQ_BAND_ONS_DEFAULT &
 typedef struct {
   /** The sample rate init bound the instance to, Hz. */
   float sr;
+  /** The EQ face that holds the static sections: its first OMX_DYNEQ_INSTANCE_BANDS bands are these, its other bands
+   * and its pass filters off; resolve() resolves it and run() runs its bank entries. */
   OmxEqInstance eq;
+  /** Each band's band-dynamics atom: resolve() writes its dynamics and `B`; `enabled` while the band is on and its
+   * dynMode is not off. */
   struct omx_band_dyn band[OMX_DYNEQ_INSTANCE_BANDS];
+  /** Each band's band-dynamics state, its detector's envelope; init clears it and omx_band_dyn_process() carries it. */
   struct omx_band_dyn_state st[OMX_DYNEQ_INSTANCE_BANDS];
   /** Band i's entry in the EQ face's bank while it is on. */
   uint32_t entry[OMX_DYNEQ_INSTANCE_BANDS];
+  /** Each band's switch as resolve() last resolved it, non-zero while on; run() skips a band that is off. */
   int on[OMX_DYNEQ_INSTANCE_BANDS];
+  /** Each band's listen switch as resolve() last resolved it; it counts in run() only while the band is on. */
   int listen[OMX_DYNEQ_INSTANCE_BANDS];
-  /** The shape, centre and Q `B` was last designed from; `designed` 0 until the first. */
+  /** The shape `B` was last designed from, an enum omx_eq_kind value; `designed` 0 until the first. */
   int kind[OMX_DYNEQ_INSTANCE_BANDS];
+  /** @var OmxDyneqInstance::q
+   * The Q `B` was last designed from: the band's Q as the EQ face holds it, after its clamps. */
+  /** The centre `B` was last designed from, Hz: the band's centre as the EQ face holds it, after its clamps. */
   float freq[OMX_DYNEQ_INSTANCE_BANDS], q[OMX_DYNEQ_INSTANCE_BANDS];
+  /** Non-zero once resolve() has designed the band's `B`; init leaves it 0, so the first resolve designs every band. */
   int designed[OMX_DYNEQ_INSTANCE_BANDS];
-  /** Each listening band's own history of `B`, per leg. */
+  /** @var OmxDyneqInstance::listen_r
+   * Each listening band's own history of `B`, right leg; cleared when the band starts listening. */
+  /** Each listening band's own history of `B`, left leg; cleared when the band starts listening. */
   float listen_l[OMX_DYNEQ_INSTANCE_BANDS][4], listen_r[OMX_DYNEQ_INSTANCE_BANDS][4];
+  /** The processed share, 0 to 1: mixPct as resolve() clamped it, over 100; init sets 1. */
   float mix;
   /** Non-zero while the effect is engaged, as the last resolve() set it; while zero, run() leaves the output as the input. */
   int enabled;
   /** Non-zero once init bound the instance to a usable rate; while zero, resolve() does nothing and run() leaves the output as the input. */
   int ready;
+  /** @var OmxDyneqInstance::dry_r
+   * Scratch: the chunk's right input, kept for the mix while the mix is under 1 and no band listens. */
+  /** Scratch: the chunk's left input, kept for the mix while the mix is under 1 and no band listens. */
   float dry_l[OMX_DYNEQ_INSTANCE_CHUNK], dry_r[OMX_DYNEQ_INSTANCE_CHUNK];
+  /** @var OmxDyneqInstance::sum_r
+   * Scratch: the listening bands' sum over the chunk, right leg; the chunk's output while any band listens. */
+  /** Scratch: the listening bands' sum over the chunk, left leg; the chunk's output while any band listens. */
   float sum_l[OMX_DYNEQ_INSTANCE_CHUNK], sum_r[OMX_DYNEQ_INSTANCE_CHUNK];
+  /** @var OmxDyneqInstance::tap_r
+   * Scratch: one listening band's `B` over the chunk, right leg, before it is added to `sum_r`. */
+  /** Scratch: one listening band's `B` over the chunk, left leg, before it is added to `sum_l`. */
   float tap_l[OMX_DYNEQ_INSTANCE_CHUNK], tap_r[OMX_DYNEQ_INSTANCE_CHUNK];
 } OmxDyneqInstance;
 
 /** A choice word: inside [0, count), else the declared default.
+ * @param v The host's word.
+ * @param count The choice's member count.
+ * @param dflt The choice's declared default id.
+ * @return `v` when it is inside [0, count), else `dflt`.
  * @thread audio */
 static inline int omx_dyneq_instance_choice(int v, int count, int dflt) { return v >= 0 && v < count ? v : dflt; }
 
 /** The EQ design kind of a dynamic band's type.
+ * @param type The band's type, a DYNEQ_BAND_TYPES id.
+ * @return OMX_EQ_LOWSHELF for lowShelf, OMX_EQ_HIGHSHELF for highShelf, OMX_EQ_PEAKING for anything else.
  * @thread audio */
 static inline enum omx_eq_kind omx_dyneq_instance_kind(int type) {
   return type == OMX_DYNEQ_BAND_TYPES_LOW_SHELF ? OMX_EQ_LOWSHELF
@@ -357,6 +386,9 @@ static inline void omx_dyneq_instance_run(OmxDyneqInstance *s, const float *in_l
  * Band `i`'s readout, band<i+1>GainDb: the gain its dynamics apply now, dB, signed (a cut negative, a
  * boost positive), inside the range travel. 0 for a band that is off, a band whose dynamics are off,
  * and a refused instance.
+ * @param s The instance; null or not ready reads 0.
+ * @param i The band, 0 to OMX_DYNEQ_INSTANCE_BANDS - 1; any other reads 0.
+ * @return The band's dynamic gain now, dB, signed; 0 when the band or its dynamics are off.
  * @thread audio
  */
 static inline float omx_dyneq_instance_band_gain_db(const OmxDyneqInstance *s, uint32_t i) {
