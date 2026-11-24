@@ -24,6 +24,7 @@
 #include <string.h>
 
 #include <omxdsp/fx/omx_instance_io.h>
+#include <omxdsp/omx_clipper.h>
 #include <omxdsp/omx_contract.h>
 #include <omxdsp/omx_param.h>
 #include <omxdsp/omx_units.h>
@@ -31,23 +32,6 @@
 
 /** @brief Audio legs in and out: TWO, a stereo pair. */
 #define OMX_CLIPPER_INSTANCE_CHANNELS 2
-
-/**
- * @brief One sample through the clip.
- * @param u The sample after the drive.
- * @param c The ceiling, linear, positive.
- * @param a The knee, linear, in (0, c].
- * @return `u` under the knee, else the bend, signed as `u`, never past `c`.
- * @note One divide above the knee. Thread-safe: pure.
- * @thread audio
- */
-static inline float omx_clipper_sample(float u, float c, float a) {
-  const float m = fabsf(u);
-  if (m <= a) return u;
-  const float room = c - a, d = m - a;
-  const float y = room > 0.0f ? a + room * d / (d + room) : c;
-  return u < 0.0f ? -y : y;
-}
 
 /** @brief One instance: the rate, the resolved drive, ceiling and knee, and the last block's reduction. */
 typedef struct {

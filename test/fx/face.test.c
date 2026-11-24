@@ -191,6 +191,12 @@ static void arm_refusals(const struct omx_kernel_desc *d) {
   ok(omx_fx_face_init(NULL, d, &g_k, g_sr) == 0, "a null face is refused", 1, 0);
   ok(omx_fx_face_init(&g_f, NULL, &g_k, g_sr) == 0 && !g_f.ready, "a null descriptor is refused", 1, 0);
   ok(omx_fx_face_init(&g_f, d, NULL, g_sr) == 0 && !g_f.ready, "a null state is refused", 1, 0);
+  struct omx_kernel_desc lame = *d;
+  lame.latency = NULL;
+  ok(omx_fx_face_init(&g_f, &lame, &g_k, g_sr) == 0 && !g_f.ready, "a descriptor without its latency is refused", 1, 0);
+  lame = *d;
+  lame.n_params = OMX_KERNEL_PARAMS_MAX + 1u;
+  ok(omx_fx_face_init(&g_f, &lame, &g_k, g_sr) == 0 && !g_f.ready, "a descriptor of more controls than the face holds is refused", 1, 0);
   stimulus(g_l, g_r, 128u, 0x99u, 0u);
   for (uint32_t i = 0; i < 128u; i++) g_fl[i] = 7.0f, g_fr[i] = 7.0f;
   omx_fx_face_run(&g_f, g_l, g_r, g_fl, g_fr, 128u);

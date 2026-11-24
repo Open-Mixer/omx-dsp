@@ -28,7 +28,9 @@
 #include <string.h>
 
 #include "omx_contract.h"
+#include "omx_kernel_desc.h"
 #include "omx_xover.h"
+#include <omxcontract/omx_vocabulary.h>
 #include <omxdsp/omxdsp_definitions.h>
 
 /** @brief The delay ring, samples: WIDTH_MAX_DELAY_MS at 192 kHz and one more, to a power of two. The
@@ -146,5 +148,112 @@ static inline void omx_width_process(float *l, float *r, uint32_t n, const struc
   OMX_POST(omx_block_pair_finite(l, r, n), "finite-out");
 }
 #undef OMX_CONTRACT_STAGE
+
+/** @brief The width kernel as the generic face serves it: the rate, the design, its state and whether it is engaged. */
+struct omx_width_kernel {
+  float sr;                   /**< The sample rate init bound the state to, Hz. */
+  struct omx_width p;         /**< The design the last set made. */
+  struct omx_width_state st;  /**< The design's running state, carried from block to block. */
+  int enabled;                /**< Non-zero while engaged, as the last set left it. */
+};
+
+/**
+ * @brief Bind a zeroed state to its rate: the rate must be one of the oracle set, as the width face takes it.
+ * @param state A struct omx_width_kernel.
+ * @param sr The sample rate, Hz.
+ * @return 1 when usable, 0 when the rate is outside the oracle set (32 to 192 kHz).
+ * @thread control
+ */
+static inline int omx_width_kernel_init(void *state, float sr) {
+  struct omx_width_kernel *k = state;
+  if (!omx_rate_is_oracle_full(sr)) return 0;
+  k->sr = sr;
+  return 1;
+}
+
+/**
+ * @brief Take the resolved controls and design the word. The engage edge starts the word from silence; bass
+ *        mono coming on starts its crossover from silence; a new pseudo-stereo mode or delay starts its ring
+ *        from silence, so a ring left from minutes earlier, or the other mode's signal, is never read.
+ * @param state A struct omx_width_kernel.
+ * @param values widthPct (%), pseudo (a WIDTH_PSEUDOS index), pseudoMs (ms), bassMono (a WIDTH_BASS_MONOS
+ *        index) and bassMonoHz (Hz), each resolved.
+ * @param bypass Non-zero: disengaged.
+ * @thread audio
+ */
+static inline void omx_width_kernel_set(void *state, const float *values, int bypass) {
+  struct omx_width_kernel *k = state;
+  const int was_bass = k->p.bass_mono, was_pseudo = k->p.pseudo, was_live = k->enabled && k->p.active;
+  const uint32_t was_d = k->p.d;
+  omx_width_design(&k->p, values[0] * 0.01f, (int)values[1], omx_width_delay(values[2], k->sr),
+                   (int)values[3] == (int)OMX_WIDTH_BASS_MONOS_ON ? 1 : 0, (double)values[4], (double)k->sr);
+  k->enabled = bypass ? 0 : 1;
+  if (k->enabled && k->p.active && !was_live) {
+    memset(&k->st, 0, sizeof k->st);
+  } else {
+    if (k->p.bass_mono && !was_bass) {
+      memset(&k->st.xs, 0, sizeof k->st.xs);
+      memset(&k->st.ap, 0, sizeof k->st.ap);
+    }
+    if (k->p.pseudo != was_pseudo || k->p.d != was_d) {
+      memset(k->st.ring, 0, sizeof k->st.ring);
+      k->st.pos = 0u;
+    }
+  }
+}
+
+/**
+ * @brief One engaged block through the word, both legs in place; at the come-up values the identity.
+ * @param state A struct omx_width_kernel.
+ * @param l The left leg, `n` frames.
+ * @param r The right leg, `n` frames.
+ * @param n The block length.
+ * @thread audio
+ */
+static inline void omx_width_kernel_process(void *state, float *l, float *r, uint32_t n) {
+  struct omx_width_kernel *k = state;
+  omx_width_process(l, r, n, &k->p, &k->st);
+}
+
+/**
+ * @brief Silence the word's memory, its crossover and its ring, keeping the design.
+ * @param state A struct omx_width_kernel.
+ * @thread audio
+ */
+static inline void omx_width_kernel_clear(void *state) {
+  struct omx_width_kernel *k = state;
+  memset(&k->st, 0, sizeof k->st);
+}
+
+/**
+ * @brief The frames of latency the width introduces: none.
+ * @param state A struct omx_width_kernel.
+ * @return 0.
+ * @thread audio
+ */
+static inline uint32_t omx_width_kernel_latency(const void *state) {
+  (void)state;
+  return 0u;
+}
+
+/**
+ * @brief The width kernel's descriptor: data/kernels/width.json's controls through the render.
+ * @return The descriptor, a constant.
+ * @thread control
+ */
+static inline const struct omx_kernel_desc *omx_width_desc(void) {
+  static const struct omx_param_desc params[] = {
+      {"widthPct", OMX_PARAM_TRAVEL, (float)OMX_WIDTH_WIDTH_PCT_RANGE_MIN, (float)OMX_WIDTH_WIDTH_PCT_RANGE_MAX, (float)OMX_WIDTH_WIDTH_PCT_RANGE_DEFAULT, OMX_PARAM_UNITS_PERCENT},
+      {"pseudo", OMX_PARAM_CHOICE, 0.0f, (float)(OMX_WIDTH_PSEUDOS_COUNT - 1u), (float)OMX_WIDTH_PSEUDOS_DEFAULT, OMX_PARAM_UNITS_NONE},
+      {"pseudoMs", OMX_PARAM_TRAVEL, (float)OMX_WIDTH_PSEUDO_MS_RANGE_MIN, (float)OMX_WIDTH_PSEUDO_MS_RANGE_MAX, (float)OMX_WIDTH_PSEUDO_MS_RANGE_DEFAULT, OMX_PARAM_UNITS_MS},
+      {"bassMono", OMX_PARAM_CHOICE, 0.0f, (float)(OMX_WIDTH_BASS_MONOS_COUNT - 1u), (float)OMX_WIDTH_BASS_MONOS_DEFAULT, OMX_PARAM_UNITS_NONE},
+      {"bassMonoHz", OMX_PARAM_TRAVEL, (float)OMX_WIDTH_BASS_MONO_HZ_RANGE_MIN, (float)OMX_WIDTH_BASS_MONO_HZ_RANGE_MAX, (float)OMX_WIDTH_BASS_MONO_HZ_RANGE_DEFAULT, OMX_PARAM_UNITS_HZ},
+  };
+  static const struct omx_kernel_desc desc = {
+      "width", sizeof(struct omx_width_kernel), 5u, params, 0u, NULL, omx_width_kernel_init, omx_width_kernel_set,
+      omx_width_kernel_process, omx_width_kernel_clear, omx_width_kernel_latency, NULL,
+  };
+  return &desc;
+}
 
 #endif /* OMX_WIDTH_H */

@@ -47,6 +47,7 @@ static inline uint32_t omxdsp_version(void) {
 #include "omx_allpass.h"
 #include "omx_balance_law.h"
 #include "omx_biquad.h"
+#include "omx_clipper.h"
 #include "omx_contract.h"
 #include <omxdsp/omxdsp_definitions.h>
 #include "omx_denormal.h"
@@ -59,6 +60,7 @@ static inline uint32_t omxdsp_version(void) {
 #include "omx_fft.h"
 #include "omx_gaincomp.h"
 #include "omx_gen.h"
+#include "omx_kernel_desc.h"
 #include "omx_lfo.h"
 #include "omx_lookahead.h"
 #include "omx_magnitude.h"
@@ -72,6 +74,7 @@ static inline uint32_t omxdsp_version(void) {
 #include "omx_port_int.h"
 #include "omx_src.h"
 #include "omx_tilt.h"
+#include "omx_trim.h"
 #include "omx_truepeak.h"
 #include "omx_units.h"
 #include "omx_wetdry.h"

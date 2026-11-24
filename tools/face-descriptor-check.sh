@@ -103,7 +103,7 @@ check() {
     got="$(awk -v k="$k" '$1 == "kernel" { on = ($2 == k); next } on' "$work/dump.txt")"
     [ "$got" = "$want" ] && continue
     echo "face-descriptor-check: $k's descriptor is not data/kernels/$k.json:" >&2
-    diff <(printf '%s\n' "$want") <(printf '%s\n' "$got") | sed -n 's/^</  kernel file:/p; s/^>/  descriptor: /p' >&2 || true
+    diff <(printf '%s\n' "$want") <(printf '%s\n' "$got") | sed -n 's/^< /  kernel file: /p; s/^> /  descriptor: /p' >&2 || true
     bad=1
   done
   [ "$n" -gt 0 ] || { echo "face-descriptor-check: the generic face serves no kernel; the check would prove nothing" >&2; return 2; }
@@ -127,7 +127,7 @@ if [ "${1:-}" = --self-test ]; then
   # Two rows swapped: the width's pseudoMs and bassMonoHz change places.
   awk '/\{"pseudoMs",/ { a = $0; next } /\{"bassMonoHz",/ { print; print b; print a; next } /\{"bassMono",/ { b = $0; next } { print }' \
     "$HERE/include/omxdsp/omx_width.h" > "$w"
-  name "the width's pseudoMs and bassMonoHz swapped" "descriptor: param bassMonoHz travel 20 300 120 Hz"
+  name "the width's pseudoMs and bassMonoHz swapped" "descriptor: param pseudoMs travel 0 30 12 ms"
   cp "$HERE/include/omxdsp/omx_width.h" "$w"
   # A default moved: the trim comes up at 1 dB.
   sed -i '/{"trimDb",/s/(float)OMX_TRIM_RANGE_DEFAULT/1.0f/' "$t"

@@ -29,7 +29,7 @@ its own descriptor (`omx_trim_desc()`, `omx_width_desc()`, `omx_clipper_desc()`)
 | `set` | takes the resolved values, in the declared order, and the bypass | the kernel |
 | `process` | one block, both legs in place | the kernel |
 | `clear` | silences the kernel's memory, keeping its values (may be null) | the kernel |
-| `latency` | the frames the kernel delays (null: none) | the kernel |
+| `latency` | the frames the kernel delays at its resolved values | the kernel |
 | `meter` | reads one readout (null: no readouts) | the kernel |
 
 The ranges are the render's macros, never typed again. The check that the descriptor is its
@@ -49,7 +49,7 @@ caller owns (`state_size` bytes):
 | `omx_fx_face_resolve(f, bypass, values)` | audio | each travel clamped into its range, a non-finite value reading as its default; each choice rounded to its index, one outside the set reading as its default; then `set` |
 | `omx_fx_face_run(f, in_l, in_r, out_l, out_r, n)` | audio | copies in to out where they differ, then, engaged, `process` in place on out |
 | `omx_fx_face_clear(f)` | audio | `clear` |
-| `omx_fx_face_latency(f)` | audio | `latency`, 0 when the kernel has none |
+| `omx_fx_face_latency(f)` | audio | `latency` |
 
 `omx_fx_face_meter(f, i)` reads readout `i`. A null face, a face that is not ready and an empty block
 are refused the way every hand-written face refuses them: nothing is touched, or out holds in.
