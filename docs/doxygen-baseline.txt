@@ -40,66 +40,6 @@ include/omxdsp/analysis/omx_hrp_correct.h: warning: return type of member omx_hr
 include/omxdsp/analysis/omx_hrp_correct.h: warning: return type of member omx_hrp_family_search is not documented
 include/omxdsp/analysis/omx_hrp_correct.h: warning: return type of member omx_hrp_resonance_score is not documented
 include/omxdsp/analysis/omx_hrp_correct.h: warning: return type of member omx_hrp_select is not documented
-include/omxdsp/analysis/omx_hrp_lv2.h: warning: Member OMX_HRP_LV2_REPORT (macro definition) of file omx_hrp_lv2.h is not documented.
-include/omxdsp/analysis/omx_hrp_lv2.h: warning: Member analysing (variable) of struct OmxHrpLv2 is not documented.
-include/omxdsp/analysis/omx_hrp_lv2.h: warning: Member answered (variable) of struct OmxHrpLv2 is not documented.
-include/omxdsp/analysis/omx_hrp_lv2.h: warning: Member coeffs[OMX_HRP_LV2_MAX_BANDS][5] (variable) of struct OmxHrpLv2Set is not documented.
-include/omxdsp/analysis/omx_hrp_lv2.h: warning: Member count (variable) of struct OmxHrpLv2Set is not documented.
-include/omxdsp/analysis/omx_hrp_lv2.h: warning: Member cut_db[OMX_HRP_LV2_MAX_BANDS] (variable) of struct OmxHrpLv2Set is not documented.
-include/omxdsp/analysis/omx_hrp_lv2.h: warning: Member freq_hz (variable) of struct OmxHrpLv2Slot is not documented.
-include/omxdsp/analysis/omx_hrp_lv2.h: warning: Member harmonic (variable) of struct OmxHrpLv2Slot is not documented.
-include/omxdsp/analysis/omx_hrp_lv2.h: warning: Member hop (variable) of struct OmxHrpLv2 is not documented.
-include/omxdsp/analysis/omx_hrp_lv2.h: warning: Member passes (variable) of struct OmxHrpLv2 is not documented.
-include/omxdsp/analysis/omx_hrp_lv2.h: warning: Member q[OMX_HRP_LV2_MAX_BANDS] (variable) of struct OmxHrpLv2Set is not documented.
-include/omxdsp/analysis/omx_hrp_lv2.h: warning: Member rate (variable) of struct OmxHrpLv2 is not documented.
-include/omxdsp/analysis/omx_hrp_lv2.h: warning: Member ready (variable) of struct OmxHrpLv2 is not documented.
-include/omxdsp/analysis/omx_hrp_lv2.h: warning: Member report[OMX_HRP_LV2_MAX_BANDS] (variable) of struct OmxHrpLv2 is not documented.
-include/omxdsp/analysis/omx_hrp_lv2.h: warning: Member voice_id (variable) of struct OmxHrpLv2Slot is not documented.
-include/omxdsp/analysis/omx_hrp_lv2.h: warning: parameters of member omx_hrp_lv2_adopt are not documented
-include/omxdsp/analysis/omx_hrp_lv2.h: warning: parameters of member omx_hrp_lv2_analyse are not documented
-include/omxdsp/analysis/omx_hrp_lv2.h: warning: parameters of member omx_hrp_lv2_due are not documented
-include/omxdsp/analysis/omx_hrp_lv2.h: warning: parameters of member omx_hrp_lv2_hop are not documented
-include/omxdsp/analysis/omx_hrp_lv2.h: warning: parameters of member omx_hrp_lv2_init are not documented
-include/omxdsp/analysis/omx_hrp_lv2.h: warning: parameters of member omx_hrp_lv2_ramp are not documented
-include/omxdsp/analysis/omx_hrp_lv2.h: warning: parameters of member omx_hrp_lv2_set_family are not documented
-include/omxdsp/analysis/omx_hrp_lv2.h: warning: parameters of member omx_hrp_lv2_slot_of are not documented
-include/omxdsp/analysis/omx_hrp_lv2.h: warning: return type of member omx_hrp_lv2_due is not documented
-include/omxdsp/analysis/omx_hrp_lv2.h: warning: return type of member omx_hrp_lv2_hop is not documented
-include/omxdsp/analysis/omx_hrp_lv2.h: warning: return type of member omx_hrp_lv2_init is not documented
-include/omxdsp/analysis/omx_hrp_lv2.h: warning: return type of member omx_hrp_lv2_ramp is not documented
-include/omxdsp/analysis/omx_hrp_lv2.h: warning: return type of member omx_hrp_lv2_slot_of is not documented
-include/omxdsp/analysis/omx_hrp_pitch.h: warning: Member OMX_HRP_HARMONICS (macro definition) of file omx_hrp_pitch.h is not documented.
-include/omxdsp/analysis/omx_hrp_pitch.h: warning: Member f0_hz (variable) of struct OmxHrpVoice is not documented.
-include/omxdsp/analysis/omx_hrp_pitch.h: warning: Member f0_max_hz (variable) of struct OmxHrpConfig is not documented.
-include/omxdsp/analysis/omx_hrp_pitch.h: warning: Member f0_min_hz (variable) of struct OmxHrpConfig is not documented.
-include/omxdsp/analysis/omx_hrp_pitch.h: warning: Member valid (variable) of struct OmxHrpVoice is not documented.
-include/omxdsp/analysis/omx_hrp_pitch.h: warning: Member voice_count (variable) of struct OmxHrpVoiceSet is not documented.
-include/omxdsp/analysis/omx_hrp_pitch.h: warning: Member voices[OMX_HRP_MAX_VOICES] (variable) of struct OmxHrpVoiceSet is not documented.
-include/omxdsp/analysis/omx_hrp_pitch.h: warning: The following parameters of omx_hrp_detect(const float *mag, uint32_t nbins, float bin_hz, const OmxHrpConfig *cfg, float *residual, OmxHrpVoiceSet *out) are not documented:   parameter 'nbins'   parameter 'cfg'
-include/omxdsp/analysis/omx_hrp_pitch.h: warning: parameters of member omx_hrp_bin_peak are not documented
-include/omxdsp/analysis/omx_hrp_pitch.h: warning: parameters of member omx_hrp_cancel are not documented
-include/omxdsp/analysis/omx_hrp_pitch.h: warning: parameters of member omx_hrp_comb_score are not documented
-include/omxdsp/analysis/omx_hrp_pitch.h: warning: parameters of member omx_hrp_descent_admissible are not documented
-include/omxdsp/analysis/omx_hrp_pitch.h: warning: parameters of member omx_hrp_low_support are not documented
-include/omxdsp/analysis/omx_hrp_pitch.h: warning: parameters of member omx_hrp_midi_note are not documented
-include/omxdsp/analysis/omx_hrp_pitch.h: warning: parameters of member omx_hrp_min_confidence_for are not documented
-include/omxdsp/analysis/omx_hrp_pitch.h: warning: parameters of member omx_hrp_octave_guard are not documented
-include/omxdsp/analysis/omx_hrp_pitch.h: warning: parameters of member omx_hrp_partial_mean are not documented
-include/omxdsp/analysis/omx_hrp_pitch.h: warning: parameters of member omx_hrp_peak_halfwidth are not documented
-include/omxdsp/analysis/omx_hrp_pitch.h: warning: parameters of member omx_hrp_refine are not documented
-include/omxdsp/analysis/omx_hrp_pitch.h: warning: parameters of member omx_hrp_total are not documented
-include/omxdsp/analysis/omx_hrp_pitch.h: warning: return type of member omx_hrp_bin_peak is not documented
-include/omxdsp/analysis/omx_hrp_pitch.h: warning: return type of member omx_hrp_comb_score is not documented
-include/omxdsp/analysis/omx_hrp_pitch.h: warning: return type of member omx_hrp_config_default is not documented
-include/omxdsp/analysis/omx_hrp_pitch.h: warning: return type of member omx_hrp_descent_admissible is not documented
-include/omxdsp/analysis/omx_hrp_pitch.h: warning: return type of member omx_hrp_low_support is not documented
-include/omxdsp/analysis/omx_hrp_pitch.h: warning: return type of member omx_hrp_midi_note is not documented
-include/omxdsp/analysis/omx_hrp_pitch.h: warning: return type of member omx_hrp_min_confidence_for is not documented
-include/omxdsp/analysis/omx_hrp_pitch.h: warning: return type of member omx_hrp_octave_guard is not documented
-include/omxdsp/analysis/omx_hrp_pitch.h: warning: return type of member omx_hrp_partial_mean is not documented
-include/omxdsp/analysis/omx_hrp_pitch.h: warning: return type of member omx_hrp_peak_halfwidth is not documented
-include/omxdsp/analysis/omx_hrp_pitch.h: warning: return type of member omx_hrp_refine is not documented
-include/omxdsp/analysis/omx_hrp_pitch.h: warning: return type of member omx_hrp_total is not documented
 include/omxdsp/analysis/omx_hrp_place.h: warning: Member freq_hz (variable) of struct OmxHrpPlacedBand is not documented.
 include/omxdsp/analysis/omx_hrp_place.h: warning: Member gain_db (variable) of struct OmxHrpPlacedBand is not documented.
 include/omxdsp/analysis/omx_hrp_place.h: warning: Member q (variable) of struct OmxHrpPlacedBand is not documented.
@@ -107,40 +47,6 @@ include/omxdsp/analysis/omx_hrp_place.h: warning: parameters of member omx_hrp_p
 include/omxdsp/analysis/omx_hrp_place.h: warning: parameters of member omx_hrp_step_toward are not documented
 include/omxdsp/analysis/omx_hrp_place.h: warning: return type of member omx_hrp_place_in_range is not documented
 include/omxdsp/analysis/omx_hrp_place.h: warning: return type of member omx_hrp_step_toward is not documented
-include/omxdsp/analysis/omx_hrp_render.h: warning: Compound OmxHrpRenderCell is not documented.
-include/omxdsp/analysis/omx_hrp_render.h: warning: Member OMX_HRP_RENDER_BASELINE_STEP_DB (macro definition) of file omx_hrp_render.h is not documented.
-include/omxdsp/analysis/omx_hrp_render.h: warning: Member OMX_HRP_RENDER_MIN_FRAMES (macro definition) of file omx_hrp_render.h is not documented.
-include/omxdsp/analysis/omx_hrp_render.h: warning: Member baseline (variable) of struct OmxHrpRender is not documented.
-include/omxdsp/analysis/omx_hrp_render.h: warning: Member baseline (variable) of struct OmxHrpRenderConfig is not documented.
-include/omxdsp/analysis/omx_hrp_render.h: warning: Member cell[OMX_HRP_BASELINE_NOTES][OMX_HRP_HARMONICS] (variable) of struct OmxHrpRenderReport is not documented.
-include/omxdsp/analysis/omx_hrp_render.h: warning: Member cfg (variable) of struct OmxHrpRender is not documented.
-include/omxdsp/analysis/omx_hrp_render.h: warning: Member omx_hrp_render_window(OmxHrpRender *r, int pass) (function) of file omx_hrp_render.h is not documented.
-include/omxdsp/analysis/omx_hrp_render.h: warning: Member pitch (variable) of struct OmxHrpRenderConfig is not documented.
-include/omxdsp/analysis/omx_hrp_render.h: warning: Member report (variable) of struct OmxHrpRender is not documented.
-include/omxdsp/analysis/omx_hrp_render.h: warning: Member residual (variable) of struct OmxHrpRender is not documented.
-include/omxdsp/analysis/omx_hrp_render.h: warning: Member track (variable) of struct OmxHrpRenderConfig is not documented.
-include/omxdsp/analysis/omx_hrp_render.h: warning: Member tracker (variable) of struct OmxHrpRender is not documented.
-include/omxdsp/analysis/omx_hrp_render.h: warning: Member work_im (variable) of struct OmxHrpRender is not documented.
-include/omxdsp/analysis/omx_hrp_render.h: warning: parameters of member omx_hrp_render_confidence are not documented
-include/omxdsp/analysis/omx_hrp_render.h: warning: parameters of member omx_hrp_render_config_default are not documented
-include/omxdsp/analysis/omx_hrp_render.h: warning: parameters of member omx_hrp_render_duty are not documented
-include/omxdsp/analysis/omx_hrp_render.h: warning: parameters of member omx_hrp_render_excess_db are not documented
-include/omxdsp/analysis/omx_hrp_render.h: warning: parameters of member omx_hrp_render_f0_hz are not documented
-include/omxdsp/analysis/omx_hrp_render.h: warning: parameters of member omx_hrp_render_feed are not documented
-include/omxdsp/analysis/omx_hrp_render.h: warning: parameters of member omx_hrp_render_init are not documented
-include/omxdsp/analysis/omx_hrp_render.h: warning: parameters of member omx_hrp_render_peak_excess_db are not documented
-include/omxdsp/analysis/omx_hrp_render.h: warning: parameters of member omx_hrp_render_reset_report are not documented
-include/omxdsp/analysis/omx_hrp_render.h: warning: parameters of member omx_hrp_render_rewind are not documented
-include/omxdsp/analysis/omx_hrp_render.h: warning: parameters of member omx_hrp_render_voice_confidence are not documented
-include/omxdsp/analysis/omx_hrp_render.h: warning: return type of member omx_hrp_render_confidence is not documented
-include/omxdsp/analysis/omx_hrp_render.h: warning: return type of member omx_hrp_render_config_default is not documented
-include/omxdsp/analysis/omx_hrp_render.h: warning: return type of member omx_hrp_render_duty is not documented
-include/omxdsp/analysis/omx_hrp_render.h: warning: return type of member omx_hrp_render_excess_db is not documented
-include/omxdsp/analysis/omx_hrp_render.h: warning: return type of member omx_hrp_render_f0_hz is not documented
-include/omxdsp/analysis/omx_hrp_render.h: warning: return type of member omx_hrp_render_feed is not documented
-include/omxdsp/analysis/omx_hrp_render.h: warning: return type of member omx_hrp_render_init is not documented
-include/omxdsp/analysis/omx_hrp_render.h: warning: return type of member omx_hrp_render_peak_excess_db is not documented
-include/omxdsp/analysis/omx_hrp_render.h: warning: return type of member omx_hrp_render_voice_confidence is not documented
 include/omxdsp/analysis/omx_hrp_track.h: warning: Member OMX_HRP_MAX_TRACKS (macro definition) of file omx_hrp_track.h is not documented.
 include/omxdsp/analysis/omx_hrp_track.h: warning: Member active (variable) of struct OmxHrpTrack is not documented.
 include/omxdsp/analysis/omx_hrp_track.h: warning: Member amplitude_db (variable) of struct OmxHrpTrack is not documented.

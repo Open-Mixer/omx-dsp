@@ -82,7 +82,7 @@
 #include <omxdsp/analysis/omx_hrp_track.h>
 #include <omxdsp/analysis/omx_rta.h>
 
-/* Windows a (note, harmonic) must be measured over before it is evidence about the take.
+/** @brief Windows a (note, harmonic) must be measured over before it is evidence about the take.
  *
  * The BASELINE's own gate is 24 accepted updates (`omx_hrp_baseline_config_default`), and a cell
  * only counts a window once that row is ripe — so anything reported here has already been heard
@@ -122,7 +122,7 @@
 /** Teach AND measure, measuring first — the only pass a one-read shell can run. */
 #define OMX_HRP_RENDER_LIVE 2
 
-/* The most one accepted measurement may move the learned level offline, in dB.
+/** @brief The most one accepted measurement may move the learned level offline, in dB.
  *
  * A FIFTH of the live default, and the fourth thing the "no live budget" claim buys. §22 asks for a
  * robust estimator; live sizes its step (0.5 dB) so a model becomes useful inside one song,
@@ -133,7 +133,7 @@
  * Same estimator, same gates, converging on the performance instead of on its last few seconds. */
 #define OMX_HRP_RENDER_BASELINE_STEP_DB 0.1f
 
-/* One (note, harmonic) cell of the whole-file measurement.
+/** @brief One (note, harmonic) cell of the whole-file measurement.
  *
  * MAGNITUDE AND STABILITY ARE SEPARATE, because §24 lists them separately: "positive deviation"
  * and "temporal stability" are two of the terms a resonance score considers, and folding them
@@ -169,6 +169,8 @@ typedef struct {
 
 /** What a whole file was measured to be doing, per note and per harmonic. */
 typedef struct {
+  /** One cell per MIDI note (0..OMX_HRP_BASELINE_NOTES-1) and harmonic; `cell[note][n - 1]` holds harmonic Hn.
+   *  Written by measuring windows; zeroed by omx_hrp_render_init() and omx_hrp_render_reset_report(). */
   OmxHrpRenderCell cell[OMX_HRP_BASELINE_NOTES][OMX_HRP_HARMONICS];
   /** Windows the measuring pass analysed — the denominator a caller reports progress against. */
   uint32_t windows;
@@ -186,8 +188,11 @@ typedef struct {
   uint32_t fft_size;
   /** Frames between windows. `fft_size / 4` gives the 75 % overlap the default config uses. */
   uint32_t hop;
+  /** The detector's search, passed to omx_hrp_detect() and omx_hrp_attribute() every window. */
   OmxHrpConfig pitch;
+  /** The tracker's config, passed to omx_hrp_track_update(); omx_hrp_render_init() refuses one it rejects. */
   OmxHrpTrackConfig track;
+  /** The baseline model's config. Its `step_db` is also the floor a deviation must exceed to count as hot. */
   OmxHrpBaselineConfig baseline;
 } OmxHrpRenderConfig;
 
@@ -200,7 +205,9 @@ typedef struct {
  * allocate could not be the same code the live tier is held to.
  */
 typedef struct {
+  /** The config omx_hrp_render_init() was given, copied. */
   OmxHrpRenderConfig cfg;
+  /** The voice tracker, updated once per window; emptied by init and by omx_hrp_render_rewind(). */
   OmxHrpTracker tracker;
   /** The voice set the LAST analysed window projected out of `tracker` — this path's own
    *  marshalled answer about that window, by omx_hrp_project_voices(), the one projection
@@ -209,15 +216,19 @@ typedef struct {
    *  compares it with the live chain's byte for byte. Empty until the first window, and emptied
    *  by omx_hrp_render_rewind() with the tracker it came from. */
   OmxHrpVoiceSet voices;
+  /** The per-note, per-harmonic model: taught by LEARN and LIVE windows, kept across omx_hrp_render_rewind(). */
   OmxHrpBaseline baseline;
+  /** The measurement: accumulated by MEASURE and LIVE windows, cleared by omx_hrp_render_reset_report(). */
   OmxHrpRenderReport report;
   /** The sliding analysis window: `cfg.fft_size` floats, filled by omx_hrp_render_feed(). */
   float *carry;
   /** FFT scratch, `cfg.fft_size` floats each. */
   float *work_re;
+  /** FFT scratch, imaginary part: `cfg.fft_size` floats, handed to omx_rta_spectrum() with `work_re`. */
   float *work_im;
   /** Magnitude spectrum and the detector's residual, `cfg.fft_size / 2` floats each. */
   float *mags;
+  /** The detector's residual scratch, `cfg.fft_size / 2` floats, clobbered by omx_hrp_detect() every window. */
   float *residual;
   /** Valid samples currently in `carry`. */
   uint32_t fill;
@@ -228,7 +239,7 @@ typedef struct {
 } OmxHrpRender;
 
 /**
- * The defaults a take of `rate` Hz is analysed with.
+ * @brief The defaults a take of `rate` Hz is analysed with.
  *
  * The window LENGTH is the RTA's own, derived from the rate (omx_rta_fft_size_for()) so
  * that a bin is about OMX_RTA_TARGET_BIN_HZ wide whatever the take was recorded at —
@@ -239,6 +250,9 @@ typedef struct {
  * offline the caller chooses, and three quarters of overlap is the point where a partial that
  * rings for one window length is seen by four measurements rather than one — evidence §24's
  * temporal-stability term can actually count.
+ * @param rate the take's sample rate, Hz
+ * @return the config: omx_rta_fft_size_for(rate) window, a quarter-window hop, the pitch, track and baseline
+ *         defaults, and a baseline step of OMX_HRP_RENDER_BASELINE_STEP_DB
  * @thread worker
  */
 static inline OmxHrpRenderConfig omx_hrp_render_config_default(uint32_t rate) {
@@ -254,13 +268,21 @@ static inline OmxHrpRenderConfig omx_hrp_render_config_default(uint32_t rate) {
 }
 
 /**
- * Bind a render to its config and the caller's five buffers. Returns 1 when the render is
+ * @brief Bind a render to its config and the caller's five buffers. Returns 1 when the render is
  * usable, 0 when it is not — a zero window, a window that is not a power of two, a hop outside
  * (0, fft_size], a track config the tracker refuses, or a missing buffer. A refused init leaves `ready` clear, and every entry
  * below is a no-op on a render that is not ready: absence is a fact, not a crash.
  *
  * `carry`, `work_re` and `work_im` hold `fft_size` floats; `mags` and `residual` hold
  * `fft_size / 2`.
+ * @param r        the render to bind; zeroed first whenever it is not NULL and `cfg` is not NULL
+ * @param cfg      the config; copied into `r->cfg`
+ * @param carry    the sliding analysis window, `fft_size` floats
+ * @param work_re  FFT scratch, real part, `fft_size` floats
+ * @param work_im  FFT scratch, imaginary part, `fft_size` floats
+ * @param mags     magnitude spectrum, `fft_size / 2` floats
+ * @param residual the detector's residual scratch, `fft_size / 2` floats
+ * @return 1 when the render is ready, 0 when it is refused
  * @thread worker
  */
 static inline int omx_hrp_render_init(OmxHrpRender *r, const OmxHrpRenderConfig *cfg,
@@ -286,13 +308,14 @@ static inline int omx_hrp_render_init(OmxHrpRender *r, const OmxHrpRenderConfig 
 }
 
 /**
- * Return to the start of the audio WITHOUT forgetting what was learned.
+ * @brief Return to the start of the audio WITHOUT forgetting what was learned.
  *
  * This is the seam between the two passes and the whole of the offline privilege in one call:
  * the window machine and the voice tracker are emptied (frame zero of pass two must not inherit
  * pass one's last window, or the file's opening would be measured against its ending), while the
  * BASELINE — everything the file taught — is kept. Calling it a second time before a third pass
  * would be equally safe.
+ * @param r the render; a NULL or not-ready render is left as it is
  * @thread worker
  */
 static inline void omx_hrp_render_rewind(OmxHrpRender *r) {
@@ -304,20 +327,24 @@ static inline void omx_hrp_render_rewind(OmxHrpRender *r) {
   memset(&r->voices, 0, sizeof(r->voices));
 }
 
-/** Forget the measurement, keeping the model — for a caller that re-measures under a new search.
+/** @brief Forget the measurement, keeping the model — for a caller that re-measures under a new search.
+ * @param r the render whose `report` is zeroed; NULL is ignored
  * @thread worker */
 static inline void omx_hrp_render_reset_report(OmxHrpRender *r) {
   if (!r) return;
   memset(&r->report, 0, sizeof(r->report));
 }
 
-/* One analysis window: the live chain's own order, over the window sitting in `carry`.
+/** @brief One analysis window: the live chain's own order, over the window sitting in `carry`.
  *
- * `learn` selects the pass. Teaching accepts a measurement under §21's gates exactly as
+ * `pass` selects the pass. Teaching accepts a measurement under §21's gates exactly as
  * `hrp_analyze.c` does; measuring reads the ripe model and accumulates the deviation. The two
  * share this function rather than duplicating the chain, because a second spelling of
  * detect->track->attribute is how the two passes would come to disagree about what a window
  * contains.
+ * @param r    a ready render with a full window in `carry`; not checked here, omx_hrp_render_feed() calls it
+ * @param pass OMX_HRP_RENDER_MEASURE, OMX_HRP_RENDER_LEARN or OMX_HRP_RENDER_LIVE; any value other than
+ *             MEASURE teaches and any value other than LEARN measures
  * @thread worker */
 static inline void omx_hrp_render_window(OmxHrpRender *r, int pass) {
   const int do_learn = (pass != OMX_HRP_RENDER_MEASURE);
@@ -410,7 +437,7 @@ static inline void omx_hrp_render_window(OmxHrpRender *r, int pass) {
 }
 
 /**
- * Feed `n` frames of the track, in order, and analyse every window that completes.
+ * @brief Feed `n` frames of the track, in order, and analyse every window that completes.
  *
  * `pass` is one of {@link OMX_HRP_RENDER_MEASURE}, {@link OMX_HRP_RENDER_LEARN} or
  * {@link OMX_HRP_RENDER_LIVE} — see the pass constants for which shell runs which and why.
@@ -427,6 +454,11 @@ static inline void omx_hrp_render_window(OmxHrpRender *r, int pass) {
  * into the measurement of a real partial's level — an invented number in the one place the
  * whole feature is about levels. The audio is untouched by this; only the last fraction of a
  * second is unmeasured, and a resonance is not a property of the last 170 ms of a show.
+ * @param r    the render; nothing happens when it is NULL or not ready
+ * @param in   `n` mono samples of the track; nothing happens when NULL
+ * @param n    number of samples in `in`
+ * @param pass OMX_HRP_RENDER_MEASURE, OMX_HRP_RENDER_LEARN or OMX_HRP_RENDER_LIVE
+ * @return the number of windows this call analysed
  * @thread worker
  */
 static inline uint32_t omx_hrp_render_feed(OmxHrpRender *r, const float *in, uint32_t n,
@@ -453,47 +485,59 @@ static inline uint32_t omx_hrp_render_feed(OmxHrpRender *r, const float *in, uin
   return windows;
 }
 
-/** The mean excess, in dB, over the windows this partial was actually ringing in — §24's
+/** @brief The mean excess, in dB, over the windows this partial was actually ringing in — §24's
  *  "positive deviation" term. Zero for a cell with no hot window, and for one below
  *  {@link OMX_HRP_RENDER_MIN_FRAMES}, which is the same statement: not evidence.
+ * @param c the cell to read
+ * @return the mean excess over hot windows, dB; 0 when `c` is NULL, below the frame floor or never hot
  * @thread worker */
 static inline float omx_hrp_render_excess_db(const OmxHrpRenderCell *c) {
   if (!c || c->frames < OMX_HRP_RENDER_MIN_FRAMES || c->hot_frames == 0u) return 0.0f;
   return c->sum_excess_db / (float)c->hot_frames;
 }
 
-/** How much of this partial's sounding time it spent above its baseline, 0..1 — §24's
+/** @brief How much of this partial's sounding time it spent above its baseline, 0..1 — §24's
  *  "temporal stability" term, and the one number that separates a resonance from a tick.
+ * @param c the cell to read
+ * @return `hot_frames / frames`, 0..1; 0 when `c` is NULL or below the frame floor
  * @thread worker */
 static inline float omx_hrp_render_duty(const OmxHrpRenderCell *c) {
   if (!c || c->frames < OMX_HRP_RENDER_MIN_FRAMES) return 0.0f;
   return (float)c->hot_frames / (float)c->frames;
 }
 
-/** The largest single positive deviation seen, in dB. What an operator reads to tell a ring
+/** @brief The largest single positive deviation seen, in dB. What an operator reads to tell a ring
  *  from a clip; never what a correction is sized from — one window is not a take.
+ * @param c the cell to read
+ * @return the cell's `peak_excess_db`, dB; 0 when `c` is NULL or below the frame floor
  * @thread worker */
 static inline float omx_hrp_render_peak_excess_db(const OmxHrpRenderCell *c) {
   if (!c || c->frames < OMX_HRP_RENDER_MIN_FRAMES) return 0.0f;
   return c->peak_excess_db;
 }
 
-/** Mean attribution confidence over the hot windows — §10's third output, aggregated.
+/** @brief Mean attribution confidence over the hot windows — §10's third output, aggregated.
+ * @param c the cell to read
+ * @return the mean attribution confidence, 0..1; 0 when `c` is NULL or has no hot window
  * @thread worker */
 static inline float omx_hrp_render_confidence(const OmxHrpRenderCell *c) {
   if (!c || c->hot_frames == 0u) return 0.0f;
   return c->sum_confidence / (float)c->hot_frames;
 }
 
-/** Mean voice confidence over the hot windows — §24's "voice confidence" term, aggregated.
+/** @brief Mean voice confidence over the hot windows — §24's "voice confidence" term, aggregated.
+ * @param c the cell to read
+ * @return the mean voice confidence, 0..1; 0 when `c` is NULL or has no hot window
  * @thread worker */
 static inline float omx_hrp_render_voice_confidence(const OmxHrpRenderCell *c) {
   if (!c || c->hot_frames == 0u) return 0.0f;
   return c->sum_voice_confidence / (float)c->hot_frames;
 }
 
-/** The MEASURED fundamental this partial belongs to, Hz — the mean over the windows it rang
+/** @brief The MEASURED fundamental this partial belongs to, Hz — the mean over the windows it rang
  *  in, so the band lands on the note that sounded and not on the tempered grid.
+ * @param c the cell to read
+ * @return the mean measured fundamental, Hz; 0 when `c` is NULL or has no hot window
  * @thread worker */
 static inline float omx_hrp_render_f0_hz(const OmxHrpRenderCell *c) {
   if (!c || c->hot_frames == 0u) return 0.0f;
