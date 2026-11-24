@@ -71,6 +71,9 @@
 #               make docs-baseline  the baseline rewritten from the tree, never with a row added;
 #               make docs-sabotage  the gate against sabotaged copies of the tree
 #   make test-tsan  the thread arm under -fsanitize=thread where the toolchain has it
+#   make rtsan  the per-block entry points marked nonblocking in a scratch copy of include/ and the oracles run
+#               under clang's RealtimeSanitizer, after its self-test sees a planted usleep (tools/rtsan/rtsan.sh);
+#               a dev tool, not part of make test, check-package or CI
 #   make rt-gate   omx-rt-gate, the one static real-time gate (tools/rt-gate, omx-rt-gate(1)): its class
 #               table measured by the externals arm, its planted fixtures red and clean twins green, its
 #               load refusals;  make rt-gate-sabotage  the guards broken one at a time, the -O2 arm
@@ -137,7 +140,7 @@ endif
 # (nothing is downloaded); this tree commits no copy of them. Every sub-script that compiles gets the
 # directory as CONTRACT_INC. The goals below compile nothing against it; it is found unless every goal
 # named is one of them (no goal is `all`, which needs it), so `make copy-check test-parallel` finds it too.
-NO_CONTRACT_GOALS = install-confined version clean docs docs-site docs-check docs-baseline docs-sabotage public-sources private-refs exports copy-check deps deps-check
+NO_CONTRACT_GOALS = rtsan install-confined version clean docs docs-site docs-check docs-baseline docs-sabotage public-sources private-refs exports copy-check deps deps-check
 ifneq ($(if $(MAKECMDGOALS),$(filter-out $(NO_CONTRACT_GOALS),$(MAKECMDGOALS)),all),)
 CONTRACT_INC := $(shell sh tools/contract-include.sh)
 ifeq ($(CONTRACT_INC),)
@@ -204,7 +207,7 @@ VERSION    := $(shell sed -n 's/^\#define OMXDSP_VERSION_\(MAJOR\|MINOR\|PATCH\)
 
 
 
-.PHONY: curve-vectors-wasm wasm wasm-check wasm-sabotage install-wasm npm-stage wasm-loader-check wasm-loader-sabotage fuzz fuzz-run fuzz-sabotage fuzz-records fuzz-coverage fuzz-corpus all lib test lint docs docs-check docs-baseline docs-sabotage clean contract-dir definitions definitions-check contract-proof contract-tests test-tsan suite negative consumer gen-once perturb fdelay-sabotage doppler-sabotage onepole-sabotage threads threads-sabotage checks cost-prel test-fx test-analysis install version golden-write flavours bench-mixmatrix bench-gate bench-drive bench-flanger check-log10f strip-input-identity analysis-engine-identity test-mix mix-engine-identity test-engine-kernels engine-kernels-identity magnitude-sabotage eq-sabotage curve-golden curve-sabotage curve-json-sabotage curve-vectors curve-vectors-write curve-vectors-sabotage meter-view-golden rta-bands-golden meter-view-sabotage rta-bands-sabotage geq-true-sabotage delay-taps-sabotage align-fdelay-sabotage pitch-rates-sabotage instance-rates-sabotage bandwidth-q-table bandwidth-q-sabotage eq-default-bands eq-defaults-table room-ts-golden public-sources private-refs deps deps-check cost-deesser note-map-sabotage exports copy-check eq-q-range-sabotage
+.PHONY: rtsan curve-vectors-wasm wasm wasm-check wasm-sabotage install-wasm npm-stage wasm-loader-check wasm-loader-sabotage fuzz fuzz-run fuzz-sabotage fuzz-records fuzz-coverage fuzz-corpus all lib test lint docs docs-check docs-baseline docs-sabotage clean contract-dir definitions definitions-check contract-proof contract-tests test-tsan suite negative consumer gen-once perturb fdelay-sabotage doppler-sabotage onepole-sabotage threads threads-sabotage checks cost-prel test-fx test-analysis install version golden-write flavours bench-mixmatrix bench-gate bench-drive bench-flanger check-log10f strip-input-identity analysis-engine-identity test-mix mix-engine-identity test-engine-kernels engine-kernels-identity magnitude-sabotage eq-sabotage curve-golden curve-sabotage curve-json-sabotage curve-vectors curve-vectors-write curve-vectors-sabotage meter-view-golden rta-bands-golden meter-view-sabotage rta-bands-sabotage geq-true-sabotage delay-taps-sabotage align-fdelay-sabotage pitch-rates-sabotage instance-rates-sabotage bandwidth-q-table bandwidth-q-sabotage eq-default-bands eq-defaults-table room-ts-golden public-sources private-refs deps deps-check cost-deesser note-map-sabotage exports copy-check eq-q-range-sabotage
 
 all: lib
 
@@ -1204,6 +1207,10 @@ test-support-install:
 	$(MAKE) --no-print-directory install PREFIX=$(abspath $(BUILD))/support-install CONTRACTDIR=$(abspath $(BUILD))/support-install/share/omx-contract/contract.d
 	sh tools/support-install-check.sh $(abspath $(BUILD))/support-install
 .PHONY: test-support-install
+
+# A dev tool, outside make test: it needs clang with compiler-rt's rtsan runtime and refuses UNJUDGED without it.
+rtsan:
+	bash tools/rtsan/rtsan.sh $(abspath $(BUILD))/rtsan
 
 # §4.3 (e): UNJUDGED (exit 0, never a pass) where the toolchain has no TSan; where it has, the
 # thread arm must be report-free and its shared-state sabotage must race. The gate's own report
