@@ -20,7 +20,15 @@ import { UNION, withoutMemberDocs } from './helpers.mjs';
 const json = (dir = UNION) => JSON.parse(renderJson(resolveData(loadData(dir)), '0.0.0')[0].text);
 const header = (dir = UNION) => withoutMemberDocs(renderC(resolveData(loadData(dir)))[0].text);
 
-// omx-contract's PARAM_FILTER_RESPONSES, the order enum omx_eq_kind reads its codes in (core's BiquadKind order)
+// The nine kinds in the order enum omx_eq_kind numbers them, peaking 0 through allpass2 8: core's BiquadKind order
+// (eq.ts), held here as written so a reorder or an insertion in omx-contract's item turns red here first. The enum
+// takes each code from the contract's X-macro, so nothing else in this tree would notice a renumbering.
+const KINDS = ['peaking', 'lowShelf', 'highShelf', 'highpass', 'lowpass', 'notch', 'bandpass', 'allpass1', 'allpass2'];
+/** The codes a words item gives, word by word: what enum omx_eq_kind becomes when it reads that item. */
+const codesOf = (item) => Object.fromEntries((item?.oneOf ?? []).map((w) => [w.const, w['x-code']]));
+/** The codes this library was built on: each kind its place in KINDS. */
+const PINNED = Object.fromEntries(KINDS.map((k, i) => [k, i]));
+// omx-contract's PARAM_FILTER_RESPONSES, the item enum omx_eq_kind reads its codes from
 const RESPONSES = JSON.parse(readFileSync(join(OC, 'contract.d/param/param.json'), 'utf8')).components.schemas.PARAM_FILTER_RESPONSES;
 // omx-dsp's OMX_EQ_LOWPASS_HANDOVER_* as written there, parsed as doubles.
 const HANDOVER = {
@@ -37,6 +45,27 @@ test('the biquad kinds are omx-contract\'s PARAM_FILTER_RESPONSES, each code its
     assert.ok(!words.every((w) => ids.includes(w)), `${name} holds the words of PARAM_FILTER_RESPONSES again`);
   }
   assert.doesNotMatch(header(), /OMX_BIQUAD_KINDS_/);
+});
+
+test('the kinds keep their codes: peaking 0 through allpass2 8, in the order omx-dsp has always numbered them', () => {
+  assert.deepEqual(RESPONSES.oneOf.map((w) => w.const), KINDS);
+  assert.deepEqual(codesOf(RESPONSES), PINNED);
+  assert.equal(codesOf(RESPONSES).peaking, 0);
+  assert.equal(codesOf(RESPONSES).allpass2, 8);
+});
+
+test('the pin refuses a moved item: two words swapped, a word inserted, a word dropped, each renumbered as the contract would', () => {
+  const renumbered = (words) => ({ oneOf: words.map((w, i) => ({ const: w, 'x-code': i })) });
+  const swapped = KINDS.slice(); [swapped[0], swapped[1]] = [swapped[1], swapped[0]];
+  const inserted = [...KINDS.slice(0, 5), 'tilt', ...KINDS.slice(5)];
+  const dropped = KINDS.filter((k) => k !== 'notch');
+  for (const [what, words] of [['swapped', swapped], ['inserted', inserted], ['dropped', dropped]]) {
+    // each sabotaged item is one the place check above accepts: its codes are its places
+    renumbered(words).oneOf.forEach((w, i) => assert.equal(w['x-code'], i));
+    assert.throws(() => assert.deepEqual(codesOf(renumbered(words)), PINNED), assert.AssertionError, `${what}: the pin did not refuse it`);
+  }
+  // a word appended after allpass2 moves no code of the nine, and is refused all the same: the enum has no kind for it
+  assert.throws(() => assert.deepEqual(codesOf(renumbered([...KINDS, 'tilt'])), PINNED), assert.AssertionError);
 });
 
 test('the hand-over table holds omx-dsp\'s eight numbers, the high Q end being the Butterworth Q', () => {
