@@ -339,6 +339,10 @@ jobs:
       - name: make units-check
         run: make units-check OMX_CONTRACT=/tmp/omx-contract
 
+      # the EQ's section kinds are omx-contract's PARAM_FILTER_RESPONSES, typed nowhere here, its sabotages held (#170)
+      - name: make filter-responses-check
+        run: make filter-responses-check OMX_CONTRACT=/tmp/omx-contract
+
   # The libFuzzer harnesses of fuzz/ (clang, libFuzzer, ASan, UBSan, the library's contracts), each run for 60 s from
   # its seed corpus; red on any crash or broken contract, the crashing input uploaded. Then the checks prove
   # themselves: every sabotage patch found at the check it names, every record met by its own check on its own seed,

@@ -3688,20 +3688,6 @@
 
 /* Every set rendered to C, sorted by set: an enum of the ids (a named id's position, or a numeric id's number), `OMX_<SET>_COUNT` and,
  * where the set names a default, `OMX_<SET>_DEFAULT`. */
-/** The biquad section kinds the EQ design builds, in the order of the integer a kernel reads: the bell, the two shelves, the pass filters, the notch, the bandpass (the de-esser's detector band, never an EQ band), and the first- and second-order allpasses (the dynamic EQ's and the phase tool's sections). The design itself is omx-dsp's `omx_eq_design`; the console draws its curves from a twin of it, and both dispatch on this list. No come-up id: a kind is chosen by the stage that designs the section. (since 2.14.0) A named id's value is its position. */
-enum omx_biquad_kinds {
-  OMX_BIQUAD_KINDS_PEAKING = 0, ///< The id `peaking`.
-  OMX_BIQUAD_KINDS_LOW_SHELF = 1, ///< The id `lowShelf`.
-  OMX_BIQUAD_KINDS_HIGH_SHELF = 2, ///< The id `highShelf`.
-  OMX_BIQUAD_KINDS_HIGHPASS = 3, ///< The id `highpass`.
-  OMX_BIQUAD_KINDS_LOWPASS = 4, ///< The id `lowpass`.
-  OMX_BIQUAD_KINDS_NOTCH = 5, ///< The id `notch`.
-  OMX_BIQUAD_KINDS_BANDPASS = 6, ///< The id `bandpass`.
-  OMX_BIQUAD_KINDS_ALLPASS1 = 7, ///< The id `allpass1`.
-  OMX_BIQUAD_KINDS_ALLPASS2 = 8, ///< The id `allpass2`.
-};
-/** The number of ids of BIQUAD_KINDS. */
-#define OMX_BIQUAD_KINDS_COUNT 9u
 /** How the detector folds the key's two legs into one level, in the order of the integer the kernel reads: linked, the louder leg (the compressor's own detection, the come-up value); mid, the mid (L + R)/2; side, the side (L - R)/2; max, the louder of the mid and the side. One gain serves both legs whatever the fold. A named id's value is its position. */
 enum omx_comp_detect_links {
   OMX_COMP_DETECT_LINKS_LINKED = 0, ///< Linked

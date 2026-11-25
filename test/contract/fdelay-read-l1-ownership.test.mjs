@@ -25,7 +25,7 @@ const FILE = 'data/primitives/fdelay-read-l1-norm.json';
 
 /** omx-contract's standard words this library may read (ruled standard: PARAM_* V21, the two rate lists V25 Q5). */
 const STANDARD_ITEMS = ['STANDARD_SAMPLE_RATES', 'STANDARD_QUANTA', 'PARAM_SCALES', 'PARAM_UNITS', 'PARAM_UNIT_DIMENSIONS',
-  'PARAM_UNIT_SCOPES', 'PARAM_UNITS_CLAP_ENCODED', 'PARAM_MEANINGS'];
+  'PARAM_UNIT_SCOPES', 'PARAM_UNITS_CLAP_ENCODED', 'PARAM_MEANINGS', 'PARAM_FILTER_RESPONSES'];
 /** Their C spellings: each item's OMX_ stem, and OMX_DECLARED_RATES, omx-contract's render of STANDARD_SAMPLE_RATES. */
 const STANDARD_C = new RegExp(`^OMX_(${[...STANDARD_ITEMS, 'DECLARED_RATE'].join('|')})(_[A-Z0-9_]*)?S?$|_H$`);
 /** The derivations that are arithmetic on this library's own values, not a kernel's closed form. */

@@ -34,6 +34,8 @@
 #               to that render (tools/definitions-render.sh)
 #   make contract-proof OMX_CONTRACT=<checkout>  the kernel completeness over data/ and recipes/answers/
 #               (tools/contract-proof.mjs)
+#   make filter-responses-check OMX_CONTRACT=<checkout>  the EQ's section kinds are omx-contract's PARAM_FILTER_RESPONSES,
+#               typed nowhere here, and its two sabotages (tools/filter-responses-check.mjs)
 #   make contract-tests OMX_CONTRACT=<checkout>  the declaration tests (test/contract/): each fact of data/ they hold,
 #               over this live data/ with omx-contract's reader and renderer
 #   make magnitude-sabotage  the magnitude arms fail against a sabotaged evaluator
@@ -203,7 +205,7 @@ VERSION    := $(shell sed -n 's/^\#define OMXDSP_VERSION_\(MAJOR\|MINOR\|PATCH\)
 
 
 
-.PHONY: curve-vectors-wasm wasm wasm-check wasm-sabotage install-wasm npm-stage wasm-loader-check wasm-loader-sabotage fuzz fuzz-run fuzz-sabotage fuzz-records fuzz-coverage fuzz-corpus all lib test lint docs docs-check docs-baseline docs-sabotage clean contract-dir definitions definitions-check contract-proof contract-tests units-check test-tsan suite negative consumer gen-once perturb fdelay-sabotage doppler-sabotage onepole-sabotage threads threads-sabotage checks cost-prel test-fx test-analysis install version golden-write flavours bench-mixmatrix bench-gate bench-drive bench-flanger check-log10f strip-input-identity analysis-engine-identity test-mix mix-engine-identity test-engine-kernels engine-kernels-identity magnitude-sabotage eq-sabotage curve-golden curve-sabotage curve-json-sabotage curve-vectors curve-vectors-write curve-vectors-sabotage meter-view-golden rta-bands-golden meter-view-sabotage rta-bands-sabotage geq-true-sabotage delay-taps-sabotage align-fdelay-sabotage pitch-rates-sabotage instance-rates-sabotage bandwidth-q-table bandwidth-q-sabotage eq-default-bands eq-defaults-table public-sources private-refs deps-check cost-deesser note-map-sabotage exports copy-check eq-q-range-sabotage rtsan
+.PHONY: curve-vectors-wasm wasm wasm-check wasm-sabotage install-wasm npm-stage wasm-loader-check wasm-loader-sabotage fuzz fuzz-run fuzz-sabotage fuzz-records fuzz-coverage fuzz-corpus all lib test lint docs docs-check docs-baseline docs-sabotage clean contract-dir definitions definitions-check contract-proof contract-tests units-check filter-responses-check test-tsan suite negative consumer gen-once perturb fdelay-sabotage doppler-sabotage onepole-sabotage threads threads-sabotage checks cost-prel test-fx test-analysis install version golden-write flavours bench-mixmatrix bench-gate bench-drive bench-flanger check-log10f strip-input-identity analysis-engine-identity test-mix mix-engine-identity test-engine-kernels engine-kernels-identity magnitude-sabotage eq-sabotage curve-golden curve-sabotage curve-json-sabotage curve-vectors curve-vectors-write curve-vectors-sabotage meter-view-golden rta-bands-golden meter-view-sabotage rta-bands-sabotage geq-true-sabotage delay-taps-sabotage align-fdelay-sabotage pitch-rates-sabotage instance-rates-sabotage bandwidth-q-table bandwidth-q-sabotage eq-default-bands eq-defaults-table public-sources private-refs deps-check cost-deesser note-map-sabotage exports copy-check eq-q-range-sabotage rtsan
 
 all: lib
 
@@ -594,6 +596,23 @@ units-check:
 	grep -q '"unit": "x"' $(BUILD)/units-sabotage/rotary.json
 	node $(OMX_CONTRACT)/bin/omx-contract.mjs units --check $(BUILD)/units-sabotage > $(BUILD)/units-sabotage/out 2>&1; \
 	  rc=$$?; cat $(BUILD)/units-sabotage/out; test $$rc = 1 && grep -q 'rotary.json:[0-9]*: .*"x" is no PARAM_UNITS standard id' $(BUILD)/units-sabotage/out
+
+# The EQ design's section kinds have one home, omx-contract's PARAM_FILTER_RESPONSES (omx-dsp#170): no item of data/
+# types its words again, and enum omx_eq_kind takes every code from the item's render (tools/filter-responses-check.mjs).
+# Two sabotages, each wanted refused by name: a set holding the words planted in a scratch copy of data/ (BIQUAD_KINDS
+# put back), and a kind set to a number in a scratch copy of the header.
+filter-responses-check:
+	@test -n "$(OMX_CONTRACT)" || { echo "$@: name an omx-contract checkout: make $@ OMX_CONTRACT=<dir>" >&2; exit 2; }
+	node tools/filter-responses-check.mjs $(OMX_CONTRACT)
+	rm -rf $(BUILD)/filter-responses-sabotage && mkdir -p $(BUILD)/filter-responses-sabotage
+	cp -r data $(BUILD)/filter-responses-sabotage/data
+	node -e 'const fs = require("fs"); const w = JSON.parse(fs.readFileSync(process.argv[1] + "/contract.d/param/param.json", "utf8")).components.schemas.PARAM_FILTER_RESPONSES.oneOf.map((x) => x.const); fs.writeFileSync(process.argv[2], JSON.stringify({ $$schema: "../../schema/omx-contract.schema.json", BIQUAD_KINDS: { kind: "set", doc: "planted", ids: w } }, null, 2) + "\n")' $(OMX_CONTRACT) $(BUILD)/filter-responses-sabotage/data/primitives/biquad-kinds.json
+	node tools/filter-responses-check.mjs $(OMX_CONTRACT) $(BUILD)/filter-responses-sabotage/data include/omxdsp/omx_eq_design.h > $(BUILD)/filter-responses-sabotage/data.out 2>&1; \
+	  rc=$$?; cat $(BUILD)/filter-responses-sabotage/data.out; test $$rc = 1 && grep -q 'biquad-kinds.json#/BIQUAD_KINDS/ids: holds every word of PARAM_FILTER_RESPONSES again' $(BUILD)/filter-responses-sabotage/data.out
+	sed 's/^  OMX_EQ_NOTCH = OMX_FILTER_RESPONSE_NOTCH,/  OMX_EQ_NOTCH = 5,/' include/omxdsp/omx_eq_design.h > $(BUILD)/filter-responses-sabotage/omx_eq_design.h
+	grep -q '^  OMX_EQ_NOTCH = 5,' $(BUILD)/filter-responses-sabotage/omx_eq_design.h
+	node tools/filter-responses-check.mjs $(OMX_CONTRACT) data $(BUILD)/filter-responses-sabotage/omx_eq_design.h > $(BUILD)/filter-responses-sabotage/header.out 2>&1; \
+	  rc=$$?; cat $(BUILD)/filter-responses-sabotage/header.out; test $$rc = 1 && grep -q 'OMX_EQ_NOTCH = 5: a kind takes its code from omx-contract' $(BUILD)/filter-responses-sabotage/header.out
 
 # The exports file a consumer's copy check reads, generated from the headers and the compiled unit.
 EXPORTS = $(BUILD)/omx-dsp-exports.json
