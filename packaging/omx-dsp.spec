@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2026 Pau Aliagas <linuxnow@gmail.com>
 Name: omx-dsp
-Version: 0.34.1
+Version: 0.34.2
 Release: 1%{?dist}
 License: GPL-3.0-or-later
 Summary: The audio toolbox of the OpenMixer console, as a real-time-safe C library
@@ -181,6 +181,13 @@ npm_config_engine_strict=true %make_install PREFIX=%{_prefix} LIBDIR=%{_libdir} 
 %{_datadir}/omx-dsp/catalogs/
 
 %changelog
+* Wed Nov 25 2026 Pau Aliagas <linuxnow@gmail.com> - 0.34.2-1
+- The contract directory has no schema-major level (#178): omx-dsp-contract
+  installs <contractdir>/omx-dsp/, no longer <contractdir>/3/omx-dsp/, by
+  the installer of omx-contract 0.23.0, and nothing reads a schema major.
+- The CI cells follow the check matrix (Fedora 45), with no change to what
+  the packages hold.
+
 * Tue Nov 24 2026 Pau Aliagas <linuxnow@gmail.com> - 0.34.1-1
 - ROTARY_ACCEL_RANGE travels in coef, the standard unit omx-contract names for
   a plain multiplier, no longer "x" (#134).

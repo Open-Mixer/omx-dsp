@@ -1,3 +1,13 @@
+omx-dsp (0.34.2) unstable; urgency=medium
+
+  * The contract directory has no schema-major level (#178): omx-dsp-contract
+    installs <contractdir>/omx-dsp/, no longer <contractdir>/3/omx-dsp/, by
+    the installer of omx-contract 0.23.0, and nothing reads a schema major.
+  * The CI cells follow the check matrix (Fedora 45), with no change to what
+    the packages hold.
+
+ -- Pau Aliagas <linuxnow@gmail.com>  Wed, 25 Nov 2026 23:05:00 +0100
+
 omx-dsp (0.34.1) unstable; urgency=medium
 
   * ROTARY_ACCEL_RANGE travels in coef, the standard unit omx-contract names for
