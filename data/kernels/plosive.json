@@ -1,8 +1,5 @@
 {
   "$schema": "../../schema/omx-contract.schema.json",
-  "requires": {
-    "omx-contract-schema": ">= 3.1.0"
-  },
   "controls": [
     {
       "name": "consonantDb",
@@ -180,7 +177,7 @@
         "impl": "include/omxdsp/fx/omx_plosive_instance.h#OMX_PLOSIVE_INSTANCE_EDGE"
       },
       "doc": "The consonant band's top edge is held under this share of the rate, the de-esser's rule: the band is redesigned from its held edges, so the clamp is never silent.",
-      "unit": "",
+      "unit": "none",
       "value": 0.45
     }
   }

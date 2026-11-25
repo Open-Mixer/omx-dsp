@@ -37,22 +37,31 @@
 #include <omxdsp/fx/omx_instance_io.h>
 #include <omxdsp/omx_param.h>
 
+/** @brief Audio legs in and out: TWO, a stereo pair. */
 #define OMX_TREMOLO_INSTANCE_CHANNELS 2
+/** @brief The latency the instance reports to its host, frames: none. */
 #define OMX_TREMOLO_INSTANCE_LATENCY_FRAMES 0.0f
 
 /** Port defaults: the declaration's (TREMOLO_*_RANGE.default), the mode the stage comes up at. */
 #define OMX_TREMOLO_INSTANCE_MODE_DEFAULT OMX_TREMOLO_MODE_TREMOLO
+/** @brief The rateHz port's default, Hz (TREMOLO_RATE_RANGE.default). */
 #define OMX_TREMOLO_INSTANCE_RATE_HZ_DEFAULT ((float)OMX_TREMOLO_RATE_RANGE_DEFAULT)
+/** @brief The depth port's default, percent (TREMOLO_DEPTH_RANGE.default). */
 #define OMX_TREMOLO_INSTANCE_DEPTH_DEFAULT ((float)OMX_TREMOLO_DEPTH_RANGE_DEFAULT)
+/** @brief The mix port's default, percent (TREMOLO_MIX_RANGE.default). */
 #define OMX_TREMOLO_INSTANCE_MIX_DEFAULT ((float)OMX_TREMOLO_MIX_RANGE_DEFAULT)
 
 /** One instance: the atom the host's ports resolve to and the oscillator it drives. */
 typedef struct {
+  /** The sample rate init bound the instance to, Hz. */
   float sr;
+  /** The kernel's controls as resolve() last resolved them; run() hands them to the kernel's process. */
   struct omx_tremolo atom;
+  /** The kernel's running state, carried from block to block and handed to its process with the atom. */
   struct omx_tremolo_state state;
   /** The previous cycle's engaged flag, so a bypass->engaged edge can restart the oscillator. */
   int was_engaged;
+  /** Non-zero once init bound the instance to a usable rate; while zero, resolve() does nothing and run() leaves the output as the input. */
   int ready;
 } OmxTremoloInstance;
 
@@ -76,15 +85,26 @@ static inline int omx_tremolo_instance_init(OmxTremoloInstance *s, float sr) {
   return 1;
 }
 
+#define OMX_CONTRACT_STAGE "tremolo/instance-resolve"
 /**
  * Resolve the host's control-port values into the kernel's atom for one cycle. `bypass` non-zero
  * disables the atom. The arguments are the kernel's contract controls, in their declared order and
  * user units: `rate_hz` (Hz), `depth` and `mix` (percent) are clamped into their declared travels,
  * a non-finite word reading as the declared default; `mode` is the TREMOLO_MODES index, an
  * `enum omx_tremolo_mode` member (any other value reads as the tremolo).
+ * @param s The instance; null or not ready leaves it as it is.
+ * @param bypass Non-zero makes run() the identity.
+ * @param rate_hz rateHz, 0.1 to 20 Hz, default 4: The tremolo's LFO rate (the catalogue row's 0.1..20 Hz); 4 Hz is the
+ *        classic amp tremolo.
+ * @param depth depth, 0 to 100 \%, default 50: The tremolo's modulation depth: the gain's trough is `1 − mix·depth`.
+ * @param mix mix, 0 to 100 \%, default 100: The tremolo's wet/dry, as an instance of DRIVE_MIX_RANGE: 100 \%.
+ * @param mode mode, the place in tremolo, pan (0 to 1), default tremolo: What the tremolo's one oscillator modulates,
+ *        in the order of the integer the kernel reads: the level of both legs in phase (tremolo), or the balance law's
+ *        position with the legs in opposition (pan).
+ * @post `atom-meets-the-kernel-preconditions`: the depth and the mix inside [0, 1], the oscillator's increment inside
+ *       [0, 1), and the mode tremolo or pan.
  * @thread audio
  */
-#define OMX_CONTRACT_STAGE "tremolo/instance-resolve"
 static inline void omx_tremolo_instance_resolve(OmxTremoloInstance *s, int bypass, float rate_hz,
                                                 float depth, float mix, int mode) {
   if (!s || !s->ready) return;

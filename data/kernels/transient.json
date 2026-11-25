@@ -1,8 +1,5 @@
 {
   "$schema": "../../schema/omx-contract.schema.json",
-  "requires": {
-    "omx-contract-schema": ">= 3.1.0"
-  },
   "controls": [
     {
       "name": "attackDb",
@@ -164,7 +161,7 @@
         "impl": "include/omxdsp/fx/omx_transient.h#da"
       },
       "doc": "The detector floor, linear (−100 dBFS): below it both envelopes read the floor and the stage is unity.",
-      "unit": "",
+      "unit": "none",
       "value": 0.00001
     }
   }

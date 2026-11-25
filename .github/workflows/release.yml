@@ -16,12 +16,10 @@ name: release
 on:
   push:
     tags: ['v*']
+    # a merge to devel builds the real package and publishes it to staging (Open-Mixer/.github#289)
+    branches: [devel]
   workflow_dispatch:
     inputs:
-      publish:
-        description: 'Sign and publish; only a run on a tag publishes'
-        type: boolean
-        default: false
       arm:
         description: 'Build the arm64 DEBs too (a dispatched release needs them, as a tag push does); no Fedora aarch64 RPM is built'
         type: boolean
@@ -32,9 +30,6 @@ on:
         default: false
   workflow_call:
     inputs:
-      publish:
-        type: boolean
-        default: false
       runner:
         type: string
         default: 'ubuntu-latest'
@@ -59,7 +54,7 @@ jobs:
       staged: ${{ inputs.staged == true }}
       package-name: omx-dsp
       binary-names: omx-dsp-devel omx-rt-gate
-      publish: ${{ github.event_name == 'push' || inputs.publish == true }}
+      publish: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') }}
       needs-mod-host: false
       runner: ${{ inputs.runner || 'ubuntu-latest' }}
       # x86_64 only: the owner ruling of 2026-11-19 stops building Fedora 45 aarch64 (the deb arm64 cells stay)
@@ -74,7 +69,7 @@ jobs:
       staged: ${{ inputs.staged == true }}
       package-name: omx-dsp
       binary-names: libomxdsp-dev omx-rt-gate omx-dsp-contract
-      publish: ${{ github.event_name == 'push' || inputs.publish == true }}
+      publish: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') }}
       dependencies: ''
       runner: ${{ inputs.runner || 'ubuntu-latest' }}
       arch-matrix: ${{ (github.event_name != 'push' && inputs.arm == false) && '["amd64"]' || '["amd64", "arm64"]' }}
@@ -102,14 +97,14 @@ jobs:
 
       # the dry run proves the build and keeps the tarball for inspection; only a tag publishes it
       - name: Keep the tarball (dry run)
-        if: ${{ github.ref_type != 'tag' || (github.event_name != 'push' && inputs.publish != true) }}
+        if: ${{ github.ref_type != 'tag' || github.event_name != 'push' }}
         uses: actions/upload-artifact@v4
         with:
           name: omx-dsp-api-docs
           path: omx-dsp-api-docs-*.tar.gz
 
       - name: Attach to the release
-        if: ${{ github.ref_type == 'tag' && (github.event_name == 'push' || inputs.publish == true) }}
+        if: ${{ github.ref_type == 'tag' && (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')) }}
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh release upload "$GITHUB_REF_NAME" omx-dsp-api-docs-*.tar.gz --clobber

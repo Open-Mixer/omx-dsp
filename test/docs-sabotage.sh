@@ -10,8 +10,9 @@
 #   documented  — the same function with its doc block: green, no row (a documented function warns nothing);
 #   listed      — the undocumented function's row in the baseline, in the base too: green, the baseline is
 #                 the one allowance;
-#   swap        — one baseline row replaced by the function's row: red, naming the dropped row's warning as
-#                 not listed (the baseline is compared as a set, never as a count);
+#   swap        — the listed copy, its probe row replaced by a row nothing warns (the same count): red, naming
+#                 the dropped probe row's warning as not listed (the baseline is compared as a set, never as a
+#                 count); built on the probe, so it holds over any tree baseline, the empty one included;
 #   nonl        — the listed baseline without its last newline: green, the same set;
 #   grew        — the function's row added to the baseline copy, the tree's baseline as the base: red,
 #                 the baseline only shrinks;
@@ -100,10 +101,14 @@ git -C "$OUT/listed" add -A && git -C "$OUT/listed" -c user.name=sabotage -c use
 check listed green
 
 copy swap
-dropped=$(head -1 "$PKG/docs/doxygen-baseline.txt")
-{ tail -n +2 "$PKG/docs/doxygen-baseline.txt"; probe_row; } | LC_ALL=C sort -u > "$OUT/swap/docs/doxygen-baseline.txt"
+probe_row | add_rows "$OUT/swap"
+git -C "$OUT/swap" add -A && git -C "$OUT/swap" -c user.name=sabotage -c user.email=sabotage@localhost commit -q -m listed && base_of "$OUT/swap"
+before=$(wc -l < "$OUT/swap/docs/doxygen-baseline.txt")
+sed -i "s/$PROBE/omx_docs_never_declared/g" "$OUT/swap/docs/doxygen-baseline.txt"
+LC_ALL=C sort -u -o "$OUT/swap/docs/doxygen-baseline.txt" "$OUT/swap/docs/doxygen-baseline.txt"
+[ "$(wc -l < "$OUT/swap/docs/doxygen-baseline.txt")" = "$before" ] || { echo "docs-sabotage.sh: FAIL — the swap changed the baseline's count"; exit 1; }
 check swap red
-names swap "$(printf '%s' "$dropped" | cut -c1-60)" "not in docs/doxygen-baseline.txt"
+names swap "$PROBE" "not in docs/doxygen-baseline.txt"
 
 copy nonl
 probe_row | add_rows "$OUT/nonl"

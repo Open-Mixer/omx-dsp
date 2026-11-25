@@ -43,6 +43,16 @@ static void arm_curve(void) {
     for (uint32_t i = 0; i < tables[t].n; i++)
       ok(omx_curve_word(tables[t].w, tables[t].n, tables[t].w[i]) == (int)i, "a wire word reads back to its value", t, i);
   ok(omx_curve_word(OMX_CURVE_SHAPE_WORDS, OMX_CURVE_SHAPES_COUNT, "-") == OMX_CURVE_SHAPES_UNSHAPED, "- is the unshaped band", 0, 0);
+  /* The indexed band roles (#40): exactly the roles up to band_on carry OMX_CURVE_ROLE_PREFIXES_BAND, and the
+   * predicate a consumer calls answers on the word, never on a prefix of its own */
+  for (uint32_t i = 0; i < OMX_CURVE_ROLES_COUNT; i++) {
+    const int band = i <= OMX_CURVE_ROLES_BAND_ON;
+    ok(omx_curve_role_is_band(OMX_CURVE_ROLE_WORDS[i]) == band &&
+           (strncmp(OMX_CURVE_ROLE_WORDS[i], OMX_CURVE_ROLE_PREFIXES_BAND, strlen(OMX_CURVE_ROLE_PREFIXES_BAND)) == 0) == band,
+       "a role word is a band's exactly when it carries the band prefix", i, band);
+  }
+  ok(!omx_curve_role_is_band(NULL) && !omx_curve_role_is_band("band") && omx_curve_role_is_band("band_freq"),
+     "no word, or the bare stem, is no band role", 0, 0);
   ok(omx_curve_word(OMX_CURVE_ROLE_WORDS, OMX_CURVE_ROLES_COUNT, "attack") == -1 &&
      omx_curve_word(OMX_CURVE_ROLE_WORDS, OMX_CURVE_ROLES_COUNT, NULL) == -1, "a word the table does not hold is -1", 0, 0);
   ok(omx_curve_word(OMX_CURVE_ROLE_WORDS, OMX_CURVE_ROLES_COUNT, "knee_start") == OMX_CURVE_ROLES_KNEE_START &&
@@ -248,6 +258,20 @@ static void arm_curve(void) {
   }
   const struct omx_curve_term slope18[] = {CT(HPF_FREQ, 0, 80.0, HZ, CT_NS), CT(HPF_SLOPE, 0, 18.0, DB, CT_NS)};
   ok(curve_code_of(&CURVE_GOLDEN_EQ, slope18, 2u) == OMX_CURVE_KIND_UNKNOWN, "an 18 dB/oct head filter: kind unknown", 0, 0);
+  {
+    /* a frequency that is not positive draws nothing that is there (#90: an HPF at -100 Hz answered a flat 0 dB
+     * line): every frequency role of an EQ is refused at or below 0 Hz, as the extents are, a head filter switched
+     * off included */
+    const struct omx_curve_term neg_hpf[] = {CT(HPF_FREQ, 0, -100.0, HZ, CT_NS), CT(HPF_SLOPE, 0, 12.0, DB, CT_NS)};
+    const struct omx_curve_term zero_lpf[] = {CT(LPF_FREQ, 0, 0.0, KHZ, CT_NS), CT(LPF_SLOPE, 0, 24.0, DB, CT_NS),
+                                              CT(LPF_ON, 0, 0.0, NONE, CT_NS)};
+    const struct omx_curve_term neg_band[] = {CT(BAND_FREQ, 0, -1000.0, HZ, OMX_CURVE_SHAPES_BELL), CT(BAND_GAIN, 0, 6.0, DB, CT_NS)};
+    const struct omx_curve_term tiny_hpf[] = {CT(HPF_FREQ, 0, 1e-3, HZ, CT_NS), CT(HPF_SLOPE, 0, 12.0, DB, CT_NS)};
+    ok(curve_code_of(&CURVE_GOLDEN_EQ, neg_hpf, 2u) == OMX_CURVE_POINTS_RANGE, "an HPF at -100 Hz: points range", 0, 0);
+    ok(curve_code_of(&CURVE_GOLDEN_EQ, zero_lpf, 3u) == OMX_CURVE_POINTS_RANGE, "an LPF at 0 kHz, off: points range", 0, 0);
+    ok(curve_code_of(&CURVE_GOLDEN_EQ, neg_band, 2u) == OMX_CURVE_POINTS_RANGE, "a band at -1000 Hz: points range", 0, 0);
+    ok(curve_code_of(&CURVE_GOLDEN_EQ, tiny_hpf, 2u) == OMX_CURVE_OK, "a positive corner, however low, is drawn", 0, 0);
+  }
   const struct omx_curve_term off[] = {CT(BAND_TYPE, 0, 0.0, NONE, OMX_CURVE_SHAPES_OFF), CT(BAND_FREQ, 0, 1000.0, HZ, CT_NS)};
   ok(curve_code_of(&CURVE_GOLDEN_EQ, off, 2u) == OMX_CURVE_OK, "an off band needs no Q and is not drawn", 0, 0);
 

@@ -78,7 +78,7 @@
 /** Deviation below which a partial is expression, not resonance. Declared as `HRP_EXCESS_THRESHOLD_DB`. */
 /* OMX_HRP_EXCESS_THRESHOLD_DB: read from omxdsp_definitions.h (the declaration's own door). */
 
-/** Two candidates closer than this are the same spectral REGION and one of them is discarded
+/** @brief Two candidates closer than this are the same spectral REGION and one of them is discarded
  * (§30). Declared as `HRP_COLLISION_CENTS`.
  *
  * NOT `hrp_attribute.h`'s `OMX_HRP_ATTRIBUTION_CENTS` (the declared 60), and the name is what keeps the two
@@ -86,7 +86,7 @@
  * cannot tell which voice owns the energy, so it is the analyser's resolution and follows the
  * ±1 bin `omx_hrp_bin_peak` reads over. This one is §30's SELECTION window: how close two
  * CORRECTIONS must sit before planting both merely deepens one bell, so it follows
- * {@link OMX_HRP_BAND_Q} — a Q-5 bell's -3 dB half-width is ~170 cents, and a semitone apart
+ * OMX_HRP_BAND_Q — a Q-5 bell's -3 dB half-width is ~170 cents, and a semitone apart
  * they overlap over most of their travel. Different laws, different derivations, different
  * numbers; they shared a name for one commit and the build now refuses that (-Werror on the
  * two binaries that include both headers). */
@@ -103,13 +103,13 @@
 /** The channel's band budget across ALL voices (§29). Declared as `HRP_DEFAULT_MAX_AUTO_BANDS`. */
 /* OMX_HRP_DEFAULT_MAX_AUTO_BANDS: read from omxdsp_definitions.h (the declaration's own door). */
 
-/** The corrector's default strength, 0..1. Twin of `makeHrpChannelState().amount`. */
+/** @brief The corrector's default strength, 0..1. Twin of `makeHrpChannelState().amount`. */
 #define OMX_HRP_DEFAULT_AMOUNT OMX_HRP_AMOUNT_RANGE_DEFAULT
 
 /* ---- §16: the instrument family, as a broad prior ------------------------------------- */
 
 /**
- * The console's instrument families, in `INSTRUMENT_FAMILIES` order — so a family's INDEX is
+ * @brief The console's instrument families, in `INSTRUMENT_FAMILIES` order — so a family's INDEX is
  * what crosses a wire, a port or a process boundary, and the two lists cannot silently
  * disagree about which integer means `guitar`.
  *
@@ -133,11 +133,11 @@ typedef enum {
   OMX_HRP_FAMILY_PLAYBACK = OMX_INSTRUMENT_FAMILIES_PLAYBACK
 } OmxHrpFamily;
 
-/** How many families the vocabulary holds: INSTRUMENT_FAMILIES' count. */
+/** @brief How many families the vocabulary holds: INSTRUMENT_FAMILIES' count. */
 #define OMX_HRP_FAMILY_COUNT ((int)OMX_INSTRUMENT_FAMILIES_COUNT)
 
 /**
- * The search a family implies — `HRP_FAMILY_SEARCH`, transcribed. Every reason for every number
+ * @brief The search a family implies — `HRP_FAMILY_SEARCH`, transcribed. Every reason for every number
  * is written at the TypeScript table and is not repeated here; what IS repeated is the one rule
  * that a transcription could plausibly get wrong.
  *
@@ -150,6 +150,10 @@ typedef enum {
  * and a family prior that went deaf on its own instrument would be worse than no prior at all.
  *
  * An unknown or {@link OMX_HRP_FAMILY_NONE} family returns the console's own defaults unchanged.
+ * @param family An OmxHrpFamily index; OMX_HRP_FAMILY_NONE (-1) or any value outside
+ *               0..OMX_HRP_FAMILY_COUNT-1 is no family.
+ * @return omx_hrp_config_default() with `max_voices`, `f0_min_hz` and `f0_max_hz` narrowed to the family and
+ *         `min_confidence` from the full OMX_HRP_MAX_VOICES budget; the defaults unchanged for no family.
  * @thread worker
  */
 static inline OmxHrpConfig omx_hrp_family_search(int family) {
@@ -217,7 +221,7 @@ static inline OmxHrpConfig omx_hrp_family_search(int family) {
 /* ---- the one curve HRP designs -------------------------------------------------------- */
 
 /**
- * The MATCHED PEAKING section, normalised to the `{b0,b1,b2,a1,a2}` tuple `omx_biquad`
+ * @brief The MATCHED PEAKING section, normalised to the `{b0,b1,b2,a1,a2}` tuple `omx_biquad`
  * consumes — the C twin of `@freemixer/core`'s `rbjCoeffs('peaking', …)`.
  *
  * MATCHED, NOT BILINEAR. The console's graph runs at 96 kHz and
@@ -245,6 +249,11 @@ static inline OmxHrpConfig omx_hrp_family_search(int family) {
  * only on success; a NULL out or a non-positive rate leaves the caller's memory alone.
  *
  * Held equal to `rbjCoeffs` by the corpus in `hrp_peaking_corpus.h`, which BOTH sides check.
+ * @param freq_hz The bell's centre, Hz; held at or under 0.999 of Nyquist by omx_matched_w0().
+ * @param q The bell's Q; a non-positive or NaN Q becomes 1e-3.
+ * @param gain_db The bell's gain, dB; negative cuts, 0 gives the exact identity section.
+ * @param rate The sample rate, Hz; 0 writes nothing.
+ * @param out The section's `{b0,b1,b2,a1,a2}`, written on success; NULL writes nothing.
  * @twin rbjCoeffs
  * @thread worker
  */
@@ -268,24 +277,35 @@ static inline void omx_hrp_peaking_coeffs(float freq_hz, float q, float gain_db,
  * true because it is the same code, not because two files were kept in step.
  */
 
-/** The cascade one shell applies, plus its per-section state. One instance per mono stream. */
+/** @brief The cascade one shell applies, plus its per-section state. One instance per mono stream. */
 typedef struct {
+  /** Sections in use, 0..OMX_EQ_MAX_BANDS: zeroed by omx_hrp_cascade_init(), raised by omx_hrp_cascade_add(). */
   uint32_t count;
+  /** Each section's `{b0,b1,b2,a1,a2}`, copied in by omx_hrp_cascade_add(); rows below `count` are in use. */
   float coeffs[OMX_EQ_MAX_BANDS][5];
+  /** Per section: 1 runs it, 0 parks it (skipped by omx_biquad_cascade() and omx_hrp_cascade_live()). */
   uint8_t enabled[OMX_EQ_MAX_BANDS];
+  /** Per section: the direct-form-I history `{x1, x2, y1, y2}` omx_biquad_cascade() reads and writes;
+   *  zeroed when the section is added. */
   float state[OMX_EQ_MAX_BANDS][4];
 } OmxHrpCascade;
 
-/** An empty cascade: no bands, no state. Running audio through it is a copy.
+/** @brief An empty cascade: no bands, no state. Running audio through it is a copy.
+ * @param c The cascade to clear; NULL is a no-op.
  * @thread audio */
 static inline void omx_hrp_cascade_init(OmxHrpCascade *c) {
   if (c) memset(c, 0, sizeof(*c));
 }
 
 /**
- * Append one designed section. Returns 1 when it was taken, 0 when the cascade is full — a
+ * @brief Append one designed section. Returns 1 when it was taken, 0 when the cascade is full — a
  * refusal, never a silent drop past the end of the array, because a band that did not reach
  * the audio would otherwise show in the report and not in the sound.
+ * @param c The cascade; NULL refuses.
+ * @param coeffs The section's `{b0,b1,b2,a1,a2}`, copied; NULL refuses.
+ * @param enabled Nonzero adds the section running, 0 adds it parked.
+ * @return 1 when the section was appended (its state zeroed), 0 when refused: a NULL argument or
+ *         `count` already at OMX_EQ_MAX_BANDS.
  * @thread worker
  */
 static inline int omx_hrp_cascade_add(OmxHrpCascade *c, const float coeffs[5], int enabled) {
@@ -298,7 +318,9 @@ static inline int omx_hrp_cascade_add(OmxHrpCascade *c, const float coeffs[5], i
   return 1;
 }
 
-/** Sections that will actually run — a parked (identity) band costs nothing and is skipped.
+/** @brief Sections that will actually run — a parked (identity) band costs nothing and is skipped.
+ * @param c The cascade; NULL counts 0.
+ * @return How many of the first `count` sections are enabled.
  * @thread audio */
 static inline uint32_t omx_hrp_cascade_live(const OmxHrpCascade *c) {
   if (!c) return 0;
@@ -308,8 +330,10 @@ static inline uint32_t omx_hrp_cascade_live(const OmxHrpCascade *c) {
   return live;
 }
 
+#undef OMX_CONTRACT_STAGE
+#define OMX_CONTRACT_STAGE "hrp/cascade"
 /**
- * Run `n` frames from `in` into `out`, advancing the cascade's state.
+ * @brief Run `n` frames from `in` into `out`, advancing the cascade's state.
  *
  * BIT-PRESERVING BYPASS. With no live section the frames are copied and nothing else happens —
  * `out` is `in`, byte for byte. Offline that is what makes "the take keeps both files" honest;
@@ -320,10 +344,15 @@ static inline uint32_t omx_hrp_cascade_live(const OmxHrpCascade *c) {
  * `in` and `out` may be the same buffer. State persists across calls, so a shell may stream in
  * blocks of any size — a file in 64 k chunks, a host in 64-frame quanta — and get the same
  * samples a single call would produce.
+ * @param c The cascade; NULL, or no live section, is the bypass.
+ * @param in The input, `n` frames; NULL does nothing.
+ * @param out The output, `n` frames; may be `in`; NULL does nothing.
+ * @param n Frames; 0 does nothing.
+ * @pre `in` holds `n` finite samples ("finite-in").
+ * @post With no live section `out` equals `in` byte for byte ("bypass-bit-identical"); otherwise
+ *       `out` is finite ("finite-out").
  * @thread audio
  */
-#undef OMX_CONTRACT_STAGE
-#define OMX_CONTRACT_STAGE "hrp/cascade"
 static inline void omx_hrp_cascade_apply(OmxHrpCascade *c, const float *in, float *out,
                                          uint32_t n) {
   /* CONTRACT (omx_contract.h). This runs under a FOREIGN host (hrp_lv2.c) — the only thing
@@ -347,16 +376,20 @@ static inline void omx_hrp_cascade_apply(OmxHrpCascade *c, const float *in, floa
 /* ---- §23 / §25: what a measured excess authorises ------------------------------------- */
 
 /**
- * The cut a positive deviation authorises, as a POSITIVE magnitude in dB — the C twin of
+ * @brief The cut a positive deviation authorises, as a POSITIVE magnitude in dB — the C twin of
  * `harmonicDeviationGainsDb`'s per-harmonic rule.
  *
- * Only the part ABOVE {@link OMX_HRP_EXCESS_THRESHOLD_DB} is a resonance; the threshold itself
+ * Only the part ABOVE OMX_HRP_EXCESS_THRESHOLD_DB is a resonance; the threshold itself
  * is the instrument's expression and is never corrected. The operator's `amount` scales what
- * remains, and {@link OMX_HRP_MAX_CUT_DB} caps it. A deviation at or below the threshold, a
+ * remains, and OMX_HRP_MAX_CUT_DB caps it. A deviation at or below the threshold, a
  * non-positive amount, or a non-finite input authorises NOTHING — zero, which callers read as
  * "no band", never as "a band of zero dB".
  *
  * §25 lives in the sign: this returns a magnitude to CUT. There is no path here that boosts.
+ * @param excess_db The partial's measured deviation, dB; only the part above OMX_HRP_EXCESS_THRESHOLD_DB counts.
+ * @param amount The operator's strength, scaling that part; not above 0 authorises nothing.
+ * @param max_cut_db The cap, positive dB; not above 0 authorises nothing.
+ * @return The cut as a positive magnitude, dB, at most `max_cut_db`; 0 when nothing is authorised.
  * @twin harmonicDeviationGainsDb
  * @thread worker
  */
@@ -369,7 +402,7 @@ static inline float omx_hrp_cut_db(float excess_db, float amount, float max_cut_
 }
 
 /**
- * §24's resonance score, the documented formula — the C twin of `hrpResonanceScore`:
+ * @brief §24's resonance score, the documented formula — the C twin of `hrpResonanceScore`:
  *
  *     score = cut_db × voice_confidence × partial_confidence
  *
@@ -377,6 +410,10 @@ static inline float omx_hrp_cut_db(float excess_db, float amount, float max_cut_
  * binary (§13 — only a stable voice produces a candidate at all) and an ambiguous attribution
  * is unmeasurable (§11/§54 — it never becomes a deviation, so it never scores). Any unusable
  * input scores zero, because a NaN weight would poison every comparison it met.
+ * @param cut_db The authorised cut, positive dB (omx_hrp_cut_db()).
+ * @param voice_confidence The voice's confidence.
+ * @param partial_confidence The partial's attribution confidence.
+ * @return The product of the three; 0 when any of them is not above 0 (NaN included).
  * @twin hrpResonanceScore
  * @thread worker
  */
@@ -390,7 +427,7 @@ static inline float omx_hrp_resonance_score(float cut_db, float voice_confidence
 
 /* ---- §29 / §30: the one globally ranked list ------------------------------------------ */
 
-/** One voice's one correctable partial, as a shell proposes it. */
+/** @brief One voice's one correctable partial, as a shell proposes it. */
 typedef struct {
   /** Where the partial actually sounded, Hz — the MEASURED fundamental's harmonic, never the
    *  tempered grid's, so the bell lands on what was measured. */
@@ -405,7 +442,12 @@ typedef struct {
   uint32_t harmonic;
 } OmxHrpCandidate;
 
-/** Strongest first; ties by voice id then harmonic, so the answer never depends on input order.
+/** @brief The ranking order: strongest first; ties by voice id then harmonic, so the answer never depends on
+ *  input order.
+ * @param a The first candidate.
+ * @param b The second candidate.
+ * @return 1 when `a` ranks before `b` (higher `score`; on a tie the lower `voice_id`, then the lower
+ *         `harmonic`), else 0.
  * @thread worker */
 static inline int omx_hrp_candidate_before(const OmxHrpCandidate *a, const OmxHrpCandidate *b) {
   if (a->score != b->score) return a->score > b->score;
@@ -413,7 +455,10 @@ static inline int omx_hrp_candidate_before(const OmxHrpCandidate *a, const OmxHr
   return a->harmonic < b->harmonic;
 }
 
-/** Musical distance between two frequencies, in cents.
+/** @brief Musical distance between two frequencies, in cents.
+ * @param a_hz One frequency, Hz.
+ * @param b_hz The other frequency, Hz.
+ * @return `|1200·log2(a_hz/b_hz)|`, cents; 0 when either frequency is not above 0.
  * @thread worker */
 static inline float omx_hrp_cents_apart(float a_hz, float b_hz) {
   if (!(a_hz > 0.0f) || !(b_hz > 0.0f)) return 0.0f;
@@ -422,7 +467,7 @@ static inline float omx_hrp_cents_apart(float a_hz, float b_hz) {
 }
 
 /**
- * The globally ranked, collision-free, budgeted correction list (§29 + §30), IN PLACE.
+ * @brief The globally ranked, collision-free, budgeted correction list (§29 + §30), IN PLACE.
  *
  * `cand[0 .. return-1]` are the kept candidates, strongest first; the rest of the array is
  * scratch the caller may ignore. Nothing is allocated and nothing is copied out, so this runs
@@ -446,6 +491,11 @@ static inline float omx_hrp_cents_apart(float a_hz, float b_hz) {
  * Insertion sort, not qsort: `n` is at most voices × harmonics (8 × 12 = 96) and the comparison
  * needs no function-pointer call. `qsort` would also drag libc's allocation-free-ness into a
  * question §4 already answered.
+ * @param cand The candidates, reordered in place.
+ * @param n How many entries `cand` holds.
+ * @param collision_cents A candidate closer than this, in cents, to one already kept is discarded.
+ * @param budget The most candidates kept (the channel's band budget).
+ * @return How many were kept, 0..`budget`; 0 for a NULL `cand`, `n` 0 or `budget` 0.
  * @thread worker
  */
 static inline uint32_t omx_hrp_select(OmxHrpCandidate *cand, uint32_t n, float collision_cents,

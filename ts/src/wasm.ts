@@ -11,7 +11,7 @@
  */
 import type { CurveAnswer, CurveRequest } from './curve-types.js';
 
-export { CURVE_WORDS } from './curve-types.js';
+export { CURVE_WORDS, curveRoleIsBand } from './curve-types.js';
 export type { CurveAnswer, CurveCode, CurveMark, CurvePoint, CurveRequest, CurveStem, CurveTerm } from './curve-types.js';
 
 /** The WASI functions the module imports and no call reaches. */

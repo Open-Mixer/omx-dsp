@@ -20,18 +20,30 @@
 #include "omx_contract.h"
 #include "omx_matched_pair.h"
 #include "omxdsp_definitions.h"
+#include <omxcontract/omx_vocabulary.h>
 
-/** @brief The biquad kinds `rbjSection` designs: BIQUAD_KINDS, the set the definitions declare. */
+/** @brief Expands one word of omx-contract's PARAM_FILTER_RESPONSES into its code, `OMX_FILTER_RESPONSE_<NAME>`. */
+#define OMX_EQ_FILTER_RESPONSE_CODE_(code, word, NAME) OMX_FILTER_RESPONSE_##NAME = (int)(code),
+
+/** @brief The codes of the filter responses, each its word's place in omx-contract's PARAM_FILTER_RESPONSES
+ *         (Open-Mixer/omx-contract#208): the item's render, OMX_PARAM_FILTER_RESPONSES(X) of
+ *         <omxcontract/omx_vocabulary.h>, expanded here. The list has that one home; omx-dsp types it nowhere
+ *         (tools/filter-responses-check.mjs, omx-dsp#170). */
+enum omx_filter_response { OMX_PARAM_FILTER_RESPONSES(OMX_EQ_FILTER_RESPONSE_CODE_) };
+#undef OMX_EQ_FILTER_RESPONSE_CODE_
+
+/** @brief The biquad kinds `rbjSection` designs: the filter responses of omx-contract's PARAM_FILTER_RESPONSES,
+ *         each kind's integer its response's code. */
 enum omx_eq_kind {
-  OMX_EQ_PEAKING = OMX_BIQUAD_KINDS_PEAKING, /**< A bell, matched pole and zero pairs. */
-  OMX_EQ_LOWSHELF = OMX_BIQUAD_KINDS_LOW_SHELF, /**< A low shelf, DC gain `A²`. */
-  OMX_EQ_HIGHSHELF = OMX_BIQUAD_KINDS_HIGH_SHELF, /**< A high shelf, DC gain unity. */
-  OMX_EQ_HIGHPASS = OMX_BIQUAD_KINDS_HIGHPASS, /**< The cookbook high-pass. */
-  OMX_EQ_LOWPASS = OMX_BIQUAD_KINDS_LOWPASS, /**< Matched poles, fitted numerator; bilinear poles near Nyquist. */
-  OMX_EQ_NOTCH = OMX_BIQUAD_KINDS_NOTCH, /**< Matched poles under the cookbook numerator, a total null. */
-  OMX_EQ_BANDPASS = OMX_BIQUAD_KINDS_BANDPASS, /**< The cookbook constant-0 dB-peak bandpass, cookbook poles: `½(1 − AP₂)`. */
-  OMX_EQ_ALLPASS1 = OMX_BIQUAD_KINDS_ALLPASS1, /**< A first-order allpass `(k + z⁻¹)/(1 + k z⁻¹)`, −90° at the corner. */
-  OMX_EQ_ALLPASS2 = OMX_BIQUAD_KINDS_ALLPASS2, /**< The second-order allpass, −180° at the corner: omx_allpass2_design(). */
+  OMX_EQ_PEAKING = OMX_FILTER_RESPONSE_PEAKING, /**< A bell, matched pole and zero pairs. */
+  OMX_EQ_LOWSHELF = OMX_FILTER_RESPONSE_LOW_SHELF, /**< A low shelf, DC gain `A²`. */
+  OMX_EQ_HIGHSHELF = OMX_FILTER_RESPONSE_HIGH_SHELF, /**< A high shelf, DC gain unity. */
+  OMX_EQ_HIGHPASS = OMX_FILTER_RESPONSE_HIGHPASS, /**< The cookbook high-pass. */
+  OMX_EQ_LOWPASS = OMX_FILTER_RESPONSE_LOWPASS, /**< Matched poles, fitted numerator; bilinear poles near Nyquist. */
+  OMX_EQ_NOTCH = OMX_FILTER_RESPONSE_NOTCH, /**< Matched poles under the cookbook numerator, a total null. */
+  OMX_EQ_BANDPASS = OMX_FILTER_RESPONSE_BANDPASS, /**< The cookbook constant-0 dB-peak bandpass, cookbook poles: `½(1 − AP₂)`. */
+  OMX_EQ_ALLPASS1 = OMX_FILTER_RESPONSE_ALLPASS1, /**< A first-order allpass `(k + z⁻¹)/(1 + k z⁻¹)`, −90° at the corner. */
+  OMX_EQ_ALLPASS2 = OMX_FILTER_RESPONSE_ALLPASS2, /**< The second-order allpass, −180° at the corner: omx_allpass2_design(). */
 };
 
 /** @brief The low-pass hand-over (omx-dsp#105): the corner band, as fractions of Nyquist, across

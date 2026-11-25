@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2026 Pau Aliagas <linuxnow@gmail.com>
-# Refuses a Debian CI job that picks its own runner or its own architectures: the jobs ci.yml test, deb, contract-floor
+# Refuses a Debian CI job that picks its own runner or its own architectures: the jobs ci.yml test, deb
 # and twins, and publish.yml publish, take their cell (image, architecture and runner) from the check-matrix action,
 # so each says `runs-on: ${{ matrix.cell.runner }}`, needs the checks job, reads its cell from that job's outputs and
 # writes no amd64, matrix include or ubuntu: image of its own: while the release matrix is quick the action renders no amd64 deb cell, and a job that
@@ -12,7 +12,7 @@ set -eu
 self=$0
 
 jobs_of() { # <file>: the jobs this check names in that file
-	case $1 in ci.yml) echo test deb contract-floor twins ;; publish.yml) echo publish ;; esac
+	case $1 in ci.yml) echo test deb twins ;; publish.yml) echo publish ;; esac
 }
 
 check() {
@@ -63,7 +63,7 @@ if [ "${1:-}" = "--self-test" ]; then
 		mkdir -p "$d/.github/workflows"
 		{
 			printf 'jobs:\n  checks:\n    steps:\n      - uses: %s\n        with:\n          %s\n' "$4" "$5"
-			for j in test deb contract-floor twins; do job "$j" "$2" "$3"; done
+			for j in test deb twins; do job "$j" "$2" "$3"; done
 		} > "$d/.github/workflows/ci.yml"
 		{
 			printf 'jobs:\n  checks:\n    steps:\n      - uses: %s\n        with:\n          %s\n' "$act" "$x86"

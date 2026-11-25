@@ -31,18 +31,27 @@
 #include <omxdsp/omx_width.h>
 #include <omxdsp/omxdsp_definitions.h>
 
+/** @brief Audio legs in and out: TWO, a stereo pair. */
 #define OMX_WIDTH_INSTANCE_CHANNELS 2
 
+/** @brief One instance: the omx_width design, its state and the controls it was designed from. */
 typedef struct {
+  /** The sample rate init bound the instance to, Hz. */
   float sr;
+  /** The width word's design as resolve() last made it (omx_width_design()); run() hands it to omx_width_process(). */
   struct omx_width p;
+  /** The width word's running state (its crossover and ring), carried from block to block and handed to
+   * omx_width_process() with the design; resolve() clears it on the engage edge, and otherwise the crossover when bass
+   * mono comes on and the ring when the pseudo-stereo mode or delay changes. */
   struct omx_width_state st;
   float wpct;  /**< widthPct as resolved */
   int pmode;   /**< pseudo as resolved, an OMX_WIDTH_PSEUDOS_* member */
   float pms;   /**< pseudoMs as resolved */
   int bmode;   /**< bassMono as resolved, an OMX_WIDTH_BASS_MONOS_* member */
   float bhz;   /**< bassMonoHz as resolved */
+  /** Non-zero while the effect is engaged, as the last resolve() set it; while zero, run() leaves the output as the input. */
   int enabled;
+  /** Non-zero once init bound the instance to a usable rate; while zero, resolve() does nothing and run() leaves the output as the input. */
   int ready;
 } OmxWidthInstance;
 
@@ -65,14 +74,27 @@ static inline int omx_width_instance_init(OmxWidthInstance *s, float sr) {
   return 1;
 }
 
+#define OMX_CONTRACT_STAGE "width/instance-resolve"
 /**
  * Resolve the host's control values for one cycle. `bypass` non-zero makes run() the identity. The
  * arguments are the width kernel's contract controls in their declared order: the width (percent),
  * the pseudo-stereo (a WIDTH_PSEUDOS index), its delay (ms), the bass mono (a WIDTH_BASS_MONOS index)
  * and its corner (Hz).
+ * @param s The instance; null or not ready leaves it as it is.
+ * @param bypass Non-zero makes run() the identity.
+ * @param width_pct widthPct, 0 to 200 \%, default 100: The stereo width, percent: the side (L - R)/2 times widthPct/100
+ *        over the mid (L + R)/2.
+ * @param pseudo pseudo, the place in off, comb, haas (0 to 2), default off: A pseudo-stereo for a mono source, in the
+ *        order of the integer the kernel reads: off; comb, the complementary comb L = M + g M[n - d], R = M - g M[n -
+ *        d] with g WIDTH_COMB_GAIN, whose mono sum is the mid exactly; haas, the right leg delayed by pseudoMs.
+ * @param pseudo_ms pseudoMs, 0 to OMX_WIDTH_MAX_DELAY_MS ms, default 12: The pseudo-stereo's delay d, ms, rounded to
+ *        the nearest sample.
+ * @param bass_mono bassMono, the place in off, on (0 to 1), default off: Whether the low end is summed to mono: on
+ *        splits the side with a Linkwitz-Riley crossover at bassMonoHz (omx_xover, LR4) and keeps its high band only,
+ *        the mid through the crossover's all-pass so the bands stay in phase.
+ * @param bass_mono_hz bassMonoHz, 20 to 300 Hz, default 120: Where the low end goes mono, Hz: the crossover's corner.
  * @thread audio
  */
-#define OMX_CONTRACT_STAGE "width/instance-resolve"
 static inline void omx_width_instance_resolve(OmxWidthInstance *s, int bypass, float width_pct, int pseudo, float pseudo_ms,
                                               int bass_mono, float bass_mono_hz) {
   if (!s || !s->ready) return;
@@ -84,24 +106,8 @@ static inline void omx_width_instance_resolve(OmxWidthInstance *s, int bypass, f
   s->bmode = bass_mono == OMX_WIDTH_BASS_MONOS_ON ? 1 : 0;
   s->bhz = omx_clamp_or(bass_mono_hz, (float)OMX_WIDTH_BASS_MONO_HZ_RANGE_MIN, (float)OMX_WIDTH_BASS_MONO_HZ_RANGE_MAX,
                         (float)OMX_WIDTH_BASS_MONO_HZ_RANGE_DEFAULT);
-  const int was_bass = s->p.bass_mono, was_pseudo = s->p.pseudo, was_live = s->enabled && s->p.active;
-  const uint32_t was_d = s->p.d;
-  omx_width_design(&s->p, s->wpct * 0.01f, s->pmode, omx_width_delay(s->pms, s->sr), s->bmode, (double)s->bhz, (double)s->sr);
-  s->enabled = bypass ? 0 : 1;
-  /* The engage edge starts the word from silence; a new pseudo-stereo mode or delay starts its ring
-   * from silence, so a ring left from minutes earlier, or the other mode's signal, is never read. */
-  if (s->enabled && s->p.active && !was_live) {
-    memset(&s->st, 0, sizeof s->st);
-  } else {
-    if (s->p.bass_mono && !was_bass) {
-      memset(&s->st.xs, 0, sizeof s->st.xs);
-      memset(&s->st.ap, 0, sizeof s->st.ap);
-    }
-    if (s->p.pseudo != was_pseudo || s->p.d != was_d) {
-      memset(s->st.ring, 0, sizeof s->st.ring);
-      s->st.pos = 0u;
-    }
-  }
+  omx_width_redesign(&s->p, &s->st, &s->enabled, bypass, s->wpct * 0.01f, s->pmode, omx_width_delay(s->pms, s->sr), s->bmode,
+                     (double)s->bhz, (double)s->sr);
 }
 #undef OMX_CONTRACT_STAGE
 

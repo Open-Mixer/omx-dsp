@@ -33,7 +33,7 @@
         "min": 0,
         "max": 0.99,
         "step": 0,
-        "unit": "",
+        "unit": "none",
         "default": 0.3,
         "defaultFrom": "desk"
       },
@@ -49,7 +49,7 @@
         "min": 0,
         "max": 1,
         "step": 0,
-        "unit": "",
+        "unit": "none",
         "default": 0.3,
         "defaultFrom": "desk"
       },
@@ -65,7 +65,7 @@
         "min": 0,
         "max": 1,
         "step": 0,
-        "unit": "",
+        "unit": "none",
         "default": 0.3,
         "defaultFrom": "desk",
         "byKind": {
@@ -101,7 +101,7 @@
         "min": 1,
         "max": 4,
         "step": 1,
-        "unit": "",
+        "unit": "none",
         "default": 1,
         "defaultFrom": "desk"
       },
@@ -118,7 +118,7 @@
           "min": 0,
           "max": 1,
           "step": 0.01,
-          "unit": "",
+          "unit": "none",
           "default": 1,
           "defaultFrom": "desk"
         },
@@ -126,7 +126,7 @@
           "min": -1,
           "max": 1,
           "step": 0.01,
-          "unit": "",
+          "unit": "none",
           "default": 0,
           "defaultFrom": "desk"
         },
@@ -134,7 +134,7 @@
           "min": 0,
           "max": 1,
           "step": 0.01,
-          "unit": "",
+          "unit": "none",
           "default": 0.7,
           "defaultFrom": "desk"
         },
@@ -142,7 +142,7 @@
           "min": -1,
           "max": 1,
           "step": 0.01,
-          "unit": "",
+          "unit": "none",
           "default": -0.5,
           "defaultFrom": "desk"
         },
@@ -150,7 +150,7 @@
           "min": 0,
           "max": 1,
           "step": 0.01,
-          "unit": "",
+          "unit": "none",
           "default": 0.5,
           "defaultFrom": "desk"
         },
@@ -158,7 +158,7 @@
           "min": -1,
           "max": 1,
           "step": 0.01,
-          "unit": "",
+          "unit": "none",
           "default": 0.5,
           "defaultFrom": "desk"
         },
@@ -166,7 +166,7 @@
           "min": 0,
           "max": 1,
           "step": 0.01,
-          "unit": "",
+          "unit": "none",
           "default": 0.35,
           "defaultFrom": "desk"
         },
@@ -174,7 +174,7 @@
           "min": -1,
           "max": 1,
           "step": 0.01,
-          "unit": "",
+          "unit": "none",
           "default": 0,
           "defaultFrom": "desk"
         }
@@ -201,7 +201,7 @@
         3
       ],
       "doc": "The numerators of the FX delay's tap factor set, in member order: 1/4, 1/3, 3/8, 1/2, 2/3, 3/4, 1, 4/3, 3/2, 2, 3. A read tap k >= 1 sits at the base time times numerator / denominator (DELAY_TAP_FACTOR_DENS at the same position), rounded once to samples. The set is two integer lists, not a set of ids, because a factor such as 1/2 is no id the schema accepts and the ratio must stay exact (1/3 has no finite decimal).",
-      "unit": "",
+      "unit": "none",
       "since": "2.14.0"
     },
     {
@@ -223,7 +223,7 @@
         1
       ],
       "doc": "The denominators of the FX delay's tap factor set, in member order, one per numerator of DELAY_TAP_FACTOR_NUMS: the factor at position i is DELAY_TAP_FACTOR_NUMS[i] / DELAY_TAP_FACTOR_DENS[i].",
-      "unit": "",
+      "unit": "none",
       "since": "2.14.0"
     },
     {
@@ -490,7 +490,7 @@
         0.1875,
         0.08333333333333333
       ],
-      "unit": "",
+      "unit": "none",
       "doc": "The beats each division of the delay lasts, in the order of its ids: whole, half, quarter, eighth, sixteenth, thirty-second, each straight, dotted (x 3/2) and triplet (x 2/3). A quarter note is one beat."
     },
     {

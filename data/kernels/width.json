@@ -1,8 +1,5 @@
 {
   "$schema": "../../schema/omx-contract.schema.json",
-  "requires": {
-    "omx-contract-schema": ">= 3.1.0"
-  },
   "controls": [
     {
       "name": "widthPct",
@@ -15,7 +12,7 @@
         "min": 0,
         "max": 200,
         "step": 1,
-        "unit": "%",
+        "unit": "percent",
         "default": 100,
         "defaultFrom": "desk"
       }
@@ -98,7 +95,7 @@
         "impl": "include/omxdsp/omx_width.h#omx_width_process"
       },
       "doc": "The complementary comb's gain g: its legs ripple between 1 - g and 1 + g, 0.5 a +3.5 / -6 dB comb, the mono sum unmoved.",
-      "unit": "",
+      "unit": "none",
       "value": 0.5
     },
     "WIDTH_MAX_DELAY_MS": {

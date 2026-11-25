@@ -107,6 +107,15 @@ if [ -n "$bad" ]; then
 	echo "make fuzz-records: RED -- checks with no record and no 'not a property' line, or records not of the form"
 	exit 1
 fi
+# the README's example record is one a harness carries, word for word, so it is proved below and moves with it (#86)
+stale=$(sed -n 's/^ \* \(mutant: .*\)$/\1/p' fuzz/README.md | while IFS= read -r r; do
+	grep -qF "* $r" fuzz/fuzz_*.c || echo "  fuzz/README.md: $r"
+done)
+if [ -n "$stale" ]; then
+	echo "$stale"
+	echo "make fuzz-records: RED -- an example record of fuzz/README.md that no harness carries"
+	exit 1
+fi
 checks=$(for f in $sources; do awk '{ print NR "|0|" $0 }' "$f" | awk -v file="$f" -f fuzz/checks.awk; done |
 	awk -F: '$5 ~ /^records=/ { n++ } END { print n + 0 }')
 

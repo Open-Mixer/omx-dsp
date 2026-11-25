@@ -13,8 +13,9 @@
  * of law (test/magnitude-sabotage.sh). */
 #define MAGNITUDE_TS_TOL_DB 1e-9
 
-/* eqCurveDb's points, captured by tools/ts-golden.mjs, against the C evaluator over
- * omx_eq_design() at the same frequencies, and its anchors against omx_eq_band_anchors(). */
+/* eqCurveDb's points, captured from the console's TypeScript (fixtures/eq_curve_ts.h), against the
+ * C evaluator over omx_eq_design() at the same frequencies, and its anchors against
+ * omx_eq_band_anchors(). */
 static void arm_magnitude_ts(void) {
   g_arm = "magnitude-ts";
   double worst = 0.0;

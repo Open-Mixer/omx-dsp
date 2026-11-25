@@ -66,6 +66,7 @@
 
 /** The modes, as the `mode` choice's positions (FBS_MODES). */
 #define OMX_FBS_LV2_CUT OMX_FBS_MODES_CUT
+/** The `report` mode: the audio passes bit-exact while the detector and the placement run on. */
 #define OMX_FBS_LV2_REPORT OMX_FBS_MODES_REPORT
 
 _Static_assert(OMX_FBS_LV2_SLOTS <= OMX_EQ_MAX_BANDS, "the cascade holds one section per report slot");
@@ -77,53 +78,59 @@ _Static_assert((int)OMX_FBS_POOLS_FIXED == (int)OMX_FBS_POOL_FIXED && (int)OMX_F
 /** What the audio thread hands one pass: the arming controls as they stood. Fixed size, no pointers. */
 typedef struct {
   int pool; /**< OmxFbsPool, inside the declared travel */
-  double hold_s;
-  double max_bands;
-  double notch_q;
-  double merge_cents;
-  double cooldown_s;
+  double hold_s;      /**< the hold word, seconds, as read; omx_fbs_place_set() clamps it */
+  double max_bands;   /**< the band cap word, as read; omx_fbs_place_set() rounds and clamps it */
+  double notch_q;     /**< the width word, as read; omx_fbs_place_set() clamps it */
+  double merge_cents; /**< the merge radius word, cents, as read; omx_fbs_place_set() rounds and clamps it */
+  double cooldown_s;  /**< the ring memory word, seconds, as read; omx_fbs_place_set() rounds and clamps it */
 } OmxFbsLv2Ask;
 
 /** What one pass hands back: the cascade by slot and the report by slot. Fixed size, no pointers. */
 typedef struct {
-  float coeffs[OMX_FBS_LV2_SLOTS][5];
-  uint8_t enabled[OMX_FBS_LV2_SLOTS];
-  OmxBandReport report[OMX_FBS_LV2_SLOTS];
+  float coeffs[OMX_FBS_LV2_SLOTS][5];       /**< per slot, the biquad omx_eq_design_f() designs; zero when off */
+  uint8_t enabled[OMX_FBS_LV2_SLOTS];       /**< per slot, 1 when the slot's band is on, else 0 */
+  OmxBandReport report[OMX_FBS_LV2_SLOTS];  /**< per slot, omx_fbs_place_report() */
 } OmxFbsLv2Set;
 
 /** One instance. Every pointer is into the caller's block. */
 typedef struct {
-  uint32_t rate;
-  uint32_t fft;
-  uint32_t hop;
+  uint32_t rate; /**< the sample rate, Hz */
+  uint32_t fft;  /**< the FFT length, omx_rta_fft_size_for() of the rate */
+  uint32_t hop;  /**< frames one pass consumes: the rate over FBS_WATCH_HZ */
 
-  /* audio -> worker */
+  /** audio -> worker */
   OmxLiveFeed feed;
 
-  /* the audio side */
+  /** the audio side */
   OmxHrpCascade live;
-  int mode;
-  int analysing;
-  OmxBandReport report[OMX_FBS_LV2_SLOTS];
+  int mode;      /**< OMX_FBS_LV2_CUT or OMX_FBS_LV2_REPORT (omx_fbs_lv2_set_mode()) */
+  int analysing; /**< 1 once an adopt installed a set, else 0 */
+  OmxBandReport report[OMX_FBS_LV2_SLOTS]; /**< the report by slot, as last adopted */
 
-  /* the worker side */
+  /** the worker side */
   OmxFbsDetector det;
-  OmxFbsResult res;
-  OmxFbsPlace place;
+  OmxFbsResult res;   /**< the detector's last push; its arrays are in the caller's block */
+  OmxFbsPlace place;  /**< the placement the detector's finds go to */
   /** Frames every pass has consumed, ever: the placement's clock, kept across a restart. */
   uint64_t elapsed;
-  float *frame;
-  float *work_re;
-  float *work_im;
-  float *mags_f;
-  double *mags;
-  double *snap_hz;
+  float *frame;    /**< `fft` frames: the newest window, ending at the hop taken */
+  float *work_re;  /**< `fft` floats: the FFT's real work */
+  float *work_im;  /**< `fft` floats: the FFT's imaginary work */
+  float *mags_f;   /**< `fft` / 2 bins: omx_rta_spectrum()'s linear magnitudes */
+  double *mags;    /**< `fft` / 2 bins: `mags_f` in double, as omx_fbs_push() reads it */
+  double *snap_hz; /**< OMX_FBS_TRACK_SLOTS entries: the snapshot's frequencies, Hz, for omx_fbs_place_tick() */
 
-  int ready;
+  int ready; /**< 1 after a successful omx_fbs_lv2_init_block(); 0 passes audio and corrects nothing */
 } OmxFbsLv2;
 
-/* the block's partition: doubles and 8-byte members first, then the 4-byte ones */
+/** The block's partition: `n` bytes rounded up to 8. Doubles and 8-byte members go first, then the 4-byte ones. */
 #define OMX_FBS_LV2_ALIGN_(n) (((n) + 7u) & ~(size_t)7u)
+
+/**
+ * @def OMX_FBS_LV2_TAKE_(ptr, type, count)
+ * @brief Inside omx_fbs_lv2_init_block() only: point `ptr` at the next `count` items of `type` in the block, and
+ *        step past them, rounded up to 8 bytes.
+ */
 
 /**
  * @brief Bytes the caller's block holds at `rate` for omx_fbs_lv2_init_block().
@@ -220,6 +227,7 @@ static inline void omx_fbs_lv2_set_mode(OmxFbsLv2 *s, float word) {
  */
 static inline int omx_fbs_lv2_mode(const OmxFbsLv2 *s) { return s ? s->mode : OMX_FBS_LV2_CUT; }
 
+#define OMX_CONTRACT_STAGE "fbs/lv2-run"
 /**
  * @brief The audio callback's whole share: the input into the ring, then the bands (cut) or nothing (report).
  * @param s The instance; NULL or not ready passes the audio bit-exact.
@@ -229,7 +237,6 @@ static inline int omx_fbs_lv2_mode(const OmxFbsLv2 *s) { return s ? s->mode : OM
  * @note No FFT, no detector, no placement, no allocation, no lock: those are the worker's.
  * @thread audio
  */
-#define OMX_CONTRACT_STAGE "fbs/lv2-run"
 static inline void omx_fbs_lv2_run(OmxFbsLv2 *s, const float *in, float *out, uint32_t n) {
   if (!omx_live_block(s && s->ready, in, out, n)) return;
   omx_live_feed(&s->feed.ring, &s->feed.written, in, n);

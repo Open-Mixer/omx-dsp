@@ -1,8 +1,5 @@
 {
   "$schema": "../../schema/omx-contract.schema.json",
-  "requires": {
-    "omx-contract-schema": ">= 3.0.0"
-  },
   "CURVE_DISPLAYS": {
     "kind": "set",
     "since": "3.0.0",
@@ -80,29 +77,29 @@
       "highCut"
     ]
   },
+  "CURVE_ROLE_PREFIXES": {
+    "kind": "words",
+    "since": "3.22.0",
+    "doc": "The prefixes a role word of CURVE_ROLES is read by: an indexed band role is one whose word starts with the `band` prefix.",
+    "why": "The console, omx-panel and the Zynthian fork each restated `band_` to tell a band role from the others (omx-dsp#40): declared once here, beside the roles it reads.",
+    "words": {
+      "band": {
+        "word": "band_",
+        "doc": "The prefix every indexed band role of CURVE_ROLES carries on the wire (`band_type`, `band_freq`, `band_gain`, `band_q`, `band_on`): a role word that starts with it is a band's and carries an index. A consumer reads this word, or calls omx_curve_role_is_band(), and never writes the prefix itself.",
+        "text": {
+          "en": "The prefix every indexed band role of CURVE_ROLES carries on the wire (`band_type`, `band_freq`, `band_gain`, `band_q`, `band_on`): a role word that starts with it is a band's and carries an index. A consumer reads this word, or calls omx_curve_role_is_band(), and never writes the prefix itself."
+        }
+      }
+    }
+  },
   "CURVE_UNITS": {
     "kind": "set",
     "since": "3.0.0",
     "source": {
       "impl": "include/omxdsp/omx_curve.h#omx_curve_unit_accepted"
     },
-    "doc": "The units a curve term's value may come in, the param-contract extension's unit tokens the served description gives a role. omx_curve_points converts once: `coef` to dB for a gain, `oct` to Q for a bandwidth, `khz` to Hz; a level in `db`, `dbfs`, `dbu` or `lufs` is read as dB from the threshold's own scale; `none` is a plain number, a switch or a choice; `ratio` a ratio. A unit its role does not accept is refused. `pc` (since 0.32.4) is percent, the drive's `mix`. `ms` and `s` (since 0.32.4) are a time, read as ms. `standard` names the PARAM_UNITS const each word stands for (`hz` is Hz, `pc` is percent, `coef` is coef): a host takes a standard id to its curve word through that table, never a copy of its own.",
+    "doc": "The units a curve term's value may come in: the PARAM_UNITS ids (the wire word, never its x-symbol) the served description gives a role, so a host sends the unit it was given. omx_curve_points converts once: `coef` to dB for a gain, `oct` to Q for a bandwidth, `kHz` to Hz; a level in `dB`, `dBFS`, `dBu` or `LUFS` is read as dB from the threshold's own scale; `none` is a plain number, a switch or a choice; `ratio` a ratio. A unit its role does not accept is refused, and so is any other spelling of an id (`hz`, `db`). `percent` (since 0.32.4) is the drive's `mix`. `ms` and `s` (since 0.32.4) are a time, read as ms.",
     "ids": [
-      "hz",
-      "khz",
-      "db",
-      "dbfs",
-      "dbu",
-      "lufs",
-      "coef",
-      "oct",
-      "none",
-      "ratio",
-      "pc",
-      "ms",
-      "s"
-    ],
-    "standard": [
       "Hz",
       "kHz",
       "dB",
@@ -177,7 +174,7 @@
       "impl": "include/omxdsp/omx_curve.h#omx_curve_points_marked"
     },
     "doc": "The most points one curve carries, an EQ's band anchors included: a reply of x with four significant digits and y to 0.01 dB, about 13 bytes a point, fits the 4096-byte line a host's reply is built in. Every caller reads it here; it moves with that buffer, in this one place.",
-    "unit": "",
+    "unit": "none",
     "value": 256
   },
   "CURVE_EXTENTS": {
@@ -206,7 +203,7 @@
       "impl": "include/omxdsp/omx_curve.h#omx_curve_time"
     },
     "doc": "The most taps a delay's time_response carries, the dry tap included (since 0.32.4): a runaway feedback near 1 must not make the train unbounded, and 32 taps at the picture's resolution are a ladder the eye reads as one.",
-    "unit": "",
+    "unit": "none",
     "value": 32
   },
   "CURVE_LEGS": {
@@ -266,7 +263,7 @@
       },
       "inputAmplitude": {
         "word": "input-amplitude",
-        "unit": "",
+        "unit": "none",
         "scale": "linear",
         "doc": "A memoryless shaper's input sample, linear, -1 to +1 full scale: bipolar, so an even/odd asymmetry shows.",
         "text": {
@@ -275,7 +272,7 @@
       },
       "outputAmplitude": {
         "word": "output-amplitude",
-        "unit": "",
+        "unit": "none",
         "scale": "linear",
         "doc": "The shaper's output sample for an input amplitude, linear, on the same full scale.",
         "text": {
@@ -311,7 +308,7 @@
       },
       "phase": {
         "word": "phase",
-        "unit": "",
+        "unit": "none",
         "scale": "linear",
         "doc": "The position within one period of a modulation source, 0 to 1.",
         "text": {
@@ -320,7 +317,7 @@
       },
       "modulation": {
         "word": "modulation",
-        "unit": "",
+        "unit": "none",
         "scale": "linear",
         "doc": "A modulation source's output at a phase, -1 to +1, before the depth scales it.",
         "text": {

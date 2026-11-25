@@ -57,16 +57,17 @@ struct omx_limiter_state {
   float blk_peak;                /**< The last enabled block's largest detector reading `p`, linear. */
 };
 
+#undef OMX_CONTRACT_STAGE
+#define OMX_CONTRACT_STAGE "limiter/lookahead-frames"
 /**
  * @brief The look-ahead `D` in frames: `round(ms · rate / 1000)`, at least 1.
  * @param lookahead_ms The look-ahead, ms.
  * @param rate The sample rate, Hz.
  * @return `D`.
+ * @post `D` is at least 1.
  * @note Thread-safe: arithmetic.
  * @thread audio
  */
-#undef OMX_CONTRACT_STAGE
-#define OMX_CONTRACT_STAGE "limiter/lookahead-frames"
 static inline uint32_t omx_limiter_lookahead_frames(float lookahead_ms, float rate) {
   const long d = lrintf(lookahead_ms * rate / 1000.0f);
   const uint32_t frames = d < 1 ? 1u : (uint32_t)d;

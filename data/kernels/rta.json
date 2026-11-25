@@ -1,8 +1,5 @@
 {
   "$schema": "../../schema/omx-contract.schema.json",
-  "requires": {
-    "omx-contract-schema": ">= 3.0.0"
-  },
   "constants": {
     "RTA_TARGET_BIN_HZ": {
       "kind": "scalar",
@@ -13,7 +10,7 @@
         },
         "impl": "include/omxdsp/analysis/omx_rta.h#omx_rta_fft_size_for"
       },
-      "doc": "The RTA's target bin resolution — generated into `omx_contract_limits.h` as `OMX_RTA_TARGET_BIN_HZ`, which `mix_dsp.h` reads; the engine's conformance test reads it back from the header.",
+      "doc": "The RTA's target bin resolution — rendered into `omxdsp/omxdsp_definitions.h` as `OMX_RTA_TARGET_BIN_HZ`, which `mix_dsp.h` reads; the engine's conformance test reads it back from the header.",
       "unit": "Hz",
       "value": 5.9
     },
@@ -26,8 +23,8 @@
         },
         "impl": "include/omxdsp/analysis/omx_rta.h#omx_rta_fft_size_for"
       },
-      "doc": "The largest RTA FFT the native ring holds — generated into `omx_contract_limits.h` as `OMX_RTA_FFT_SIZE_MAX`.",
-      "unit": "",
+      "doc": "The largest RTA FFT the native ring holds — rendered into `omxdsp/omxdsp_definitions.h` as `OMX_RTA_FFT_SIZE_MAX`.",
+      "unit": "none",
       "value": 32768
     },
     "RTA_BAND_F_MIN": {
@@ -153,7 +150,7 @@
         "impl": "tools/omx-rta-read/omx-rta-read.c#low_due"
       },
       "doc": "How far the low zoom's window must have advanced, as a fraction of that window, before it is recomputed; between recomputes the last zoom rides the fresh main spectrum unchanged.",
-      "unit": "",
+      "unit": "none",
       "value": 0.25
     },
     "RTA_TAP_GATE_DB": {

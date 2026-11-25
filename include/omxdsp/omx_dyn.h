@@ -111,7 +111,7 @@ struct omx_dyn {
    * points rather than a width centred on the threshold. 0 is the centred knee, and the gain
    * computer is then omx_gaincomp_gain bit for bit (omx_gaincomp_db_shifted). */
   float knee_shift_db;
-  /** The comp row's detectorTopology (omx-contract's `enum omx_detector_topology`):
+  /** The comp row's detectorTopology (this library's `enum omx_detector_topology`):
    *  OMX_DETECTOR_TOPOLOGY_FEEDFORWARD (0, a zeroed atom) or OMX_DETECTOR_TOPOLOGY_FEEDBACK —
    *  where the detector listens. A keyed slot detects its key and stays feed-forward. */
   int topology;

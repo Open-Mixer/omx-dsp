@@ -37,18 +37,28 @@
 #include <omxdsp/omx_units.h>
 #include <omxdsp/omxdsp_definitions.h>
 
+/** @brief Audio legs in and out: TWO, a stereo pair. */
 #define OMX_LEVELER_INSTANCE_CHANNELS 2
 
-/** The table: LEVELER_AMOUNT_POINTS and its rows, the speeds, the knee. */
+/** The table's amount points, percent: LEVELER_AMOUNT_POINTS, rising; each row below has one entry per point. */
 static const float OMX_LEVELER_INSTANCE_POINTS[OMX_LEVELER_AMOUNT_POINTS_COUNT] = OMX_LEVELER_AMOUNT_POINTS_INIT;
+/** The downward slot's threshold at each amount point, dB: LEVELER_DOWN_THRESHOLD_DB. */
 static const float OMX_LEVELER_INSTANCE_DOWN_T[OMX_LEVELER_DOWN_THRESHOLD_DB_COUNT] = OMX_LEVELER_DOWN_THRESHOLD_DB_INIT;
+/** The downward slot's ratio at each amount point: LEVELER_DOWN_RATIO. */
 static const float OMX_LEVELER_INSTANCE_DOWN_R[OMX_LEVELER_DOWN_RATIO_COUNT] = OMX_LEVELER_DOWN_RATIO_INIT;
+/** The downward slot's make-up at each amount point, dB: LEVELER_DOWN_MAKEUP_DB. */
 static const float OMX_LEVELER_INSTANCE_DOWN_M[OMX_LEVELER_DOWN_MAKEUP_DB_COUNT] = OMX_LEVELER_DOWN_MAKEUP_DB_INIT;
+/** The upward slot's threshold at each amount point, dB: LEVELER_UP_THRESHOLD_DB. */
 static const float OMX_LEVELER_INSTANCE_UP_T[OMX_LEVELER_UP_THRESHOLD_DB_COUNT] = OMX_LEVELER_UP_THRESHOLD_DB_INIT;
+/** The upward slot's ratio at each amount point: LEVELER_UP_RATIO. */
 static const float OMX_LEVELER_INSTANCE_UP_R[OMX_LEVELER_UP_RATIO_COUNT] = OMX_LEVELER_UP_RATIO_INIT;
+/** The upward slot's largest boost at each amount point, dB: LEVELER_UP_RANGE_DB. */
 static const float OMX_LEVELER_INSTANCE_UP_RANGE[OMX_LEVELER_UP_RANGE_DB_COUNT] = OMX_LEVELER_UP_RANGE_DB_INIT;
+/** Each speed's attack, ms, slow first: LEVELER_SPEED_ATTACK_MS. */
 static const float OMX_LEVELER_INSTANCE_ATTACK[OMX_LEVELER_SPEED_ATTACK_MS_COUNT] = OMX_LEVELER_SPEED_ATTACK_MS_INIT;
+/** Each speed's release, ms, slow first: LEVELER_SPEED_RELEASE_MS. */
 static const float OMX_LEVELER_INSTANCE_RELEASE[OMX_LEVELER_SPEED_RELEASE_MS_COUNT] = OMX_LEVELER_SPEED_RELEASE_MS_INIT;
+/** Both slots' knee, dB: LEVELER_KNEE_DB. */
 #define OMX_LEVELER_INSTANCE_KNEE ((float)OMX_LEVELER_KNEE_DB)
 _Static_assert(OMX_LEVELER_DOWN_THRESHOLD_DB_COUNT == OMX_LEVELER_AMOUNT_POINTS_COUNT &&
                    OMX_LEVELER_DOWN_RATIO_COUNT == OMX_LEVELER_AMOUNT_POINTS_COUNT &&
@@ -63,13 +73,25 @@ _Static_assert(OMX_LEVELER_SPEED_ATTACK_MS_COUNT == OMX_LEVELER_SPEEDS_COUNT &&
 
 /** One row of the table read at an amount. */
 struct omx_leveler_row {
-  float down_t, down_r, down_m; /**< the downward slot's threshold (dB), ratio and make-up (dB) */
-  float up_t, up_r, up_range;   /**< the upward slot's threshold (dB), ratio and largest boost (dB) */
+  /** @var omx_leveler_row::down_r
+   * The downward slot's ratio. */
+  /** @var omx_leveler_row::down_m
+   * The downward slot's make-up, dB. */
+  /** The downward slot's threshold, dB. */
+  float down_t, down_r, down_m;
+  /** @var omx_leveler_row::up_r
+   * The upward slot's ratio. */
+  /** @var omx_leveler_row::up_range
+   * The upward slot's largest boost, dB. */
+  /** The upward slot's threshold, dB. */
+  float up_t, up_r, up_range;
 };
 
 /**
  * The table read at `amount` (percent, inside LEVELER_AMOUNT_POINTS' span): each column linear between
  * the two points around it, exactly the row at a point. RT-safe: arithmetic. Pure.
+ * @param amount The amount, percent, inside LEVELER_AMOUNT_POINTS' span.
+ * @return The row at `amount`.
  * @thread audio
  */
 static inline struct omx_leveler_row omx_leveler_table(float amount) {
@@ -83,15 +105,25 @@ static inline struct omx_leveler_row omx_leveler_table(float amount) {
 #undef OMX_LEVELER_LERP
   return r;
 }
+/** @def OMX_LEVELER_LERP(t)
+ * Column `t` of the table read between points `k` and `k + 1` at the share `u`: defined and undefined inside
+ * omx_leveler_table(), which alone uses it. */
 
+/** One instance: the downward and the upward slot, each an atom and its state, and the controls as resolved. */
 typedef struct {
+  /** The sample rate init bound the instance to, Hz. */
   float sr;
   struct omx_dyn down, up;           /**< the two slots' atoms */
+  /** @var OmxLevelerInstance::up_st
+   * The upward slot's state; init and the slot's engage edge clear it, run() carries it. */
+  /** The downward slot's state; init and the slot's engage edge clear it, run() carries it. */
   struct omx_dyn_state down_st, up_st;
   float amt; /**< the amount as resolved, percent */
   int dir;   /**< the direction as resolved, an OMX_LEVELER_DIRECTIONS_* member */
   int spd;   /**< the speed as resolved, an OMX_LEVELER_SPEEDS_* member */
+  /** Non-zero while the effect is engaged, as the last resolve() set it; while zero, run() leaves the output as the input. */
   int enabled;
+  /** Non-zero once init bound the instance to a usable rate; while zero, resolve() does nothing and run() leaves the output as the input. */
   int ready;
 } OmxLevelerInstance;
 
@@ -115,6 +147,15 @@ static inline int omx_leveler_instance_init(OmxLevelerInstance *s, float sr) {
 }
 
 /** One slot's atom: `mode`, the row's threshold, ratio, boost and make-up, the speed's poles.
+ * @param d The slot's atom; every word of it is written, `enabled` set to 1.
+ * @param mode The gain computer's mode: OMX_DYN_ABOVE for the downward slot, OMX_DYN_UPWARD for the upward one.
+ * @param t The threshold, dB.
+ * @param r The ratio.
+ * @param range The gain computer's range, dB: the upward slot's largest boost; 0 for the downward slot.
+ * @param makeup_db The make-up, dB.
+ * @param att_ms The attack, ms.
+ * @param rel_ms The release, ms.
+ * @param sr The sample rate, Hz.
  * @thread audio */
 static inline void omx_leveler_slot(struct omx_dyn *d, int mode, float t, float r, float range, float makeup_db,
                                     float att_ms, float rel_ms, float sr) {
@@ -133,14 +174,24 @@ static inline void omx_leveler_slot(struct omx_dyn *d, int mode, float t, float 
   d->release_coeff = omx_pole_from_time_ms(rel_ms, sr);
 }
 
+#define OMX_CONTRACT_STAGE "leveler/instance-resolve"
 /**
  * Resolve the host's control values for one cycle. `bypass` non-zero makes run() the identity. The
  * arguments are the leveler kernel's contract controls in their declared order: the amount (percent),
  * the direction (a LEVELER_DIRECTIONS index) and the speed (a LEVELER_SPEEDS index); an index outside
  * its set reads as its default.
+ * @param s The instance; null or not ready leaves it as it is.
+ * @param bypass Non-zero makes run() the identity.
+ * @param amount amount, 0 to 100 \%, default 0: How hard the leveler works, percent: the one knob.
+ * @param direction direction, the place in down, up, both (0 to 2), default both: Which way the leveler works, in the
+ *        order of the integer the kernel reads: down, a compressor over the loud passages; up, an upward compressor
+ *        under the quiet ones (omx_dyn's UPWARD law); both, the two in series, down first.
+ * @param speed speed, the place in slow, medium, fast (0 to 2), default medium: How fast the leveler follows, in the
+ *        order of the integer the kernel reads: slow, medium, fast; each an attack and a release from
+ *        LEVELER_SPEED_ATTACK_MS and LEVELER_SPEED_RELEASE_MS.
+ * @post `row-inside-the-laws`: both ratios at least 1 and the upward range not negative.
  * @thread audio
  */
-#define OMX_CONTRACT_STAGE "leveler/instance-resolve"
 static inline void omx_leveler_instance_resolve(OmxLevelerInstance *s, int bypass, float amount, int direction, int speed) {
   if (!s || !s->ready) return;
   s->amt = omx_clamp_or(amount, (float)OMX_LEVELER_AMOUNT_RANGE_MIN, (float)OMX_LEVELER_AMOUNT_RANGE_MAX,

@@ -1,8 +1,5 @@
 {
   "$schema": "../../schema/omx-contract.schema.json",
-  "requires": {
-    "omx-contract-schema": ">= 3.0.0"
-  },
   "controls": [
     {
       "name": "hornSlowHz",
@@ -103,7 +100,7 @@
         "min": 0.25,
         "max": 4,
         "step": 0.01,
-        "unit": "x",
+        "unit": "coef",
         "default": 1,
         "defaultFrom": "desk"
       }
@@ -123,7 +120,7 @@
         "min": -100,
         "max": 100,
         "step": 1,
-        "unit": "%",
+        "unit": "percent",
         "default": 0,
         "defaultFrom": "desk"
       }
@@ -143,7 +140,7 @@
         "min": 0,
         "max": 100,
         "step": 0.1,
-        "unit": "%",
+        "unit": "percent",
         "default": 100,
         "defaultFrom": "desk"
       }
@@ -237,7 +234,7 @@
         "impl": "include/omxdsp/fx/omx_rotary.h#omx_rotary_resolve"
       },
       "doc": "The horn's amplitude swing `m_horn` (a −6 dB directivity dip), a ratio.",
-      "unit": "",
+      "unit": "none",
       "value": 0.5
     },
     "ROTARY_DRUM_AM": {
@@ -250,7 +247,7 @@
         "impl": "include/omxdsp/fx/omx_rotary.h#omx_rotary_resolve"
       },
       "doc": "The drum baffle's amplitude swing `m_drum`, a ratio.",
-      "unit": "",
+      "unit": "none",
       "value": 0.3
     },
     "ROTARY_HORN_ACCEL_MS": {
@@ -315,7 +312,7 @@
         "impl": "include/omxdsp/fx/omx_rotor.h#omx_rotor_step"
       },
       "doc": "Below this rate, Hz, a rotor coasting toward `stop` is snapped to exactly 0.",
-      "unit": "",
+      "unit": "none",
       "value": 0.0001
     },
     "ROTARY_RING_FLOATS": {
@@ -328,7 +325,7 @@
         "impl": "include/omxdsp/fx/omx_rotary.h#c"
       },
       "doc": "One inline ring per rotor per leg, floats — at least the 192 kHz need of the horn's sweep.",
-      "unit": "",
+      "unit": "none",
       "value": 256
     }
   }

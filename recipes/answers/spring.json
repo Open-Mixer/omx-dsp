@@ -46,7 +46,7 @@
         "min": 0,
         "max": 100,
         "step": 1,
-        "unit": "%",
+        "unit": "percent",
         "default": 50,
         "defaultFrom": "desk"
       },
@@ -76,7 +76,7 @@
         "min": 0,
         "max": 100,
         "step": 1,
-        "unit": "%",
+        "unit": "percent",
         "default": 0,
         "defaultFrom": "desk"
       },
@@ -88,7 +88,7 @@
         "origin": "first declared in omx-dsp data/kernels/spring.json at 994c5d26e17e, shipped in omx-dsp 0.28.0; implemented at include/omxdsp/fx/omx_spring_instance.h#omx_spring_chain_delay"
       },
       "value": 40,
-      "unit": "",
+      "unit": "none",
       "doc": "The first-order all-pass sections in the loop: enough of them and the low notes come later, the sound of a spring."
     },
     {
@@ -109,7 +109,7 @@
         "origin": "first declared in omx-dsp data/kernels/spring.json at 994c5d26e17e, shipped in omx-dsp 0.28.0; implemented at include/omxdsp/fx/omx_spring_instance.h#omx_spring_instance_resolve"
       },
       "value": 1.13,
-      "unit": "",
+      "unit": "none",
       "doc": "The right spring's length against the left's: two springs of different lengths, as a tank carries, so the legs decorrelate."
     },
     {
@@ -118,7 +118,7 @@
         "origin": "first declared in omx-dsp data/kernels/spring.json at 994c5d26e17e, shipped in omx-dsp 0.28.0; implemented at include/omxdsp/fx/omx_spring_instance.h#omx_spring_instance_resolve"
       },
       "value": 0.97,
-      "unit": "",
+      "unit": "none",
       "doc": "The loop gain's ceiling: the tail always decays."
     }
   ]

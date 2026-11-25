@@ -16,7 +16,7 @@
      {
       "role": "threshold",
       "value": -20,
-      "unit": "db"
+      "unit": "dB"
      },
      {
       "role": "ratio",
@@ -102,7 +102,7 @@
      {
       "role": "threshold",
       "value": -20,
-      "unit": "db"
+      "unit": "dB"
      },
      {
       "role": "ratio",
@@ -112,12 +112,12 @@
      {
       "role": "knee",
       "value": 8,
-      "unit": "db"
+      "unit": "dB"
      },
      {
       "role": "makeup",
       "value": 3,
-      "unit": "db"
+      "unit": "dB"
      }
     ]
    },
@@ -246,7 +246,7 @@
      {
       "role": "threshold",
       "value": -30,
-      "unit": "db"
+      "unit": "dB"
      },
      {
       "role": "ratio",
@@ -308,7 +308,7 @@
      {
       "role": "threshold",
       "value": -6,
-      "unit": "db"
+      "unit": "dB"
      }
     ]
    },
@@ -373,7 +373,7 @@
      {
       "role": "threshold",
       "value": -40,
-      "unit": "db"
+      "unit": "dB"
      },
      {
       "role": "ratio",
@@ -383,7 +383,7 @@
      {
       "role": "range",
       "value": -30,
-      "unit": "db"
+      "unit": "dB"
      }
     ]
    },
@@ -460,12 +460,12 @@
      {
       "role": "hpf_freq",
       "value": 100,
-      "unit": "hz"
+      "unit": "Hz"
      },
      {
       "role": "hpf_slope",
       "value": 12,
-      "unit": "db"
+      "unit": "dB"
      }
     ]
    },
@@ -509,12 +509,12 @@
      {
       "role": "hpf_freq",
       "value": 250,
-      "unit": "hz"
+      "unit": "Hz"
      },
      {
       "role": "hpf_slope",
       "value": 24,
-      "unit": "db"
+      "unit": "dB"
      }
     ]
    },
@@ -558,13 +558,13 @@
      {
       "role": "band_freq",
       "value": 1000,
-      "unit": "hz",
+      "unit": "Hz",
       "shape": "bell"
      },
      {
       "role": "band_gain",
       "value": 6,
-      "unit": "db"
+      "unit": "dB"
      },
      {
       "role": "band_q",
@@ -602,13 +602,13 @@
      {
       "role": "band_freq",
       "value": 4000,
-      "unit": "hz",
+      "unit": "Hz",
       "shape": "bell"
      },
      {
       "role": "band_gain",
       "value": -9,
-      "unit": "db"
+      "unit": "dB"
      },
      {
       "role": "band_q",
@@ -646,7 +646,7 @@
      {
       "role": "band_freq",
       "value": 3000,
-      "unit": "hz",
+      "unit": "Hz",
       "shape": "notch"
      },
      {
@@ -864,7 +864,7 @@
      {
       "role": "threshold",
       "value": -20,
-      "unit": "db"
+      "unit": "dB"
      }
     ]
    },
@@ -883,7 +883,7 @@
      {
       "role": "threshold",
       "value": -20,
-      "unit": "khz"
+      "unit": "kHz"
      },
      {
       "role": "ratio",
@@ -907,7 +907,7 @@
      {
       "role": "threshold",
       "value": -20,
-      "unit": "db"
+      "unit": "dB"
      },
      {
       "role": "ratio",
@@ -931,7 +931,7 @@
      {
       "role": "threshold",
       "value": -20,
-      "unit": "db"
+      "unit": "dB"
      },
      {
       "role": "ratio",
@@ -955,7 +955,7 @@
      {
       "role": "threshold",
       "value": -20,
-      "unit": "db"
+      "unit": "dB"
      },
      {
       "role": "ratio",
@@ -992,12 +992,12 @@
      {
       "role": "band_freq",
       "value": 1000,
-      "unit": "hz"
+      "unit": "Hz"
      },
      {
       "role": "band_gain",
       "value": 3,
-      "unit": "db"
+      "unit": "dB"
      }
     ]
    },
@@ -1016,12 +1016,12 @@
      {
       "role": "hpf_freq",
       "value": 100,
-      "unit": "hz"
+      "unit": "Hz"
      },
      {
       "role": "hpf_slope",
       "value": 18,
-      "unit": "db"
+      "unit": "dB"
      }
     ]
    },

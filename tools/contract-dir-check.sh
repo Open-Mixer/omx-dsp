@@ -10,13 +10,13 @@
 # The checkout gives the reader (bin/omx-contract.mjs, its node_modules installed), the installer
 # (tools/install-contract-dir.sh) and omx-contract's own data/, installed as the package omx-contract. Both
 # packages go into <build dir>/dir; then, with that directory:
-#   validate --needs omx-dsp@'>= <this version>' --catalogs catalogs   every file found, hashed, floored, validated and
-#                                       merged, and every key of this tree's catalogs one of its words
+#   validate --catalogs catalogs                   every file found, hashed, validated and merged, and every key of
+#                                                  this tree's catalogs one of its words
 #   links --check --package omx-dsp                every source link resolves in this tree
 #   fmt --check --data data                        the files are in the one formatting
-# and three arms that must each be refused with their code: an installed file changed after the manifest
-# (contract.manifest.mismatch), a file installed with no schema floor (contract.schema.floor-absent) and an
-# impl link to a symbol this tree does not define (contract.source.symbol-absent).
+# and two arms that must each be refused with their code: an installed file changed after the manifest
+# (contract.manifest.mismatch) and an impl link to a symbol this tree does not define
+# (contract.source.symbol-absent). No version floor is stated or held (owner ruling 2026-11-24).
 # It reads only against a contract that already dropped this tree's files (no overlap: a definition has one
 # installed home, and the reader refuses a second with contract.item.duplicate). A checkout that still carries one of
 # them is an environment this check cannot read, exit 2, named, before anything runs.
@@ -68,7 +68,7 @@ fi
 
 dir="$out/dir"
 install_both "$dir" "$HERE/data"
-oc validate --contract-dir "$dir" --needs "omx-dsp@>= $version" --catalogs "$HERE/catalogs"
+oc validate --contract-dir "$dir" --catalogs "$HERE/catalogs"
 oc links --check --root "$HERE" --contract-dir "$dir" --package omx-dsp
 oc fmt --check --data "$HERE/data"
 
@@ -78,16 +78,6 @@ f="$(cd "$dir/$major/omx-dsp" && find . -name '*.json' ! -name MANIFEST.json | L
 sed -i '0,/"doc": "/s//"doc": "changed /' "$dir/$major/omx-dsp/$f"
 refused contract.manifest.mismatch "an installed file changed after its manifest" oc validate --contract-dir "$dir" || bad=1
 
-# a file installed without its schema floor
-scratch="$out/no-floor"; rm -rf "$scratch"; cp -r "$HERE/data" "$scratch"
-f="$(cd "$scratch" && find . -name '*.json' | LC_ALL=C sort | head -1)"
-# the floor removed as data, not by layout: a regex over the text matched nothing once the layout moved, and the arm
-# then tested an unchanged file; node is already this check's need (the reader), perl was not declared anywhere
-node -e 'const fs=require("fs"),f=process.argv[1],d=JSON.parse(fs.readFileSync(f,"utf8")); if(!d.requires?.["omx-contract-schema"]) process.exit(3); delete d.requires["omx-contract-schema"]; if(!Object.keys(d.requires).length) delete d.requires; fs.writeFileSync(f,JSON.stringify(d,null,2)+"\n")' "$scratch/$f" \
-  || { echo "contract-dir-check: $f carries no omx-contract-schema floor to remove: the no-floor arm tests nothing" >&2; exit 1; }
-install_both "$out/dir-no-floor" "$scratch"
-refused contract.schema.floor-absent "a file with no schema floor" oc validate --contract-dir "$out/dir-no-floor" || bad=1
-
 # an impl link to a symbol this tree does not define
 scratch="$out/bad-link"; rm -rf "$scratch"; cp -r "$HERE/data" "$scratch"
 f="$(cd "$scratch" && grep -l '"impl": "' -r . | LC_ALL=C sort | head -1)"
@@ -96,4 +86,4 @@ install_both "$out/dir-bad-link" "$scratch"
 refused contract.source.symbol-absent "an impl link to an undefined symbol" oc links --check --root "$HERE" --contract-dir "$out/dir-bad-link" --package omx-dsp || bad=1
 
 [ "$bad" = 0 ] || exit 1
-echo "contract-dir-check: data/ installs as omx-dsp $version beside omx-contract $ocversion and reads back whole; three arms refused"
+echo "contract-dir-check: data/ installs as omx-dsp $version beside omx-contract $ocversion and reads back whole; two arms refused"

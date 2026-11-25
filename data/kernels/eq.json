@@ -1,8 +1,5 @@
 {
   "$schema": "../../schema/omx-contract.schema.json",
-  "requires": {
-    "omx-contract-schema": ">= 3.0.0"
-  },
   "controls": [
     {
       "name": "hpfOn",
@@ -174,7 +171,7 @@
         "min": 0.3,
         "max": 8,
         "step": 0.1,
-        "unit": ""
+        "unit": "none"
       },
       "count": "EQ_BAND_COUNTS"
     },
@@ -193,7 +190,7 @@
         "min": 0.3,
         "max": 116,
         "step": 0.1,
-        "unit": ""
+        "unit": "none"
       },
       "of": "q",
       "when": {
@@ -233,8 +230,8 @@
         },
         "impl": "include/omxdsp/fx/omx_eq_instance.h#nb"
       },
-      "doc": "The maximum number of parametric bands a channel EQ may hold — the operator can add up to this many. Generated into `omx_contract_limits.h` as `OMX_EQ_MAX_BANDS`, which `omx_biquad.h` reads (the engine's conformance test reads the header): the native lane allocates exactly this many biquad slots per channel and silently clamps above it, so the model, the wire, and the DSP agree by test, not by memory.",
-      "unit": "",
+      "doc": "The maximum number of parametric bands a channel EQ may hold — the operator can add up to this many. Rendered into `omxdsp/omxdsp_definitions.h` as `OMX_EQ_MAX_BANDS`, which `omx_biquad.h` reads (the engine's conformance test reads the header): the native lane allocates exactly this many biquad slots per channel and silently clamps above it, so the model, the wire, and the DSP agree by test, not by memory.",
+      "unit": "none",
       "value": 24
     },
     "ISO_THIRD_OCTAVE_CENTRES_HZ": {
@@ -291,8 +288,8 @@
         },
         "impl": "include/omxdsp/fx/omx_geq_instance.h#acc"
       },
-      "doc": "The graphic EQ's section count: DERIVED from ISO_THIRD_OCTAVE_CENTRES_HZ, never a second literal. Generated into `omx_contract_limits.h` as `OMX_GEQ_BANDS`, which sizes `mix_geq.h`'s section array — its OWN budget, never a claimant on EQ_MAX_BANDS (roster ruling 3).",
-      "unit": "",
+      "doc": "The graphic EQ's section count: DERIVED from ISO_THIRD_OCTAVE_CENTRES_HZ, never a second literal. Rendered into `omxdsp/omxdsp_definitions.h` as `OMX_GEQ_BANDS`, which sizes `mix_geq.h`'s section array — its OWN budget, never a claimant on EQ_MAX_BANDS (roster ruling 3).",
+      "unit": "none",
       "value": {
         "derive": "count",
         "of": "ISO_THIRD_OCTAVE_CENTRES_HZ"
@@ -307,7 +304,7 @@
         }
       },
       "doc": "The band slots kept for the operator's own hand: the reserve the feedback suppressor and the ring correction may never eat into. Nine is the working set a live EQ actually holds. The budget OPERATOR_EQ_BANDS_RESERVE + FBS_DEFAULT_MAX_AUTO_BANDS + HRP_DEFAULT_MAX_AUTO_BANDS (9 + 6 + 8 = 23) must fit EQ_MAX_BANDS, and `omx-contract validate` refuses data where it does not.",
-      "unit": "",
+      "unit": "none",
       "value": 9
     },
     "EQ_BAND_COUNTS": {

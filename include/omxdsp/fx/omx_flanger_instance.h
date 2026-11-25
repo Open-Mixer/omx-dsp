@@ -41,29 +41,43 @@
 #include <omxdsp/fx/omx_instance_io.h>
 #include <omxdsp/omx_param.h>
 
+/** @brief Audio legs in and out: TWO, a stereo pair. */
 #define OMX_FLANGER_INSTANCE_CHANNELS 2
+/** @brief The latency the instance reports to its host, frames: none. */
 #define OMX_FLANGER_INSTANCE_LATENCY_FRAMES 0.0f
 
 /** Port defaults: the declaration's (FLANGER_*_RANGE.default). */
 #define OMX_FLANGER_INSTANCE_DEPTH_MS_DEFAULT ((float)OMX_FLANGER_DEPTH_RANGE_DEFAULT)
+/** @brief The rate port's default, Hz (FLANGER_RATE_RANGE.default). */
 #define OMX_FLANGER_INSTANCE_RATE_HZ_DEFAULT ((float)OMX_FLANGER_RATE_RANGE_DEFAULT)
+/** @brief The feedback port's default, signed (FLANGER_FEEDBACK_RANGE.default). */
 #define OMX_FLANGER_INSTANCE_FEEDBACK_DEFAULT ((float)OMX_FLANGER_FEEDBACK_RANGE_DEFAULT)
+/** @brief The mix port's default, percent (FLANGER_MIX_RANGE.default). */
 #define OMX_FLANGER_INSTANCE_MIX_PCT_DEFAULT ((float)OMX_FLANGER_MIX_RANGE_DEFAULT)
 
 /** One instance. It owns its rings; the kernel is armed over the first `cap` floats of each. */
 typedef struct {
+  /** The sample rate init bound the instance to, Hz. */
   float sr;
+  /** The kernel's controls as resolve() last resolved them; run() hands them to the kernel's process. */
   struct omx_flanger atom;
+  /** The kernel's running state, carried from block to block and handed to its process with the atom. */
   struct omx_flanger_state state;
+  /** The left leg's ring, inline; the kernel's left line is armed over its first `cap` floats. */
   float ring_l[OMX_FLANGER_CAP];
+  /** The right leg's ring, inline; the kernel's right line is armed over its first `cap` floats. */
   float ring_r[OMX_FLANGER_CAP];
+  /** The floats of each ring the kernel uses, omx_flanger_instance_cap_for() at `sr`, set by init. */
   uint32_t cap;
   /** The previous cycle's engaged flag, so a bypass->engaged edge can clear the rings. */
   int was_engaged;
+  /** Non-zero once init bound the instance to a usable rate; while zero, resolve() does nothing and run() leaves the output as the input. */
   int ready;
 } OmxFlangerInstance;
 
 /** The ring, per leg, the deepest sweep needs at `sr`: the floats of each inline ring the kernel uses.
+ * @param sr The sample rate, Hz.
+ * @return The line's capacity, floats, for a delay of OMX_FLANGER_BASE_MS plus OMX_FLANGER_MAX_DEPTH_MS at `sr`.
  * @thread audio */
 static inline uint32_t omx_flanger_instance_cap_for(float sr) {
   return omx_fdelay_cap_for((OMX_FLANGER_BASE_MS + OMX_FLANGER_MAX_DEPTH_MS) * 0.001f * sr,
@@ -93,6 +107,8 @@ static inline int omx_flanger_instance_init(OmxFlangerInstance *s, float sr) {
 /** Clear the rings and restart the oscillator — the re-enable recipe. A bounded memset over the
  * instance's own rings, no allocation.
  * @param s The instance; null or not ready is ignored.
+ * @post `cleared-ring-is-silent`: both rings read 0 at their ends, the oscillator's phase and both feedback words are
+ *       back at 0.
  * @thread audio */
 static inline void omx_flanger_instance_clear(OmxFlangerInstance *s) {
   if (!s || !s->ready) return;
@@ -104,15 +120,25 @@ static inline void omx_flanger_instance_clear(OmxFlangerInstance *s) {
 }
 #undef OMX_CONTRACT_STAGE
 
+#define OMX_CONTRACT_STAGE "flanger/instance-resolve"
 /**
  * Resolve the host's control-port values into the kernel's atom for one cycle. `bypass` non-zero
  * disables the atom. The arguments are the kernel's contract controls, in their declared order and
  * user units: `rate` (Hz), `depth` (ms), `feedback` (signed) and `mix` (percent), each clamped
  * into its declared travel, a non-finite word reading as the declared default; the kernel's own
  * feedback clamp stays the last line before the recursion.
+ * @param s The instance; null or not ready leaves it as it is.
+ * @param bypass Non-zero makes run() the identity.
+ * @param rate rate, 0.05 to 5 Hz, default 0.25: The flanger's jet sweep.
+ * @param depth depth, 0 to 5 ms, default 2: The flanger's peak-to-peak excursion above its declared 0.5 ms base.
+ * @param feedback feedback, -0.95 to 0.95, default 0.6: The flanger's SIGNED resonance.
+ * @param mix mix, 0 to 100 \%, default 50: The flanger's wet/dry, as an instance of DRIVE_MIX_RANGE: 50 \%, equal dry
+ *        and wet, where the comb is deepest.
+ * @post `atom-meets-the-kernel-preconditions`: the mix inside [0, 1], the feedback inside ±OMX_FLANGER_FB_MAX, the
+ *       depth not negative, the oscillator's increment inside [0, 1), and the base plus the depth inside the line's
+ *       longest delay.
  * @thread audio
  */
-#define OMX_CONTRACT_STAGE "flanger/instance-resolve"
 static inline void omx_flanger_instance_resolve(OmxFlangerInstance *s, int bypass, float rate,
                                                 float depth, float feedback, float mix) {
   if (!s || !s->ready) return;

@@ -1,8 +1,5 @@
 {
   "$schema": "../../schema/omx-contract.schema.json",
-  "requires": {
-    "omx-contract-schema": ">= 3.0.0"
-  },
   "BS1770_ABSOLUTE_GATE_LUFS": {
     "kind": "scalar",
     "since": "3.0.0",
@@ -60,7 +57,7 @@
       "impl": "include/omxdsp/omx_loudness.h#OMX_LOUDNESS_RANGE_LOW"
     },
     "doc": "The low end of the loudness range of EBU Tech 3342 v4.0 (November 2023), \"Loudness Range: A measure to supplement EBU R 128 loudness normalisation\": the 10th percentile of the gated short-term loudness distribution, as a fraction.",
-    "unit": "",
+    "unit": "none",
     "value": 0.1
   },
   "TECH3342_RANGE_HIGH_PERCENTILE": {
@@ -70,7 +67,7 @@
       "impl": "include/omxdsp/omx_loudness.h#OMX_LOUDNESS_RANGE_HIGH"
     },
     "doc": "The high end of the loudness range of EBU Tech 3342 v4.0 (November 2023), \"Loudness Range: A measure to supplement EBU R 128 loudness normalisation\": the 95th percentile of the gated short-term loudness distribution, as a fraction.",
-    "unit": "",
+    "unit": "none",
     "value": 0.95
   }
 }

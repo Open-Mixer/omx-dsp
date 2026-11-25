@@ -49,7 +49,7 @@ macro, and the comment above it says what it checks and carries a record, as OSS
 
 ```
 /* A clamp lands inside its travel, whatever the word.
- * mutant: include/omxdsp/omx_param.h:37 `(v <= hi ? v : hi)` -> `v`
+ * mutant: include/omxdsp/omx_param.h:38 `(v <= hi ? v : hi)` -> `v`
  * input: clamp */
 ```
 

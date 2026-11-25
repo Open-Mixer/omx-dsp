@@ -31,7 +31,7 @@ static uint32_t cd_draw(int model, double amount, double tone, double mix, doubl
   t[n++] = (struct omx_curve_term){OMX_CURVE_ROLES_DRIVE, 0, amount, OMX_CURVE_UNITS_DB, OMX_CURVE_NO_SHAPE, OMX_CURVE_ORIGINS_USER};
   t[n++] = (struct omx_curve_term){OMX_CURVE_ROLES_MODEL, 0, (double)model, OMX_CURVE_UNITS_NONE, OMX_CURVE_NO_SHAPE, OMX_CURVE_ORIGINS_USER};
   if (with_tone) t[n++] = (struct omx_curve_term){OMX_CURVE_ROLES_TONE, 0, tone, OMX_CURVE_UNITS_NONE, OMX_CURVE_NO_SHAPE, OMX_CURVE_ORIGINS_USER};
-  if (with_mix) t[n++] = (struct omx_curve_term){OMX_CURVE_ROLES_MIX, 0, mix, OMX_CURVE_UNITS_PC, OMX_CURVE_NO_SHAPE, OMX_CURVE_ORIGINS_USER};
+  if (with_mix) t[n++] = (struct omx_curve_term){OMX_CURVE_ROLES_MIX, 0, mix, OMX_CURVE_UNITS_PERCENT, OMX_CURVE_NO_SHAPE, OMX_CURVE_ORIGINS_USER};
   if (with_output) t[n++] = (struct omx_curve_term){OMX_CURVE_ROLES_OUTPUT, 0, output, OMX_CURVE_UNITS_DB, OMX_CURVE_NO_SHAPE, OMX_CURVE_ORIGINS_USER};
   const struct omx_curve_request rq = {OMX_CURVE_DISPLAYS_TRANSFER_CURVE, OMX_CURVE_FAMILIES_DRIVE, 48000.0, CD_POINTS, 0, 0.0, 0.0,
                                        t, n, 0, 0.0};
@@ -172,7 +172,7 @@ static void arm_curve_drive(void) {
   }
   ok(omx_curve_word(OMX_CURVE_FAMILY_WORDS, OMX_CURVE_FAMILIES_COUNT, "drive") == OMX_CURVE_FAMILIES_DRIVE &&
      omx_curve_word(OMX_CURVE_ROLE_WORDS, OMX_CURVE_ROLES_COUNT, "tone") == OMX_CURVE_ROLES_TONE &&
-     omx_curve_word(OMX_CURVE_UNIT_WORDS, OMX_CURVE_UNITS_COUNT, "pc") == OMX_CURVE_UNITS_PC,
+     omx_curve_word(OMX_CURVE_UNIT_WORDS, OMX_CURVE_UNITS_COUNT, "percent") == OMX_CURVE_UNITS_PERCENT,
      "the drive's words are the description's", 0, 0);
   expect_clean();
 }

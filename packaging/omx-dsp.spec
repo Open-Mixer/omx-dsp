@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2026 Pau Aliagas <linuxnow@gmail.com>
 Name: omx-dsp
-Version: 0.34.0
+Version: 0.34.1
 Release: 1%{?dist}
 License: GPL-3.0-or-later
 Summary: The audio toolbox of the OpenMixer console, as a real-time-safe C library
@@ -20,16 +20,17 @@ BuildRequires: lld
 BuildRequires: wasi-libc-devel
 BuildRequires: wasi-libc-static
 BuildRequires: pkgconfig
-BuildRequires: omx-contract-devel >= 3.21.0
+BuildRequires: omx-contract-devel
 # The JACK headers by pkgconfig(jack), so a host with PipeWire's JACK (the build image preinstalls its devel package)
 # builds this; and jack2's RUNTIME by name, jackd and its libjack, which check-package's omx-rt-gate host-buffer arm
 # starts and loads, failing by name on PipeWire's. It installs beside PipeWire's JACK libraries. A build requirement
 # only: no package of this spec requires jack2 (omx-rta-read needs libjack.so.0, which either provides).
 BuildRequires: pkgconfig(jack)
 BuildRequires: jack-audio-connection-kit
-# the npm package's module tree (make npm-stage): npm ci fetches the package's pinned TypeScript in ts/, and npm pack's prepack compiles ts/ with it
-BuildRequires: nodejs
-BuildRequires: npm
+# the npm package's module tree (make npm-stage): npm ci fetches the package's pinned TypeScript in ts/, and npm pack's prepack compiles ts/ with it.
+# Node 26, the floor ts/package.json's engines names: nodejs26-npm-bin brings npm and nodejs26-bin, whose /usr/bin/node is 26.
+BuildRequires: nodejs26
+BuildRequires: nodejs26-npm-bin
 
 # Headers and a static archive only: nothing of this package is loaded at run time.
 %global debug_package %{nil}
@@ -49,7 +50,7 @@ Its documentation is on openmixer.org.
 %package devel
 Summary: Headers and static library to build on the OpenMixer audio toolbox
 Provides: %{name}-static = %{version}-%{release}
-Requires: omx-contract-devel >= 3.21.0
+Requires: omx-contract-devel
 Requires: %{name}-contract = %{version}-%{release}
 
 %package -n omx-rt-gate
@@ -84,8 +85,8 @@ Its documentation is on openmixer.org.
 %package contract
 Summary: omx-dsp's kernel and instance declarations, for programs that read them at run time
 BuildArch: noarch
-# the declarations live in omx-contract's contract directory and are read against its schema; a floor only
-Requires: omx-contract-data >= 3.21.0
+# the declarations live in omx-contract's contract directory and are read against its schema (no version)
+Requires: omx-contract-data
 
 %package -n omx-dsp-wasm
 Summary: omx-dsp's curve function as a WebAssembly module, with its JavaScript loader
@@ -127,7 +128,10 @@ Its documentation is on openmixer.org.
 %make_build lib rt-gate-ship rta-read wasm
 
 %install
-%make_install PREFIX=%{_prefix} LIBDIR=%{_libdir} INCLUDEDIR=%{_includedir} install-wasm
+# The npm tree is built under the Node ts/package.json's engines names: the log shows the node, and
+# engine-strict turns npm ci's EBADENGINE warning into the build's failure on an older one.
+node --version
+npm_config_engine_strict=true %make_install PREFIX=%{_prefix} LIBDIR=%{_libdir} INCLUDEDIR=%{_includedir} install-wasm
 
 %check
 %make_build check-package
@@ -177,6 +181,22 @@ Its documentation is on openmixer.org.
 %{_datadir}/omx-dsp/catalogs/
 
 %changelog
+* Tue Nov 24 2026 Pau Aliagas <linuxnow@gmail.com> - 0.34.1-1
+- ROTARY_ACCEL_RANGE travels in coef, the standard unit omx-contract names for
+  a plain multiplier, no longer "x" (#134).
+- No hand-kept version floor (the devel wave 2026-11-24): packaging/deps.txt
+  is gone, the spec, debian/control and omxdsp.pc name omx-contract with no
+  version, and the requires of the 59 data files (each only
+  omx-contract-schema) are removed; the build installs the published
+  omx-contract it is paired with.
+- The curve and meter unit words are the PARAM_UNITS ids (#122): the wire
+  words of CURVE_UNITS and OMX_CURVE_UNIT_WORDS are now "Hz", "kHz", "dB",
+  "dBFS", "dBu", "LUFS", "percent" (were "hz", "khz", "db", "dbfs", "dbu",
+  "lufs", "pc"), and OMX_CURVE_UNITS_PC is OMX_CURVE_UNITS_PERCENT. A
+  consumer that spells the old words or the old enumerator must follow.
+- Every unit data/ states is a PARAM_UNITS standard id (dBPerOct, dBPerS,
+  coef), held by make units-check.
+
 * Sat Nov 21 2026 Pau Aliagas <linuxnow@gmail.com> - 0.34.0-1
 - Sorting pass: RT_HARD_TARGET, ORACLE_FLOOR_RATES and ORACLE_FULL_RATES (V25),
   CURVE_AXES and CURVE_KINDS with their translations (V26 and its

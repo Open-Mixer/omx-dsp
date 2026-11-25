@@ -5,6 +5,7 @@
 
 #include "../fx/fdelay_oracle.h"
 #include "../fx/fx_rates.h"
+#include "fixtures/fdelay_read_l1.h"
 
 /* ---- the fractional delay line -------------------------------------------------------------- */
 
@@ -14,6 +15,12 @@ static void fd_arm_tick_pair(void);
 static void arm_fdelay(void) {
   g_arm = "fdelay";
   static float ring[4096];
+  /* The declared Λ (OMX_FDELAY_READ_L1_NORM, this library's value) IS the worst L1 norm of the read at the declared
+   * order (OMX_FDELAY_MOD_READ_ORDER) over 1024 fractions, rounded to 1e-9: the value's oracle is the kernel. */
+  {
+    const double l1 = omx_test_fdelay_read_l1(OMX_FDELAY_MOD_READ_ORDER);
+    ok(l1 == OMX_FDELAY_READ_L1_NORM_DOUBLE, "the declared read L1 norm is the kernel's worst", l1, OMX_FDELAY_READ_L1_NORM_DOUBLE);
+  }
   for (int order = 3; order <= 5; order += 2) {
     /* the kernel is unity at DC at every fraction, and the identity at a zero fraction */
     for (int fi = 0; fi < 50; fi++) {
