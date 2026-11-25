@@ -16,6 +16,9 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 PKG="$(cd "$HERE/.." && pwd)"
 OUT="${1:?scratch dir}"
 NODE="${NODE:-node}"
+# cmp (diffutils) is what proves a sabotage changed its copy. Without it `cmp -s … && { FAIL }` is false on "command not
+# found", so a sabotage that matched nothing went through unseen (fedora:45's image carries no diffutils).
+command -v cmp >/dev/null 2>&1 || { echo "wasm-sabotage: FAIL — no cmp on PATH (diffutils): a sabotage that matched nothing could not be seen"; exit 1; }
 mkdir -p "$OUT"
 sh "$PKG/tools/wasm-build.sh" "$OUT/control.wasm" "$PKG/wasm/omx_curve_wasm.c" >/dev/null
 "$NODE" "$PKG/tools/wasm-check.mjs" "$OUT/control.wasm" >/dev/null || { echo "wasm-sabotage: FAIL — the control is red"; exit 1; }

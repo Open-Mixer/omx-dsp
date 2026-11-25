@@ -2,16 +2,23 @@
 # Copyright (C) 2026 Pau Aliagas <linuxnow@gmail.com>
 name: release
 
-# A version tag builds omx-dsp-devel (RPM, fc45 x86_64; Fedora 45 aarch64 is not built, owner ruling 2026-11-19) and libomxdsp-dev (DEB, bookworm and
-# trixie, amd64 and arm64), signs them, publishes them into the rpm/ and deb/ trees of the OpenMixer
-# Pages repository and attaches the RPMs to the GitHub release. Anything else builds unsigned trees and
-# publishes nothing. Everything is in Open-Mixer/.github; the secrets are the organisation's.
-
-# A manual run with staged on (never a tag) builds fc45 x86_64 and trixie amd64 only, against the staging channel, and
-# publishes them, signed, to the staging channel (staging/rpm and staging/deb of the channel repository), where the
-# next layer of the release chain finds them by adding the staging channel beside the real one. Nothing reaches the
-# real channel, and the real release still publishes once from the v<version> tag (Open-Mixer/.github build-rpm.yml
-# and build-deb.yml).
+# Two paths, one build. A manual run with staged on BUILDS omx-dsp-devel and omx-rt-gate (RPM, fc45 x86_64; Fedora 45
+# aarch64 is not built, owner ruling 2026-11-19) and libomxdsp-dev, omx-rt-gate and omx-dsp-contract (DEB, amd64 and
+# arm64) through Open-Mixer/.github's build-rpm.yml and build-deb.yml, signed, into the staging channel (staging/rpm and
+# staging/deb of the channel repository), where the next layer builds against them. The quick set by default (matrix:
+# quick, the staging of a devel run); a promotion candidate is dispatched with matrix: full, the only staged tree a tag
+# can promote (promote-staged refuses one that lacks a release or architecture). Without staged, a dispatch (and the
+# ci.yml dry run that calls this workflow) builds unsigned trees and publishes nothing.
+#
+# A version tag v<make version> PROMOTES and never builds: on the commit the staged build recorded, and that commit on
+# main (fast-forward main to it first), Open-Mixer/.github promote-staged.yml copies the identical signed files that
+# commit left under staging/ to the channel root, rpm and deb, re-signs the repository metadata, checks the channel
+# serves the same bytes and that they install, and creates the GitHub release; the C API reference is attached to it.
+# What the layers above were built against is what ships. npm follows the promotion, never the bare tag: publish.yml
+# runs when this workflow completes for a v* tag and publishes only when its promote jobs all succeeded.
+#
+# A manual run with version (and commit) set is a dry run of the promotion: it finds and checks the staged build and
+# publishes nothing.
 
 on:
   push:
@@ -21,13 +28,26 @@ on:
   workflow_dispatch:
     inputs:
       arm:
-        description: 'Build the arm64 DEBs too (a dispatched release needs them, as a tag push does); no Fedora aarch64 RPM is built'
+        description: 'Build the arm64 DEBs too (a dispatched release needs them); no Fedora aarch64 RPM is built'
         type: boolean
         default: true
       staged:
-        description: 'Build fc45 x86_64 and trixie amd64 only and publish them to the staging channel for the next layer; publishes nothing to the real channel'
+        description: 'Build and publish to the staging channel for the next layer (the matrix below); publishes nothing to the real channel'
         type: boolean
         default: false
+      matrix:
+        description: 'quick (fc45 x86_64, trixie arm64: the staging of every devel run) or full (every release and architecture: a promotion candidate, the only tree a tag can promote)'
+        type: choice
+        options: [quick, full]
+        default: quick
+      version:
+        description: 'A dry run of the promotion: the staged version to find (no v). Set, nothing is built'
+        type: string
+        default: ''
+      commit:
+        description: 'A dry run of the promotion: the commit of the staged build, short or full'
+        type: string
+        default: ''
   workflow_call:
     inputs:
       runner:
@@ -48,13 +68,39 @@ permissions:
   actions: read
 
 jobs:
+  # A tag names the library's version and sits on main: devel -> testing -> main by fast-forward, then the tag
+  check:
+    name: The tag is the version, on main
+    if: github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: The tag names the library version
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          want="v$(make -s version)"
+          [ "$TAG" = "$want" ] || { echo "::error::tag $TAG is not $want (make version)"; exit 1; }
+      - name: The tag is on main
+        run: |
+          git fetch -q origin main
+          main=$(git rev-parse -q --verify origin/main) || { echo "::error::no origin/main to hold the tag to"; exit 1; }
+          git merge-base --is-ancestor "$GITHUB_SHA" "$main" || { echo "::error::the tag's commit $GITHUB_SHA is not on main ($main): fast-forward main to it first"; exit 1; }
+
   rpm:
+    # the build path: a dispatch or the ci.yml dry run, never a tag (a tag promotes what this staged)
+    if: github.ref_type != 'tag' && !inputs.version
     uses: Open-Mixer/.github/.github/workflows/build-rpm.yml@openmixer-v1
     with:
       staged: ${{ inputs.staged == true }}
+      matrix: ${{ inputs.matrix || '' }}
       package-name: omx-dsp
       binary-names: omx-dsp-devel omx-rt-gate
-      publish: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') }}
+      publish: false
       needs-mod-host: false
       runner: ${{ inputs.runner || 'ubuntu-latest' }}
       # x86_64 only: the owner ruling of 2026-11-19 stops building Fedora 45 aarch64 (the deb arm64 cells stay)
@@ -64,12 +110,15 @@ jobs:
 
   # beside the RPMs: the two publish jobs share one concurrency group, so their pushes never race
   deb:
+    # the build path: a dispatch or the ci.yml dry run, never a tag (a tag promotes what this staged)
+    if: github.ref_type != 'tag' && !inputs.version
     uses: Open-Mixer/.github/.github/workflows/build-deb.yml@openmixer-v1
     with:
       staged: ${{ inputs.staged == true }}
+      matrix: ${{ inputs.matrix || '' }}
       package-name: omx-dsp
       binary-names: libomxdsp-dev omx-rt-gate omx-dsp-contract
-      publish: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') }}
+      publish: false
       dependencies: ''
       runner: ${{ inputs.runner || 'ubuntu-latest' }}
       arch-matrix: ${{ (github.event_name != 'push' && inputs.arm == false) && '["amd64"]' || '["amd64", "arm64"]' }}
@@ -77,9 +126,26 @@ jobs:
       channel-deps: true
     secrets: inherit
 
-  # the generated C API reference, fetched by the website from the release assets
+  # The tag path: the staged build becomes the release, byte for byte (no rebuild, no re-sign). binary-names are the
+  # packages both kinds build, which every release and architecture must hold; every file of the commit goes along.
+  # The rpm architectures are the build's (x86_64 alone, owner ruling 2026-11-19).
+  promote:
+    if: ${{ !cancelled() && ((github.ref_type == 'tag' && needs.check.result == 'success') || (github.event_name == 'workflow_dispatch' && inputs.version != '')) }}
+    needs: check
+    uses: Open-Mixer/.github/.github/workflows/promote-staged.yml@openmixer-v1
+    with:
+      package-name: omx-dsp
+      binary-names: omx-rt-gate
+      rpm-arch-matrix: '["x86_64"]'
+      version: ${{ inputs.version || '' }}
+      commit: ${{ inputs.commit || '' }}
+    secrets: inherit
+
+  # the generated C API reference, fetched by the website from the release assets: kept by a build run, attached to the
+  # release a promotion created
   api-docs:
-    needs: [rpm, deb]
+    needs: [rpm, deb, promote]
+    if: ${{ !cancelled() && ((github.ref_type == 'tag' && needs.promote.result == 'success') || (needs.rpm.result == 'success' && needs.deb.result == 'success')) }}
     # the same doxygen the documentation gate runs on (public-sources.yml)
     runs-on: ubuntu-24.04
     timeout-minutes: 10
@@ -95,7 +161,7 @@ jobs:
           make docs
           tar -czf "omx-dsp-api-docs-$(make -s version).tar.gz" -C build/docs html
 
-      # the dry run proves the build and keeps the tarball for inspection; only a tag publishes it
+      # the dry run proves the build and keeps the tarball for inspection; only a promoted tag publishes it
       - name: Keep the tarball (dry run)
         if: ${{ github.ref_type != 'tag' || github.event_name != 'push' }}
         uses: actions/upload-artifact@v4
