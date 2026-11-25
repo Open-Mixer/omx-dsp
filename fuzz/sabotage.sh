@@ -38,6 +38,12 @@ restore() {
 trap 'restore' EXIT
 trap 'restore; exit 130' INT TERM
 
+# a tree git cannot read (in a CI container: a checkout another user owns, no safe.directory) is no proof of a change:
+# there git diff runs outside any repository and answers 1, so the tree is asked for first and named as what it is
+if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+	echo "fuzz-sabotage: git cannot read this tree as a repository (a checkout another user owns needs safe.directory); refusing to patch it" >&2
+	exit 2
+fi
 if ! git diff --quiet -- src include; then
 	echo "fuzz-sabotage: src/ or include/ has uncommitted changes; refusing to patch over them" >&2
 	exit 2
