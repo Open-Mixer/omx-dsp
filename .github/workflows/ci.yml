@@ -477,11 +477,11 @@ jobs:
           grep -q '^/usr/share/omx-dsp/wasm/omx-dsp.wasm$' listing.txt
           contract=$(ls rpms/omx-dsp-contract-[0-9]*.noarch.rpm)
           rpm -qlp "$contract" > contract.txt
-          grep -q '^/usr/share/omx-contract/contract.d/3/omx-dsp/MANIFEST.json$' contract.txt
-          grep -q '^/usr/share/omx-contract/contract.d/3/omx-dsp/render.json$' contract.txt
+          grep -q '^/usr/share/omx-contract/contract.d/omx-dsp/MANIFEST.json$' contract.txt
+          grep -q '^/usr/share/omx-contract/contract.d/omx-dsp/render.json$' contract.txt
           # every definition file of data/ is installed, under the same relative path
-          diff <(cd data && find . -name '*.json' | sed 's|^\./|/usr/share/omx-contract/contract.d/3/omx-dsp/|' | sort) \
-               <(grep '^/usr/share/omx-contract/contract.d/3/omx-dsp/.*\.json$' contract.txt | grep -v '/MANIFEST\.json$' | sort)
+          diff <(cd data && find . -name '*.json' | sed 's|^\./|/usr/share/omx-contract/contract.d/omx-dsp/|' | sort) \
+               <(grep '^/usr/share/omx-contract/contract.d/omx-dsp/.*\.json$' contract.txt | grep -v '/MANIFEST\.json$' | sort)
 
       - name: A consumer builds against omx-dsp-devel
         run: |
@@ -564,9 +564,9 @@ jobs:
           for f in /usr/bin/omx-rt-gate /usr/share/man/man1/omx-rt-gate.1.gz /usr/share/omxdsp/rt-gate/tables/forbidden.tbl \
                    /usr/share/omxdsp/rt-gate/omx-dsp.tags /usr/share/omxdsp/rt-gate/graphs/omx_fbs_detect.ci; do grep -q "^$f\$" listing.txt; done
           dpkg -L omx-dsp-contract > listing.txt
-          grep -q '^/usr/share/omx-contract/contract.d/3/omx-dsp/MANIFEST.json$' listing.txt
-          diff <(cd data && find . -name '*.json' | sed 's|^\./|/usr/share/omx-contract/contract.d/3/omx-dsp/|' | sort) \
-               <(grep '^/usr/share/omx-contract/contract.d/3/omx-dsp/.*\.json$' listing.txt | grep -v '/MANIFEST\.json$' | sort)
+          grep -q '^/usr/share/omx-contract/contract.d/omx-dsp/MANIFEST.json$' listing.txt
+          diff <(cd data && find . -name '*.json' | sed 's|^\./|/usr/share/omx-contract/contract.d/omx-dsp/|' | sort) \
+               <(grep '^/usr/share/omx-contract/contract.d/omx-dsp/.*\.json$' listing.txt | grep -v '/MANIFEST\.json$' | sort)
           test "$(pkg-config --modversion omxdsp)" = "$(make -s version)"
           gcc $(pkg-config --cflags omxdsp) -Itest/fx -include test/support/log10f_subst.h -O2 -o /tmp/golden test/fx/delay_golden.test.c $(pkg-config --libs omxdsp)
           /tmp/golden test/golden/delay.sha256

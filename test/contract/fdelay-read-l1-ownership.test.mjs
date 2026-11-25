@@ -115,11 +115,10 @@ function strayIdentifiers(sources) {
 function compiledRead(dspData) {
   const dir = scratchDir('omx-dsp-l1-');
   const ocVersion = JSON.parse(readFileSync(join(OC, 'package.json'), 'utf8')).version;
-  const major = JSON.parse(readFileSync(join(OC, 'schema/omx-contract.schema.json'), 'utf8'))['x-omx-schema-version'].split('.')[0];
   const version = execFileSync('make', ['-s', '-C', HERE, 'version'], { encoding: 'utf8' }).trim();
   const install = (...a) => execFileSync('sh', [join(OC, 'tools/install-contract-dir.sh'), ...a], { stdio: ['ignore', 'ignore', 'inherit'] });
-  install('-x', 'scale-vectors.json', 'omx-contract', ocVersion, major, join(OC, 'data'), join(dir, 'dir'), 'data');
-  install('omx-dsp', version, major, dspData, join(dir, 'dir'), 'data');
+  install('-x', 'scale-vectors.json', 'omx-contract', ocVersion, join(OC, 'data'), join(dir, 'dir'), 'data');
+  install('omx-dsp', version, dspData, join(dir, 'dir'), 'data');
   execFileSync('node', [join(OC, 'bin/omx-contract.mjs'), 'render', '--target', 'c', '--package', 'omx-dsp', '--contract-dir', join(dir, 'dir'),
     '--out', join(dir, 'include')], { cwd: OC, stdio: ['ignore', 'ignore', 'inherit'] });
   const src = join(dir, 'read.c');

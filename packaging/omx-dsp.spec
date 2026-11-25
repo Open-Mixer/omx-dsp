@@ -106,7 +106,7 @@ Its documentation is on openmixer.org.
 %description contract
 omx-dsp's package of omx-contract's contract directory: the declarations of
 its kernels and instance faces (their controls, units and readouts) under
-/usr/share/omx-contract/contract.d/3/omx-dsp. A program that reads them while
+/usr/share/omx-contract/contract.d/omx-dsp. A program that reads them while
 it runs (a panel, the omx-contract command) needs this package, not the
 development one.
 Its documentation is on openmixer.org.
@@ -177,7 +177,7 @@ npm_config_engine_strict=true %make_install PREFIX=%{_prefix} LIBDIR=%{_libdir} 
 %files contract
 %license LICENSE
 %doc README.md
-%{_datadir}/omx-contract/contract.d/3/omx-dsp/
+%{_datadir}/omx-contract/contract.d/omx-dsp/
 %{_datadir}/omx-dsp/catalogs/
 
 %changelog

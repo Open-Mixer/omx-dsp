@@ -72,7 +72,7 @@ Depends: omx-contract-data, ${misc:Depends}
 Description: omx-dsp's kernel and instance declarations, read at run time
  omx-dsp's package of omx-contract's contract directory: the declarations of
  its kernels and instance faces (their controls, units and readouts) under
- /usr/share/omx-contract/contract.d/3/omx-dsp. A program that reads them while
+ /usr/share/omx-contract/contract.d/omx-dsp. A program that reads them while
  it runs (a panel, the omx-contract command) needs this package, not the
  development one.
  .
