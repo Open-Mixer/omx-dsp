@@ -53,8 +53,9 @@ jobs:
           cat jobs.tsv
           promote=$(grep -c '^promote / ' jobs.tsv || true)
           [ "$promote" -gt 0 ] || { echo "::error::release run $RUN of $TAG has no promote job: nothing was promoted, npm is not published"; exit 1; }
-          # a dry-run-only job of the promotion (the unsigned trees) is skipped on a tag: skipped passes, failed never does
-          bad=$(grep '^promote / ' jobs.tsv | awk -F'\t' '$2 != "success" && $2 != "skipped"' || true)
+          # only a dry-run-only job of the promotion ("..., nothing is published": the unsigned trees) may be skipped on a
+          # tag; every other promote job must succeed, a skipped install check or release gate included
+          bad=$(grep '^promote / ' jobs.tsv | awk -F'\t' '$2 != "success" && !($2 == "skipped" && $1 ~ /, nothing is published$/)' || true)
           [ -z "$bad" ] || { echo "::error::the promotion of $TAG did not succeed, npm is not published:"; echo "$bad"; exit 1; }
           # the jobs that put the release in the channel each succeeded: none of them skipped
           for job in 'Promote the RPMs' 'Promote the DEBs' 'The channel serves the same bytes' 'GitHub release'; do
