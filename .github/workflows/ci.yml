@@ -181,7 +181,7 @@ jobs:
       - name: Install the toolchain
         run: |
           if command -v dnf >/dev/null; then
-            dnf install -y --setopt=tsflags=nodocs --setopt=install_weak_deps=False make gcc git curl tar gzip pkgconf-pkg-config clang lld wasi-libc-devel wasi-libc-static dnf5-plugins
+            dnf install -y --setopt=tsflags=nodocs --setopt=install_weak_deps=False make gcc git curl tar gzip diffutils pkgconf-pkg-config clang lld wasi-libc-devel wasi-libc-static dnf5-plugins
           else
             apt-get update -qq
             apt-get -o Dpkg::Options::=--force-unsafe-io install -y --no-install-recommends make gcc git ca-certificates curl pkgconf dpkg-dev clang lld wasi-libc
