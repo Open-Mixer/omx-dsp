@@ -192,15 +192,14 @@ DATADIR    ?= $(PREFIX)/share
 MANDIR     ?= $(DATADIR)/man
 DESTDIR    ?=
 # The definitions this library implements (data/) install as the package omx-dsp of the installed
-# omx-contract's contract directory, <contractdir>/<schema major>/omx-dsp/, with the installer that
+# omx-contract's contract directory, <contractdir>/omx-dsp/ (it has no schema-major level), with the installer that
 # omx-contract ships beside its schema: plain shell, no node. Read when `make install` runs, only.
 # The contract directory is PREFIX's own (<DATADIR>/omx-contract/contract.d, where omx-contract.pc puts it at
 # PREFIX=/usr): install writes nowhere outside DESTDIR+PREFIX, so the installed omx-contract's directory is never
-# the target of another prefix (#75). Only the installer and the schema major are read from omx-contract.
+# the target of another prefix (#75). Only the installer is read from omx-contract.
 CONTRACTDIR        ?= $(DATADIR)/omx-contract/contract.d
 CONTRACT_DATADIR    = $(shell pkg-config --variable=datadir omx-contract 2>/dev/null)
 CONTRACT_INSTALLER ?= $(CONTRACT_DATADIR)/install-contract-dir.sh
-CONTRACT_MAJOR      = $(shell sed -n 's/^  "x-omx-schema-version": "\([0-9]*\)\..*",$$/\1/p' $(CONTRACT_DATADIR)/omx-contract.schema.json 2>/dev/null)
 VERSION    := $(shell sed -n 's/^\#define OMXDSP_VERSION_\(MAJOR\|MINOR\|PATCH\) \([0-9]*\)$$/\2/p' include/omxdsp/omxdsp.h | paste -sd.)
 
 
@@ -1207,9 +1206,9 @@ install: $(LIBS_ALL) $(PC_ALL) $(EXPORTS) install-rt-gate install-rta-read
 	install -m 0644 include/omxdsp/mix/*.h $(DESTDIR)$(INCLUDEDIR)/omxdsp/mix/
 	install -m 0644 $(LIBS_ALL) $(DESTDIR)$(LIBDIR)/
 	install -m 0644 $(PC_ALL) $(DESTDIR)$(LIBDIR)/pkgconfig/
-	@test -n "$(CONTRACTDIR)" && test -f "$(CONTRACT_INSTALLER)" && test -n "$(CONTRACT_MAJOR)" || \
-	  { echo "install: the installed omx-contract names no contract directory, installer or schema major (contractdir and datadir of omx-contract.pc): data/ cannot be installed" >&2; exit 1; }
-	sh $(CONTRACT_INSTALLER) omx-dsp $(VERSION) $(CONTRACT_MAJOR) data $(DESTDIR)$(CONTRACTDIR) data
+	@test -n "$(CONTRACTDIR)" && test -f "$(CONTRACT_INSTALLER)" || \
+	  { echo "install: the installed omx-contract names no contract directory or installer (contractdir and datadir of omx-contract.pc): data/ cannot be installed" >&2; exit 1; }
+	sh $(CONTRACT_INSTALLER) omx-dsp $(VERSION) data $(DESTDIR)$(CONTRACTDIR) data
 	install -d $(DESTDIR)$(DATADIR)/omx-dsp/catalogs
 	install -m 0644 catalogs/*.json $(DESTDIR)$(DATADIR)/omx-dsp/catalogs/
 	install -m 0644 $(EXPORTS) $(DESTDIR)$(DATADIR)/omxdsp/

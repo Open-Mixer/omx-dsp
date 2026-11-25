@@ -31,16 +31,15 @@ tool="$OC/bin/omx-contract.mjs" installer="$OC/tools/install-contract-dir.sh"
 command -v node >/dev/null 2>&1 || { echo "contract-dir-check: node is missing" >&2; exit 2; }
 [ -f "$tool" ] && [ -f "$installer" ] && [ -d "$OC/node_modules" ] || { echo "contract-dir-check: $OC has no bin/omx-contract.mjs, tools/install-contract-dir.sh or node_modules (npm ci there)" >&2; exit 2; }
 version="$(make -s -C "$HERE" version)"
-major="$(sed -n 's/^  "x-omx-schema-version": "\([0-9]*\)\..*",$/\1/p' "$OC/schema/omx-contract.schema.json")"
 ocversion="$(sed -n 's/^  "version": "\(.*\)",$/\1/p' "$OC/package.json")"
-[ -n "$major" ] && [ -n "$ocversion" ] || { echo "contract-dir-check: $OC states no schema major or version" >&2; exit 2; }
+[ -n "$ocversion" ] || { echo "contract-dir-check: $OC states no version" >&2; exit 2; }
 oc() { (cd "$OC" && node bin/omx-contract.mjs "$@"); }
 
 # install <dir> <omx-dsp data dir>: the two packages of the contract directory under <dir>
 install_both() {
   rm -rf "$1"; mkdir -p "$1"
-  sh "$installer" -x scale-vectors.json omx-contract "$ocversion" "$major" "$OC/data" "$1" data >/dev/null
-  sh "$installer" omx-dsp "$version" "$major" "$2" "$1" data >/dev/null
+  sh "$installer" -x scale-vectors.json omx-contract "$ocversion" "$OC/data" "$1" data >/dev/null
+  sh "$installer" omx-dsp "$version" "$2" "$1" data >/dev/null
 }
 
 # refused <code> <what> <command...>: the command exits 1 and names the code first on a line
@@ -74,8 +73,8 @@ oc fmt --check --data "$HERE/data"
 
 bad=0
 # an installed file changed after its manifest was written
-f="$(cd "$dir/$major/omx-dsp" && find . -name '*.json' ! -name MANIFEST.json | LC_ALL=C sort | head -1)"
-sed -i '0,/"doc": "/s//"doc": "changed /' "$dir/$major/omx-dsp/$f"
+f="$(cd "$dir/omx-dsp" && find . -name '*.json' ! -name MANIFEST.json | LC_ALL=C sort | head -1)"
+sed -i '0,/"doc": "/s//"doc": "changed /' "$dir/omx-dsp/$f"
 refused contract.manifest.mismatch "an installed file changed after its manifest" oc validate --contract-dir "$dir" || bad=1
 
 # an impl link to a symbol this tree does not define
