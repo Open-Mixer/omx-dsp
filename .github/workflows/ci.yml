@@ -286,7 +286,7 @@ jobs:
         shell: bash
     steps:
       - name: Install the tools
-        run: dnf install -y --setopt=tsflags=nodocs --setopt=install_weak_deps=False make gcc git tar gzip pkgconf-pkg-config dnf5-plugins
+        run: dnf install -y --setopt=tsflags=nodocs --setopt=install_weak_deps=False make gcc git tar gzip diffutils pkgconf-pkg-config dnf5-plugins
 
       - uses: actions/checkout@v4
 
@@ -386,7 +386,11 @@ jobs:
       # a property no breakage can make fail checks nothing: each patch must make its harness abort on the seed it
       # names, at the check it names
       - name: Find every sabotage patch, each at its own check
-        run: make fuzz-sabotage
+        # the container's root does not own the checkout, and actions/checkout's safe.directory does not outlive its
+        # step: without this git cannot read the tree and the sabotage refuses it
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          make fuzz-sabotage
 
       # every check records the one-line bug it catches and the seed it catches it on, and each record, alone, makes
       # that check abort on that seed; a check with neither a record nor a not-a-property line is red

@@ -68,7 +68,7 @@ const DYN = {
   points: 3,
   extents: { min: -40, max: 0 },
   terms: [
-    { role: 'threshold', value: -20, unit: 'db' },
+    { role: 'threshold', value: -20, unit: 'dB' },
     { role: 'ratio', value: 4, unit: 'ratio' },
   ],
 };
