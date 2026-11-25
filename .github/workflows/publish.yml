@@ -53,8 +53,13 @@ jobs:
           cat jobs.tsv
           promote=$(grep -c '^promote / ' jobs.tsv || true)
           [ "$promote" -gt 0 ] || { echo "::error::release run $RUN of $TAG has no promote job: nothing was promoted, npm is not published"; exit 1; }
-          bad=$(grep '^promote / ' jobs.tsv | awk -F'\t' '$2 != "success"' || true)
+          # a dry-run-only job of the promotion (the unsigned trees) is skipped on a tag: skipped passes, failed never does
+          bad=$(grep '^promote / ' jobs.tsv | awk -F'\t' '$2 != "success" && $2 != "skipped"' || true)
           [ -z "$bad" ] || { echo "::error::the promotion of $TAG did not succeed, npm is not published:"; echo "$bad"; exit 1; }
+          # the jobs that put the release in the channel each succeeded: none of them skipped
+          for job in 'Promote the RPMs' 'Promote the DEBs' 'The channel serves the same bytes' 'GitHub release'; do
+            grep -qxF "promote / $job"$'\t'success jobs.tsv || { echo "::error::the promotion of $TAG has no successful '$job', npm is not published"; exit 1; }
+          done
       - id: m
         uses: Open-Mixer/.github/.github/actions/check-matrix@openmixer-v1
         with:

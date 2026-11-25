@@ -68,7 +68,7 @@ jobs:
         run: bash tools/no-floor-check.sh && bash tools/no-floor-check.sh --self-test
 
       # a v* tag promotes the staged build, never rebuilds; npm follows the promotion (python3-yaml is on this runner)
-      - name: A tag promotes the staged build (self-test, nine planted edits red)
+      - name: A tag promotes the staged build (self-test, ten planted edits red)
         id: handback-release-promote
         run: bash tools/release-promote-check.sh && bash tools/release-promote-check.sh --sabotage
 

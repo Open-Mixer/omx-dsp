@@ -76,7 +76,7 @@ wr = pon.get("workflow_run") or {}
 if wr.get("workflows") != ["release"] or wr.get("types") != ["completed"]:
     bad.append("publish.yml: it does not run on the release workflow's completion")
 gate = " ".join(s.get("run", "") for j in pub.get("jobs", {}).values() for s in j.get("steps", []))
-if "grep -c '^promote / '" not in gate or '-gt 0' not in gate or '$2 != "success"' not in gate:
+if "grep -c '^promote / '" not in gate or '-gt 0' not in gate or '$2 != "success"' not in gate or "'Promote the DEBs'" not in gate:
     bad.append("publish.yml: no gate refuses a release run whose promote jobs did not all succeed")
 co = [s for s in pub.get("jobs", {}).get("publish", {}).get("steps", []) if s.get("uses", "").startswith("actions/checkout")]
 if not co or "env.SHA" not in co[0].get("with", {}).get("ref", ""):
@@ -115,6 +115,7 @@ if [ "${1:-}" = --sabotage ]; then
   push:
     tags: ['v*']
   workflow_run:" 'push trigger publishes npm'
+  plant "the channel jobs not required" pub "'Promote the RPMs' 'Promote the DEBs'" "'Promote the RPMs'" 'no gate refuses'
   plant "no promote gate" pub "grep -c '^promote / '" "grep -c '^anything / '" 'no gate refuses'
   [ $rc = 0 ] && echo "release-promote-check --sabotage: every planted edit named"; exit $rc
 fi
