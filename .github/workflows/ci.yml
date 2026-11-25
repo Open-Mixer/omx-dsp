@@ -23,6 +23,16 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
+  # no Fedora release written into a job: the cells come from check-matrix (ruling D25)
+  fedora-cells:
+    runs-on: ${{ github.event.pull_request.head.repo.fork && 'ubuntu-latest' || vars.OMX_RUNNER || 'ubuntu-latest' }}
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/workflows
+      - uses: Open-Mixer/.github/.github/actions/fedora-cells@openmixer-v1
+
   # The cells the Debian and Fedora jobs below run on: the quick set's alone while OMX_RELEASE_MATRIX is quick, the whole
   # matrix when it is full (check-matrix; each cell carries its image, architecture and runner).
   checks:
@@ -30,6 +40,8 @@ jobs:
     timeout-minutes: 5
     outputs:
       cells: ${{ steps.m.outputs.cells }}
+      rpm: ${{ steps.m.outputs.rpm }}
+      rpm-count: ${{ steps.m.outputs.rpm-count }}
       deb: ${{ steps.m.outputs.deb }}
       count: ${{ steps.m.outputs.count }}
       deb-count: ${{ steps.m.outputs.deb-count }}
@@ -165,15 +177,17 @@ jobs:
   # The curve function as WebAssembly (make wasm, tools/wasm-build.sh): the distribution's own clang, lld and wasi-libc,
   # nothing downloaded. Fedora is the reference; Debian trixie's package names are what this cell confirms or refutes.
   wasm:
-    name: The WebAssembly build (${{ matrix.image }})
-    runs-on: ubuntu-latest
+    name: The WebAssembly build (${{ matrix.cell.image }}, ${{ matrix.cell.arch }})
+    runs-on: ${{ matrix.cell.runner }}
+    needs: checks
+    if: needs.checks.outputs.count != '0'
     timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
-        image: ["fedora:45", "debian:trixie"]
+        cell: ${{ fromJSON(needs.checks.outputs.cells) }}
     container:
-      image: ${{ matrix.image }}
+      image: ${{ matrix.cell.image }}
     defaults:
       run:
         shell: bash
@@ -192,7 +206,7 @@ jobs:
       - name: Add the OpenMixer repository
         uses: Open-Mixer/.github/.github/actions/add-openmixer@openmixer-v1
         with:
-          suite: ${{ startsWith(matrix.image, 'ubuntu') && 'trixie' || '' }}
+          suite: ${{ startsWith(matrix.cell.image, 'ubuntu') && 'trixie' || '' }}
       - name: Install omx-contract from the OpenMixer channel
         run: |
           set -euo pipefail
@@ -415,17 +429,19 @@ jobs:
           if-no-files-found: ignore
 
   rpm:
-    name: omx-dsp-devel (fc45, ${{ matrix.arch }})
-    if: github.event_name == 'workflow_dispatch'
+    name: omx-dsp-devel (fc${{ matrix.cell.fedora }}, ${{ matrix.cell.arch }})
+    needs: checks
+    if: github.event_name == 'workflow_dispatch' && needs.checks.outputs.rpm-count != '0'
     runs-on: ${{ github.event.pull_request.head.repo.fork && 'ubuntu-latest' || vars.OMX_RUNNER || 'ubuntu-latest' }}
     # %check runs make check-package, as the deb job's build does
     timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
-        arch: [x86_64]  # x86_64 only: Fedora 45 aarch64 is not built (owner ruling 2026-11-19)
+        # check-matrix's rpm cells (x86_64 only: Fedora aarch64 is not built, owner ruling 2026-11-19)
+        cell: ${{ fromJSON(needs.checks.outputs.rpm) }}
     container:
-      image: fedora:45
+      image: ${{ matrix.cell.image }}
     steps:
       - name: Install the build tools
         run: |
@@ -446,7 +462,7 @@ jobs:
       - name: Check the file list
         run: |
           set -euo pipefail
-          rpm=$(ls rpms/omx-dsp-devel-[0-9]*.${{ matrix.arch }}.rpm)
+          rpm=$(ls rpms/omx-dsp-devel-[0-9]*.${{ matrix.cell.arch }}.rpm)
           rpm -qp --qf '[%{FILEMODES:perms} %{FILENAMES}\n]' "$rpm" | grep -v '^d' | cut -d' ' -f2 \
             | sed 's,/usr/lib64/,/usr/lib*/,' | grep -v '^/usr/include/omxdsp/' | sort > files.txt
           printf '%s\n' '/usr/lib*/libomxdsp.a' '/usr/lib*/libomxdsp-contracts.a' '/usr/lib*/libomxdsp-tsan.a' \
@@ -467,7 +483,7 @@ jobs:
           grep -q '^/usr/include/omxdsp/fx/omx_reverb.h$' listing.txt
           # the gate is its own package: its binary, man page and share directory, and nothing of it in the devel one
           ! grep -q 'rt-gate' listing.txt
-          rpm -qlp "$(ls rpms/omx-rt-gate-[0-9]*.${{ matrix.arch }}.rpm)" > listing.txt
+          rpm -qlp "$(ls rpms/omx-rt-gate-[0-9]*.${{ matrix.cell.arch }}.rpm)" > listing.txt
           for f in bin/omx-rt-gate share/man/man1/omx-rt-gate.1.gz share/omxdsp/rt-gate/tables/forbidden.tbl \
                    share/omxdsp/rt-gate/tables/classes.tbl share/omxdsp/rt-gate/tables/lv2.abi share/omxdsp/rt-gate/tables/clap.abi \
                    share/omxdsp/rt-gate/tables/pipewire.abi share/omxdsp/rt-gate/tables/omxdsp.abi share/omxdsp/rt-gate/omx-dsp.tags \
@@ -491,7 +507,7 @@ jobs:
       - name: A consumer builds against omx-dsp-devel
         run: |
           set -euo pipefail
-          dnf install -y --setopt=tsflags=nodocs --setopt=install_weak_deps=False rpms/omx-dsp-devel-[0-9]*.${{ matrix.arch }}.rpm rpms/omx-dsp-contract-[0-9]*.noarch.rpm
+          dnf install -y --setopt=tsflags=nodocs --setopt=install_weak_deps=False rpms/omx-dsp-devel-[0-9]*.${{ matrix.cell.arch }}.rpm rpms/omx-dsp-contract-[0-9]*.noarch.rpm
           test "$(pkg-config --modversion omxdsp)" = "$(make -s version)"
           pkg-config --cflags omxdsp | grep -q -- '-ffp-contract=off'
           gcc $(pkg-config --cflags omxdsp) -Itest/fx -include test/support/log10f_subst.h -O2 -o /tmp/golden test/fx/delay_golden.test.c $(pkg-config --libs omxdsp)
@@ -512,7 +528,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: omx-dsp-rpms-fc45-${{ matrix.arch }}
+          name: omx-dsp-rpms-fc${{ matrix.cell.fedora }}-${{ matrix.cell.arch }}
           path: rpms/*.rpm
           if-no-files-found: error
           retention-days: 7
