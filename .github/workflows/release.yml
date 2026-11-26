@@ -103,8 +103,6 @@ jobs:
       publish: false
       needs-mod-host: false
       runner: ${{ inputs.runner || 'ubuntu-latest' }}
-      # x86_64 only: the owner ruling of 2026-11-19 stops building Fedora 45 aarch64 (the deb arm64 cells stay)
-      arch-matrix: '["x86_64"]'
       channel-deps: true
     secrets: inherit
 
@@ -128,7 +126,7 @@ jobs:
 
   # The tag path: the staged build becomes the release, byte for byte (no rebuild, no re-sign). binary-names are the
   # packages both kinds build, which every release and architecture must hold; every file of the commit goes along.
-  # The rpm architectures are the build's (x86_64 alone, owner ruling 2026-11-19).
+  # The rpm architectures are the build's: the shared default, x86_64 and aarch64.
   promote:
     if: ${{ !cancelled() && ((github.ref_type == 'tag' && needs.check.result == 'success') || (github.event_name == 'workflow_dispatch' && inputs.version != '')) }}
     needs: check
@@ -136,7 +134,6 @@ jobs:
     with:
       package-name: omx-dsp
       binary-names: omx-rt-gate
-      rpm-arch-matrix: '["x86_64"]'
       version: ${{ inputs.version || '' }}
       commit: ${{ inputs.commit || '' }}
     secrets: inherit
