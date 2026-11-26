@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2026 Pau Aliagas <linuxnow@gmail.com>
 Name: omx-dsp
-Version: 0.34.2
+Version: 0.34.3
 Release: 1%{?dist}
 License: GPL-3.0-or-later
 Summary: The audio toolbox of the OpenMixer console, as a real-time-safe C library
@@ -181,6 +181,13 @@ npm_config_engine_strict=true %make_install PREFIX=%{_prefix} LIBDIR=%{_libdir} 
 %{_datadir}/omx-dsp/catalogs/
 
 %changelog
+* Thu Nov 26 2026 Pau Aliagas <linuxnow@gmail.com> - 0.34.3-1
+- The RPMs are built for Fedora aarch64 as well as x86_64: the release
+  matrix is Open-Mixer/.github's shared releases and architectures, with no
+  list of this repository's own.
+- Published by the devel release of the full matrix, with every change
+  merged to devel since 0.34.2.
+
 * Wed Nov 25 2026 Pau Aliagas <linuxnow@gmail.com> - 0.34.2-1
 - The contract directory has no schema-major level (#178): omx-dsp-contract
   installs <contractdir>/omx-dsp/, no longer <contractdir>/3/omx-dsp/, by
