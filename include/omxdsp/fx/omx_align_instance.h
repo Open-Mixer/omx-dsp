@@ -88,15 +88,17 @@ static inline int omx_align_instance_init(OmxAlignInstance *s, float sr) {
 }
 
 #define OMX_CONTRACT_STAGE "align-instance/clear"
-/** @brief The engage-edge clear: both rings back to silence and the lines re-armed at no delay, as init left
- * them. RT-safe: two bounded memsets over the inline rings.
+/** @brief The engage-edge clear: both rings back to silence, the write cursors and the applied delay back at
+ * 0, as init's omx_align_arm() left them (the arm itself is the control thread's; the lines stay armed over
+ * the same rings, so only what a run moves is reset). RT-safe: two bounded memsets over the inline rings.
  * @param s The instance; null or not ready is ignored.
  * @post `cleared-line-is-fresh`: the rings read 0 at their ends and the applied delay is back at 0.
  * @thread audio */
 static inline void omx_align_instance_clear(OmxAlignInstance *s) {
   if (!s || !s->ready) return;
   omx_instance_rings_clear(s->ring_l, s->ring_r, (uint32_t)OMX_ALIGN_CAP);
-  (void)omx_align_arm(&s->state, s->ring_l, s->ring_r);
+  s->state.line_l.wpos = s->state.line_r.wpos = 0u;
+  s->state.cur = 0.0f;
   OMX_POST(s->ring_l[0] == 0.0f && s->ring_r[OMX_ALIGN_CAP - 1] == 0.0f && s->state.cur == 0.0f &&
                s->state.line_l.wpos == 0u,
            "cleared-line-is-fresh");
