@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Pau Aliagas <linuxnow@gmail.com>
 /**
- * EVERY TWIN AGREES WITH ITS KERNEL: the twin (dist/, the published code) and the omx-dsp kernel
+ * EVERY TWIN AGREES WITH ITS KERNEL: the twin (dist/, the published code; the curve function is the C as WebAssembly) and the omx-dsp kernel
  * (oracle/ts-twin-oracle.c) run one grid and must agree inside the tolerance test/tolerances.mjs states. A twin
  * whose SABOTAGE arm stays green would be decoration, so each has one. Moved here from the console with the twins.
  */
@@ -18,26 +18,28 @@ import {
   biquadMagnitudeDb,
   butterworthQs,
   clampEqQFor,
-  curvePoints,
+  loadCurve,
   dbToLinearGain,
   fftSizeForRate,
   gaincompDb,
-  gaincompDbShifted,
-  gateKnee,
   linearGainToDb,
   linearToDbFloored,
   magnitudeSumDb,
-  octavesToQ,
   rbjSection,
 } from '../dist/index.js';
+import { readFileSync } from 'node:fs';
 import { TOLERANCES as T } from './tolerances.mjs';
+
+/** curvePoints is the C's own, as WebAssembly (ts/wasm/omx-dsp.wasm, built by `npm run build:wasm`): this file asks the
+ *  module and the native oracle the same questions, and a difference is a finding about the toolchain, not a twin's drift. */
+const { curvePoints } = await loadCurve(readFileSync(new URL('../wasm/omx-dsp.wasm', import.meta.url)));
 
 const red = (asked, twin, tol) => against(asked, twin, tol).failures.length > 0;
 
 describe('the oracle is here', () => {
   it('answers every kernel these twins need', () => {
     const k = oracleKernels();
-    for (const n of ['lin_to_db', 'lin_to_db_d', 'db_to_lin', 'eq_octaves_q', 'rta_fft_size_for', 'eq_design', 'eq_lv2_clamp_q', 'eq_band_magnitude_db', 'eq_magnitude_sum_db', 'curve_points', 'curve_points_marked', 'curve_time', 'gaincomp_db', 'gaincomp_db_shifted', 'gate_knee']) assert.ok(k.includes(n), n);
+    for (const n of ['lin_to_db', 'lin_to_db_d', 'db_to_lin', 'rta_fft_size_for', 'eq_design', 'eq_lv2_clamp_q', 'eq_band_magnitude_db', 'eq_magnitude_sum_db', 'curve_points', 'curve_points_marked', 'curve_time', 'gaincomp_db']) assert.ok(k.includes(n), n);
   });
 });
 
@@ -80,15 +82,6 @@ describe('the dB and linear twins agree with omx_units.h', () => {
   });
 });
 
-describe('octavesToQ agrees with omx_eq_octaves_q', () => {
-  const asked = ask('eq_octaves_q', [-3, 0, 0.001, 0.049, 0.05, 0.051, 0.1, 0.25, 0.5, 1, 1.5, 2, 3, 4, 6, 8, 12].map((b) => [b]));
-  it('agrees, floor included; the floor removed and sqrt(t) for t are each red', () => {
-    assert.deepEqual(against(asked, (r) => [octavesToQ(r[0])], T.octavesToQ).failures, []);
-    assert.ok(red(asked, (r) => [Math.sqrt(2 ** r[0]) / (2 ** r[0] - 1)], T.octavesToQ), 'SABOTAGE no floor stayed green');
-    assert.ok(red(asked, (r) => [2 ** Math.max(r[0], 0.05) / (2 ** Math.max(r[0], 0.05) - 1)], T.octavesToQ), 'SABOTAGE t for sqrt(t) stayed green');
-  });
-});
-
 describe('fftSizeForRate agrees with omx_rta_fft_size_for', () => {
   // Every whole-hertz rate from 1 kHz to 400 kHz: the kernel divides in float and the twin in double.
   const rows = [];
@@ -107,7 +100,7 @@ const KINDS = Object.keys(KIND);
 const HAS_GAIN = new Set([0, 1, 2]);
 const kindOf = (n) => KINDS.find((k) => KIND[k] === n);
 
-describe('rbjSection (and matchedPair, lowpassHandover inside it) agrees with omx_eq_design', () => {
+describe('rbjSection (and its matched pair and lowpass handover inside it) agrees with omx_eq_design', () => {
   const QS = [-1, 0.05, 0.3, 0.5, Math.SQRT1_2, 0.9, 1, 4, 20, 116];
   const GAINS = [-24, -12, -6, -0.5, 0, 0.5, 6, 12, 24];
   const centres = (sr) => [0, 1, 20, 63, 200, 1000, 4000, 10000, 0.45 * sr, 0.499 * sr, 0.5 * sr, 0.6 * sr];
@@ -235,29 +228,6 @@ describe('gaincompDb agrees with omx_gaincomp_db, bit for bit', () => {
   });
 });
 
-describe('gaincompDbShifted and gateKnee agree with omx_gaincomp_db_shifted and omx_gate_knee, bit for bit', () => {
-  const pairs = [[-46, -38], [-40, -40], [-43, -37], [-38, -46], [-60, -20], [-41, -40], [-80, 0]];
-  const krows = [];
-  for (const t of [-60, -40, -33.3, -10]) for (const [a, b] of pairs) krows.push([t, a, b]);
-  const kasked = ask('gate_knee', krows);
-  it('gateKnee: the width and the clamped shift', () => {
-    assert.deepEqual(against(kasked, (r) => { const k = gateKnee(r[0], r[1], r[2]); return [k.kneeDb, k.shiftDb]; }, T.gateKnee).failures, []);
-    assert.ok(kasked.answers.some((a) => a[1] !== 0) && kasked.answers.some((a) => Math.abs(a[1]) === a[0] / 2 && a[0] > 0), 'shifted and clamped shifts are both in the grid');
-  });
-  const rows = [];
-  for (const [i, [t, a, b]] of krows.entries()) for (const r of [1, 2, 4, 16, 100]) for (const rg of [-90, -60, -20, 0])
-    for (let lv = -100; lv <= 6; lv += 0.5) rows.push([t, r, kasked.answers[i][0], rg, kasked.answers[i][1], lv]);
-  const asked = ask('gaincomp_db_shifted', rows);
-  const twin = (r) => [gaincompDbShifted({ mode: 'below', threshDb: r[0], ratio: r[1], kneeDb: r[2], rangeDb: r[3] }, r[4], r[5])];
-  it('gaincompDbShifted agrees across shifts, ratios and ranges', () => {
-    assert.deepEqual(against(asked, twin, T.gaincompDbShifted).failures.slice(0, 5), []);
-  });
-  it('SABOTAGE: the shift one float step off, and the centred knee for the shifted one: each red', () => {
-    assert.ok(against(asked, (r) => [gaincompDbShifted({ mode: 'below', threshDb: r[0], ratio: r[1], kneeDb: r[2], rangeDb: r[3] }, r[4] === 0 ? 0 : nextFloat(r[4]), r[5])], T.gaincompDbShifted).failures.length > 50);
-    assert.ok(against(asked, (r) => [gaincompDb({ mode: 'below', threshDb: r[0], ratio: r[1], kneeDb: r[2], rangeDb: r[3] }, r[5])], T.gaincompDbShifted).failures.length > 50);
-  });
-});
-
 describe('butterworthQs agrees with omx_eq_butterworth_qs', () => {
   it('one section at 12 dB/oct, two at 24, the kernel\'s digits; the 24 dB pair swapped is red', () => {
     const asked = ask('eq_butterworth_qs', [[0], [1]]);
@@ -303,14 +273,14 @@ describe('curvePoints agrees with omx_curve_points at every oracle rate', () => 
         const shape = SH[(seed + b) % SH.length], f0 = 30 * (1 + ((seed * 7 + b * 13) % 600));
         const viaType = (seed + b) % 2 === 0;
         if (viaType) terms.push({ role: 'band_type', index: b, value: b % 4, unit: 'none', shape });
-        terms.push({ role: 'band_freq', index: b, value: (seed + b) % 3 === 0 ? f0 / 1000 : f0, unit: (seed + b) % 3 === 0 ? 'khz' : 'hz', shape: viaType ? undefined : shape });
+        terms.push({ role: 'band_freq', index: b, value: (seed + b) % 3 === 0 ? f0 / 1000 : f0, unit: (seed + b) % 3 === 0 ? 'kHz' : 'Hz', shape: viaType ? undefined : shape });
         const g = ((seed * 5 + b * 3) % 25) - 12;
-        terms.push(coef ? { role: 'band_gain', index: b, value: 10 ** (g / 20), unit: 'coef' } : { role: 'band_gain', index: b, value: g, unit: 'db' });
+        terms.push(coef ? { role: 'band_gain', index: b, value: 10 ** (g / 20), unit: 'coef' } : { role: 'band_gain', index: b, value: g, unit: 'dB' });
         terms.push((seed + b) % 4 === 1 ? { role: 'band_q', index: b, value: 0.25 + ((seed + b) % 7) / 3, unit: 'oct' } : { role: 'band_q', index: b, value: 0.4 + ((seed + 2 * b) % 9), unit: 'none' });
         if (b === 2) terms.push({ role: 'band_on', index: b, value: seed % 3 === 0 ? 0 : 1, unit: 'none' });
       }
-      if (seed % 3 !== 2) terms.push({ role: 'hpf_freq', value: 20 + seed * 7, unit: 'hz' }, { role: 'hpf_slope', value: seed % 2 ? 24 : 12, unit: 'db' });
-      if (seed % 4 === 1) terms.push({ role: 'lpf_freq', value: 9 + seed / 4, unit: 'khz' }, { role: 'lpf_slope', value: 12, unit: 'db' }, { role: 'lpf_on', value: seed % 8 === 1 ? 0 : 1, unit: 'none' });
+      if (seed % 3 !== 2) terms.push({ role: 'hpf_freq', value: 20 + seed * 7, unit: 'Hz' }, { role: 'hpf_slope', value: seed % 2 ? 24 : 12, unit: 'dB' });
+      if (seed % 4 === 1) terms.push({ role: 'lpf_freq', value: 9 + seed / 4, unit: 'kHz' }, { role: 'lpf_slope', value: 12, unit: 'dB' }, { role: 'lpf_on', value: seed % 8 === 1 ? 0 : 1, unit: 'none' });
       out.push({ kind: 'eq_response', family: 'eq', sampleRate: sr, points: 16 + ((seed * 37) % 200) % (CURVE_POINTS_MAX - 3 * nb - 12 - 16), terms, ...(seed % 5 === 4 ? { extents: { min: 40, max: 0.45 * sr } } : {}) });
     }
     return out;
@@ -342,12 +312,12 @@ describe('curvePoints agrees with omx_curve_points at every oracle rate', () => 
   for (const sr of RATES) {
     for (const family of ['dynamics', 'limiter', 'deesser']) for (const [t, r, k, mk] of [[-20, 4, 6, 3], [-40.5, 1.5, 0, undefined], [-6, 20, 12, 0], [-30, 100, 24, -2], [-60, 1, 3, undefined]])
       transferReqs.push({ kind: 'transfer_curve', family, sampleRate: sr, points: [41, 97, 256, 2, 13][transferReqs.length % 5], terms: [
-        { role: 'threshold', value: t, unit: ['dbfs', 'db', 'dbu', 'lufs'][transferReqs.length % 4] }, { role: 'ratio', value: r, unit: transferReqs.length % 2 ? 'coef' : 'ratio' },
-        ...(k ? [{ role: 'knee', value: k, unit: 'db' }] : []), ...(mk === undefined ? [] : [{ role: 'makeup', value: mk, unit: 'db' }])] });
+        { role: 'threshold', value: t, unit: ['dBFS', 'dB', 'dBu', 'LUFS'][transferReqs.length % 4] }, { role: 'ratio', value: r, unit: transferReqs.length % 2 ? 'coef' : 'ratio' },
+        ...(k ? [{ role: 'knee', value: k, unit: 'dB' }] : []), ...(mk === undefined ? [] : [{ role: 'makeup', value: mk, unit: 'dB' }])] });
     for (const [t, r, rg, ks, ke] of [[-40, 4, -60, -46, -38], [-40, 16, -90, undefined, undefined], [-30, 2, -20, -33, -27], [-50, 100, 0, -50, -50], [-20, 1.2, -40, -10, -30], [-40, 4, -60, -45, -44]])
       transferReqs.push({ kind: 'transfer_curve', family: 'gate', sampleRate: sr, points: [41, 160, 256][transferReqs.length % 3], ...(transferReqs.length % 4 === 0 ? { extents: { min: -90, max: 6 } } : {}), terms: [
-        { role: 'threshold', value: t, unit: 'db' }, { role: 'ratio', value: r, unit: 'ratio' }, { role: 'range', value: rg, unit: 'db' },
-        ...(ks === undefined ? [] : [{ role: 'knee_start', value: ks, unit: 'db' }, { role: 'knee_end', value: ke, unit: 'db' }])] });
+        { role: 'threshold', value: t, unit: 'dB' }, { role: 'ratio', value: r, unit: 'ratio' }, { role: 'range', value: rg, unit: 'dB' },
+        ...(ks === undefined ? [] : [{ role: 'knee_start', value: ks, unit: 'dB' }, { role: 'knee_end', value: ke, unit: 'dB' }])] });
   }
   const trAsked = askCurves(transferReqs);
   it('transfer_curve: every family at every rate draws and agrees bit for bit', () => {
@@ -367,10 +337,10 @@ describe('curvePoints agrees with omx_curve_points at every oracle rate', () => 
     for (const model of [0, 1, 2, 3, 9]) for (const [amount, tone, mix, output] of [[0, -1, 100, 0], [12, -0.3, 37.5, -6], [36, 1, 0, 4.5], [40, 0.5, 70, 12], [18, undefined, undefined, undefined]]) {
       k++;
       driveReqs.push({ kind: 'transfer_curve', family: 'drive', sampleRate: sr, points: [129, 41, 256, 2, 13][k % 5], ...(k % 4 === 0 ? { extents: { min: -90, max: 6 } } : {}), terms: [
-        { role: 'drive', value: amount, unit: 'db' }, { role: 'model', value: model, unit: 'none' },
+        { role: 'drive', value: amount, unit: 'dB' }, { role: 'model', value: model, unit: 'none' },
         ...(tone === undefined ? [] : [{ role: 'tone', value: tone, unit: k % 2 ? 'coef' : 'none' }]),
-        ...(mix === undefined ? [] : [{ role: 'mix', value: mix, unit: 'pc' }]),
-        ...(output === undefined ? [] : [{ role: 'output', value: output, unit: 'db' }])] });
+        ...(mix === undefined ? [] : [{ role: 'mix', value: mix, unit: 'percent' }]),
+        ...(output === undefined ? [] : [{ role: 'output', value: output, unit: 'dB' }])] });
     }
   }
   const driveAsked = askCurves(driveReqs);
@@ -386,7 +356,7 @@ describe('curvePoints agrees with omx_curve_points at every oracle rate', () => 
     assert.ok(curveAgainst(driveAsked, near('tone', (v) => (v === 1 ? 0.99 : v + 0.01)), T.curvePointsDrive).failures.length > 10);
     assert.ok(curveAgainst(driveAsked, near('model', (v) => (v + 1) % 4), T.curvePointsDrive).failures.length > 10);
     assert.ok(curveAgainst(driveAsked, near('mix', (v) => (v === 100 ? 99 : v + 1)), T.curvePointsDrive).failures.length > 10);
-    const plusOne = (rq) => curvePoints(rq.terms.some((t) => t.role === 'output') ? rq : { ...rq, terms: [...rq.terms, { role: 'output', value: 1, unit: 'db' }] });
+    const plusOne = (rq) => curvePoints(rq.terms.some((t) => t.role === 'output') ? rq : { ...rq, terms: [...rq.terms, { role: 'output', value: 1, unit: 'dB' }] });
     assert.ok(curveAgainst(driveAsked, plusOne, T.curvePointsDrive).failures.length > 10);
   });
 
@@ -420,7 +390,7 @@ describe('curvePoints agrees with omx_curve_points at every oracle rate', () => 
   const timeReqs = () => {
     const out = [];
     for (const sr of RATES) for (let seed = 0; seed < 10; seed++) {
-      const units = seed % 2 ? { share: 'pc', k: 100 } : { share: 'none', k: 1 };
+      const units = seed % 2 ? { share: 'percent', k: 100 } : { share: 'none', k: 1 };
       out.push({ kind: 'time_response', family: 'delay', sampleRate: sr, points: 8, terms: [
         { role: 'time', value: seed % 3 ? 40 + 110 * seed : (40 + 110 * seed) / 1000, unit: seed % 3 ? 'ms' : 's' },
         { role: 'feedback', value: (0.1 + 0.09 * seed) * units.k, unit: units.share },
@@ -447,7 +417,7 @@ describe('curvePoints agrees with omx_curve_points at every oracle rate', () => 
     out.push({ kind: 'time_response', family: 'reverb', sampleRate: 48000, points: 8, terms: [{ role: 'size', value: 0.5, unit: 'none' }, { role: 'algorithm', value: 3, unit: 'none' }, { role: 'mix', value: 1, unit: 'none' }] });
     out.push({ kind: 'time_response', family: 'reverb', sampleRate: 48000, points: 8, terms: [{ role: 'size', value: 0.5, unit: 'none' }] });
     out.push({ kind: 'time_response', family: 'delay', sampleRate: 48000, points: 8, terms: [{ role: 'time', value: 100, unit: 'ms' }] });
-    out.push({ kind: 'time_response', family: 'delay', sampleRate: 48000, points: 8, terms: [{ role: 'time', value: 100, unit: 'ms' }, { role: 'feedback', value: 0.5, unit: 'db' }] });
+    out.push({ kind: 'time_response', family: 'delay', sampleRate: 48000, points: 8, terms: [{ role: 'time', value: 100, unit: 'ms' }, { role: 'feedback', value: 0.5, unit: 'dB' }] });
     out.push({ kind: 'transfer_curve', family: 'delay', sampleRate: 48000, points: 8, terms: [{ role: 'time', value: 100, unit: 'ms' }, { role: 'feedback', value: 0.5, unit: 'none' }] });
     return out;
   };
@@ -462,7 +432,7 @@ describe('curvePoints agrees with omx_curve_points at every oracle rate', () => 
   it('SABOTAGE time: the feedback one power off, the shade not raised, the predelay gap dropped, the floor at -66: each red', () => {
     // feedback^n for feedback^(n-1): every echo one pass darker in level
     const fbUp = (rq) => { const a = curvePoints(rq); return 'code' in a || !a.stems ? a : { ...a, stems: a.stems.map((s) => (s.x > 0 ? { ...s, y: s.y + 20 * Math.log10(valueFb(rq)) } : s)) }; };
-    const valueFb = (rq) => { const t = rq.terms.find((q) => q.role === 'feedback'); return t.unit === 'pc' ? t.value / 100 : t.value; };
+    const valueFb = (rq) => { const t = rq.terms.find((q) => q.role === 'feedback'); return t.unit === 'percent' ? t.value / 100 : t.value; };
     assert.ok(timeAgainst(timeAsked, fbUp, T.curvePointsTime, T.curveStemsTime).failures.length > 10, 'SABOTAGE one power of feedback on every echo stayed green');
     const flatShade = (rq) => { const a = curvePoints(rq); return 'code' in a || !a.stems ? a : { ...a, stems: a.stems.map((s) => ({ ...s, shade: 1 })) }; };
     assert.ok(timeAgainst(timeAsked, flatShade, T.curvePointsTime, T.curveStemsTime).failures.length > 10, 'SABOTAGE the tone\'s shade flattened stayed green');
@@ -476,14 +446,14 @@ describe('curvePoints agrees with omx_curve_points at every oracle rate', () => 
     const reqs = [];
     for (const sr of RATES) {
       reqs.push({ kind: 'eq_response', family: 'eq', sampleRate: sr, points: 48, terms: [
-        { role: 'band_freq', index: 0, value: 900, unit: 'hz', shape: 'bell' }, { role: 'band_gain', index: 0, value: 5, unit: 'db' },
-        { role: 'band_freq', index: 1, value: 4000, unit: 'hz', shape: 'notch' },
-        { role: 'band_type', index: 2, value: 3, unit: 'none', shape: 'allpass1' }, { role: 'band_freq', index: 2, value: 300, unit: 'hz' },
-        { role: 'band_freq', index: 3, value: 7000, unit: 'hz', shape: 'allpass2' },
-        { role: 'band_type', index: 4, value: 5, unit: 'none', shape: '-' }, { role: 'band_freq', index: 4, value: 60, unit: 'hz' },
-        { role: 'band_gain', index: 4, value: 9, unit: 'db' }] });
+        { role: 'band_freq', index: 0, value: 900, unit: 'Hz', shape: 'bell' }, { role: 'band_gain', index: 0, value: 5, unit: 'dB' },
+        { role: 'band_freq', index: 1, value: 4000, unit: 'Hz', shape: 'notch' },
+        { role: 'band_type', index: 2, value: 3, unit: 'none', shape: 'allpass1' }, { role: 'band_freq', index: 2, value: 300, unit: 'Hz' },
+        { role: 'band_freq', index: 3, value: 7000, unit: 'Hz', shape: 'allpass2' },
+        { role: 'band_type', index: 4, value: 5, unit: 'none', shape: '-' }, { role: 'band_freq', index: 4, value: 60, unit: 'Hz' },
+        { role: 'band_gain', index: 4, value: 9, unit: 'dB' }] });
       reqs.push({ kind: 'transfer_curve', family: 'limiter', sampleRate: sr, points: 41, terms: [
-        { role: 'threshold', value: -6, unit: 'dbfs' }, { role: 'knee', value: 2, unit: 'db' }] });
+        { role: 'threshold', value: -6, unit: 'dBFS' }, { role: 'knee', value: 2, unit: 'dB' }] });
     }
     const asked = askCurves(reqs);
     assert.ok(asked.answers.every((a) => a[0] === 0), 'every ruled request draws');
@@ -492,20 +462,20 @@ describe('curvePoints agrees with omx_curve_points at every oracle rate', () => 
     assert.ok(curveAgainst(asked, noDefault, T.curvePointsEq).failures.length > 0, 'SABOTAGE: a limiter at ratio 4 is red');
   });
   it('every refusal is the same code on both sides', () => {
-    const bell = [{ role: 'band_freq', value: 1000, unit: 'hz', shape: 'bell' }, { role: 'band_gain', value: 3, unit: 'db' }, { role: 'band_q', value: 1, unit: 'none' }];
+    const bell = [{ role: 'band_freq', value: 1000, unit: 'Hz', shape: 'bell' }, { role: 'band_gain', value: 3, unit: 'dB' }, { role: 'band_q', value: 1, unit: 'none' }];
     const eq = { kind: 'eq_response', family: 'eq', sampleRate: 48000, points: 64, terms: bell };
-    const comp = { kind: 'transfer_curve', family: 'dynamics', sampleRate: 48000, points: 41, terms: [{ role: 'threshold', value: -20, unit: 'db' }, { role: 'ratio', value: 4, unit: 'ratio' }] };
+    const comp = { kind: 'transfer_curve', family: 'dynamics', sampleRate: 48000, points: 41, terms: [{ role: 'threshold', value: -20, unit: 'dB' }, { role: 'ratio', value: 4, unit: 'ratio' }] };
     const bad = [
       [{ ...eq, family: 'gate' }, 'kindUnknown'], [{ ...comp, family: 'eq' }, 'kindUnknown'],
-      [{ ...eq, terms: [{ role: 'hpf_freq', value: 80, unit: 'hz' }, { role: 'hpf_slope', value: 1, unit: 'none' }] }, 'termMissing'],
+      [{ ...eq, terms: [{ role: 'hpf_freq', value: 80, unit: 'Hz' }, { role: 'hpf_slope', value: 1, unit: 'none' }] }, 'termMissing'],
       [{ ...comp, family: 'limiter', terms: [{ role: 'ratio', value: 4, unit: 'ratio' }] }, 'termMissing'],
-      [{ ...eq, terms: [{ role: 'hpf_freq', value: 80, unit: 'hz' }, { role: 'hpf_slope', value: 18, unit: 'db' }] }, 'kindUnknown'],
+      [{ ...eq, terms: [{ role: 'hpf_freq', value: 80, unit: 'Hz' }, { role: 'hpf_slope', value: 18, unit: 'dB' }] }, 'kindUnknown'],
       [{ ...eq, terms: bell.slice(1) }, 'termMissing'], [{ ...eq, terms: [{ ...bell[0], shape: undefined }, ...bell.slice(1)] }, 'termMissing'],
 [{ ...eq, terms: [] }, 'termMissing'], [{ ...comp, terms: comp.terms.slice(0, 1) }, 'termMissing'],
       [{ ...comp, family: 'gate' }, 'termMissing'],
-      [{ ...comp, family: 'gate', terms: [...comp.terms, { role: 'range', value: -60, unit: 'db' }, { role: 'knee_end', value: -30, unit: 'db' }] }, 'termMissing'],
-      [{ ...eq, terms: [{ ...bell[0], unit: 'db' }] }, 'unitRefused'], [{ ...comp, terms: [...comp.terms, { role: 'makeup', value: 2, unit: 'coef' }] }, 'unitRefused'],
-      [{ ...comp, terms: [{ role: 'threshold', value: NaN, unit: 'db' }, comp.terms[1]] }, 'valueNotFinite'], [{ ...comp, sampleRate: 0 }, 'valueNotFinite'],
+      [{ ...comp, family: 'gate', terms: [...comp.terms, { role: 'range', value: -60, unit: 'dB' }, { role: 'knee_end', value: -30, unit: 'dB' }] }, 'termMissing'],
+      [{ ...eq, terms: [{ ...bell[0], unit: 'dB' }] }, 'unitRefused'], [{ ...comp, terms: [...comp.terms, { role: 'makeup', value: 2, unit: 'coef' }] }, 'unitRefused'],
+      [{ ...comp, terms: [{ role: 'threshold', value: NaN, unit: 'dB' }, comp.terms[1]] }, 'valueNotFinite'], [{ ...comp, sampleRate: 0 }, 'valueNotFinite'],
       [{ ...comp, extents: { min: -80, max: Infinity } }, 'valueNotFinite'],
       [{ ...comp, points: 1 }, 'pointsRange'], [{ ...comp, points: CURVE_POINTS_MAX + 1 }, 'pointsRange'], [{ ...comp, extents: { min: -10, max: -10 } }, 'pointsRange'],
       [{ ...eq, extents: { min: 0, max: 20000 } }, 'pointsRange'], [{ ...eq, points: CURVE_POINTS_MAX - 2 }, 'pointsRange'],
@@ -540,11 +510,11 @@ describe('curvePoints marks the feedback corrector\'s bands and draws the user-o
       const origin = b === 0 ? 'user' : ['fbs-fixed', 'fbs-live', 'hrp', 'room-mode', 'user'][(seed + b) % 5];
       const notch = origin !== 'user' && (seed + b) % 2 === 0;
       const f0 = 200 * (1 + ((seed * 3 + b * 7) % 40));
-      terms.push({ role: 'band_freq', index: b, value: f0, unit: 'hz', shape: notch ? 'notch' : 'bell', origin });
-      if (!notch) terms.push({ role: 'band_gain', index: b, value: origin === 'user' ? 4 - b : -6 - b, unit: 'db' });
+      terms.push({ role: 'band_freq', index: b, value: f0, unit: 'Hz', shape: notch ? 'notch' : 'bell', origin });
+      if (!notch) terms.push({ role: 'band_gain', index: b, value: origin === 'user' ? 4 - b : -6 - b, unit: 'dB' });
       terms.push({ role: 'band_q', index: b, value: origin === 'user' ? 0.9 : 12 + b, unit: 'none' });
     }
-    if (seed % 2) terms.push({ role: 'hpf_freq', value: 50, unit: 'hz' }, { role: 'hpf_slope', value: 24, unit: 'db' });
+    if (seed % 2) terms.push({ role: 'hpf_freq', value: 50, unit: 'Hz' }, { role: 'hpf_slope', value: 24, unit: 'dB' });
     reqs.push({ kind: 'eq_response', family: 'eq', sampleRate: sr, points: 40 + seed * 10, terms, userOnly: seed % 3 !== 2 });
   }
   const asked = ask('curve_points_marked', reqs.map(rowOfMarked));

@@ -1,8 +1,5 @@
 {
   "$schema": "../../schema/omx-contract.schema.json",
-  "requires": {
-    "omx-contract-schema": ">= 3.1.0"
-  },
   "controls": [
     {
       "name": "decayS",
@@ -47,7 +44,7 @@
         "min": 0,
         "max": 100,
         "step": 1,
-        "unit": "%",
+        "unit": "percent",
         "default": 50,
         "defaultFrom": "desk"
       }
@@ -79,7 +76,7 @@
         "min": 0,
         "max": 100,
         "step": 1,
-        "unit": "%",
+        "unit": "percent",
         "default": 0,
         "defaultFrom": "desk"
       }
@@ -92,7 +89,7 @@
         "impl": "include/omxdsp/fx/omx_spring_instance.h#omx_spring_chain_delay"
       },
       "doc": "The first-order all-pass sections in the loop: enough of them and the low notes come later, the sound of a spring.",
-      "unit": "",
+      "unit": "none",
       "value": 40
     },
     "SPRING_CHIRP_HZ": {
@@ -113,7 +110,7 @@
         "impl": "include/omxdsp/fx/omx_spring_instance.h#omx_spring_instance_resolve"
       },
       "doc": "The right spring's length against the left's: two springs of different lengths, as a tank carries, so the legs decorrelate.",
-      "unit": "",
+      "unit": "none",
       "value": 1.13
     },
     "SPRING_LOOP_MAX": {
@@ -122,7 +119,7 @@
         "impl": "include/omxdsp/fx/omx_spring_instance.h#omx_spring_instance_resolve"
       },
       "doc": "The loop gain's ceiling: the tail always decays.",
-      "unit": "",
+      "unit": "none",
       "value": 0.97
     }
   }

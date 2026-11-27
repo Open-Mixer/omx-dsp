@@ -43,14 +43,19 @@
 #include <omxdsp/omx_tilt.h>
 #include <omxdsp/omxdsp_definitions.h>
 
+/** @brief Audio legs in and out: TWO, a stereo pair. */
 #define OMX_TONE_INSTANCE_CHANNELS 2
 
 /** The DJ filter's ends, Hz: TONE_FILTER_LOW_HZ and TONE_FILTER_HIGH_HZ. */
 #define OMX_TONE_INSTANCE_LOW_HZ ((double)OMX_TONE_FILTER_LOW_HZ)
+/** @brief The DJ filter's top end, Hz: TONE_FILTER_HIGH_HZ. */
 #define OMX_TONE_INSTANCE_HIGH_HZ ((double)OMX_TONE_FILTER_HIGH_HZ)
 
+/** @brief One instance: the tilt and the DJ filter as resolved, and each one's history per leg. */
 typedef struct {
+  /** The sample rate init bound the instance to, Hz. */
   float sr;
+  /** The tilt's shelf pair, designed by resolve() from span_db and pivot_hz while the tilt is not flat. */
   struct omx_tilt tilt;
   double fc[5];       /**< the filter's section, `{b0, b1, b2, a1, a2}` */
   double ts[2][4];    /**< the tilt's history per leg */
@@ -62,7 +67,9 @@ typedef struct {
   int tilt_on;        /**< 1 while the tilt is not flat */
   int filter_on;      /**< 1 while the filter is not open */
   int fside;          /**< the side the filter's history belongs to: -1 the low-pass, +1 the high-pass */
+  /** Non-zero while the effect is engaged, as the last resolve() set it; while zero, run() leaves the output as the input. */
   int enabled;
+  /** Non-zero once init bound the instance to a usable rate; while zero, resolve() does nothing and run() leaves the output as the input. */
   int ready;
 } OmxToneInstance;
 
@@ -71,6 +78,8 @@ typedef struct {
  * `TONE_FILTER_HIGH_HZ x (TONE_FILTER_LOW_HZ / TONE_FILTER_HIGH_HZ)^(-filter/100)`; above 0 the
  * high-pass, `TONE_FILTER_LOW_HZ x (TONE_FILTER_HIGH_HZ / TONE_FILTER_LOW_HZ)^(filter/100)`. Its
  * logarithm is linear in the word on each side. 0 returns 0 (open). RT-safe: one exp. Pure.
+ * @param filter The filter word, -100 to 100.
+ * @return The corner, Hz; 0 for a word of 0.
  * @thread audio
  */
 static inline double omx_tone_filter_hz(double filter) {
@@ -97,13 +106,25 @@ static inline int omx_tone_instance_init(OmxToneInstance *s, float sr) {
   return 1;
 }
 
+#define OMX_CONTRACT_STAGE "tone/instance-resolve"
 /**
  * Resolve the host's control values for one cycle. `bypass` non-zero makes run() the identity. The
  * arguments are the tone kernel's contract controls in their declared order: the tilt's span (dB),
  * its pivot (Hz), the DJ filter (-100 to +100) and its resonance.
+ * @param s The instance; null or not ready leaves it as it is.
+ * @param bypass Non-zero makes run() the identity.
+ * @param tilt_db tiltDb, -6 to 6 dB, default 0: The tilt's span, dB: one first-order complementary shelf pair about
+ *        pivotHz (omx_tilt, a = 10^(tiltDb/40)), -tiltDb/2 at DC, +tiltDb/2 at Nyquist and 0 dB at the pivot.
+ * @param pivot_hz pivotHz, 200 to 5000 Hz, default 1000: The tilt's pivot, Hz: the frequency the tilt leaves at 0 dB,
+ *        at every rate (the section is prewarped there).
+ * @param filter filter, -100 to 100, default 0: The DJ filter: below 0 a low-pass whose corner falls from
+ *        TONE_FILTER_HIGH_HZ toward TONE_FILTER_LOW_HZ at -100, above 0 a high-pass whose corner rises from
+ *        TONE_FILTER_LOW_HZ toward TONE_FILTER_HIGH_HZ at +100, on a log map; the EQ's own low-pass and high-pass
+ *        sections.
+ * @param resonance resonance, 0.5 to 4, default 0.71: The DJ filter's resonance, its section's Q: the magnitude at the
+ *        corner.
  * @thread audio
  */
-#define OMX_CONTRACT_STAGE "tone/instance-resolve"
 static inline void omx_tone_instance_resolve(OmxToneInstance *s, int bypass, float tilt_db, float pivot_hz, float filter,
                                              float resonance) {
   if (!s || !s->ready) return;
@@ -137,6 +158,9 @@ static inline void omx_tone_instance_resolve(OmxToneInstance *s, int bypass, flo
  * The face's magnitude at `freq_hz` as resolved, below Nyquist: the tilt's closed form
  * (omx_tilt_magnitude) times the filter section's `|H(e^jw)|`. What a host draws; 1 when flat and
  * open. RT-safe: a few trig calls. Thread-safe: reads `s`.
+ * @param s The instance; null or not ready reads 1.
+ * @param freq_hz The frequency, Hz, below Nyquist.
+ * @return The linear magnitude at `freq_hz`.
  * @thread audio
  */
 static inline double omx_tone_instance_magnitude(const OmxToneInstance *s, double freq_hz) {
@@ -161,6 +185,8 @@ static inline double omx_tone_instance_magnitude(const OmxToneInstance *s, doubl
  * @param out_l The left output, `n` frames, may be `in_l`.
  * @param out_r The right output, `n` frames, may be `in_r`.
  * @param n The block length, frames; a null port or 0 touches nothing.
+ * @pre `finite-in`: the input, copied through to the output legs, is finite.
+ * @post `finite-out`: both output legs are finite.
  * @thread audio
  */
 static inline void omx_tone_instance_run(OmxToneInstance *s, const float *in_l, const float *in_r, float *out_l,

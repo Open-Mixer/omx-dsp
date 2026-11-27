@@ -1,8 +1,5 @@
 {
   "$schema": "../../schema/omx-contract.schema.json",
-  "requires": {
-    "omx-contract-schema": ">= 3.0.0"
-  },
   "controls": [
     {
       "name": "rateHz",
@@ -40,7 +37,7 @@
         "min": 0,
         "max": 100,
         "step": 0.1,
-        "unit": "%",
+        "unit": "percent",
         "default": 50,
         "defaultFrom": "desk"
       }
@@ -60,7 +57,7 @@
         "min": 0,
         "max": 100,
         "step": 0.1,
-        "unit": "%",
+        "unit": "percent",
         "default": 100,
         "defaultFrom": "desk"
       }

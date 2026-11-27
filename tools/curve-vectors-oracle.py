@@ -17,7 +17,7 @@ The laws, each exact in the design's own terms:
   delay stems     echo k at k x time, mix x feedback^(k-1) in dB, the dry tap at 1 - mix, a leg per ping-pong turn.
 Each row carries the tolerance MEASURED against the library (test/curve-vectors.mjs --report) and rounded up: the
 transfer curves and the notch floor are exact (0), the delay's levels differ by 4e-15 dB (a log10 and a pow), a 12 dB/oct
-head filter by 4e-10 dB (the cookbook's formula against the section's coefficients), a 24 dB/oct one by 4e-8 dB (the
+head filter by 4e-10 dB (the cookbook's formula against the section's coefficients), a 24 dB/oct one by 4.4e-8 dB (the
 kernel's seven-digit Butterworth Qs), a bell's centre by 8e-6 dB (the matched pair meets the analogue gain to a part in a
 million). A tolerance is never widened to absorb a second implementation's miss: that is a finding.
 
@@ -133,7 +133,7 @@ def eq_head_row(name, slope24, f0, fs, n):
     return {
         "name": name,
         "request": {"kind": "eq_response", "family": "eq", "sampleRate": fs, "points": n,
-                    "terms": [t("hpf_freq", f0, "hz"), t("hpf_slope", 24 if slope24 else 12, "db")]},
+                    "terms": [t("hpf_freq", f0, "Hz"), t("hpf_slope", 24 if slope24 else 12, "dB")]},
         "tolerance": {"x": 1e-15, "y": 1e-7 if slope24 else 1e-9},
         "expect": {"points": pts},
     }
@@ -143,9 +143,9 @@ def eq_centre_row(name, shape, gain, f0, q, fs, floor_db=None):
     # the matched pole and zero pairs meet the analogue gain at the centre to a part in a million (measured 8e-6 dB
     # at Q 1, 3e-6 dB at Q 2), not exactly; a notch's null is exact, and held at the drawing's floor
     y = float(gain) if floor_db is None else float(floor_db)
-    terms = [t("band_freq", f0, "hz", shape=shape), t("band_q", q, "none"), t("band_on", 1, "none")]
+    terms = [t("band_freq", f0, "Hz", shape=shape), t("band_q", q, "none"), t("band_on", 1, "none")]
     if floor_db is None:
-        terms.insert(1, t("band_gain", gain, "db"))
+        terms.insert(1, t("band_gain", gain, "dB"))
     return {
         "name": name,
         "request": {"kind": "eq_response", "family": "eq", "sampleRate": fs, "points": 32, "terms": terms},
@@ -190,15 +190,15 @@ def base(kind="transfer_curve", family="dynamics", **kw):
 
 
 def rows():
-    dyn = [t("threshold", -20, "db"), t("ratio", 4, "ratio")]
+    dyn = [t("threshold", -20, "dB"), t("ratio", 4, "ratio")]
     out = [
         transfer_row("dynamics hard knee", "dynamics", dyn, -60, 0, 13),
         transfer_row("dynamics soft knee with make-up", "dynamics",
-                     dyn + [t("knee", 8, "db"), t("makeup", 3, "db")], -60, 0, 25),
-        transfer_row("de-esser", "deesser", [t("threshold", -30, "db"), t("ratio", 2.5, "ratio")], -60, 0, 7),
-        transfer_row("limiter", "limiter", [t("threshold", -6, "db")], -40, 0, 9),
+                     dyn + [t("knee", 8, "dB"), t("makeup", 3, "dB")], -60, 0, 25),
+        transfer_row("de-esser", "deesser", [t("threshold", -30, "dB"), t("ratio", 2.5, "ratio")], -60, 0, 7),
+        transfer_row("limiter", "limiter", [t("threshold", -6, "dB")], -40, 0, 9),
         transfer_row("gate hard knee", "gate",
-                     [t("threshold", -40, "db"), t("ratio", 3, "ratio"), t("range", -30, "db")], -80, -20, 13),
+                     [t("threshold", -40, "dB"), t("ratio", 3, "ratio"), t("range", -30, "dB")], -80, -20, 13),
         eq_head_row("high-pass 12 dB/oct at 100 Hz, 48 kHz", False, 100, 48000, 24),
         eq_head_row("high-pass 24 dB/oct at 250 Hz, 96 kHz", True, 250, 96000, 24),
         eq_centre_row("bell +6 dB at its centre", "bell", 6, 1000, 1, 48000),
@@ -207,16 +207,16 @@ def rows():
         delay_row("delay, half mix, half feedback", 250, 0.5, 0.5, False),
         delay_row("delay, ping-pong, light feedback", 120, 0.4, 0.3, True),
         refusal("a transfer curve with no threshold", base(terms=[t("ratio", 4, "ratio")]), "termMissing"),
-        refusal("a transfer curve with no ratio", base(terms=[t("threshold", -20, "db")]), "termMissing"),
-        refusal("a threshold in kHz", base(terms=[t("threshold", -20, "khz"), t("ratio", 4, "ratio")]), "unitRefused"),
+        refusal("a transfer curve with no ratio", base(terms=[t("threshold", -20, "dB")]), "termMissing"),
+        refusal("a threshold in kHz", base(terms=[t("threshold", -20, "kHz"), t("ratio", 4, "ratio")]), "unitRefused"),
         refusal("a sample rate of zero", base(sampleRate=0, terms=dyn), "valueNotFinite"),
         refusal("one grid point", base(points=1, terms=dyn), "pointsRange"),
         refusal("an eq display on the dynamics family", base(kind="eq_response", terms=dyn), "kindUnknown"),
         refusal("an eq with no band and no head filter", base(kind="eq_response", family="eq", terms=[]), "termMissing"),
         refusal("a band with no shape", base(kind="eq_response", family="eq",
-                                             terms=[t("band_freq", 1000, "hz"), t("band_gain", 3, "db")]), "termMissing"),
+                                             terms=[t("band_freq", 1000, "Hz"), t("band_gain", 3, "dB")]), "termMissing"),
         refusal("a 18 dB/oct head filter", base(kind="eq_response", family="eq",
-                                                terms=[t("hpf_freq", 100, "hz"), t("hpf_slope", 18, "db")]), "kindUnknown"),
+                                                terms=[t("hpf_freq", 100, "Hz"), t("hpf_slope", 18, "dB")]), "kindUnknown"),
         refusal("a delay with no feedback", base(kind="time_response", family="delay",
                                                  terms=[t("time", 100, "ms")]), "termMissing"),
     ]

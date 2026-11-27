@@ -46,6 +46,7 @@
 #include <omxdsp/omx_wetdry.h>
 #include <omxdsp/omxdsp_definitions.h>
 
+/** @brief Audio legs in and out: TWO, a stereo pair. */
 #define OMX_DOUBLER_INSTANCE_CHANNELS 2
 
 /** The voices the state holds, DOUBLER_MAX_VOICES. */
@@ -53,7 +54,9 @@
 
 /** Each voice's detune share, delay share and place: DOUBLER_VOICE_DETUNES, _DELAYS and _PANS. */
 static const float OMX_DOUBLER_INSTANCE_DETUNES[OMX_DOUBLER_VOICE_DETUNES_COUNT] = OMX_DOUBLER_VOICE_DETUNES_INIT;
+/** Each voice's share of the delayMs control: DOUBLER_VOICE_DELAYS. */
 static const float OMX_DOUBLER_INSTANCE_DELAYS[OMX_DOUBLER_VOICE_DELAYS_COUNT] = OMX_DOUBLER_VOICE_DELAYS_INIT;
+/** Each voice's place, its share of the spread before the balance law: DOUBLER_VOICE_PANS. */
 static const float OMX_DOUBLER_INSTANCE_PANS[OMX_DOUBLER_VOICE_PANS_COUNT] = OMX_DOUBLER_VOICE_PANS_INIT;
 _Static_assert(OMX_DOUBLER_VOICE_DETUNES_COUNT == OMX_DOUBLER_MAX_VOICES && OMX_DOUBLER_VOICE_DELAYS_COUNT == OMX_DOUBLER_MAX_VOICES &&
                    OMX_DOUBLER_VOICE_PANS_COUNT == OMX_DOUBLER_MAX_VOICES,
@@ -61,6 +64,7 @@ _Static_assert(OMX_DOUBLER_VOICE_DETUNES_COUNT == OMX_DOUBLER_MAX_VOICES && OMX_
 
 /** The head's sweep and its crossfade share: DOUBLER_WINDOW_MS, DOUBLER_FADE. */
 #define OMX_DOUBLER_INSTANCE_WINDOW_MS ((float)OMX_DOUBLER_WINDOW_MS)
+/** A hand-over's crossfade, a share of the window: DOUBLER_FADE. */
 #define OMX_DOUBLER_INSTANCE_FADE ((float)OMX_DOUBLER_FADE)
 
 /** The line's Lagrange order. */
@@ -70,14 +74,20 @@ _Static_assert(OMX_DOUBLER_VOICE_DETUNES_COUNT == OMX_DOUBLER_MAX_VOICES && OMX_
  * the sweep) at 192 kHz, held to that by test/fx/doubler_instance.test.c. */
 #define OMX_DOUBLER_INSTANCE_CAP 16384u
 
+/** @brief One instance: the delay line over its inline ring, a read head per voice, the drift and the blend. */
 typedef struct {
+  /** The sample rate init bound the instance to, Hz. */
   float sr;
+  /** The fractional delay line, order 3, over `ring`; run() writes the mono sum `(l + r) / 2` into it. */
   struct omx_fdelay line;
+  /** Each voice's read-head design as it sounds; settle() copies `next` into it. */
   struct omx_doppler head[OMX_DOUBLER_INSTANCE_VOICES];
+  /** Each voice's read-head state: its position and any hand-over in progress. */
   struct omx_doppler_state hs[OMX_DOUBLER_INSTANCE_VOICES];
   struct omx_doppler next[OMX_DOUBLER_INSTANCE_VOICES]; /**< each voice's design as last resolved */
   float next_mean[OMX_DOUBLER_INSTANCE_VOICES];         /**< each voice's mean delay as last resolved */
   int pending[OMX_DOUBLER_INSTANCE_VOICES];             /**< 1 while a resolved change waits for its hand-over */
+  /** The drift's oscillator, its rate set by resolve() from modRateHz; voice k reads it `k / nv` of a turn along. */
   struct omx_lfo lfo;
   float mean[OMX_DOUBLER_INSTANCE_VOICES]; /**< each voice's mean delay as it sounds, samples */
   float vdepth[OMX_DOUBLER_INSTANCE_VOICES]; /**< each voice's drift as it sounds, samples either side */
@@ -86,9 +96,13 @@ typedef struct {
   float depth;                             /**< the drift as last resolved, samples either side */
   float hand_len;                          /**< a hand-over's crossfade, samples */
   uint32_t nv;                             /**< voices sounding */
+  /** The wet share, 0 to 1, from mixPct; 0 makes run() the identity. */
   float mix;
+  /** Non-zero while the effect is engaged, as the last resolve() set it; while zero, run() leaves the output as the input. */
   int enabled;
+  /** Non-zero once init bound the instance to a usable rate; while zero, resolve() does nothing and run() leaves the output as the input. */
   int ready;
+  /** The delay line's storage, OMX_DOUBLER_INSTANCE_CAP floats, inline: the instance is never copied after init. */
   float ring[OMX_DOUBLER_INSTANCE_CAP];
 } OmxDoublerInstance;
 
@@ -122,6 +136,8 @@ static inline int omx_doubler_instance_init(OmxDoublerInstance *s, float sr) {
  * Voice k takes its resolved design and mean, unless a hand-over is still fading. A new mean, drift,
  * window or direction goes through the hand-over (a voice that has not read yet only starts); a new
  * detune alone keeps the head's position. RT-safe: no libm call.
+ * @param s The instance.
+ * @param k The voice, 0 to OMX_DOUBLER_INSTANCE_VOICES - 1.
  * @thread audio
  */
 static inline void omx_doubler_instance_settle(OmxDoublerInstance *s, uint32_t k) {
@@ -213,6 +229,8 @@ static inline void omx_doubler_instance_resolve(OmxDoublerInstance *s, int bypas
  * @param out_l The left output, `n` frames, may be `in_l`.
  * @param out_r The right output, `n` frames, may be `in_r`.
  * @param n The block length, frames; a null port or 0 touches nothing.
+ * @pre `finite-in`: the input, copied through to the output legs, is finite.
+ * @post `finite-out`: both output legs are finite.
  * @thread audio
  */
 static inline void omx_doubler_instance_run(OmxDoublerInstance *s, const float *in_l, const float *in_r, float *out_l,

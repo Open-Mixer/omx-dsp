@@ -435,7 +435,7 @@ static inline void omx_eq_lv2_run(struct omx_eq_lv2 *e, const float *in, float *
 /* ---- the control words: eq_lv2.c's run(), without the LV2 face -------------------------------- */
 
 /* The defaults a word reads when its port is not connected (eq_lv2.c's `ctl(…, dflt)` arguments),
- * all declared in omx-contract: the pass filters' corners, a band's gain and Q, all off. A band's
+ * all declared in data/kernels/eq.json: the pass filters' corners, a band's gain and Q, all off. A band's
  * type and centre are the one default rule for a bank of OMX_EQ_LV2_BANDS bands (omx_eq_defaults.h:
  * omx_eq_default_type, omx_eq_default_centres). */
 /** The HPF corner an unconnected port reads, Hz: EQ_PASS_FILTER_DEFAULTS. */

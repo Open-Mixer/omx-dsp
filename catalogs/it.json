@@ -1,0 +1,29 @@
+{
+  "$schema": "../schema/omx-contract.schema.json#/$defs/catalog",
+  "kind": "catalog",
+  "lang": "it",
+  "owner": "omx-dsp",
+  "messages": {
+    "CURVE_AXES.decay-time": { "text": "Il tempo dopo un impulso in cui l'energia di un riverbero decade.", "by": "machine", "model": "draft-prose", "source": "c61d02b2a49950786732f93e77123b392fe6e9319fb99cd8d3103c0e8c4543d1" },
+    "CURVE_AXES.delay-time": { "text": "Il tempo dopo il suono diretto in cui un tap o una ripetizione di un delay suona.", "by": "machine", "model": "draft-prose", "source": "2c054dfb767a109449e3b58a146d64fa052c45596308502d31814573caef5e99" },
+    "CURVE_AXES.frequency": { "text": "Frequenza, sui punti di `EQ_CURVE_GRID` dove la curva è una risposta.", "by": "machine", "model": "draft-prose", "source": "cfbfc3fdba35c36e017bd594623ec3901d040a12889ed9b56ab46ab71ca73059" },
+    "CURVE_AXES.input-amplitude": { "text": "Un campione di input di uno shaper senza memoria, lineare, da -1 a +1 a piena scala: bipolare, quindi mostra un'asimmetria pari/dispari.", "by": "machine", "model": "draft-prose", "source": "fd009d644ce77e5d695221a746097ee7d7deb53aa729284a05f769a4c284c2d1" },
+    "CURVE_AXES.input-level": { "text": "Il livello che un computer di guadagno legge, l'input della legge statica.", "by": "machine", "model": "draft-prose", "source": "2093b14de30a00d69f506a7d2d219513a6eac93eedb9e9bf31312db2e978cfa6" },
+    "CURVE_AXES.input-pitch": { "text": "Il pitch suonato in un effetto pitch, semitoni da un'origine scelta dall'host.", "by": "machine", "model": "draft-prose", "source": "809289f78177c9920be5e221c39b7a426abbe79d4e07b971156b9019e5511f7d" },
+    "CURVE_AXES.level": { "text": "Un livello relativo all'input diretto: 0 dB è l'input stesso, un tap o un decay al di sotto è negativo.", "by": "machine", "model": "draft-prose", "source": "04dcc90206b699da302b00168fac4d542b25f3c1bd3c6a5756d4ecaecb3fb190" },
+    "CURVE_AXES.magnitude": { "text": "La magnitudine di una risposta a una frequenza: 0 dB è unità, un boost positivo, un cut negativo.", "by": "machine", "model": "draft-prose", "source": "d362489ce006922501a70944bc6d76daccf3e5291cf1b499617289edf740879e" },
+    "CURVE_AXES.modulation": { "text": "L'output di una sorgente di modulazione a una fase, da -1 a +1, prima che la profondità lo ridimensioni.", "by": "machine", "model": "draft-prose", "source": "1bc73adf10f7559b4d7371c4deda44661e11f3ec87f61d4fff3dd6efbdaee8da" },
+    "CURVE_AXES.output-amplitude": { "text": "Il campione di output dello shaper per un'ampiezza di input, lineare, sulla stessa piena scala.", "by": "machine", "model": "draft-prose", "source": "a516417a76d05b1dc9d9f18b079ef359e95eaef1424fce0f028ef0ca82af5e00" },
+    "CURVE_AXES.output-level": { "text": "Il livello che la legge statica dà per un livello di input; la diagonale è nessuna variazione di guadagno.", "by": "machine", "model": "draft-prose", "source": "458a10c245241a56b11777d51b3c7ce147c5b536b49047141af8349f30578072" },
+    "CURVE_AXES.output-pitch": { "text": "Il pitch che l'effetto suona per un pitch di input, semitoni sulla stessa origine: una mappa non spostata è la diagonale.", "by": "machine", "model": "draft-prose", "source": "82abeda24ce5e13651a0e5bbaf67e1aa6094a51f9ad42cebd10bb02fed67285b" },
+    "CURVE_AXES.phase": { "text": "La posizione all'interno di un periodo di una sorgente di modulazione, da 0 a 1.", "by": "machine", "model": "draft-prose", "source": "cd44dc0548511085e540503887e9dc1a494490c49058875e00c23ab116d0400f" },
+    "CURVE_KINDS.comb-response": { "text": "La risposta a pettine o a tacca del percorso wet alla posizione di sweep corrente (chorus, flanger, phaser, doubler).", "by": "machine", "model": "draft-prose", "source": "7034422bf345da5637be30b67ec007851995ea22cee94bfd3ee5799e3dbe3266" },
+    "CURVE_KINDS.decay-envelope": { "text": "L'inviluppo di decay di un riverbero dopo un impulso.", "by": "machine", "model": "draft-prose", "source": "8a5e5982dc5ce11c8afb4e55af25d8089417ee578a9078be5f52beeb4b042cb2" },
+    "CURVE_KINDS.delay-taps": { "text": "I tap e le ripetizioni di un delay, ognuno una linea al suo tempo e livello.", "by": "machine", "model": "draft-prose", "source": "9d54987606b03dde18734bc7738c18da739f3bc2f9b1060418457f88cf8bfb6b" },
+    "CURVE_KINDS.dynamics-curve": { "text": "La legge statica di un gate o un compressore, livello di input a livello di output, con l'ago attivo.", "by": "machine", "model": "draft-prose", "source": "fcd408605567abd18386bbea356039d917c4c4ad9a71400b729d80ab943d7ba4" },
+    "CURVE_KINDS.eq-curve": { "text": "La risposta di magnitudine sommata di un EQ su frequenza logaritmica.", "by": "machine", "model": "draft-prose", "source": "89978b9cef2ff799677c56864874375c907cd1a36221a3e5223fc8ccf48fab1d" },
+    "CURVE_KINDS.interval-map": { "text": "Una mappa di un effetto pitch dall'input pitch all'output pitch.", "by": "machine", "model": "draft-prose", "source": "510f2e74cfb5b6342825e61891affd7093775bd465c5b009eba582c709d1a337" },
+    "CURVE_KINDS.modulation-shape": { "text": "Una sorgente di modulazione su un periodo (tremolo, rotary).", "by": "machine", "model": "draft-prose", "source": "dcbf61656f9f7da1d8cbd1ca1027e2f18e00594e707e1f2e61fabc7674f2b0bb" },
+    "CURVE_KINDS.transfer-curve": { "text": "Il transfer di uno shaper senza memoria, campione di input a campione di output su piena scala.", "by": "machine", "model": "draft-prose", "source": "c22bbb9d662547b696f4ac202e3051aac06168bc7c4adc48bd1c90badc4de945" }
+  }
+}

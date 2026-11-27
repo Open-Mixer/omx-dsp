@@ -79,8 +79,10 @@ struct omx_reverse_render_scratch {
   struct omx_reverb_state *st; /**< One reverb state, re-laid out per block. */
   float *pool;                 /**< The state's float pool. */
   uint32_t pool_len;           /**< Floats in `pool`. */
+  /** The left leg's window, `tmp_cap` frames; tmp_r is the right leg's. */
   float *tmp_l, *tmp_r;        /**< One window of audio on its way through the network. */
   uint32_t tmp_cap;            /**< Frames in each `tmp_*`, at least the window. */
+  /** The left leg's accumulated wet, `wet_cap` frames; wet_r is the right leg's. */
   float *wet_l, *wet_r;        /**< The accumulated wet, reversed domain. */
   uint32_t wet_cap;            /**< Frames in each `wet_*`, at least the region. */
 };

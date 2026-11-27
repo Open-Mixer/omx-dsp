@@ -1,0 +1,21 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 Pau Aliagas <linuxnow@gmail.com>
+#
+# omx-clap-core.abi — the thread roles of omx-clap-core's embedding API, declared once (omx-rt-gate(1)).
+# `--abi omx-clap-core` binds the library side (omx-clap-core: its core and its LV2 adapter), and
+# `--abi omx-clap-core:host` the embedder that hands the library these functions (plugin-hostd, any host
+# of the adapter). There, each function stored into one of these fields is a root of the role named,
+# judged in the embedder's own run.
+#
+# what the embedder provides: the library calls these from the audio thread
+#   omx_clap_audio_role.is_audio   the audio-role predicate omx_clap_host_set_audio_role and
+#                                  omx_clap_host_publish_role hand in: is this thread the instance's
+#                                  audio thread (the CLAP host's thread check, a helper's task)
+#   lv2_audio_role.is_audio        the same predicate for an LV2 instance (lv2_instance_set_role),
+#                                  asked by schedule_work and the log on the audio thread
+#   omx_lv2_feature_options.sink   the log sink a plugin's log:log line is routed to
+#                                  (OMX_LV2_LOG_ROUTE), called with the formatted line from the
+#                                  plugin's audio thread
+host omx_clap_audio_role is_audio audio
+host lv2_audio_role is_audio audio
+host omx_lv2_feature_options sink audio

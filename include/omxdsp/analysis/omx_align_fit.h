@@ -26,7 +26,7 @@
  *     magnitude-weighted RMS of what the delay and polarity left.
  *
  * Every limit core declares for this fit (MIN_FRAMES, DEFAULT_BAND, ALIGN_TRUST_COHERENCE) is the
- * caller's to pass: omx-contract does not declare them yet and this tree types none of them.
+ * caller's to pass: this library's data/ does not declare them yet and this tree types none of them.
  * Control thread only, never the audio callback: no allocation (every buffer is the caller's), no
  * lock, no global state, no I/O, so any number of threads may run fits on their own buffers.
  */

@@ -17,17 +17,18 @@ Needs a C11 compiler, GNU make, binutils, awk, sed, grep and diffutils.
 | `make flavours` | each archive carries its flavour, and a contracts consumer reads a violation raised inside the compiled code only through the contracts archive |
 | `make docs` | the API reference with doxygen, over every installed header (`include/omxdsp` and its `fx/`, `mix/` and `analysis/`) |
 | `make docs-check` | the documentation gate (run on every pull request): doxygen's undocumented-declaration and undocumented-parameter warnings against `docs/doxygen-baseline.txt`, one row per public declaration still undocumented, compared as a set, which only shrinks: a warning not in it is red, a row no longer warned is red, a row the branch added against `DOCS_BASE=<remote>/<branch>` (required; the branch is fetched from the remote first, and an unset base, a failed fetch, an unresolvable ref or a base without a baseline is red by name — never a stale remote-tracking ref, never the head's own copy) is red, and what doxygen cannot see is red by name before it runs: a missing Doxyfile, baseline or warning log, a Doxyfile without the gate's lines or with a filter, a header without a doc-comment `@file`, a `@cond`/`@internal`/`@if`, an untracked header under `include/omxdsp`, a tree that is no git checkout, a baseline not sorted and unique; `make docs-baseline` rewrites the baseline from the tree and refuses to add a row; `make docs-sabotage` proves each red on a copy of the tree. The CI runner's doxygen (ubuntu-24.04, 1.9.8, pinned) is the authority; another doxygen may add doc-error rows |
+| `make test-support-install` | the test support `make install` puts in `$(DATADIR)/omxdsp/` (`test-support/`: `log10f_cr.h`, `log10f_subst.h`; `tsan-gate.sh`), named by `omxdsp.pc` (`testsupportdir`, `tsangate`) for a consumer's native tests, read back from a scratch install |
 | `make exports` | `build/omx-dsp-exports.json`: every public function and macro with its signature, its body as normalised tokens, its distinctive literals, maths calls, inline kernels and `@twin` names; `make install` puts it in `$(DATADIR)/omxdsp/` beside `omx-dsp-copy-check` in `$(BINDIR)` |
 | `make copy-check` | `tools/omx-dsp-copy-check.sh --self-test`: planted copies in a scratch consumer (an exact copy, a renamed one, a TypeScript twin, a literal copy, inline kernels) must be found, a legitimate caller, boilerplate, tests and fakes must pass, and a stale or reasonless allowlist entry must fail; then each rule is broken in turn and the self-test must go red (part of `make test`, which runs it alone before everything else, so no parallel job runs beside it) |
 | `make lint` | the doc check, the source scan, the log10f guard, tools/contract-single-source.sh (no name omx-contract defines is defined again here), tools/face-conformance.sh (every instance face's resolve takes its kernel's contract controls by name, order and kind), tools/travel-grid-check.sh (a travel's step reaches its maximum and default, a choice names its ids) and tools/clone-check.sh (a second copy of a body inside the library goes red); each checks its own sabotage |
 | `make test-tsan` | the thread arm under ThreadSanitizer, where the toolchain has it |
+| `make rtsan` | the per-block entry points under clang's RealtimeSanitizer, after a self-test that must see a planted blocking call (below); a dev tool, not part of `make test`, `CHECK_PACKAGE` or CI |
 | `make rt-gate` | omx-rt-gate, the one static real-time gate (`omx-rt-gate(1)`): its class table measured by the externals arm, its planted fixtures read red at their place and path and their clean twins green, its load refusals, the `@thread` tag of every function of the shipped headers under three sets of flags, the self-run (every tagged audio and worker function a root, joined to the compiled units' graphs, nothing red), and the installed gate judging a consumer joined to the shipped graphs; `make rt-gate-sabotage` breaks each guard in turn (part of `make test`) |
 | `make engine-kernels-identity OPENMIXER=<checkout>` | renders those digests again through the copies OpenMixer's engine still carries (`mix_src.h`, `mix_dsp.h`), and checks that each of its sabotages goes red; a desk check, not run in CI |
 | `make test-mix` | the mix module's golden digests at the nine oracle rates (`test/golden/mix.sha256`, written by the engine's own copies), and a break in each kernel and in each of the bus stages' contract checks that must turn its arm red; alone |
 | `make mix-engine-identity OPENMIXER=<checkout>` | renders the mix digests again through each set of copies OpenMixer's engine still carries (the bus stages' `omx_mix_strip`, `omx_bus_out_gain` and `omx_bus_out_stage` in `mix_dsp.h`, under the same names as `mix/omx_bus_stage.h`), and checks that each of its sabotages goes red; a desk check, not run in CI |
 | `make strip-input-identity OMX_PLUGINS=<checkout>` | renders omx-plugins' channel strip's own input stage (`plugins/omx-strip/omx_strip.h`) and requires the trim face's golden digests, then its sabotage; a desk check, not run in CI |
 | `make analysis-engine-identity OPENMIXER=<checkout>` | builds the analysis golden against the engine's own `mix_dsp.h`, `hrp_render.h` and `hrp_lv2.h` and requires the committed digests, then its sabotage; a desk check, not run in CI |
-| `make room-ts-golden OPENMIXER=<checkout>` | runs core's room analysis and alignment fit from an OpenMixer checkout under node (22.6 or later) and requires the committed parity table `test/analysis/fixtures/room_ts.h`; a desk check, not run in CI |
 | `make eq-sabotage` | the EQ bank, head-filter and drawn-curve arms (`eq-curve`, `eq-design-ts`) against nine sabotaged copies of the headers; each must fail both arms (part of `make test`) |
 | `make bench-mixmatrix` | the mix matrix's cost, then a 64 x 32 matrix held to MIXMATRIX_PERIOD_SHARE of the period at the nine rates, and a budget nothing can meet must go red; a desk check, not run in CI, whose shared runners time a core the console does not run on |
 | `make golden-write` | rewrites every kernel's `test/golden/<kernel>.sha256`; only in a commit that bumps the minor version or adds a kernel |
@@ -204,18 +205,19 @@ bounds are omx-contract's (`OMX_FBS_MAX_NOTCH_DEPTH_DB`, `OMX_EQ_GAIN_RANGE_*`,
 Two kinds of oracle hold them. `test/analysis/align_fit.test.c`, `room.test.c` and
 `sweep.test.c` check closed forms at the nine oracle rates (a known delay, gain, reflection,
 decay, set of resonances, sweep law) and count allocations. `test/analysis/room_ts.test.c` holds
-every result to what core's TypeScript computes on fixed inputs, from the parity table
+every result to what core's TypeScript computed on fixed inputs, from the parity table
 `test/analysis/fixtures/room_ts.h`: integers exactly, reals within 1e-9 relative (measured gap
-about 1e-12; V8's libm against the host's). `tools/room-ts-golden.mjs` wrote the table from an
-OpenMixer checkout, with omx-contract's TypeScript render from the pinned release; every input
-is built from an integer PRNG and exact arithmetic, so the C test rebuilds the same bits.
-`make room-ts-golden OPENMIXER=<checkout>` writes it again and requires the committed file; run
-it whenever core's TypeScript or these kernels change, until the TypeScript is deleted. `test/analysis/room-sabotage.sh` breaks each kernel once in a
+about 1e-12; V8's libm against the host's). Every input is built from an integer PRNG and exact
+arithmetic, so the C test rebuilds the same bits. The table is frozen: core's TypeScript now calls
+these kernels for every one of these results, so the C is the only source of these numbers and
+nothing writes the table again. `test/analysis/room-sabotage.sh` breaks each kernel once in a
 scratch copy and requires its closed-form oracle and the parity test to fail.
-## The EQ maths openmixer's TypeScript computes
+## The EQ maths openmixer's TypeScript computed
 
-openmixer designs its console EQ and draws its curve in TypeScript today. The C
-here computes the same results, so the engine and the server can take them from one place:
+openmixer designed its console EQ and drew its curve in TypeScript. The C here computes
+the same results, and openmixer now takes every one of them from this library (`@openmixer/omx-dsp`,
+or these kernels through its DSP port), so the C is the only source of these numbers. Where each
+TypeScript function went:
 
 | TypeScript | C |
 |---|---|
@@ -235,16 +237,15 @@ here computes the same results, so the engine and the server can take them from 
 | web `eqStateCurveDb`, `compositeCurveDb` | `omx_eq_curve_bands`, then `omx_eq_curve_db` |
 | catalog `octavesToQ` (catalog `eq.ts`) | `omx_eq_octaves_q` |
 
-`test/kernels/fixtures/eq_design_ts.h` is what that TypeScript computes on fixed inputs at the nine
-oracle rates, written by `tools/ts-golden.mjs design <openmixer> <contract-ts>` (Node 22.7 or later;
-`<contract-ts>` is omx-contract's TypeScript render, `omx-contract render --target ts --out <dir>`
-from a checkout of the installed release). The `eq-design-ts` arm holds the C to it: a coefficient, a Q or
-a frequency of the drawn grid within 4 ulp, a magnitude within 1e-9 dB, the bank's order, count and
-parked sections exactly. Two families of coefficient pass 4 ulp, both a cancellation that turns one
-ulp of V8's `exp` or `cos` into many (a matched bell or shelf at a low corner or a wide Q, and the
-fitted low-pass's b2 far below Nyquist); they are held to 1e-13 absolute, and the arm prints the
-largest gap of each kind. Regenerate the fixture when openmixer's TypeScript changes, until it is
-deleted. The `eq-curve` arm holds the same functions to closed forms.
+`test/kernels/fixtures/eq_design_ts.h` is what that TypeScript computed on fixed inputs at the nine
+oracle rates, frozen when the TypeScript went (nothing writes it again; likewise
+`test/kernels/fixtures/eq_curve_ts.h`, core's `eqCurveDb` points). The `eq-design-ts` arm holds the
+C to it: a coefficient, a Q or a frequency of the drawn grid within 4 ulp, a magnitude within
+1e-9 dB, the bank's order, count and parked sections exactly. Two families of coefficient pass 4
+ulp, both a cancellation that turns one ulp of V8's `exp` or `cos` into many (a matched bell or
+shelf at a low corner or a wide Q, and the fitted low-pass's b2 far below Nyquist); they are held to
+1e-13 absolute, and the arm prints the largest gap of each kind. The `eq-curve` arm holds the same
+functions to closed forms.
 
 ## Loudness
 
@@ -306,27 +307,58 @@ removed outside `$(DESTDIR)$(PREFIX)` (`make install-confined`, in a throwaway c
 
 The facts no single package implements (the declared sample rates, the parameter scales) stay in
 Open-Mixer/omx-contract, read through `<omxcontract/omx_contract_limits.h>`, which the definitions
-header includes. That dependency is declared once, in the packaging: `packaging/omx-dsp.spec`
-(`BuildRequires`, `Requires`) and `debian/control` (`Build-Depends`, `Depends`) carry the same floor
-and the same ceiling, the next major (`>= 3.18.0` and `< 4`), and `omxdsp.pc` requires the same range. Install
-it from the OpenMixer channel with the rest of the build dependencies:
+header includes. That dependency is declared by name, with no version: `packaging/omx-dsp.spec`
+(`BuildRequires`, `Requires`), `debian/control` (`Build-Depends`, `Depends`) and `omxdsp.pc` name the package
+and nothing more. This level builds and installs against the omx-contract package the channel publishes; a
+relation that must exist is generated by the packaging, never typed (owner ruling 2026-11-24). Install it from
+the OpenMixer channel with the rest of the build dependencies:
 
     dnf builddep packaging/omx-dsp.spec     # Fedora, with the OpenMixer repository added
     apt-get build-dep ./                    # Debian, with the OpenMixer source list added
 
-`tools/contract-include.sh` finds the installed `omx-contract` with `pkg-config`: at or above the
-floor the spec declares, it prints the package's include directory; otherwise the build stops, naming
-the package, the floor and the version installed. The script reads the floor; the ceiling is held by the package managers and pkg-config.
-Nothing is downloaded and no version is pinned anywhere else. `tools/contract-include-selftest.sh`
-(`make checks`) holds the script to that floor, and the spec, `debian/control` and `omxdsp.pc.in` to the same
-floor and the ceiling `< 4`; a ceiling missing from any of them is red.
+`tools/contract-include.sh` finds the installed `omx-contract` with `pkg-config` and prints its include
+directory; with none installed the build stops, naming the package. Nothing is downloaded and no version is
+pinned anywhere. `tools/contract-include-selftest.sh` (`make checks`) holds the script, and the spec,
+`debian/control` and `omxdsp.pc.in` to no ceiling; `tools/no-floor-check.sh` (`make checks`, its self-test
+planting six floors) refuses a version floor put back in the packaging, `package.json` or `data/`.
 
-`OMX_CONTRACT_INC=<dir>` names another include directory (one that holds `omxcontract/`) and skips the
-version check. The perturbation arms use it, and so can you: render a contract with one value moved
-into a scratch directory, `make test`, and the kernel test that reads that value must go red.
-Moving the range is one commit of its own, in the spec and `debian/control` together. A value the
-kernels need is added to its definition in `data/` and the header rendered again; it is never typed
+`OMX_CONTRACT_INC=<dir>` names another include directory (one that holds `omxcontract/`) in place of the
+installed one. The perturbation arms use it, and so can you: render a contract with one value moved
+into a scratch directory, `make test`, and the kernel test that reads that value must go red. A value
+the kernels need is added to its definition in `data/` and the header rendered again; it is never typed
 in the code.
+
+## RealtimeSanitizer
+
+`make rtsan` (`tools/rtsan/rtsan.sh`) asks clang's RealtimeSanitizer whether any per-block entry point allocates,
+locks, sleeps or makes another unsafe libc or system call while the oracles run. It never edits the tree: it copies
+the tree (without `build/`) under `build/rtsan/`, and `tools/rtsan/annotate.py` marks `__attribute__((nonblocking))`
+on the copy's `static inline` definitions of `omx_*_{process*,run,run_keyed,block,render,render_window,render_network}`,
+skipping init, reset, size and validity queries and the reading helpers (the script's docstring lists the names).
+It needs clang with compiler-rt's rtsan runtime (Fedora: `dnf install clang compiler-rt llvm`); without it the run
+stops with `rtsan: UNJUDGED: no clang rtsan runtime`, exit 2, never a pass.
+
+1. Self-test: a second copy, marked and with a `usleep(1)` planted in `omx_gate_run`, runs the gate kernel test
+   (`fx-run-kernel-gate`). RTSan must report `usleep` with `omx_gate_run` on its stack (the run keeps `-g`); otherwise `rtsan: FAIL the sanitizer saw nothing it
+   should have`, and no clean result is claimed.
+2. The run: the marked copy builds and runs `fx-oracles mix-golden analysis-oracles engine-kernels-golden consumer`
+   and `suite` with `CC=clang CFLAGS="-Wall -O1 -fsanitize=realtime -g -fno-omit-frame-pointer -Wno-function-effects
+   -Wno-error" FASTMATH=off`, `make -k`, under
+   `RTSAN_OPTIONS=halt_on_error=false:abort_on_error=false:suppress_equal_stacks=true`. Each target prints its exit
+   and its report count; any report, or a target that does not exit 0, is red. The suite's exit is printed but not
+   judged: under clang -O1 four `clampf`/`clamp_or` checks fail on a signed zero, a separate item; its reports are
+   judged, and its summary line must print. Logs and `RESULT.txt` stay in `build/rtsan/`; `RTSAN_JOBS` (default 4)
+   sizes `make -j`, `RTSAN_CC` names the compiler.
+
+What it cannot see:
+
+- Only the paths the tests execute. Set-up in create and init is out of scope by design, and an allocation the
+  compiler elides (a `malloc`/`free` pair optimised away at -O1) is not reported; one that survives optimisation is.
+- `-Wno-function-effects` is set: clang's static effect analysis (a nonblocking function calling an unannotated one)
+  is not triaged, so paths the tests do not reach are not found.
+- `src/*.c` (room, sweep, oversampler, FBS and HRP placement, the alignment fit) is not marked, nor is an entry point
+  the rule skips or does not name (`omx_hrp_render_feed`, for one).
+- Fuzz, the thread arms, the perturbation, sabotage and install targets of `make test` are not run.
 
 ## Packages
 

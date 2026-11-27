@@ -12,14 +12,14 @@ headers and static libraries, nothing a running program loads.
 
 ## Install
 
-Fedora 44, x86_64 or aarch64:
+Fedora 45, x86_64:
 
 ```
 sudo dnf install https://www.openmixer.org/rpm/openmixer-release.noarch.rpm
 sudo dnf install omx-dsp-devel
 ```
 
-Debian bookworm and trixie, amd64 or arm64 (also Raspberry Pi OS and Zynthian):
+Debian trixie, arm64 (also Raspberry Pi OS and Zynthian):
 
 ```
 cd /tmp && curl -fsSLO https://www.openmixer.org/deb/openmixer-release.deb && sudo apt install ./openmixer-release.deb
@@ -43,7 +43,8 @@ Test builds use `omxdsp-contracts` (or `omxdsp-tsan`) in place of `omxdsp`.
 
 <https://www.openmixer.org/projects/omx-dsp>, `man omx-dsp-copy-check`, and in this repository: how the
 kernels are tested, the three library flavours and the copy check for consumers
-([docs/overview.md](docs/overview.md)); building from source and running the tests
+([docs/overview.md](docs/overview.md)); the generic face a host runs any served kernel through, from the
+kernel's descriptor ([docs/generic-face.md](docs/generic-face.md)); building from source and running the tests
 ([BUILDING.md](BUILDING.md)). Every public declaration of the installed headers is documented with
 Doxygen, held by `make docs-check` against `docs/doxygen-baseline.txt`, the rows still undocumented,
 which only shrinks (BUILDING.md).

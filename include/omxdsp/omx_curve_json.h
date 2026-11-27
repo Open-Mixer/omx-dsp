@@ -15,7 +15,8 @@
  * not name, a key given twice, a missing required key, a value of the wrong kind, trailing text, more terms than
  * OMX_CURVE_JSON_TERMS_MAX) is refused with OMX_CURVE_JSON_MALFORMED, never read as far as it goes. A word of a
  * term's role, unit or origin that no table holds is answered as the struct call answers a value out of range
- * (`unitRefused`); a kind or family word of none, or a shape word of none, as `kindUnknown`.
+ * (`unitRefused`); a number that overflows a double (`1e999`, how a JavaScript caller writes NaN or Infinity) reads as
+ * infinity and is `valueNotFinite`; a kind or family word of none, or a shape word of none, as `kindUnknown`.
  *
  * Not on the audio path: a control thread, a page or a host's verb calls it. Design: one behaviour in C
  * (typed-contracts-shared-behaviour.md §4).
@@ -23,7 +24,9 @@
 #ifndef OMX_CURVE_JSON_H
 #define OMX_CURVE_JSON_H
 
-#include <locale.h>
+#ifndef __wasi__
+#include <locale.h> /* wasi-libc has no locale: its numbers are the C locale's, always */
+#endif
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -62,8 +65,12 @@ struct omx_curve_json_cursor {
  * @thread control
  */
 static inline char omx_curve_json_point(void) {
+#ifdef __wasi__
+  return '.';
+#else
   const struct lconv *lc = localeconv();
   return lc && lc->decimal_point && lc->decimal_point[0] && !lc->decimal_point[1] ? lc->decimal_point[0] : '.';
+#endif
 }
 
 /**
@@ -524,7 +531,6 @@ static inline int omx_curve_points_json_point(const char *request, char *out, si
  *         OMX_CURVE_JSON_CAP when `out` is too small.
  * @note Thread-safe on distinct output, reentrant, as long as no thread changes the locale during the call; the stack
  *       holds the terms and the points (about 40 kB).
- * @twin curvePoints
  * @thread control
  */
 static inline int omx_curve_points_json(const char *request, char *out, size_t cap) {

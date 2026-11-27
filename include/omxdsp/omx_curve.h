@@ -10,7 +10,7 @@
  * plain value, the unit the description gives that role (CURVE_UNITS) and, for an EQ band, the shape the
  * caller resolved (CURVE_SHAPES). The request is already bound: the function parses no label and reads no
  * descriptor. It converts each value once (`coef` to dB through omx_lin_to_db(), `oct` to Q through
- * omx_eq_octaves_q(), `khz` to Hz) and answers ascending points:
+ * omx_eq_octaves_q(), `kHz` to Hz) and answers ascending points:
  *
  * - `eq_response`: exactly omx_eq_curve_db() over the bands the terms make, by omx_eq_curve_bands()'s rule (a
  *   band switched off is not drawn, the head filters as Butterworth sections), x in Hz, y in dB, the bands'
@@ -51,6 +51,7 @@
 #include "omx_gate.h"
 #include "omx_magnitude.h"
 #include "omx_units.h"
+#include "omx_dsp_vocabulary.h"
 #include "omxdsp_definitions.h"
 
 /** @brief What omx_curve_points() answers in its code: CURVE_CODES, spelt as the design names them. */
@@ -150,10 +151,10 @@ static const char *const OMX_CURVE_ROLE_WORDS[OMX_CURVE_ROLES_COUNT] = {
     "drive",     "tone",      "model",     "mix",     "output",     "time",       "feedback",   "pingpong",
     "sync",      "division",  "size",      "decay",   "algorithm", "predelay",  "damping",    "width",      "low_cut",
     "high_cut"};
-/** @brief The wire words of CURVE_UNITS, by value: the param-contract extension's unit tokens. */
-static const char *const OMX_CURVE_UNIT_WORDS[OMX_CURVE_UNITS_COUNT] = {"hz",   "khz", "db",   "dbfs", "dbu",
-                                                                        "lufs", "coef", "oct", "none", "ratio",
-                                                                        "pc", "ms", "s"};
+/** @brief The wire words of CURVE_UNITS, by value: the PARAM_UNITS ids themselves, never another spelling. */
+static const char *const OMX_CURVE_UNIT_WORDS[OMX_CURVE_UNITS_COUNT] = {"Hz",   "kHz",  "dB",  "dBFS", "dBu",
+                                                                        "LUFS", "coef", "oct", "none", "ratio",
+                                                                        "percent", "ms", "s"};
 /** @brief The wire words of CURVE_LEGS, by value: the leg a delay's tap lands on. */
 static const char *const OMX_CURVE_LEG_WORDS[OMX_CURVE_LEGS_COUNT] = {"both", "left", "right"};
 /** @brief The wire words of CURVE_SHAPES, by value; `unshaped` is spelt `-`. */
@@ -177,11 +178,23 @@ static inline int omx_curve_word(const char *const *words, uint32_t n, const cha
 }
 
 /**
+ * @brief Whether a role word is an indexed band role's: it starts with CURVE_ROLE_PREFIXES `band`
+ *        (OMX_CURVE_ROLE_PREFIXES_BAND), as `band_freq` does. A consumer asks this, never a prefix of its own.
+ * @param word The role word, NUL-terminated; NULL is no word.
+ * @return 1 for a band role's word, else 0.
+ * @note Thread-safe: pure.
+ * @thread control
+ */
+static inline int omx_curve_role_is_band(const char *word) {
+  return word && strncmp(word, OMX_CURVE_ROLE_PREFIXES_BAND, sizeof OMX_CURVE_ROLE_PREFIXES_BAND - 1u) == 0;
+}
+
+/**
  * @brief Whether `role` takes a value in `unit`: the conversions omx_curve_points() makes, and no other.
  *
- * A frequency in `hz` or `khz`; a band's gain in `db` or `coef`; a band's Q in `none` or `coef` (a Q) or `oct`
- * (a bandwidth); a choice or a switch in `none`; a head filter's slope in `none` or `db`, dB per octave; a
- * threshold in any level unit, read as dB; a ratio in `ratio` or `coef`; the other gain computer terms in `db`.
+ * A frequency in `Hz` or `kHz`; a band's gain in `dB` or `coef`; a band's Q in `none` or `coef` (a Q) or `oct`
+ * (a bandwidth); a choice or a switch in `none`; a head filter's slope in `none` or `dB`, dB per octave; a
+ * threshold in any level unit, read as dB; a ratio in `ratio` or `coef`; the other gain computer terms in `dB`.
  * @param role The role.
  * @param unit The unit.
  * @return 1 when the role accepts the unit, else 0.
@@ -229,7 +242,7 @@ static inline int omx_curve_unit_accepted(enum omx_curve_roles role, enum omx_cu
   case OMX_CURVE_ROLES_DAMPING:
   case OMX_CURVE_ROLES_WIDTH:
     /* a share: the drive serves its mix in percent, the delay and the reverb theirs as a plain 0..1 */
-    return unit == OMX_CURVE_UNITS_PC || unit == OMX_CURVE_UNITS_NONE || unit == OMX_CURVE_UNITS_COEF;
+    return unit == OMX_CURVE_UNITS_PERCENT || unit == OMX_CURVE_UNITS_NONE || unit == OMX_CURVE_UNITS_COEF;
   case OMX_CURVE_ROLES_TIME:
   case OMX_CURVE_ROLES_DECAY:
   case OMX_CURVE_ROLES_PREDELAY:
@@ -274,7 +287,7 @@ static inline double omx_curve_term_value(const struct omx_curve_term *t) {
  * @thread control
  */
 static inline double omx_curve_share_value(const struct omx_curve_term *t) {
-  return t->unit == OMX_CURVE_UNITS_PC ? t->value / 100.0 : t->value;
+  return t->unit == OMX_CURVE_UNITS_PERCENT ? t->value / 100.0 : t->value;
 }
 
 /**
@@ -752,7 +765,8 @@ static inline uint32_t omx_curve_time(const struct omx_curve_request *rq, int ha
  * `eq_response` of the `eq` family, a `transfer_curve` of `dynamics`, `limiter`, `gate`, `deesser` or `drive`); the grid
  * points, 2 to CURVE_POINTS_MAX (OMX_CURVE_POINTS_RANGE); the rate, the extents and every value finite and the
  * rate positive (OMX_CURVE_VALUE_NOT_FINITE); every unit accepted by its role (OMX_CURVE_UNIT_REFUSED); the
- * extents bounding a range, an EQ's above 0 Hz (OMX_CURVE_POINTS_RANGE); then the model's own terms
+ * extents bounding a range, an EQ's above 0 Hz, and every frequency of an EQ (a band's, a head filter's, switched
+ * off or not) above 0 Hz (OMX_CURVE_POINTS_RANGE); then the model's own terms
  * (OMX_CURVE_TERM_MISSING, OMX_CURVE_KIND_UNKNOWN), an EQ's anchors within CURVE_POINTS_MAX
  * (OMX_CURVE_POINTS_RANGE) and the room (OMX_CURVE_ROOM). With no extents, an EQ runs from CURVE_EXTENTS
  * `freqMinHz` to the lower of `freqMaxHz` and `nyquistFraction` of Nyquist, a transfer curve from `levelMinDb`
@@ -768,7 +782,6 @@ static inline uint32_t omx_curve_time(const struct omx_curve_request *rq, int ha
  * @return The points written; 0 when `*code` is not OMX_CURVE_OK.
  * @post `ascending`.
  * @note Thread-safe on distinct output, reentrant.
- * @twin curvePoints
  * @thread control
  */
 static inline uint32_t omx_curve_points_marked(const struct omx_curve_request *rq, double *x, double *y,
@@ -809,6 +822,13 @@ static inline uint32_t omx_curve_points_marked(const struct omx_curve_request *r
   }
   if ((!(hi > lo) && !(timed && !rq->has_extents)) || (eq && !(lo > 0.0)) || (timed && !(lo >= 0.0)))
     return (*code = OMX_CURVE_POINTS_RANGE), 0u;
+  for (uint32_t i = 0; eq && i < rq->nterms; i++) {
+    /* a corner at or below 0 Hz is no filter: refused, never drawn as the flat line of a filter not there (#90) */
+    const enum omx_curve_roles r = rq->terms[i].role;
+    if ((r == OMX_CURVE_ROLES_BAND_FREQ || r == OMX_CURVE_ROLES_HPF_FREQ || r == OMX_CURVE_ROLES_LPF_FREQ) &&
+        !(omx_curve_term_value(&rq->terms[i]) > 0.0))
+      return (*code = OMX_CURVE_POINTS_RANGE), 0u;
+  }
   if (ex && rq->user_only && !ex->y_user) return (*code = OMX_CURVE_ROOM), 0u;
   const uint32_t n = eq                                     ? omx_curve_eq(rq, lo, hi, x, y, room, ex, code)
                      : timed                                  ? omx_curve_time(rq, rq->has_extents, lo, hi, x, y, room, ex, code)

@@ -88,11 +88,21 @@ pull_request null noarm
 EOF
 }
 
-check_job rpm aarch64
+# rpm builds no aarch64 at all: the owner ruling of 2026-11-19 stops building Fedora 45 aarch64, so its arch-matrix is
+# the fixed x86_64 list, with no gate. deb keeps the arm gate.
+rpm_line="$(awk '
+  /^  rpm:/ { injob = 1 }
+  injob && /^  [a-z]+:$/ && !/^  rpm:/ { injob = 0 }
+  injob && /arch-matrix:/ { print; exit }
+' "$REL")"
+[[ "$rpm_line" =~ arch-matrix:\ \'\[\"x86_64\"\]\'[[:space:]]*$ ]] || {
+  echo "release-arm-gate-selftest: FAIL — rpm's arch-matrix is not the fixed '[\"x86_64\"]' (no Fedora aarch64): $rpm_line"
+  fails=$((fails + 1))
+}
 check_job deb arm64
 
 if [ "$fails" -ne 0 ]; then
   echo "release-arm-gate-selftest: FAIL — $fails part(s) of the arm gate wrong"
   exit 1
 fi
-echo "release-arm-gate-selftest: ok — rpm and deb arch-matrix build arm on every tag push, opt-in only on dispatch"
+echo "release-arm-gate-selftest: ok — deb arch-matrix builds arm64 on every tag push, opt-in only on dispatch; rpm is x86_64 only"

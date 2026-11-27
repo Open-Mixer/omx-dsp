@@ -1,8 +1,5 @@
 {
   "$schema": "../../schema/omx-contract.schema.json",
-  "requires": {
-    "omx-contract-schema": ">= 3.1.0"
-  },
   "controls": [
     {
       "name": "keySource",
@@ -131,7 +128,7 @@
         "min": 1,
         "max": 100,
         "step": 1,
-        "unit": "",
+        "unit": "none",
         "default": 16,
         "defaultFrom": "desk"
       }
@@ -186,7 +183,7 @@
         "min": -6,
         "max": 6,
         "step": 0.5,
-        "unit": "dB/oct",
+        "unit": "dBPerOct",
         "default": 0,
         "defaultFrom": "desk"
       }

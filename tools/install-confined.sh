@@ -5,7 +5,7 @@
 # install-confined.sh — make install writes and removes nothing outside $(DESTDIR)$(PREFIX) (#75).
 #
 #   tools/install-confined.sh            the check, in a throwaway podman container (OMX_INSTALL_CONFINED_IMAGE, default
-#                                        tools/install-confined.image: fedora:44 pinned by digest), so a red run never touches the host
+#                                        tools/install-confined.image: fedora:45 pinned by digest), so a red run never touches the host
 #   OMX_INSTALL_CONFINED_INNER=1 tools/install-confined.sh
 #                                        the check itself, on THIS file system. Only an explicit opt-in, set by the CI job
 #                                        whose container is thrown away and by the podman call above: a container marker
@@ -17,7 +17,7 @@
 # Inner check, what it WRITES and REMOVES (all of it in a container that is thrown away):
 #   /w                a copy of the tree (removed first); the install runs there
 #   a mktemp -d       (TMPDIR, else /tmp): the prefix, the destdir, the snapshots and the make log (removed at the end)
-#   the system contract directory /usr/share/omx-contract/contract.d/3/omx-dsp/: ONE sentinel file planted (the proof the
+#   the system contract directory /usr/share/omx-contract/contract.d/omx-dsp/: ONE sentinel file planted (the proof the
 #                     install does not remove it); and, when omx-contract is not installed, dnf installs gcc, make,
 #                     pkgconf, omx-contract-devel and the OpenMixer release package (no chmod anywhere)
 # The two installs are `make install PREFIX=<scratch>/p` and `make install DESTDIR=<scratch>/d PREFIX=/usr`. The snapshots
@@ -50,7 +50,7 @@ if ! pkg-config --exists omx-contract 2>/dev/null; then
 fi
 work=/w
 rm -rf "$work"; cp -a "$SRC" "$work"; rm -rf "$work/build"
-sentinel=/usr/share/omx-contract/contract.d/3/omx-dsp/sentinel-install-confined
+sentinel=/usr/share/omx-contract/contract.d/omx-dsp/sentinel-install-confined
 mkdir -p "$(dirname "$sentinel")"; echo planted > "$sentinel"
 
 snap() {
@@ -73,12 +73,12 @@ confined() { # <label> <make args...>
 
 P=$scratch/p D=$scratch/d
 confined "PREFIX=$P" install PREFIX="$P"
-[ -f "$P"/share/omx-contract/contract.d/3/omx-dsp/MANIFEST.json ] || { echo "install-confined: PREFIX=$P: the contract directory is not under the prefix"; fail=1; }
+[ -f "$P"/share/omx-contract/contract.d/omx-dsp/MANIFEST.json ] || { echo "install-confined: PREFIX=$P: the contract directory is not under the prefix"; fail=1; }
 for h in "$SRC"/include/omxdsp/*.h "$SRC"/include/omxdsp/*/*.h; do
   rel=${h#"$SRC"/}
   [ -f "$P/$rel" ] || { echo "install-confined: PREFIX=$P: the install put no $rel under the prefix"; fail=1; }
 done
 confined "DESTDIR=$D PREFIX=/usr" install DESTDIR="$D" PREFIX=/usr
-[ -f "$D"/usr/share/omx-contract/contract.d/3/omx-dsp/MANIFEST.json ] || { echo "install-confined: DESTDIR=$D PREFIX=/usr: the contract directory is not under the destdir"; fail=1; }
+[ -f "$D"/usr/share/omx-contract/contract.d/omx-dsp/MANIFEST.json ] || { echo "install-confined: DESTDIR=$D PREFIX=/usr: the contract directory is not under the destdir"; fail=1; }
 [ "$fail" = 0 ] || { echo "install-confined: FAIL"; exit 1; }
 echo "install-confined: both installs stayed inside DESTDIR+PREFIX and the planted system directory is intact"

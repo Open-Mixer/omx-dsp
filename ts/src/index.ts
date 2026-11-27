@@ -10,11 +10,9 @@ export {
   biquadMagnitudeDb,
   clampEqQFor,
   lowpassHandover,
+  butterworthQs,
   magnitudeSumDb,
-  matchedPair,
-  octavesToQ,
   rbjSection,
-  sectionMagnitudeDb,
   type BiquadBand,
   type BiquadKind,
   type BiquadSection,
@@ -29,6 +27,7 @@ export {
   CURVE_FAMILIES,
   CURVE_POINTS_MAX,
   CURVE_ORIGINS,
+  CURVE_ROLE_PREFIXES,
   CURVE_ROLES,
   CURVE_SHAPES,
   CURVE_UNITS,
@@ -42,7 +41,6 @@ export {
   METER_KINDS,
   METER_MEASUREMENTS,
   METER_UNITS,
-  METER_UNITS_LABELS,
   METER_VIEW,
   RTA_BAND_F_MAX_CAP,
   RTA_BAND_F_MIN,
@@ -74,59 +72,8 @@ export {
   type SpectrumBandOptions,
   type SpectrumTierInput,
 } from './rta.js';
-export { gaincompDb, gaincompDbShifted, gateKnee, type GaincompMode, type GaincompParams } from './gaincomp.js';
-export {
-  CURVE_WORDS,
-  butterworthQs,
-  curvePoints,
-  reverbDecayLoop,
-  type CurveAnswer,
-  type CurveCode,
-  type CurveMark,
-  type CurvePoint,
-  type CurveStem,
-  type CurveRequest,
-  type CurveTerm,
-} from './curve.js';
-export {
-  FBS_ACTIONS,
-  FBS_HOLD_NEVER,
-  FBS_PLACE_SLOTS,
-  FbsPlace,
-  ORIGIN,
-  ORIGIN_WORDS,
-  SHAPE,
-  SHAPE_WORDS,
-  fbsCents,
-  fbsGainCap,
-  sameRingFreq,
-  type BandReport,
-  type FbsAction,
-  type FbsEvent,
-  type FbsFind,
-  type FbsPool,
-} from './fbs-place.js';
-export { hrpPlaceBands, hrpPlaceInRange, hrpStepToward, type HrpPlaceLimits, type HrpPlacedBand } from './hrp-place.js';
+export { gaincompDb, type GaincompMode, type GaincompParams } from './gaincomp.js';
+export { CURVE_WORDS, WASI_IMPORTS, curveRoleIsBand, loadCurve, wasiStandIns, type CurveAnswer, type CurveCode, type CurveMark, type CurveModule, type CurvePoint, type CurveRequest, type CurveStem, type CurveTerm } from './wasm.js';
 export { EQ_FREQ_RANGE, HRP_GAIN_STEP_DB } from './definitions.js';
 export { EQ_GAIN_RANGE, FBS_MAX_CUT_DB } from './definitions.js';
-export {
-  METER_GR_EMPTY,
-  METER_GR_HOLD_MS,
-  METER_MARKER_EMPTY,
-  METER_WORDS,
-  meterBarStep,
-  meterClip,
-  meterDecimate,
-  meterFill,
-  meterFillDb,
-  meterGrStep,
-  meterGrView,
-  meterMarker,
-  meterStep,
-  meterUnitOf,
-  type MeterGr,
-  type MeterKind,
-  type MeterMarker,
-  type MeterMeasurement,
-  type MeterUnit,
-} from './meter.js';
+export { METER_MARKER_EMPTY, meterBarStep, meterFill, meterFillDb, meterMarker, meterStep, type MeterMarker } from './meter.js';

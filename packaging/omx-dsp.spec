@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2026 Pau Aliagas <linuxnow@gmail.com>
 Name: omx-dsp
-Version: 0.32.4
+Version: 0.34.3
 Release: 1%{?dist}
 License: GPL-3.0-or-later
 Summary: The audio toolbox of the OpenMixer console, as a real-time-safe C library
@@ -14,14 +14,23 @@ BuildRequires: make
 BuildRequires: binutils
 BuildRequires: gawk
 BuildRequires: diffutils
+# the WebAssembly module of the omx-dsp-wasm package (tools/wasm-build.sh): the distribution's own toolchain
+BuildRequires: clang
+BuildRequires: lld
+BuildRequires: wasi-libc-devel
+BuildRequires: wasi-libc-static
 BuildRequires: pkgconfig
-BuildRequires: omx-contract-devel >= 3.18.0
+BuildRequires: omx-contract-devel
 # The JACK headers by pkgconfig(jack), so a host with PipeWire's JACK (the build image preinstalls its devel package)
 # builds this; and jack2's RUNTIME by name, jackd and its libjack, which check-package's omx-rt-gate host-buffer arm
 # starts and loads, failing by name on PipeWire's. It installs beside PipeWire's JACK libraries. A build requirement
 # only: no package of this spec requires jack2 (omx-rta-read needs libjack.so.0, which either provides).
 BuildRequires: pkgconfig(jack)
 BuildRequires: jack-audio-connection-kit
+# the npm package's module tree (make npm-stage): npm ci fetches the package's pinned TypeScript in ts/, and npm pack's prepack compiles ts/ with it.
+# Node 26, the floor ts/package.json's engines names: nodejs26-npm-bin brings npm and nodejs26-bin, whose /usr/bin/node is 26.
+BuildRequires: nodejs26
+BuildRequires: nodejs26-npm-bin
 
 # Headers and a static archive only: nothing of this package is loaded at run time.
 %global debug_package %{nil}
@@ -41,7 +50,7 @@ Its documentation is on openmixer.org.
 %package devel
 Summary: Headers and static library to build on the OpenMixer audio toolbox
 Provides: %{name}-static = %{version}-%{release}
-Requires: omx-contract-devel >= 3.18.0
+Requires: omx-contract-devel
 Requires: %{name}-contract = %{version}-%{release}
 
 %package -n omx-rt-gate
@@ -76,13 +85,28 @@ Its documentation is on openmixer.org.
 %package contract
 Summary: omx-dsp's kernel and instance declarations, for programs that read them at run time
 BuildArch: noarch
-# the declarations live in omx-contract's contract directory and are read against its schema; a floor only
-Requires: omx-contract-data >= 3.18.0
+# the declarations live in omx-contract's contract directory and are read against its schema (no version)
+Requires: omx-contract-data
+
+%package -n omx-dsp-wasm
+Summary: omx-dsp's curve function as a WebAssembly module, with its JavaScript loader
+BuildArch: noarch
+
+%description -n omx-dsp-wasm
+The curve function of omx-dsp (the points of an EQ or transfer curve from a
+panel description's terms) compiled to one WebAssembly module,
+/usr/share/omx-dsp/wasm/omx-dsp.wasm, and the loader that loads it, beside it
+under /usr/share/omx-dsp/: dist/index.js, the files the npm package
+@openmixer/omx-dsp publishes (package.json, dist/, src/, oracle/, wasm/), the
+same files. A Node program imports /usr/share/omx-dsp/dist/index.js and calls
+loadCurve on the module; a browser bundles the same files. The arithmetic is the
+console's and the plugins', not a second implementation of it.
+Its documentation is on openmixer.org.
 
 %description contract
 omx-dsp's package of omx-contract's contract directory: the declarations of
 its kernels and instance faces (their controls, units and readouts) under
-/usr/share/omx-contract/contract.d/3/omx-dsp. A program that reads them while
+/usr/share/omx-contract/contract.d/omx-dsp. A program that reads them while
 it runs (a panel, the omx-contract command) needs this package, not the
 development one.
 Its documentation is on openmixer.org.
@@ -101,10 +125,13 @@ Its documentation is on openmixer.org.
 
 %build
 %set_build_flags
-%make_build lib rt-gate-ship rta-read
+%make_build lib rt-gate-ship rta-read wasm
 
 %install
-%make_install PREFIX=%{_prefix} LIBDIR=%{_libdir} INCLUDEDIR=%{_includedir}
+# The npm tree is built under the Node ts/package.json's engines names: the log shows the node, and
+# engine-strict turns npm ci's EBADENGINE warning into the build's failure on an older one.
+node --version
+npm_config_engine_strict=true %make_install PREFIX=%{_prefix} LIBDIR=%{_libdir} INCLUDEDIR=%{_includedir} install-wasm
 
 %check
 %make_build check-package
@@ -139,12 +166,107 @@ Its documentation is on openmixer.org.
 %{_bindir}/omx-rta-read
 %{_mandir}/man1/omx-rta-read.1*
 
+%files -n omx-dsp-wasm
+%license LICENSE
+%{_datadir}/omx-dsp/package.json
+%{_datadir}/omx-dsp/dist/
+%{_datadir}/omx-dsp/src/
+%{_datadir}/omx-dsp/oracle/
+%{_datadir}/omx-dsp/wasm/
+
 %files contract
 %license LICENSE
 %doc README.md
-%{_datadir}/omx-contract/contract.d/3/omx-dsp/
+%{_datadir}/omx-contract/contract.d/omx-dsp/
+%{_datadir}/omx-dsp/catalogs/
 
 %changelog
+* Thu Nov 26 2026 Pau Aliagas <linuxnow@gmail.com> - 0.34.3-1
+- The RPMs are built for Fedora aarch64 as well as x86_64: the release
+  matrix is Open-Mixer/.github's shared releases and architectures, with no
+  list of this repository's own.
+- Published by the devel release of the full matrix, with every change
+  merged to devel since 0.34.2.
+
+* Wed Nov 25 2026 Pau Aliagas <linuxnow@gmail.com> - 0.34.2-1
+- The contract directory has no schema-major level (#178): omx-dsp-contract
+  installs <contractdir>/omx-dsp/, no longer <contractdir>/3/omx-dsp/, by
+  the installer of omx-contract 0.23.0, and nothing reads a schema major.
+- The CI cells follow the check matrix (Fedora 45), with no change to what
+  the packages hold.
+
+* Tue Nov 24 2026 Pau Aliagas <linuxnow@gmail.com> - 0.34.1-1
+- ROTARY_ACCEL_RANGE travels in coef, the standard unit omx-contract names for
+  a plain multiplier, no longer "x" (#134).
+- No hand-kept version floor (the devel wave 2026-11-24): packaging/deps.txt
+  is gone, the spec, debian/control and omxdsp.pc name omx-contract with no
+  version, and the requires of the 59 data files (each only
+  omx-contract-schema) are removed; the build installs the published
+  omx-contract it is paired with.
+- The curve and meter unit words are the PARAM_UNITS ids (#122): the wire
+  words of CURVE_UNITS and OMX_CURVE_UNIT_WORDS are now "Hz", "kHz", "dB",
+  "dBFS", "dBu", "LUFS", "percent" (were "hz", "khz", "db", "dbfs", "dbu",
+  "lufs", "pc"), and OMX_CURVE_UNITS_PC is OMX_CURVE_UNITS_PERCENT. A
+  consumer that spells the old words or the old enumerator must follow.
+- Every unit data/ states is a PARAM_UNITS standard id (dBPerOct, dBPerS,
+  coef), held by make units-check.
+
+* Sat Nov 21 2026 Pau Aliagas <linuxnow@gmail.com> - 0.34.0-1
+- Sorting pass: RT_HARD_TARGET, ORACLE_FLOOR_RATES and ORACLE_FULL_RATES (V25),
+  CURVE_AXES and CURVE_KINDS with their translations (V26 and its
+  catalogs, installed in /usr/share/omx-dsp/catalogs) and READOUT_RATE_HZ
+  (V22) are this library's data, rendered into omxdsp_definitions.h and
+  omx_dsp_vocabulary.h; the install no longer excludes codes.json (V20
+  follow-up). The floors on omx-contract rise to 3.21.0.
+- CURVE_UNITS names the standard unit each curve word stands for (`standard`,
+  a PARAM_UNITS const), rendered as OMX_CURVE_UNITS_STANDARD.
+- The rotary reports the sweep's shortest read as its latency at full mix,
+  and 0 below it (#117).
+- OMX_ROTARY_INSTANCE_LATENCY_FRAMES is removed: the latency is the face's
+  latency function, the sweep's shortest read at full mix and 0 below it.
+- The rotary publishes its sweep (omx_rotary_sweep, omx_rotary_instance_sweep)
+  and ROTARY_LONGEST_MS, its far end.
+* Thu Nov 19 2026 Pau Aliagas <linuxnow@gmail.com> - 0.33.1-1
+- ts: the TypeScript twins no Open-Mixer repository consumes are deleted
+  (hrp-place and fbs-place, the gaincomp, gate, meter and eq helpers named in
+  #105) with their agreement arms; the C kernels are the one source, each held
+  by its vectors and oracle. The HRP placement's vectors are installed as
+  omxdsp/hrp-place-vectors (omxdsp.pc hrpplacevectors) (#105).
+- CI: the below-floor job installs the newest published omx-contract below the
+  floor (#103).
+- comp key: the key never reaching the audio and the N-thread identity are
+  oracles (test/fx/comp_key_isolation), with a perturbation that turns them red
+  (#109).
+- omx-rt-gate: syscall stays forbidden, but a FUTEX_WAKE spelled at the call is
+  a wake; the thread-identity class (pthread_self, pthread_equal,
+  pthread_gettid_np) and the cpu-identity class (sched_getcpu), each closed to
+  its symbols; strnlen joins bulk-memory; omx-clap-core.abi, the embedder's
+  audio-thread callbacks (#111).
+- CI and release: Fedora 45 only (fc45, RPM on x86_64); the arm gate covers the
+  DEBs; tools/test/workflow-fedora-check.sh refuses Fedora 44 in the workflows
+  (#112).
+- install: the devel package ships the test support and the TSan gate a
+  consumer's native tests read; tools/support-install-check.sh holds the file
+  list (#107).
+- comp feedback: the bus preset's O7, O8 and O9 oracles, with five sabotages;
+  the peak scans written as comparisons (#108).
+
+* Wed Nov 18 2026 Pau Aliagas <linuxnow@gmail.com> - 0.33.0-1
+- wasm: make wasm builds omx_curve_points_json to build/wasm/omx-dsp.wasm
+  with the distribution's clang, lld and wasi-libc (tools/wasm-build.sh, one
+  recipe for every module), the curve function as C compiled to WebAssembly
+  (#91). Built by the recipe, never committed.
+- ts: @openmixer/omx-dsp loads that module as WebAssembly, and the TypeScript
+  curve twin is deleted. vectors/curve-points.json runs through the
+  WebAssembly door, with the native-against-wasm report (#92, #93).
+- The noarch package omx-dsp-wasm installs the npm tree under /usr/share/omx-dsp/:
+  the loader at dist/index.js, the module at wasm/omx-dsp.wasm, with
+  package.json, src/ and oracle/; the loader is built by the package's own
+  pinned TypeScript (#101).
+- Packaging: dependency floors only. omx-contract keeps its floor (3.18.0);
+  BUILDING.md names no ceiling, and the contract-include self-test refuses a
+  ceiling planted in packaging/deps.txt (#100).
+
 * Tue Nov 17 2026 Pau Aliagas <linuxnow@gmail.com> - 0.32.4-1
 - curve: the drive family, a drive's transfer curve sample in to sample
   out through the drive kernel's own control mapping and biased shaper;

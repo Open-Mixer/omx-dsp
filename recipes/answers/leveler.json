@@ -16,7 +16,7 @@
         "min": 0,
         "max": 100,
         "step": 1,
-        "unit": "%",
+        "unit": "percent",
         "default": 0,
         "defaultFrom": "desk"
       },
@@ -70,7 +70,7 @@
         75,
         100
       ],
-      "unit": "%",
+      "unit": "percent",
       "doc": "The amounts the table's rows are written at, percent; between two the leveler reads the rows linearly."
     },
     {
@@ -100,7 +100,7 @@
         3,
         4
       ],
-      "unit": "",
+      "unit": "none",
       "doc": "The downward slot's ratio at each point; 1 is no compression."
     },
     {
@@ -145,7 +145,7 @@
         2.5,
         3
       ],
-      "unit": "",
+      "unit": "none",
       "doc": "The upward slot's ratio at each point; 1 is no lift."
     },
     {

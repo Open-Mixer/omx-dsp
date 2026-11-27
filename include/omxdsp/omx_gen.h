@@ -10,7 +10,7 @@
  * cheaper than a Voss-McCartney octave bank and with no per-sample branching. A generator is
  * mono; a host duplicates the block to both legs of a stereo pair.
  *
- * The kinds and waveforms are omx-contract's generator kernel, GENERATOR_KINDS and WAVEFORMS, in
+ * The kinds and waveforms are this library's generator kernel, GENERATOR_KINDS and WAVEFORMS, in
  * their surface order. Moved from the OpenMixer engine (mix_dsp.h) unchanged in behaviour:
  * test/golden/engine_kernels.sha256 holds its output to the engine's, bit for bit.
  */

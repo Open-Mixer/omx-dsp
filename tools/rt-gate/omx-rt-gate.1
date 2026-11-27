@@ -84,18 +84,28 @@ above.
 \fIsymbol class arm:case reason\fR: the external symbols a root may call, each
 with its class from the closed set \fBmaths\fR, \fBbulk\-memory\fR,
 \fBword\-atomic\fR, \fBclock\fR, \fBftz\-register\fR, \fBwake\fR,
-\fBhost\-buffer\fR, the arm that measured it and the reason. \fBsem_post\fR is a
+\fBhost\-buffer\fR, \fBthread\-identity\fR, \fBcpu\-identity\fR, the arm that measured it and the reason. \fBsem_post\fR is a
 wake, like FUTEX_WAKE: an atomic, and a futex wake only when a waiter sleeps;
 \fBsem_wait\fR and \fBsem_timedwait\fR stay forbidden. \fBhost\-buffer\fR is an
 audio host's own lookup of a port's buffer for the current period, documented
 for its process thread: the one call a process callback cannot avoid. It holds
 exactly the symbols the gate names, today \fBjack_port_get_buffer\fR; a row of
 the class for any other symbol is refused at load, so another host call enters
-it only by a ruling. A row naming a site, a field, a file or a
+it only by a ruling. \fBthread\-identity\fR is the calling thread's own identity, read from its
+descriptor with no system call, allocation or lock, on any thread: closed to
+\fBpthread_self\fR, \fBpthread_equal\fR and \fBpthread_gettid_np\fR (glibc
+2.42 and later); a row of the class for any other symbol is refused at load.
+\fBcpu\-identity\fR is the CPU the calling thread runs on, read through rseq or
+the vDSO with no system call: closed to \fBsched_getcpu\fR.
+\fBsyscall\fR is forbidden, save one
+operation the gate reads at the call: \fBsyscall(SYS_futex,\fR \fIword\fR\fB,
+FUTEX_WAKE\fR or \fBFUTEX_WAKE_PRIVATE\fR\fB, ...)\fR is a wake. Any other
+operation, \fBFUTEX_WAKE_OP\fR among them, one held in a variable or one the
+call's text does not show stays \fBRT\-BLOCK\fR. A row naming a site, a field, a file or a
 function of omx-dsp, a class outside the set, a row without a reason or an arm,
 a duplicate, or a row for a forbidden symbol is refused at load.
 .TP
-.B lv2.abi, clap.abi, pipewire.abi, jack.abi
+.B lv2.abi, clap.abi, pipewire.abi, jack.abi, omx-clap-core.abi
 the roles of each ABI: \fBplugin\fR fields the bound side provides (its roots),
 \fBhost\fR fields the other side provides (callable with their role),
 \fBhanded\fR parameters (LV2 work's respond) and the \fBresult\fR rows.
@@ -103,10 +113,13 @@ the roles of each ABI: \fBplugin\fR fields the bound side provides (its roots),
 JACK takes its process callback by a call, not a table: a JACK client stores
 the callback in the \fBprocess\fR field of an \fBomx_jack_process\fR and
 registers it from there, and \fB\-\-abi jack\fR makes it the root.
+\fBomx\-clap\-core.abi\fR is omx-clap-core's embedding API: the audio-role predicate and
+the log sink its embedder hands it, called on the audio thread; \fB\-\-abi omx\-clap\-core\fR
+binds the library, \fB\-\-abi omx\-clap\-core:host\fR the embedder.
 .SH OPTIONS
 .TP
 .BI \-\-abi " NAME" "\fR[\fB:host\fR]"
-An ABI the units bind: \fBlv2\fR, \fBclap\fR, \fBpipewire\fR, \fBjack\fR.
+An ABI the units bind: \fBlv2\fR, \fBclap\fR, \fBpipewire\fR, \fBjack\fR, \fBomx\-clap\-core\fR.
 .TP
 .BI \-\-tags " FILE"
 The thread tags of a library's functions. The installed omx-dsp tags are read

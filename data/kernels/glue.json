@@ -1,8 +1,5 @@
 {
   "$schema": "../../schema/omx-contract.schema.json",
-  "requires": {
-    "omx-contract-schema": ">= 3.1.0"
-  },
   "controls": [
     {
       "name": "thresholdDb",
@@ -130,7 +127,7 @@
         "min": 0,
         "max": 100,
         "step": 1,
-        "unit": "%",
+        "unit": "percent",
         "default": 100,
         "defaultFrom": "desk"
       }
@@ -175,7 +172,7 @@
         "impl": "include/omxdsp/fx/omx_glue_instance.h#OMX_GLUE_INSTANCE_RATIOS"
       },
       "doc": "The ratios of the `ratio` detents.",
-      "unit": "",
+      "unit": "none",
       "values": [
         2,
         4,

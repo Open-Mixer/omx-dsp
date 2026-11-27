@@ -11,9 +11,9 @@ import { validateData } from './oc.mjs';
 import { renderC } from './oc.mjs';
 import { renderJson } from './oc.mjs';
 import { renderTs } from './oc.mjs';
-import { UNION, editData, scratchData, texts } from './helpers.mjs';
+import { UNION, editData, scratchData, texts, withoutMemberDocs } from './helpers.mjs';
 
-const header = (dir = UNION) => renderC(resolveData(loadData(dir))).find((f) => f.path === 'omxcontract/omx_contract_limits.h').text;
+const header = (dir = UNION) => withoutMemberDocs(renderC(resolveData(loadData(dir))).find((f) => f.path === 'omxcontract/omx_contract_limits.h').text);
 const json = (dir = UNION) => JSON.parse(renderJson(resolveData(loadData(dir)), '0.0.0')[0].text);
 const ts = (dir = UNION) => renderTs(resolveData(loadData(dir))).map((f) => f.text).join('\n');
 const controls = (k, dir) => json(dir).kernels[k].controls;
