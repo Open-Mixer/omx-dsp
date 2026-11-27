@@ -1,3 +1,14 @@
+omx-dsp (0.34.4) unstable; urgency=medium
+
+  * The align and idelay kernels have instance faces (#185):
+    omx_align_instance.h and omx_idelay_instance.h, each resolving its one
+    contract control (inputAlignDelay, outputDelay, ms), owning its rings,
+    latency 0. face-conformance requires both faces and now checks 33.
+  * Published by the devel release of the full matrix, with every change
+    merged to devel since 0.34.3.
+
+ -- Pau Aliagas <linuxnow@gmail.com>  Fri, 27 Nov 2026 23:40:36 +0100
+
 omx-dsp (0.34.3) unstable; urgency=medium
 
   * The RPMs are built for Fedora aarch64 as well as x86_64: the release
