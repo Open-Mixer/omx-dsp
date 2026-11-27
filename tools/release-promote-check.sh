@@ -105,8 +105,8 @@ if [ "${1:-}" = --sabotage ]; then
         default: quick" "        options: [quick, full]
         default: full" "default is not quick"
   plant "a binary only the deb builds" rel "      binary-names: omx-rt-gate
-      rpm-arch-matrix" "      binary-names: omx-rt-gate omx-dsp-contract
-      rpm-arch-matrix" 'not packages both builds list'
+      version:" "      binary-names: omx-rt-gate omx-dsp-contract
+      version:" 'not packages both builds list'
   plant "no on-main step" rel "git merge-base --is-ancestor" "git merge-base" 'commit to main'
   plant "no secrets" rel "      commit: \${{ inputs.commit || '' }}
     secrets: inherit" "      commit: \${{ inputs.commit || '' }}" 'inherit the secrets'
