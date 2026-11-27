@@ -79,7 +79,7 @@ for 60 s (`.github/workflows/ci.yml`, job `fuzz`).
 
 | untrusted input | harness |
 |---|---|
-| Port words, sample blocks (finite and hostile) and rates of all 31 instance faces in `include/omxdsp/fx/*_instance.h` | `fuzz/fuzz_fx.c` |
+| Port words, sample blocks (finite and hostile) and rates of all 33 instance faces in `include/omxdsp/fx/*_instance.h` | `fuzz/fuzz_fx.c` |
 | Port words through the scalar laws (clamps, dB/linear, pan, balance, fader, ramp, slew, wet/dry, one-pole) | `fuzz/fuzz_laws.c` |
 | EQ bank (up to 24 bands), design rate, blocks through the cascade | `fuzz/fuzz_eq.c` |
 | SRC rate pair, polyphase table, blocks | `fuzz/fuzz_src.c` |

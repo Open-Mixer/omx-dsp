@@ -31,6 +31,7 @@
 #define OMX_CONTRACT_STORAGE 1
 #include "fuzz.h"
 
+#include <omxdsp/fx/omx_align_instance.h>
 #include <omxdsp/fx/omx_balancer_instance.h>
 #include <omxdsp/fx/omx_chorus_instance.h>
 #include <omxdsp/fx/omx_clipper_instance.h>
@@ -44,6 +45,7 @@
 #include <omxdsp/fx/omx_flanger_instance.h>
 #include <omxdsp/fx/omx_gate_instance.h>
 #include <omxdsp/fx/omx_geq_instance.h>
+#include <omxdsp/fx/omx_idelay_instance.h>
 #include <omxdsp/fx/omx_leveler_instance.h>
 #include <omxdsp/fx/omx_limiter_instance.h>
 #include <omxdsp/fx/omx_mbcomp_instance.h>
@@ -171,6 +173,8 @@ FX_STD(upward, OmxUpwardInstance,
 FX_STD(width, OmxWidthInstance,
        { float w = F(); int ps = I(); float pm = F(); int bm = I(); float bh = F();
          omx_width_instance_resolve(s, bypass, w, ps, pm, bm, bh); })
+FX_STD(align, OmxAlignInstance, { omx_align_instance_resolve(s, bypass, F()); })
+FX_STD(idelay, OmxIdelayInstance, { omx_idelay_instance_resolve(s, bypass, F()); })
 
 /* The faces with array ports, and the two with a key or a double rate. */
 FX_INIT_STD(comp, OmxCompInstance)
@@ -268,6 +272,8 @@ static const struct fx FX[] = {
     ROW(upward, OmxUpwardInstance),   ROW(glue, OmxGlueInstance),
     ROW(loudlevel, OmxLoudlevelInstance), ROW(spring, OmxSpringInstance),
     ROW(balancer, OmxBalancerInstance),
+    /* appended, so every older seed's first byte still picks its face */
+    ROW(align, OmxAlignInstance),     ROW(idelay, OmxIdelayInstance),
 };
 #define FX_COUNT (sizeof FX / sizeof FX[0])
 
