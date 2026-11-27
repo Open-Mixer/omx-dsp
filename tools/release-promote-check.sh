@@ -14,6 +14,10 @@
 # version, with binary-names the packages BOTH build jobs list, the rpm architectures the rpm build's, and the secrets.
 # publish.yml: no push trigger (npm never moves on the bare tag), a workflow_run of release, a gate that refuses a run
 # with no promote job or a promote job that did not succeed, and a checkout of the tag's commit.
+# Publish only by tagging (Open-Mixer/.github#126; omx-dsp#94, where a dispatch of a tag ref with publish=true attached
+# the API reference to the release): no trigger declares a publish input and nothing reads inputs.publish (a dispatch is a
+# dry run), and every step that writes to the GitHub release (gh release upload, create or edit) runs under an if, its
+# own or its job's, holding both github.event_name == 'push' and startsWith(github.ref, 'refs/tags/').
 set -uo pipefail
 cd "$(dirname "$0")/.." || exit 2
 REL="${RELEASE_YML:-.github/workflows/release.yml}"
@@ -21,7 +25,7 @@ PUB="${PUBLISH_YML:-.github/workflows/publish.yml}"
 
 check() { # <release.yml> <publish.yml>: one line per finding, exit 1 on any
   python3 -I - "$1" "$2" <<'PY'
-import sys, yaml
+import re, sys, yaml
 rel = yaml.load(open(sys.argv[1]), Loader=yaml.BaseLoader)
 pub = yaml.load(open(sys.argv[2]), Loader=yaml.BaseLoader)
 bad = []
@@ -69,6 +73,25 @@ if pw.get("rpm-arch-matrix") != jobs.get("rpm", {}).get("with", {}).get("arch-ma
     bad.append("release.yml: the promotion's rpm architectures are not the rpm build's")
 if pr.get("secrets") != "inherit":
     bad.append("release.yml: the promote job does not inherit the secrets")
+# publish only by tagging (omx-dsp#94): a dispatch is a dry run, whatever its inputs say
+for trigger in ("workflow_dispatch", "workflow_call"):
+    if "publish" in ((on.get(trigger) or {}).get("inputs") or {}):
+        bad.append(f"release.yml: a publish input under {trigger} (a dispatch is a dry run: only a tag push publishes)")
+if "inputs.publish" in open(sys.argv[1]).read():
+    bad.append("release.yml: inputs.publish is read, an input no trigger declares (a dispatch publish is gone)")
+TAG_PUSH = ("github.event_name == 'push'", "startsWith(github.ref, 'refs/tags/')")
+tag_push = lambda cond: all(t in cond for t in TAG_PUSH)
+releasing = 0
+for j, job in jobs.items():
+    for s in job.get("steps", []) or []:
+        verb = re.search(r"gh release (upload|create|edit)", s.get("run", ""))
+        if not verb:
+            continue
+        releasing += 1
+        if not (tag_push(s.get("if", "")) or tag_push(job.get("if", ""))):
+            bad.append(f"release.yml: job {j} step '{s.get('name') or verb.group(0)}' writes to the release (gh release {verb.group(1)}) under if `{s.get('if') or job.get('if') or ''}`: not held to a tag push ({' and '.join(TAG_PUSH)})")
+if not releasing:
+    bad.append("release.yml: no step writes to the GitHub release (the API reference is attached by one): nothing for the tag-push law to hold")
 pon = pub.get("on", {})
 if "push" in pon:
     bad.append("publish.yml: a push trigger publishes npm on the bare tag")
@@ -105,11 +128,25 @@ if [ "${1:-}" = --sabotage ]; then
         default: quick" "        options: [quick, full]
         default: full" "default is not quick"
   plant "a binary only the deb builds" rel "      binary-names: omx-rt-gate
-      rpm-arch-matrix" "      binary-names: omx-rt-gate omx-dsp-contract
-      rpm-arch-matrix" 'not packages both builds list'
+      version:" "      binary-names: omx-rt-gate omx-dsp-contract
+      version:" 'not packages both builds list'
   plant "no on-main step" rel "git merge-base --is-ancestor" "git merge-base" 'commit to main'
   plant "no secrets" rel "      commit: \${{ inputs.commit || '' }}
     secrets: inherit" "      commit: \${{ inputs.commit || '' }}" 'inherit the secrets'
+  plant "the API reference attached on a dispatch of a tag ref (omx-dsp#94)" rel "        if: \${{ github.ref_type == 'tag' && (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')) }}" "        if: \${{ github.ref_type == 'tag' && (github.event_name == 'push' || inputs.publish == true) }}" "step 'Attach to the release' writes to the release .* not held to a tag push"
+  plant "a publish dispatch input" rel "      staged:
+        description: 'Build and publish to the staging channel" "      publish:
+        description: 'Sign and publish'
+        type: boolean
+        default: false
+      staged:
+        description: 'Build and publish to the staging channel" 'publish input under workflow_dispatch'
+  plant "a read of inputs.publish" rel "          name: omx-dsp-api-docs
+          path: omx-dsp-api-docs-*.tar.gz" "          name: omx-dsp-api-docs
+          path: omx-dsp-api-docs-*.tar.gz
+          retention-days: \${{ inputs.publish && 90 || 2 }}" 'inputs.publish is read'
+  plant "the attach step moved out of its if" rel "        if: \${{ github.ref_type == 'tag' && (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')) }}
+        env:" "        env:" "step 'Attach to the release' writes to the release .* under if .*needs.promote.result.*: not held to a tag push"
   plant "npm on the bare tag" pub "on:
   workflow_run:" "on:
   push:
