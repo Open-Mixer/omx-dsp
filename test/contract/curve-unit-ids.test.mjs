@@ -33,3 +33,10 @@ test('omx_curve.h reads the CURVE_UNITS ids, in their order: OMX_CURVE_UNIT_WORD
   assert.ok(m, 'no OMX_CURVE_UNIT_WORDS table in omx_curve.h');
   assert.deepEqual(JSON.parse(`[${m[1]}]`), CURVE.ids);
 });
+
+test('the shipped request shape (shapes/curve-io.schema.json) names the CURVE_UNITS ids as its unit words, in their order', () => {
+  // it said hz, db, pc after #122 made the ids the wire words, and had no dBPerOct: a host that validated a request
+  // against the schema it was shipped would refuse every unit the library reads
+  const shape = JSON.parse(readFileSync(join(HERE, 'shapes/curve-io.schema.json'), 'utf8'));
+  assert.deepEqual(shape.$defs.CurveTerm.properties.unit.enum, CURVE.ids);
+});
