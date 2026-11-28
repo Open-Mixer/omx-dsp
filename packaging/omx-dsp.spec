@@ -804,12 +804,12 @@ npm_config_engine_strict=true %make_install PREFIX=%{_prefix} LIBDIR=%{_libdir} 
 - omx-dsp now builds against omx-contract 1.3.0 and no longer carries its own
   copy of the console's limits. Every limit, travel, default, list and choice
   the kernels read comes from the contract's header
-  (`omxcontract/omx_contract_limits.h`, pinned by this tree); the
+  (`omxcontract/omx_contract.h`, pinned by this tree); the
   library installs and requires `omx-contract-devel` (or
   `libomx-contract-dev`) at exactly that version, and `omxdsp.pc` requires it.
-- Breaking, while the library is 0.x: `omxdsp/omx_contract_limits.h` is gone.
+- Breaking, while the library is 0.x: `omxdsp/omx_contract.h` is gone.
   A program that read names from it now includes
-  `<omxcontract/omx_contract_limits.h>`, and the console-only names the old
+  `<omxcontract/omx_contract.h>`, and the console-only names the old
   header carried for the engine (about 460) are not in the contract and are
   not here.
 - The kernels' own copies of contract values are gone: the chorus, flanger,

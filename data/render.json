@@ -17,7 +17,7 @@
         "brief": "The definitions omx-dsp implements: every kernel's travels, sets, readouts and constants.",
         "includes": [
           "math.h",
-          "omxcontract/omx_contract_limits.h"
+          "omxcontract/omx_contract.h"
         ],
         "scope": "package",
         "limits": {}

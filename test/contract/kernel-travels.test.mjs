@@ -17,7 +17,7 @@ import { renderJson } from './oc.mjs';
 import { UNION } from './helpers.mjs';
 
 const json = (dir = UNION) => JSON.parse(renderJson(resolveData(loadData(dir)), '0.0.0')[0].text);
-const header = (dir = UNION) => renderC(resolveData(loadData(dir))).find((f) => f.path === 'omxcontract/omx_contract_limits.h').text;
+const header = (dir = UNION) => renderC(resolveData(loadData(dir))).find((f) => f.path === 'omxcontract/omx_contract.h').text;
 
 /**
  * name -> [the file declaring it, the value the console engine uses]. The five fbs travels, FBS_DEFAULT_HOLD_SECONDS,

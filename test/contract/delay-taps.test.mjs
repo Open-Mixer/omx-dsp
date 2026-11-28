@@ -15,7 +15,7 @@ import { loadData, renderC, renderJson, resolveData } from './oc.mjs';
 import { HERE, UNION } from './helpers.mjs';
 
 const items = () => JSON.parse(renderJson(resolveData(loadData(UNION)), '0.0.0')[0].text).items;
-const header = () => renderC(resolveData(loadData(UNION))).find((f) => f.path === 'omxcontract/omx_contract_limits.h').text;
+const header = () => renderC(resolveData(loadData(UNION))).find((f) => f.path === 'omxcontract/omx_contract.h').text;
 const src = (p) => readFileSync(join(HERE, p), 'utf8');
 
 test('the tap count travels 1..4 step 1 and comes up at 1, rendered as the integer OMX_FX_DELAY_TAPS_RANGE_MAX; 3.0.0 dropped its float alias', () => {

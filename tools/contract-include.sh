@@ -17,7 +17,7 @@
 # Prints one line on stdout and nothing else; the reason for a refusal goes to stderr, exit 1.
 set -eu
 if [ -n "${OMX_CONTRACT_INC:-}" ]; then
-  [ -f "$OMX_CONTRACT_INC/omxcontract/omx_contract_limits.h" ] || { echo "contract-include: OMX_CONTRACT_INC=$OMX_CONTRACT_INC has no omxcontract/omx_contract_limits.h" >&2; exit 1; }
+  [ -f "$OMX_CONTRACT_INC/omxcontract/omx_contract.h" ] || { echo "contract-include: OMX_CONTRACT_INC=$OMX_CONTRACT_INC has no omxcontract/omx_contract.h" >&2; exit 1; }
   printf '%s\n' "$OMX_CONTRACT_INC"; exit 0
 fi
 need="omx-contract (omx-contract-devel / libomx-contract-dev: dnf builddep packaging/omx-dsp.spec, apt-get build-dep ./)"
@@ -28,5 +28,5 @@ if ! pkg-config --exists omx-contract 2>/dev/null; then
 fi
 have="$(pkg-config --modversion omx-contract)"
 inc="$(pkg-config --variable=includedir omx-contract)"
-[ -f "$inc/omxcontract/omx_contract_limits.h" ] || { echo "contract-include: omx-contract $have is installed but $inc/omxcontract/omx_contract_limits.h is missing" >&2; exit 1; }
+[ -f "$inc/omxcontract/omx_contract.h" ] || { echo "contract-include: omx-contract $have is installed but $inc/omxcontract/omx_contract.h is missing" >&2; exit 1; }
 printf '%s\n' "$inc"

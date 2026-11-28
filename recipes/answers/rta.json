@@ -14,7 +14,7 @@
         "export": "RTA_TARGET_BIN_HZ"
       },
       "value": 5.9,
-      "doc": "The RTA's target bin resolution — generated into `omx_contract_limits.h` as `OMX_RTA_TARGET_BIN_HZ`, which `mix_dsp.h` reads; the engine's conformance test reads it back from the header.",
+      "doc": "The RTA's target bin resolution — generated into `omx_contract.h` as `OMX_RTA_TARGET_BIN_HZ`, which `mix_dsp.h` reads; the engine's conformance test reads it back from the header.",
       "unit": "Hz"
     },
     {
@@ -24,7 +24,7 @@
         "export": "RTA_FFT_SIZE_MAX"
       },
       "value": 32768,
-      "doc": "The largest RTA FFT the native ring holds — generated into `omx_contract_limits.h` as `OMX_RTA_FFT_SIZE_MAX`.",
+      "doc": "The largest RTA FFT the native ring holds — generated into `omx_contract.h` as `OMX_RTA_FFT_SIZE_MAX`.",
       "unit": "none"
     },
     {

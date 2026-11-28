@@ -306,7 +306,7 @@ as the package `omx-dsp`, with a `MANIFEST.json`, where the other packages read 
 removed outside `$(DESTDIR)$(PREFIX)` (`make install-confined`, in a throwaway container).
 
 The facts no single package implements (the declared sample rates, the parameter scales) stay in
-Open-Mixer/omx-contract, read through `<omxcontract/omx_contract_limits.h>`, which the definitions
+Open-Mixer/omx-contract, read through `<omxcontract/omx_contract.h>`, which the definitions
 header includes. That dependency is declared by name, with no version: `packaging/omx-dsp.spec`
 (`BuildRequires`, `Requires`), `debian/control` (`Build-Depends`, `Depends`) and `omxdsp.pc` name the package
 and nothing more. This level builds and installs against the omx-contract package the channel publishes; a

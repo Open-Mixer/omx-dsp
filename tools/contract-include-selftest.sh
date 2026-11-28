@@ -33,7 +33,7 @@ cp "$HERE/debian/control" "$S/ceil/debian/"; sed -i 's/^Requires: omx-contract$/
 
 # A scratch package. omx-contract.json carries one kernel, pretty-printed as the release ships it.
 mkdir -p "$S/lib/pkgconfig" "$S/include/omxcontract" "$S/share/omx-contract"
-: > "$S/include/omxcontract/omx_contract_limits.h"
+: > "$S/include/omxcontract/omx_contract.h"
 printf '%s\n' '{' '  "name": "x",' '  "kernels": {' '    "gate": {' '      "controls": [' '        {' '          "name": "keySource",' \
   '          "kind": "choice"' '        }' '      ]' '    }' '  }' '}' > "$S/share/omx-contract/omx-contract.json"
 render() {
