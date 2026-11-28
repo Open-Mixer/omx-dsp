@@ -9,7 +9,7 @@
 #   tools/release-promote-check.sh --sabotage  each careless edit below, planted in a copy, must be named red
 #
 # release.yml: the rpm and deb build jobs never run on a tag and never publish (publish: false), and take the matrix
-# input; the matrix input offers quick and full, quick by default; a check job holds the tag to `make version` and to
+# input; the matrix input offers quick and full, full by default (owner ruling 2026-11-26); a check job holds the tag to `make version` and to
 # main; a promote job calls Open-Mixer/.github promote-staged.yml@openmixer-v1 on a tag (after check) or a dispatched
 # version, with binary-names the packages BOTH build jobs list, the rpm architectures the rpm build's, and the secrets.
 # publish.yml: no push trigger (npm never moves on the bare tag), a workflow_run of release, a gate that refuses a run
@@ -31,8 +31,8 @@ disp = (on.get("workflow_dispatch") or {}).get("inputs", {})
 m = disp.get("matrix", {})
 if m.get("options") != ["quick", "full"] and sorted(m.get("options") or []) != ["full", "quick"]:
     bad.append("release.yml: the matrix input does not offer quick and full")
-if m.get("default") != "quick":
-    bad.append("release.yml: the matrix input's default is not quick (a staged run is the quick set unless a promotion candidate asks for full)")
+if m.get("default") != "full":
+    bad.append("release.yml: the matrix input's default is not full (every package in every cell, owner ruling 2026-11-26; quick is asked for by name)")
 for k in ("version", "commit"):
     if k not in disp:
         bad.append(f"release.yml: no {k} input for a dry run of the promotion")
@@ -101,9 +101,9 @@ if [ "${1:-}" = --sabotage ]; then
       publish: false" "      binary-names: libomxdsp-dev omx-rt-gate omx-dsp-contract
       publish: \${{ github.event_name == 'push' }}" 'deb build publishes'
   plant "no promote job" rel "promote-staged.yml@openmixer-v1" "build-rpm.yml@openmixer-v1" 'no promote job calls'
-  plant "full by default" rel "        options: [quick, full]
-        default: quick" "        options: [quick, full]
-        default: full" "default is not quick"
+  plant "quick by default" rel "        options: [quick, full]
+        default: full" "        options: [quick, full]
+        default: quick" "default is not full"
   plant "a binary only the deb builds" rel "      binary-names: omx-rt-gate
       rpm-arch-matrix" "      binary-names: omx-rt-gate omx-dsp-contract
       rpm-arch-matrix" 'not packages both builds list'
