@@ -52,7 +52,7 @@ jobs:
           wave: ${{ vars.OMX_RELEASE_MATRIX }}
           rpm-releases: '["45"]'
           rpm-arches: '["x86_64"]'
-          # trixie alone, quick and full: Debian bookworm is dropped from the matrix (owner 2026-11-27)
+          # trixie alone, quick and full: Debian is trixie only (owner ruling 2026-11-28)
           deb-releases: '["trixie"]'
           deb-arches: '["amd64", "arm64"]'
           x86-runner: ${{ github.event.pull_request.head.repo.fork && 'ubuntu-latest' || vars.OMX_RUNNER || 'ubuntu-latest' }}
@@ -98,7 +98,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # ruling D25: the cells follow the release set; no bookworm cell (dropped from the matrix, owner 2026-11-27)
+        # ruling D25: the cells follow the release set; Debian is trixie only (owner ruling 2026-11-28)
         cell: ${{ fromJSON(needs.checks.outputs.cells) }}
     container:
       image: ${{ matrix.cell.image }}

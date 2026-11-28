@@ -2,8 +2,8 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2026 Pau Aliagas <linuxnow@gmail.com>
 #
-# Ruling D25: a CI matrix follows the release set, never a hand list. Debian bookworm is dropped from the matrix
-# (owner 2026-11-27): no channel level serves a bookworm package and nothing builds one, so a bookworm cell can only
+# Ruling D25: a CI matrix follows the release set, never a hand list. Debian is trixie only (owner ruling 2026-11-28,
+# "we don't do bookworm"): no channel level serves a bookworm package and nothing builds one, so a bookworm cell can only
 # fail at its install, in the quick set and the full set alike. A workflow line outside a comment names no bookworm at
 # all, and choosing it through OMX_RELEASE_MATRIX (the full set's switch, which once carried it) is no exception.
 # `ci-matrix-follows-set.sh [workflow...]`; with --self-test it also plants a hand cell and a switch-chosen cell, each red.
@@ -12,7 +12,7 @@ check() {
   bad=$(awk '/^[[:space:]]*#/ { next } /bookworm/ { print FILENAME ":" FNR ": " $0 }' "$@")
   if [ -n "$bad" ]; then
     printf '%s\n' "$bad" >&2
-    echo "FAIL a bookworm cell: Debian bookworm is dropped from the matrix (owner 2026-11-27); CI follows the release set (ruling D25)" >&2
+    echo "FAIL a bookworm cell: Debian is trixie only (owner ruling 2026-11-28); CI follows the release set (ruling D25)" >&2
     return 1
   fi
 }

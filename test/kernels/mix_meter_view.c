@@ -50,7 +50,7 @@ static int mvj_arr(const char *line, const char *key, double *out, int max) {
 }
 
 /* The gain-reduction reading is float arithmetic through powf, omx_db_to_lin and omx_lin_to_db: one libm's
- * powf and log10f differ from another's (glibc 2.36 on bookworm, 2.39 on ubuntu 24.04, 2.41 on fc44) by a float
+ * powf and log10f differ from another's (glibc 2.36, 2.39 on ubuntu 24.04, 2.41 on fc44) by a float
  * step of the dB value, and the recovery carries it from read to read: measured 2.4e-7 to 2.9e-6 dB against a file
  * written on one of them. The twin declares the same bound (ts/test/tolerances.mjs meterGr); a hold one read off
  * is a whole dB, so every sabotage of the step stays red under it. The held values, the fall, the ladder and the
