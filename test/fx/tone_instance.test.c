@@ -317,7 +317,7 @@ static void jump(float from, float to, float res) {
   omx_tone_instance_resolve(&g_ref, 0, 0.0f, 1000.0f, to, res);
   run(&g_ref, g_l + pre, g_r + pre, g_xl, g_xr, post);
   double step = 0.0, peak = 0.0;
-  for (uint32_t i = 0; i < post; i++) { /* comparisons, not fmax: BUILDING.md, GCC 12.2 on arm64 */
+  for (uint32_t i = 0; i < post; i++) { /* comparisons, not fmax: a NaN is carried */
     const double dl = fabs((double)g_ol[i] - g_xl[i]), dr = fabs((double)g_or[i] - g_xr[i]);
     const double pl = fabs((double)g_xl[i]), pr = fabs((double)g_xr[i]);
     if (!(dl <= step)) step = dl;
