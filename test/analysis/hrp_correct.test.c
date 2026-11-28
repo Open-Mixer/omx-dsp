@@ -160,7 +160,7 @@ static void test_a_zero_db_bell_is_identity(void) {
   double worst = 0.0;
   for (int i = 0; i < 512; i++) {
     const double e = fabs((double)out[i] - (double)sig[i]);
-    if (!(e <= worst)) worst = e; /* not fmax: tools/reduction-check.sh */
+    if (!(e <= worst)) worst = e; /* a comparison, not fmax: a NaN is carried */
   }
   check(worst < 1e-4, "a 0 dB bell RUN is identity to within float rounding (< -80 dBFS)");
   check(worst > 0.0, "but not bit-exact, which is what parking the band is for");

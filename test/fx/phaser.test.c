@@ -274,7 +274,7 @@ static double max_step(const float *y, uint32_t from, uint32_t to) {
   double m = 0.0;
   for (uint32_t i = from + 1u; i < to; i++) {
     const double e = fabs((double)y[i] - (double)y[i - 1]);
-    if (!(e <= m)) m = e; /* not fmax: GCC 12.2 arm64, BUILDING.md */
+    if (!(e <= m)) m = e; /* a comparison, not fmax: a NaN is carried */
   }
   return m;
 }
