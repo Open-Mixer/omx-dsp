@@ -7,9 +7,9 @@
 # order, of the same kind, with the same range, default and unit, and the same readouts (docs/generic-face.md).
 #
 #   tools/face-descriptor-check.sh [WORK]              the check; WORK holds the dump program (default a scratch dir)
-#   tools/face-descriptor-check.sh --self-test [WORK]  two rows swapped, a default moved and a unit changed in a
-#                                                      descriptor, and a readout renamed in a kernel file, must each
-#                                                      be named; the tree as it is must pass
+#   tools/face-descriptor-check.sh --self-test [WORK]  two rows swapped, a default moved, a range swapped and a unit
+#                                                      changed in a descriptor, and a readout renamed in a kernel
+#                                                      file, must each be named; the tree as it is must pass
 #
 # The descriptors are read by compiling tools/face-descriptor-dump.c against the headers ($CC, the contract
 # include tools/contract-include.sh finds). The kernel file is read as text (the data files are written two
@@ -93,7 +93,9 @@ rows() {
 check() {
   local inc="$1" data="$2" work="$3" bad=0 n=0 k want got
   mkdir -p "$work"
-  "$CC" -std=c11 -Wall -Wextra -Werror -I"$inc" -isystem "$CONTRACT_INC" -o "$work/dump" "$HERE/tools/face-descriptor-dump.c" -lm
+  # gnu11, the dialect the headers are written in: the idelay's header reaches the umbrella, whose filters use <math.h>'s
+  # M_LN10 and kin, which strict C11 hides
+  "$CC" -std=gnu11 -Wall -Wextra -Werror -I"$inc" -isystem "$CONTRACT_INC" -o "$work/dump" "$HERE/tools/face-descriptor-dump.c" -lm
   "$work/dump" > "$work/dump.txt"
   units > "$work/units.txt"
   constants "$data" > "$work/constants.txt"
@@ -134,6 +136,16 @@ if [ "${1:-}" = --self-test ]; then
   sed -i '/{"trimDb",/s/(float)OMX_TRIM_RANGE_DEFAULT/1.0f/' "$t"
   name "the trim's default moved to 1 dB" "descriptor: param trimDb travel -24 24 1 dB"
   cp "$HERE/include/omxdsp/omx_trim.h" "$t"
+  # A default moved on a kernel with no hand-written face: the alignment comes up at its ceiling, and the output
+  # delay's range swapped end for end.
+  al="$s/include/omxdsp/omx_align.h"; id="$s/include/omxdsp/omx_idelay.h"
+  awk '/\{"inputAlignDelay",/ { print; getline; sub(/\(float\)OMX_INPUT_ALIGN_DELAY_RANGE_MIN,/, "(float)OMX_INPUT_ALIGN_DELAY_RANGE_MAX,") } { print }' \
+    "$HERE/include/omxdsp/omx_align.h" > "$al"
+  name "the alignment's default moved to its ceiling" "descriptor: param inputAlignDelay travel 0 100 100 ms"
+  cp "$HERE/include/omxdsp/omx_align.h" "$al"
+  sed -i '/{"outputDelay",/s/(float)OMX_OUTPUT_DELAY_RANGE_MIN, (float)OMX_OUTPUT_DELAY_RANGE_MAX,/(float)OMX_OUTPUT_DELAY_RANGE_MAX, (float)OMX_OUTPUT_DELAY_RANGE_MIN,/' "$id"
+  name "the output delay's range swapped" "descriptor: param outputDelay travel 1000 0 0 ms"
+  cp "$HERE/include/omxdsp/omx_idelay.h" "$id"
   # A unit changed: the clipper's softness in no unit.
   sed -i '/{"softnessPct",/s/OMX_PARAM_UNITS_PERCENT/OMX_PARAM_UNITS_NONE/' "$c"
   name "the clipper's softness unit changed" "descriptor: param softnessPct travel 0 100 0 none"
@@ -148,7 +160,7 @@ if [ "${1:-}" = --self-test ]; then
   name "the clipper's softness unit spelled as a symbol" "kernel file: param softnessPct travel 0 100 0 UNKNOWN-UNIT(%)"
   cp "$HERE/data/kernels/clipper.json" "$s/data/kernels/clipper.json"
   check "$s/include" "$s/data" "$s/w" >/dev/null || { echo "face-descriptor-check self-test: the restored tree does not pass" >&2; exit 1; }
-  echo "face-descriptor-check self-test: two rows swapped, a default moved, a unit changed, a unit spelled as a symbol and a readout renamed in a kernel file were each named"
+  echo "face-descriptor-check self-test: two rows swapped, a default moved (the trim's and the alignment's), a range swapped (the output delay's), a unit changed, a unit spelled as a symbol and a readout renamed in a kernel file were each named"
   exit 0
 fi
 
