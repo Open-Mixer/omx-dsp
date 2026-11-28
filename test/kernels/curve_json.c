@@ -185,6 +185,28 @@ static void arm_curve_json(void) {
        "the planted band is a mark with its origin word", ex.nmarks, 1);
   }
   {
+    /* A head filter's slope in the unit the served description gives it, PARAM_UNITS `dBPerOct` (x-symbol dB/oct, the
+     * one slope unit), is read as dB per octave: the same answer, byte for byte, as the slope sent in `dB`. Before,
+     * CURVE_UNITS had no `dBPerOct`, so omx-eq8's curve, asked with the description's word, answered unitRefused and
+     * the panel drew an empty frame. Both head filters, both slopes. */
+    static const char *const head[] = {"hpf", "lpf"};
+    static const double corner[] = {80.0, 9000.0};
+    static const int slope[] = {12, 24};
+    static char a_db[OMX_CURVE_JSON_OUT_MAX], a_oct[OMX_CURVE_JSON_OUT_MAX];
+    for (int h = 0; h < 2; h++)
+      for (int s = 0; s < 2; s++) {
+        char rq_db[512], rq_oct[512];
+        static const char fmt[] =
+            "{\"kind\":\"eq_response\",\"family\":\"eq\",\"sampleRate\":48000,\"points\":32,\"terms\":["
+            "{\"role\":\"%s_freq\",\"value\":%g,\"unit\":\"Hz\"},{\"role\":\"%s_slope\",\"value\":%d,\"unit\":\"%s\"}]}";
+        snprintf(rq_db, sizeof rq_db, fmt, head[h], corner[h], head[h], slope[s], "dB");
+        snprintf(rq_oct, sizeof rq_oct, fmt, head[h], corner[h], head[h], slope[s], "dBPerOct");
+        const int n_db = cj_call(rq_db, a_db, sizeof a_db), n_oct = cj_call(rq_oct, a_oct, sizeof a_oct);
+        ok(n_db > 0 && n_oct == n_db && memcmp(a_db, a_oct, (size_t)n_db) == 0,
+           "a head filter's slope in dBPerOct draws what the same slope in dB draws", n_oct, n_db);
+      }
+  }
+  {
     /* a delay answers stems and no point */
     ok(cj_call("{\"kind\":\"time_response\",\"family\":\"delay\",\"sampleRate\":48000,\"points\":8,\"terms\":["
                "{\"role\":\"time\",\"value\":100,\"unit\":\"ms\"},{\"role\":\"feedback\",\"value\":0.5,\"unit\":\"none\"},"

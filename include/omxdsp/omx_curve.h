@@ -154,7 +154,7 @@ static const char *const OMX_CURVE_ROLE_WORDS[OMX_CURVE_ROLES_COUNT] = {
 /** @brief The wire words of CURVE_UNITS, by value: the PARAM_UNITS ids themselves, never another spelling. */
 static const char *const OMX_CURVE_UNIT_WORDS[OMX_CURVE_UNITS_COUNT] = {"Hz",   "kHz",  "dB",  "dBFS", "dBu",
                                                                         "LUFS", "coef", "oct", "none", "ratio",
-                                                                        "percent", "ms", "s"};
+                                                                        "percent", "ms", "s", "dBPerOct"};
 /** @brief The wire words of CURVE_LEGS, by value: the leg a delay's tap lands on. */
 static const char *const OMX_CURVE_LEG_WORDS[OMX_CURVE_LEGS_COUNT] = {"both", "left", "right"};
 /** @brief The wire words of CURVE_SHAPES, by value; `unshaped` is spelt `-`. */
@@ -193,7 +193,9 @@ static inline int omx_curve_role_is_band(const char *word) {
  * @brief Whether `role` takes a value in `unit`: the conversions omx_curve_points() makes, and no other.
  *
  * A frequency in `Hz` or `kHz`; a band's gain in `dB` or `coef`; a band's Q in `none` or `coef` (a Q) or `oct`
- * (a bandwidth); a choice or a switch in `none`; a head filter's slope in `none` or `dB`, dB per octave; a
+ * (a bandwidth); a choice or a switch in `none`; a head filter's slope in `dBPerOct`, the unit its served
+ * description gives it, or in `dB` or `none`, dB per octave (a `none` is refused as a missing term, a choice value
+ * with no enumeration resolving it); a
  * threshold in any level unit, read as dB; a ratio in `ratio` or `coef`; the other gain computer terms in `dB`.
  * @param role The role.
  * @param unit The unit.
@@ -218,7 +220,7 @@ static inline int omx_curve_unit_accepted(enum omx_curve_roles role, enum omx_cu
     return unit == OMX_CURVE_UNITS_NONE;
   case OMX_CURVE_ROLES_HPF_SLOPE:
   case OMX_CURVE_ROLES_LPF_SLOPE:
-    return unit == OMX_CURVE_UNITS_NONE || unit == OMX_CURVE_UNITS_DB;
+    return unit == OMX_CURVE_UNITS_NONE || unit == OMX_CURVE_UNITS_DB || unit == OMX_CURVE_UNITS_DB_PER_OCT;
   case OMX_CURVE_ROLES_THRESHOLD:
     return unit == OMX_CURVE_UNITS_DB || unit == OMX_CURVE_UNITS_DBFS || unit == OMX_CURVE_UNITS_DBU ||
            unit == OMX_CURVE_UNITS_LUFS;
@@ -349,8 +351,9 @@ static inline int omx_curve_pass(const struct omx_curve_request *rq, enum omx_cu
   *present = f || s || on;
   if (!*present) return OMX_CURVE_OK;
   /* the slope in dB per octave: from the role's declared enumeration (the caller resolves a choice to it) or a
-   * control in dB; a bare choice value is no slope */
-  if (!f || !s || s->unit != OMX_CURVE_UNITS_DB) return OMX_CURVE_TERM_MISSING;
+   * control in `dBPerOct` (the PARAM_UNITS slope unit the description gives it) or in `dB`; a bare choice value is no
+   * slope */
+  if (!f || !s || (s->unit != OMX_CURVE_UNITS_DB && s->unit != OMX_CURVE_UNITS_DB_PER_OCT)) return OMX_CURVE_TERM_MISSING;
   const double slope = omx_curve_term_value(s);
   if (slope != 12.0 && slope != 24.0) return OMX_CURVE_KIND_UNKNOWN;
   out->on = on ? omx_curve_term_value(on) != 0.0 : 1;

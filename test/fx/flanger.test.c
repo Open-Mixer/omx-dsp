@@ -343,7 +343,7 @@ static void arm_c_clamp(void) {
       omx_flanger_process(g_bl, g_br, BLEN, &in, &s79);
       for (uint32_t i = 0; i < BLEN; i++) {
         const double a = fabs((double)g_bl[i]);
-        if (!(a <= pk79)) pk79 = a; /* not fmax: GCC 12.2 arm64, BUILDING.md */
+        if (!(a <= pk79)) pk79 = a; /* a comparison, not fmax: a NaN is carried */
       }
     }
     ok(isfinite(b79) && pk79 <= b79 * 0.999 + 1e-3,

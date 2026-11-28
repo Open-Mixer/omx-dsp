@@ -52,7 +52,7 @@ jobs:
           wave: ${{ vars.OMX_RELEASE_MATRIX }}
           rpm-releases: '["45"]'
           rpm-arches: '["x86_64"]'
-          # trixie alone, quick and full: Debian bookworm is dropped from the matrix (owner 2026-11-27)
+          # trixie alone, quick and full: Debian is trixie only (owner ruling 2026-11-28)
           deb-releases: '["trixie"]'
           deb-arches: '["amd64", "arm64"]'
           x86-runner: ${{ github.event.pull_request.head.repo.fork && 'ubuntu-latest' || vars.OMX_RUNNER || 'ubuntu-latest' }}
@@ -98,7 +98,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # ruling D25: the cells follow the release set; no bookworm cell (dropped from the matrix, owner 2026-11-27)
+        # ruling D25: the cells follow the release set; Debian is trixie only (owner ruling 2026-11-28)
         cell: ${{ fromJSON(needs.checks.outputs.cells) }}
     container:
       image: ${{ matrix.cell.image }}
@@ -127,6 +127,9 @@ jobs:
       - name: Add the OpenMixer repository
         uses: Open-Mixer/.github/.github/actions/add-openmixer@openmixer-v1
         with:
+          # a pull request into devel, or a dispatch off main, in a wave reads that wave's devel channel and its base above staging
+          devel-channel: ${{ ((startsWith(github.event_name, 'pull_request') && github.base_ref == 'devel') || (github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main')) && vars.OMX_DEVEL_CHANNEL || '' }}
+          devel-base: ${{ ((startsWith(github.event_name, 'pull_request') && github.base_ref == 'devel') || (github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main')) && vars.OMX_DEVEL_BASE || '' }}
           suite: ''
 
       - name: Install the build dependencies from the OpenMixer channel
@@ -207,6 +210,9 @@ jobs:
       - name: Add the OpenMixer repository
         uses: Open-Mixer/.github/.github/actions/add-openmixer@openmixer-v1
         with:
+          # a pull request into devel, or a dispatch off main, in a wave reads that wave's devel channel and its base above staging
+          devel-channel: ${{ ((startsWith(github.event_name, 'pull_request') && github.base_ref == 'devel') || (github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main')) && vars.OMX_DEVEL_CHANNEL || '' }}
+          devel-base: ${{ ((startsWith(github.event_name, 'pull_request') && github.base_ref == 'devel') || (github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main')) && vars.OMX_DEVEL_BASE || '' }}
           suite: ${{ startsWith(matrix.cell.image, 'ubuntu') && 'trixie' || '' }}
       - name: Install omx-contract from the OpenMixer channel
         run: |
@@ -255,6 +261,10 @@ jobs:
         run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
       - name: Add the OpenMixer repository
         uses: Open-Mixer/.github/.github/actions/add-openmixer@openmixer-v1
+        with:
+          # a pull request into devel, or a dispatch off main, in a wave reads that wave's devel channel and its base above staging
+          devel-channel: ${{ ((startsWith(github.event_name, 'pull_request') && github.base_ref == 'devel') || (github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main')) && vars.OMX_DEVEL_CHANNEL || '' }}
+          devel-base: ${{ ((startsWith(github.event_name, 'pull_request') && github.base_ref == 'devel') || (github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main')) && vars.OMX_DEVEL_BASE || '' }}
       - name: Install the build dependencies from the OpenMixer channel
         run: apt-get -o Dpkg::Options::=--force-unsafe-io build-dep -y --no-install-recommends ./
       # the parallel jobs from the job's CPU quota and the runner's declared CPUs, never the host's nproc
@@ -306,7 +316,7 @@ jobs:
         shell: bash
     steps:
       - name: Install the tools
-        run: dnf install -y --setopt=tsflags=nodocs --setopt=install_weak_deps=False make gcc git tar gzip diffutils pkgconf-pkg-config dnf5-plugins
+        run: dnf install -y --setopt=tsflags=nodocs --setopt=install_weak_deps=False make gcc git curl gawk tar gzip diffutils pkgconf-pkg-config dnf5-plugins
 
       - uses: actions/checkout@v4
 
@@ -319,17 +329,26 @@ jobs:
 
       - name: Add the OpenMixer repository
         uses: Open-Mixer/.github/.github/actions/add-openmixer@openmixer-v1
+        with:
+          # a pull request into devel, or a dispatch off main, in a wave reads that wave's devel channel and its base above staging
+          devel-channel: ${{ ((startsWith(github.event_name, 'pull_request') && github.base_ref == 'devel') || (github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main')) && vars.OMX_DEVEL_CHANNEL || '' }}
+          devel-base: ${{ ((startsWith(github.event_name, 'pull_request') && github.base_ref == 'devel') || (github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main')) && vars.OMX_DEVEL_BASE || '' }}
 
-      # the published package names the source it was built from: its version's release tag, never a typed one
+      - name: tools/installed-source.sh names each level's commit and refuses an unrecorded one
+        run: bash tools/installed-source-selftest.sh
+
+      # the channel names the source the installed package was built from, never a typed version and never an assumed
+      # tag: a devel publish has no tag (tags exist only on main), so tools/installed-source.sh reads the build record of
+      # the tree the package came from (<tree>/built/omx-contract/<version>.commit), then a snapshot's commit, then the tag
       - name: Install omx-contract from the channel and fetch the source of the version installed
         run: |
           set -euo pipefail
           dnf install -y --setopt=tsflags=nodocs --setopt=install_weak_deps=False omx-contract
           v="$(rpm -q --qf '%{VERSION}' omx-contract)"
-          ref=refs/tags/v$v
-          echo "omx-contract $v installed from the channel: its source at $ref"
+          commit=$(bash tools/installed-source.sh omx-contract omx-contract https://github.com/Open-Mixer/omx-contract)
+          echo "omx-contract $v installed from the channel: its source at $commit"
           git init -q /tmp/omx-contract
-          git -C /tmp/omx-contract fetch -q --depth 1 https://github.com/Open-Mixer/omx-contract "$ref"
+          git -C /tmp/omx-contract fetch -q --depth 1 https://github.com/Open-Mixer/omx-contract "$commit"
           git -C /tmp/omx-contract checkout -q FETCH_HEAD
           # with its devDependencies: since 3.18.0 a tag's lib/ is built from src/ by its prepare script (tsc)
           npm ci --prefix /tmp/omx-contract
@@ -389,6 +408,10 @@ jobs:
 
       - name: Add the OpenMixer repository
         uses: Open-Mixer/.github/.github/actions/add-openmixer@openmixer-v1
+        with:
+          # a pull request into devel, or a dispatch off main, in a wave reads that wave's devel channel and its base above staging
+          devel-channel: ${{ ((startsWith(github.event_name, 'pull_request') && github.base_ref == 'devel') || (github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main')) && vars.OMX_DEVEL_CHANNEL || '' }}
+          devel-base: ${{ ((startsWith(github.event_name, 'pull_request') && github.base_ref == 'devel') || (github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main')) && vars.OMX_DEVEL_BASE || '' }}
 
       - name: Install omx-contract from the channel
         run: |
@@ -450,6 +473,10 @@ jobs:
 
       - name: Add the OpenMixer repository
         uses: Open-Mixer/.github/.github/actions/add-openmixer@openmixer-v1
+        with:
+          # a pull request into devel, or a dispatch off main, in a wave reads that wave's devel channel and its base above staging
+          devel-channel: ${{ ((startsWith(github.event_name, 'pull_request') && github.base_ref == 'devel') || (github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main')) && vars.OMX_DEVEL_CHANNEL || '' }}
+          devel-base: ${{ ((startsWith(github.event_name, 'pull_request') && github.base_ref == 'devel') || (github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main')) && vars.OMX_DEVEL_BASE || '' }}
 
       - uses: actions/checkout@v4
         with:
@@ -567,6 +594,10 @@ jobs:
 
       - name: Take omx-contract from the OpenMixer channel
         uses: Open-Mixer/.github/.github/actions/add-openmixer@openmixer-v1
+        with:
+          # a pull request into devel, or a dispatch off main, in a wave reads that wave's devel channel and its base above staging
+          devel-channel: ${{ ((startsWith(github.event_name, 'pull_request') && github.base_ref == 'devel') || (github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main')) && vars.OMX_DEVEL_CHANNEL || '' }}
+          devel-base: ${{ ((startsWith(github.event_name, 'pull_request') && github.base_ref == 'devel') || (github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main')) && vars.OMX_DEVEL_BASE || '' }}
 
       - uses: Open-Mixer/.github/.github/actions/build-deb@openmixer-v1
 

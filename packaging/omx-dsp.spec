@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2026 Pau Aliagas <linuxnow@gmail.com>
 Name: omx-dsp
-Version: 0.34.4
+Version: 0.34.5
 Release: 1%{?dist}
 License: GPL-3.0-or-later
 Summary: The audio toolbox of the OpenMixer console, as a real-time-safe C library
@@ -181,6 +181,14 @@ npm_config_engine_strict=true %make_install PREFIX=%{_prefix} LIBDIR=%{_libdir} 
 %{_datadir}/omx-dsp/catalogs/
 
 %changelog
+* Sat Nov 28 2026 Pau Aliagas <linuxnow@gmail.com> - 0.34.5-1
+- curve: a head filter's slope in dBPerOct, the PARAM_UNITS slope unit, is
+  read as dB per octave; the curve request's unit words are the CURVE_UNITS
+  ids
+- ci: the add-openmixer steps read the wave's devel channel and its base
+- ci: Debian is trixie only; the GCC 12.2 arm64 reduction check goes with
+  bookworm
+
 * Fri Nov 27 2026 Pau Aliagas <linuxnow@gmail.com> - 0.34.4-1
 - The align and idelay kernels reach a host through the generic face
   (#185): omx_align_desc() and omx_idelay_desc() in their kernels'

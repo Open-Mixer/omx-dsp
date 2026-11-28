@@ -1,3 +1,14 @@
+omx-dsp (0.34.5) unstable; urgency=medium
+
+  * curve: a head filter's slope in dBPerOct, the PARAM_UNITS slope unit, is
+    read as dB per octave; the curve request's unit words are the
+    CURVE_UNITS ids
+  * ci: the add-openmixer steps read the wave's devel channel and its base
+  * ci: Debian is trixie only; the GCC 12.2 arm64 reduction check goes with
+    bookworm
+
+ -- Pau Aliagas <linuxnow@gmail.com>  Sat, 28 Nov 2026 16:15:31 +0100
+
 omx-dsp (0.34.4) unstable; urgency=medium
 
   * The align and idelay kernels reach a host through the generic face

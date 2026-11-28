@@ -160,19 +160,20 @@
         "unit": {
           "type": "string",
           "enum": [
-            "hz",
-            "khz",
-            "db",
-            "dbfs",
-            "dbu",
-            "lufs",
+            "Hz",
+            "kHz",
+            "dB",
+            "dBFS",
+            "dBu",
+            "LUFS",
             "coef",
             "oct",
             "none",
             "ratio",
-            "pc",
+            "percent",
             "ms",
-            "s"
+            "s",
+            "dBPerOct"
           ],
           "description": "The unit the description gives the role (CURVE_UNITS); a role takes only the units omx_curve_unit_accepted names."
         },

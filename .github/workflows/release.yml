@@ -97,6 +97,12 @@ jobs:
     uses: Open-Mixer/.github/.github/workflows/build-rpm.yml@openmixer-v1
     with:
       staged: ${{ inputs.staged == true }}
+      # a dispatch off main in a wave (the dry run ci.yml calls this with) builds and checks installability against that
+      # wave's devel channel and its bases above staging, as ci.yml's own jobs read them: a dispatch read the real
+      # channel alone, which serves none of the wave's lower layers (Open-Mixer/.github#329; plugin-qualify 39ca667).
+      # A staging dry run publishes nothing (publish: false); never a release, a tag or a staged run
+      staging: ${{ github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main' && inputs.staged != true && vars.OMX_DEVEL_CHANNEL != '' }}
+      channel-level: ${{ (github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main' && inputs.staged != true) && vars.OMX_DEVEL_CHANNEL || '' }}
       matrix: ${{ inputs.matrix || '' }}
       package-name: omx-dsp
       binary-names: omx-dsp-devel omx-rt-gate
@@ -113,6 +119,12 @@ jobs:
     uses: Open-Mixer/.github/.github/workflows/build-deb.yml@openmixer-v1
     with:
       staged: ${{ inputs.staged == true }}
+      # a dispatch off main in a wave (the dry run ci.yml calls this with) builds and checks installability against that
+      # wave's devel channel and its bases above staging, as ci.yml's own jobs read them: a dispatch read the real
+      # channel alone, which serves none of the wave's lower layers (Open-Mixer/.github#329; plugin-qualify 39ca667).
+      # A staging dry run publishes nothing (publish: false); never a release, a tag or a staged run
+      staging: ${{ github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main' && inputs.staged != true && vars.OMX_DEVEL_CHANNEL != '' }}
+      channel-level: ${{ (github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main' && inputs.staged != true) && vars.OMX_DEVEL_CHANNEL || '' }}
       matrix: ${{ inputs.matrix || '' }}
       package-name: omx-dsp
       binary-names: libomxdsp-dev omx-rt-gate omx-dsp-contract
