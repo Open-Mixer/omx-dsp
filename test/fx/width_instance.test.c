@@ -148,7 +148,7 @@ static void arm_pseudo(void) {
   double worst = 0.0, peak = 0.0;
   for (uint32_t i = 0; i < m; i++) {
     const double e = fabs(((double)g_ol[i] + g_or[i]) - ((double)g_l[i] + g_r[i]));
-    if (!(e <= worst)) worst = e; /* a comparison, not fmax: BUILDING.md, GCC 12.2 on arm64 */
+    if (!(e <= worst)) worst = e; /* a comparison, not fmax: a NaN is carried */
     peak = fmax(peak, fabs(g_ol[i]) + fabs(g_or[i]));
   }
   ok(worst <= 4.0 * FLT_EPSILON * peak, "the comb's legs sum to twice the mid (4 ulp)", worst, 4.0 * FLT_EPSILON * peak);
