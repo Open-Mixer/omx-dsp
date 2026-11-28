@@ -1,4 +1,4 @@
-Breaks the check of fuzz/fuzz_fx.c:329 (the compressor takes only the rates of the oracle grid).
+Breaks the check of fuzz/fuzz_fx.c:353 (the compressor takes only the rates of the oracle grid).
 Caught by the seed input "comp-22050" of fuzz_fx.
 
 diff --git a/include/omxdsp/fx/omx_comp_instance.h b/include/omxdsp/fx/omx_comp_instance.h
