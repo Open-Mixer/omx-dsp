@@ -300,7 +300,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     container:
-      image: fedora:45
+      image: fedora:45  # tool image: one run of omx-contract's reader, renderer and proof over data/, the whole repository at once; not a release cell
     defaults:
       run:
         shell: bash
