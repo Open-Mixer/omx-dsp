@@ -101,7 +101,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
   double pass[OMX_EQ_PASS_MAX_SECTIONS][5];
   const uint32_t np = omx_eq_pass_design(&hpf, &lpf, rate, pass);
   /* The head filters write at most their limit of sections.
-   * mutant: include/omxdsp/omx_eq_design.h:554 `return n;` -> `return n + 9u;`
+   * mutant: include/omxdsp/omx_eq_design.h:566 `return n;` -> `return n + 9u;`
    * input: bank-0 */
   if (!(np <= OMX_EQ_PASS_MAX_SECTIONS)) {
     FUZZ_SAY("the head filters wrote %u sections", (unsigned)np);
@@ -109,7 +109,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
   }
   for (uint32_t i = 0; i < np; i++)
     /* Each section of the head filters is stable and finite, by the harness's own reading of its coefficients.
-     * mutant: include/omxdsp/omx_eq_design.h:552 `coeffs[i]);` -> `coeffs[i]), coeffs[i][4] = 2.0;`
+     * mutant: include/omxdsp/omx_eq_design.h:564 `coeffs[i]);` -> `coeffs[i]), coeffs[i][4] = 2.0;`
      * input: bank-0 */
     if (!(stable(pass[i]) && isfinite(pass[i][0]) && isfinite(pass[i][1]) && isfinite(pass[i][2]))) {
       FUZZ_SAY("head section %u is unstable or not finite", (unsigned)i);
@@ -133,14 +133,14 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
   uint8_t enabled[OMX_EQ_MAX_BANDS];
   const uint32_t ns = omx_eq_bank_design((flags >> 1) & 1, bands, nb, rate, dcoef, enabled);
   /* The bank has at most as many sections as bands.
-   * mutant: include/omxdsp/omx_eq_design.h:497 `return n;` -> `return nbands + 1u;`
+   * mutant: include/omxdsp/omx_eq_design.h:509 `return n;` -> `return nbands + 1u;`
    * input: bank-0 */
   if (!(ns <= nb)) {
     FUZZ_SAY("the bank has %u sections for %u bands", (unsigned)ns, (unsigned)nb);
     abort();
   }
   /* The bank has a section for each band that is on, and none with the EQ off.
-   * mutant: include/omxdsp/omx_eq_design.h:491 `if (!b->on) continue;` -> ``
+   * mutant: include/omxdsp/omx_eq_design.h:503 `if (!b->on) continue;` -> ``
    * input: bank-off-band */
   if (!(((flags >> 1) & 1) ? ns == on_count : ns == 0)) {
     FUZZ_SAY("the bank has %u sections for %u bands that are on", (unsigned)ns, (unsigned)on_count);
@@ -150,7 +150,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
   uint32_t live = 0;
   for (uint32_t i = 0; i < ns; i++) {
     /* Each section of the bank is stable, by the harness's own reading of its coefficients.
-     * mutant: include/omxdsp/omx_eq_design.h:492 `coeffs[n]);` -> `coeffs[n]), coeffs[n][4] = 2.0;`
+     * mutant: include/omxdsp/omx_eq_design.h:504 `coeffs[n]);` -> `coeffs[n]), coeffs[n][4] = 2.0;`
      * input: bank-0 */
     if (!(stable(dcoef[i]))) {
       FUZZ_SAY("section %u is not stable: %g %g %g %g %g", (unsigned)i, dcoef[i][0], dcoef[i][1], dcoef[i][2], dcoef[i][3], dcoef[i][4]);
@@ -158,7 +158,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     }
     for (int k = 0; k < 5; k++) {
       /* Each coefficient of the bank is finite.
-       * mutant: include/omxdsp/omx_eq_design.h:492 `coeffs[n]);` -> `coeffs[n]), coeffs[n][0] = NAN;`
+       * mutant: include/omxdsp/omx_eq_design.h:504 `coeffs[n]);` -> `coeffs[n]), coeffs[n][0] = NAN;`
        * input: bank-0 */
       if (!(isfinite(dcoef[i][k]))) {
         FUZZ_SAY("section %u coefficient %d is not finite", (unsigned)i, k);
@@ -168,7 +168,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     }
     const struct omx_eq_band *own = band_of(bands, i);
     /* A section is parked exactly when its band is a peaking or shelf band at 0 dB.
-     * mutant: include/omxdsp/omx_eq_design.h:493 `? 0u : 1u` -> `? 1u : 1u`
+     * mutant: include/omxdsp/omx_eq_design.h:505 `? 0u : 1u` -> `? 1u : 1u`
      * input: parked-and-live */
     if (!(enabled[i] == (parked(own) ? 0u : 1u))) {
       FUZZ_SAY("section %u has enabled %u, band kind %d at %g dB", (unsigned)i, (unsigned)enabled[i], (int)own->kind, own->gain_db);
@@ -178,7 +178,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     const double dc_num = dcoef[i][0] + dcoef[i][1] + dcoef[i][2], dc_den = 1.0 + dcoef[i][3] + dcoef[i][4];
     /* A section has the gain at DC of the i-th band that is on. The denominator is positive in a
      * stable section; the tolerance leaves room for its rounding at the lowest corner (about 1e-5).
-     * mutant: include/omxdsp/omx_eq_design.h:492 `b->kind, b->freq_hz, b->q, b->gain_db` -> `bands->kind, bands->freq_hz, bands->q, bands->gain_db`
+     * mutant: include/omxdsp/omx_eq_design.h:504 `b->kind, b->freq_hz, b->q, b->gain_db` -> `bands->kind, bands->freq_hz, bands->q, bands->gain_db`
      * input: shelf-then-shelf */
     if (!(fabs(dc_num - dc_gain(own) * dc_den) <= 1e-3 * fmax(dc_gain(own), 1.0) * dc_den)) {
       FUZZ_SAY("section %u has %g at DC, band kind %d at %g dB owes %g", (unsigned)i, dc_num / dc_den, (int)own->kind, own->gain_db, dc_gain(own));
@@ -194,11 +194,11 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
        * also at most the gain asked, to 5 % (the design is within 1.6 % there, from Q 1e-3 to 100
        * at any rate). For a bell a console sets: from 20 Hz, no narrower than Q 100; below that the
        * bell is narrower than its double coefficients resolve.
-       * mutant: include/omxdsp/omx_eq_design.h:164 `omx_eq_matched_pair(w0, 1.0 / (2.0 * A * qq), p);` -> `omx_eq_matched_pair(w0, A / (2.0 * qq), p);`
+       * mutant: include/omxdsp/omx_eq_design.h:176 `omx_eq_matched_pair(w0, 1.0 / (2.0 * A * qq), p);` -> `omx_eq_matched_pair(w0, A / (2.0 * qq), p);`
        * input: peak-then-shelf
-       * mutant: include/omxdsp/omx_eq_design.h:160 `exp(gain_db * (M_LN10 / 40.0))` -> `exp(-gain_db * (M_LN10 / 40.0))`
+       * mutant: include/omxdsp/omx_eq_design.h:172 `exp(gain_db * (M_LN10 / 40.0))` -> `exp(-gain_db * (M_LN10 / 40.0))`
        * input: peak-then-shelf
-       * mutant: include/omxdsp/omx_eq_design.h:164 `1.0 / (2.0 * A * qq)` -> `1.0 / (2.0 * A * A * qq)`
+       * mutant: include/omxdsp/omx_eq_design.h:176 `1.0 / (2.0 * A * qq)` -> `1.0 / (2.0 * A * A * qq)`
        * input: peak-then-shelf */
       if (!(side >= fabs(own->gain_db) * (1.0 - 1e-3) &&
             (corner(own, rate) > rate / 8.0 || side <= fabs(own->gain_db) * 1.05))) {
@@ -211,7 +211,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
       /* A high shelf whose corner is at most an eighth of the rate has at Nyquist, three octaves or
        * more above it, at least a quarter of its band's gain, on its side of 0 dB: past its midpoint
        * a shelf of any Q has gone at least half way to its gain, and the check asks half of that.
-       * mutant: include/omxdsp/omx_eq_design.h:180 `omx_eq_matched_pair(w0 * sa, 1.0 / (2.0 * qq), p);` -> `omx_eq_matched_pair(w0 / sa, 1.0 / (2.0 * qq), p);`
+       * mutant: include/omxdsp/omx_eq_design.h:192 `omx_eq_matched_pair(w0 * sa, 1.0 / (2.0 * qq), p);` -> `omx_eq_matched_pair(w0 / sa, 1.0 / (2.0 * qq), p);`
        * input: peak-then-shelf */
       if (!(top * (own->gain_db > 0.0 ? 1.0 : -1.0) >= 0.25 * fabs(own->gain_db))) {
         FUZZ_SAY("section %u, a high shelf of %g dB at %g Hz, is %g dB at Nyquist", (unsigned)i, own->gain_db, corner(own, rate), top);
@@ -286,7 +286,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
   if (bw > 0.0) {
     const double q = omx_eq_bandwidth_q(fin_or(fuzz_f64(&in), 1000.0), bw, rate);
     /* The width to Q conversion is finite and not negative.
-     * mutant: include/omxdsp/omx_eq_design.h:319 `1.0 / (2.0 *` -> `-1.0 / (2.0 *`
+     * mutant: include/omxdsp/omx_eq_design.h:331 `1.0 / (2.0 *` -> `-1.0 / (2.0 *`
      * input: bank-0 */
     if (!(isfinite(q) && q >= 0.0)) {
       FUZZ_SAY("omx_eq_bandwidth_q gave %g", q);
@@ -295,7 +295,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
   }
   const double q2 = omx_eq_octaves_q(bw);
   /* The octaves to Q conversion is finite and above 0.
-   * mutant: include/omxdsp/omx_eq_design.h:420 `if (q < OMX_EQ_Q_MIN) q = OMX_EQ_Q_MIN;` -> `q = -q;`
+   * mutant: include/omxdsp/omx_eq_design.h:432 `if (q < OMX_EQ_Q_MIN) q = OMX_EQ_Q_MIN;` -> `q = -q;`
    * input: bank-0 */
   if (!(isfinite(q2) && q2 > 0.0)) {
     FUZZ_SAY("omx_eq_octaves_q(%g) gave %g", bw, q2);
