@@ -98,7 +98,7 @@
     "source": {
       "impl": "include/omxdsp/omx_curve.h#omx_curve_unit_accepted"
     },
-    "doc": "The units a curve term's value may come in: the PARAM_UNITS ids (the wire word, never its x-symbol) the served description gives a role, so a host sends the unit it was given. omx_curve_points converts once: `coef` to dB for a gain, `oct` to Q for a bandwidth, `kHz` to Hz; a level in `dB`, `dBFS`, `dBu` or `LUFS` is read as dB from the threshold's own scale; `none` is a plain number, a switch or a choice; `ratio` a ratio. A unit its role does not accept is refused, and so is any other spelling of an id (`hz`, `db`). `percent` (since 0.32.4) is the drive's `mix`. `ms` and `s` (since 0.32.4) are a time, read as ms.",
+    "doc": "The units a curve term's value may come in: the PARAM_UNITS ids (the wire word, never its x-symbol) the served description gives a role, so a host sends the unit it was given. omx_curve_points converts once: `coef` to dB for a gain, `oct` to Q for a bandwidth, `kHz` to Hz; a level in `dB`, `dBFS`, `dBu` or `LUFS` is read as dB from the threshold's own scale; `none` is a plain number, a switch or a choice; `ratio` a ratio. A unit its role does not accept is refused, and so is any other spelling of an id (`hz`, `db`). `percent` (since 0.32.4) is the drive's `mix`. `ms` and `s` (since 0.32.4) are a time, read as ms. `dBPerOct` is a head filter's slope, the unit its served description gives it (x-symbol dB/oct); a slope in `dB` is read as the same dB per octave.",
     "ids": [
       "Hz",
       "kHz",
@@ -112,7 +112,8 @@
       "ratio",
       "percent",
       "ms",
-      "s"
+      "s",
+      "dBPerOct"
     ]
   },
   "CURVE_SHAPES": {

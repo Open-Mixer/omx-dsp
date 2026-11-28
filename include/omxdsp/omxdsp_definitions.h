@@ -3852,7 +3852,7 @@ enum omx_curve_shapes {
 };
 /** The number of ids of CURVE_SHAPES. */
 #define OMX_CURVE_SHAPES_COUNT 10u
-/** The units a curve term's value may come in: the PARAM_UNITS ids (the wire word, never its x-symbol) the served description gives a role, so a host sends the unit it was given. omx_curve_points converts once: `coef` to dB for a gain, `oct` to Q for a bandwidth, `kHz` to Hz; a level in `dB`, `dBFS`, `dBu` or `LUFS` is read as dB from the threshold's own scale; `none` is a plain number, a switch or a choice; `ratio` a ratio. A unit its role does not accept is refused, and so is any other spelling of an id (`hz`, `db`). `percent` (since 0.32.4) is the drive's `mix`. `ms` and `s` (since 0.32.4) are a time, read as ms. (since 3.0.0) A named id's value is its position. */
+/** The units a curve term's value may come in: the PARAM_UNITS ids (the wire word, never its x-symbol) the served description gives a role, so a host sends the unit it was given. omx_curve_points converts once: `coef` to dB for a gain, `oct` to Q for a bandwidth, `kHz` to Hz; a level in `dB`, `dBFS`, `dBu` or `LUFS` is read as dB from the threshold's own scale; `none` is a plain number, a switch or a choice; `ratio` a ratio. A unit its role does not accept is refused, and so is any other spelling of an id (`hz`, `db`). `percent` (since 0.32.4) is the drive's `mix`. `ms` and `s` (since 0.32.4) are a time, read as ms. `dBPerOct` is a head filter's slope, the unit its served description gives it (x-symbol dB/oct); a slope in `dB` is read as the same dB per octave. (since 3.0.0) A named id's value is its position. */
 enum omx_curve_units {
   OMX_CURVE_UNITS_HZ = 0, ///< The id `Hz`.
   OMX_CURVE_UNITS_KHZ = 1, ///< The id `kHz`.
@@ -3867,9 +3867,10 @@ enum omx_curve_units {
   OMX_CURVE_UNITS_PERCENT = 10, ///< The id `percent`.
   OMX_CURVE_UNITS_MS = 11, ///< The id `ms`.
   OMX_CURVE_UNITS_S = 12, ///< The id `s`.
+  OMX_CURVE_UNITS_DB_PER_OCT = 13, ///< The id `dBPerOct`.
 };
 /** The number of ids of CURVE_UNITS. */
-#define OMX_CURVE_UNITS_COUNT 13u
+#define OMX_CURVE_UNITS_COUNT 14u
 /** The de-esser's modes, in the order of the integer the kernel reads: split attenuates the detected band only, wideband the whole signal while the sibilance lasts. A named id's value is its position. */
 enum omx_deess_modes {
   OMX_DEESS_MODES_SPLIT = 0, ///< The id `split`.
