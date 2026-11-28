@@ -90,10 +90,7 @@ The later batches, smallest first, each a kernel whose state is its parameters:
 3. gate, spring, tone, loudlevel, leveler, mbcomp, balancer
 4. doubler, suboct, drive, plosive, delay, reverb
 5. dyneq, comp, geq, eq (the counted controls: a band's row taken once per band)
-6. align and idelay. Their hand-written faces came first after all (omx-dsp#185): the console runs
-   both kernels per strip and per output and generates their plugins from a face, so
-   `tools/face-conformance.sh` requires `omx_align_instance.h` and `omx_idelay_instance.h` (REQUIRED)
-   until the generic face serves them; they then join through their descriptors like every other batch.
+6. align and idelay, written straight against the descriptor (no hand-written face first)
 
 Each batch removes its faces and their hand-list rows once their outside consumers call the
 generic face.
