@@ -79,7 +79,7 @@ A golden digest covers the kernel's output bit for bit, so it also covers every 
 kernel makes per sample. A libm's `log10f` is not one function: glibc 2.36 (debian:bookworm)
 misrounds 1.39% of the non-negative floats, 62 225 of them by 2 ulp, where glibc 2.41 (debian:trixie)
 and 2.43 (Fedora 44) round every one correctly, since 2.41 took `log10f` from CORE-MATH. The limiter's
-48 kHz digest (the render of FreeMixer/omx-dsp#21) read `5fe47250…` on bookworm against `69a449ce…`
+48 kHz digest read `5fe47250…` on bookworm against `69a449ce…`
 on 2.41 and 2.43. The compiler played no part: the same binary flips with the glibc it runs on.
 
 Production calls the libm: `omx_lin_to_db()` is `20·log10f(max(lin, 1e-9))`, about 2 ns per call
@@ -249,8 +249,7 @@ functions to closed forms.
 
 ## Loudness
 
-`omx_loudness.h` measures EBU R 128 loudness the way ITU-R BS.1770-4 defines it
-(FreeMixer/omx-dsp#64). The engine measures and accumulates; it reads the figures and publishes
+`omx_loudness.h` measures EBU R 128 loudness the way ITU-R BS.1770-4 defines it. The engine measures and accumulates; it reads the figures and publishes
 them, and no other code computes them.
 
 - **K-weighting.** Two sections designed for the rate at init, in double, from the analogue
