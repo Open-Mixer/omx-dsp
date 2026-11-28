@@ -2,9 +2,9 @@
 # Copyright (C) 2026 Pau Aliagas <linuxnow@gmail.com>
 name: release
 
-# Two paths, one build. A manual run with staged on BUILDS omx-dsp-devel and omx-rt-gate (RPM, fc45 x86_64; Fedora 45
-# aarch64 is not built, owner ruling 2026-11-19) and libomxdsp-dev, omx-rt-gate and omx-dsp-contract (DEB, amd64 and
-# arm64) through Open-Mixer/.github's build-rpm.yml and build-deb.yml, signed, into the staging channel (staging/rpm and
+# Two paths, one build. A manual run with staged on BUILDS omx-dsp-devel and omx-rt-gate (RPM, fc45 x86_64 and
+# aarch64: the full matrix for every package, owner ruling 2026-11-26) and libomxdsp-dev, omx-rt-gate and
+# omx-dsp-contract (DEB, amd64 and arm64) through Open-Mixer/.github's build-rpm.yml and build-deb.yml, signed, into the staging channel (staging/rpm and
 # staging/deb of the channel repository), where the next layer builds against them. The quick set by default (matrix:
 # quick, the staging of a devel run); a promotion candidate is dispatched with matrix: full, the only staged tree a tag
 # can promote (promote-staged refuses one that lacks a release or architecture). Without staged, a dispatch (and the
@@ -28,7 +28,7 @@ on:
   workflow_dispatch:
     inputs:
       arm:
-        description: 'Build the arm64 DEBs too (a dispatched release needs them); no Fedora aarch64 RPM is built'
+        description: 'Build the arm64 DEBs too (a dispatched release needs them); the RPMs build x86_64 and aarch64 either way'
         type: boolean
         default: true
       staged:
@@ -57,7 +57,7 @@ on:
       arm:
         type: boolean
         default: true
-        description: "Build the arm64 DEBs too; the pull-request dry run passes false (arm builds run at release only); no Fedora aarch64 RPM is built"
+        description: "Build the arm64 DEBs too; the pull-request dry run passes false (arm builds run at release only); the RPMs build x86_64 and aarch64 either way"
       staged:
         type: boolean
         default: false

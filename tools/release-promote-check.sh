@@ -104,9 +104,10 @@ if [ "${1:-}" = --sabotage ]; then
   plant "full by default" rel "        options: [quick, full]
         default: quick" "        options: [quick, full]
         default: full" "default is not quick"
+  # the promote job's binary-names, anchored on the line after it (rpm-arch-matrix until #182 removed it, version now)
   plant "a binary only the deb builds" rel "      binary-names: omx-rt-gate
-      rpm-arch-matrix" "      binary-names: omx-rt-gate omx-dsp-contract
-      rpm-arch-matrix" 'not packages both builds list'
+      version:" "      binary-names: omx-rt-gate omx-dsp-contract
+      version:" 'not packages both builds list'
   plant "no on-main step" rel "git merge-base --is-ancestor" "git merge-base" 'commit to main'
   plant "no secrets" rel "      commit: \${{ inputs.commit || '' }}
     secrets: inherit" "      commit: \${{ inputs.commit || '' }}" 'inherit the secrets'

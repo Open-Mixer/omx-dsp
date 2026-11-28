@@ -33,9 +33,11 @@
 #include <math.h>
 #include <stdint.h>
 
+#include <omxcontract/omx_vocabulary.h>
 #include <omxdsp/omxdsp_definitions.h>
 #include "omx_contract.h"
 #include "omx_fdelay.h"
+#include "omx_kernel_desc.h"
 
 /** @brief The alignment's ceiling, ms: the contract's input alignment travel top (INPUT_ALIGN_DELAY_RANGE.max). */
 #define OMX_ALIGN_MAX_MS OMX_INPUT_ALIGN_DELAY_RANGE_MAX
@@ -237,5 +239,112 @@ static inline void omx_align_apply(struct omx_align_state *a, float *l, float *r
   OMX_INVARIANT(a->line_l.wpos < a->line_l.cap, "write-cursor-inside-the-ring");
 }
 #undef OMX_CONTRACT_STAGE
+
+/** @brief The alignment as the generic face (fx/omx_fx_face.h) serves it: the strip's two lines over two rings
+ * of its own, inline, so the full travel is reachable at every oracle rate and nothing is allocated. The state
+ * points into its own rings: it is bound where it lives and never copied after. */
+struct omx_align_kernel {
+  float sr;                     /**< The sample rate init bound the state to, Hz. */
+  struct omx_align_state st;    /**< The two lines, armed over `ring_l` and `ring_r`. */
+  float tgt;                    /**< The target, fractional samples, omx_align_target() of `ms`. */
+  float ms;                     /**< inputAlignDelay as the last set took it, ms. */
+  int enabled;                  /**< Non-zero while engaged, as the last set left it. */
+  float ring_l[OMX_ALIGN_CAP];  /**< The left line's ring. */
+  float ring_r[OMX_ALIGN_CAP];  /**< The right line's ring. */
+};
+
+/**
+ * @brief Bind a zeroed state to its rate and arm its two lines over its own rings, at no delay. Allocates nothing.
+ * @param state A struct omx_align_kernel, zeroed.
+ * @param sr The sample rate, Hz: one of the nine oracle rates.
+ * @return 1 when usable, 0 when the rate is not one of them.
+ * @thread control
+ */
+static inline int omx_align_kernel_init(void *state, float sr) {
+  struct omx_align_kernel *k = state;
+  if (!omx_rate_is_oracle_full(sr)) return 0;
+  k->sr = sr;
+  if (!omx_align_arm(&k->st, k->ring_l, k->ring_r)) return 0;
+  k->enabled = 1;
+  return 1;
+}
+
+#define OMX_CONTRACT_STAGE "align/clear"
+/**
+ * @brief Silence both lines, keeping the target: the rings back to 0, both write cursors and the applied delay
+ *        back at 0, as init's arm left them. The lines stay armed over the same rings, so only what a block moves
+ *        is reset; the arm itself is the control thread's. Bounded work, no allocation.
+ * @param state A struct omx_align_kernel.
+ * @post `cleared-line-is-fresh`.
+ * @thread audio
+ */
+static inline void omx_align_kernel_clear(void *state) {
+  struct omx_align_kernel *k = state;
+  for (uint32_t i = 0; i < (uint32_t)OMX_ALIGN_CAP; i++) k->ring_l[i] = 0.0f, k->ring_r[i] = 0.0f;
+  k->st.line_l.wpos = k->st.line_r.wpos = 0u;
+  k->st.cur = 0.0f;
+  OMX_POST(k->ring_l[0] == 0.0f && k->ring_r[OMX_ALIGN_CAP - 1] == 0.0f && k->st.cur == 0.0f && k->st.line_l.wpos == 0u,
+           "cleared-line-is-fresh");
+}
+#undef OMX_CONTRACT_STAGE
+
+/**
+ * @brief Take the resolved inputAlignDelay: the target the line slews to, omx_align_target()'s, the kernel's own
+ *        conversion. A bypassed -> engaged edge clears the lines, so a re-engaged alignment is a fresh one.
+ * @param state A struct omx_align_kernel.
+ * @param values inputAlignDelay, ms, inside INPUT_ALIGN_DELAY_RANGE.
+ * @param bypass Non-zero while bypassed.
+ * @thread audio
+ */
+static inline void omx_align_kernel_set(void *state, const float *values, int bypass) {
+  struct omx_align_kernel *k = state;
+  if (!bypass && !k->enabled) omx_align_kernel_clear(k);
+  k->enabled = bypass ? 0 : 1;
+  k->ms = values[0];
+  k->tgt = omx_align_target(k->ms, k->sr);
+}
+
+/**
+ * @brief One engaged block, both legs in place, toward the target: omx_align_apply().
+ * @param state A struct omx_align_kernel.
+ * @param l The left leg, `n` frames.
+ * @param r The right leg, `n` frames.
+ * @param n The block length.
+ * @thread audio
+ */
+static inline void omx_align_kernel_process(void *state, float *l, float *r, uint32_t n) {
+  struct omx_align_kernel *k = state;
+  omx_align_apply(&k->st, l, r, n, k->tgt);
+}
+
+/**
+ * @brief The frames of latency the alignment reports: none. The delay IS the effect; a host that compensated it
+ *        would undo the alignment.
+ * @param state A struct omx_align_kernel, unread.
+ * @return 0.
+ * @thread audio
+ */
+static inline uint32_t omx_align_kernel_latency(const void *state) {
+  (void)state;
+  return 0u;
+}
+
+/**
+ * @brief The alignment's descriptor: data/kernels/align.json's one control through the render. The travel declares
+ *        no default; its floor, no delay, is the come-up value and what a non-finite word reads as.
+ * @return The descriptor, a constant.
+ * @thread control
+ */
+static inline const struct omx_kernel_desc *omx_align_desc(void) {
+  static const struct omx_param_desc params[] = {
+      {"inputAlignDelay", OMX_PARAM_TRAVEL, (float)OMX_INPUT_ALIGN_DELAY_RANGE_MIN, (float)OMX_INPUT_ALIGN_DELAY_RANGE_MAX,
+       (float)OMX_INPUT_ALIGN_DELAY_RANGE_MIN, OMX_PARAM_UNITS_MS},
+  };
+  static const struct omx_kernel_desc desc = {
+      "align", sizeof(struct omx_align_kernel), 1u, params, 0u, NULL, omx_align_kernel_init, omx_align_kernel_set,
+      omx_align_kernel_process, omx_align_kernel_clear, omx_align_kernel_latency, NULL,
+  };
+  return &desc;
+}
 
 #endif /* OMX_ALIGN_H */

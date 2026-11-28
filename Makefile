@@ -665,9 +665,9 @@ check-log10f: tools/log10f-check.c test/support/log10f_cr.h | $(BUILD)
 #   test/fx/<k>_golden.test.c  the golden digests, compared with test/golden/<k>.sha256
 FX_KERNELS = delay geq pitch transient drive chorus flanger phaser reverb tremolo rotor rotary transient_instance geq_instance eq_instance limiter dynamics_keyed dynamics gate gate_instance gate_knee gate_keyfilter comp_instance band_dyn deesser dyn_controls trim_instance align reverse_render dynamics_feedback idelay loudness mbcomp dyneq_instance mbcomp_instance doubler_instance tone_instance leveler_instance plosive_instance width_instance suboct_instance clipper_instance upward_instance glue_instance loudlevel_instance spring_instance balancer_instance
 # Oracles that read the contract ledger themselves build with contracts and threads.
-FX_CONTRACT_ORACLES = delay_taps geq pitch transient chorus flanger phaser tremolo rotor rotary transient_instance geq_instance eq_instance limiter dynamics_keyed dynamics gate gate_instance gate_knee gate_keyfilter comp_instance band_dyn dyn_controls trim_instance align_fdelay dynamics_feedback idelay loudness mbcomp geq_true dyneq_instance comp_key mbcomp_instance delay_color gate_key reverb_return doubler_instance tone_instance dyn_upward leveler_instance comp_release comp_models comp_key_isolation comp_feedback plosive_instance transient_readouts width_instance suboct_instance clipper_instance upward_instance glue_instance loudlevel_instance spring_instance balancer_instance face $(addsuffix _instance,$(FX_INSTANCES))
+FX_CONTRACT_ORACLES = delay_taps geq pitch transient chorus flanger phaser tremolo rotor rotary transient_instance geq_instance eq_instance limiter dynamics_keyed dynamics gate gate_instance gate_knee gate_keyfilter comp_instance band_dyn dyn_controls trim_instance align_fdelay dynamics_feedback idelay loudness mbcomp geq_true dyneq_instance comp_key mbcomp_instance delay_color gate_key reverb_return doubler_instance tone_instance dyn_upward leveler_instance comp_release comp_models comp_key_isolation comp_feedback plosive_instance transient_readouts width_instance suboct_instance clipper_instance upward_instance glue_instance loudlevel_instance spring_instance balancer_instance face face_align face_idelay $(addsuffix _instance,$(FX_INSTANCES))
 # Further oracles of a kernel in FX_KERNELS, each test/fx/<o>.test.c, built by the same rule.
-FX_ORACLES = align_fdelay delay_taps dyn_flat gaincomp_fpflags geq_true band_dyn_poly comp_key delay_color gate_key reverb_return dyn_upward comp_release comp_models transient_readouts comp_key_isolation comp_feedback face
+FX_ORACLES = align_fdelay delay_taps dyn_flat gaincomp_fpflags geq_true band_dyn_poly comp_key delay_color gate_key reverb_return dyn_upward comp_release comp_models transient_readouts comp_key_isolation comp_feedback face face_align face_idelay
 # The effects that carry a host-agnostic instance core, include/omxdsp/fx/omx_<k>_instance.h: each
 # adds test/fx/<k>_instance.test.c, its oracle at every declared rate, contracts compiled in.
 FX_INSTANCES = chorus flanger drive reverb tremolo phaser pitch rotary limiter deesser delay
@@ -679,7 +679,8 @@ FX_INSTANCE_GOLDENS = pitch
 FX_ORACLE_GOLDENS = delay_taps comp_key delay_color gate_key reverb_return
 # The kernels the generic face serves (docs/generic-face.md), each through it against its hand-written face's
 # own digests: test/fx/face_<k>_golden.test.c, compared with test/golden/<k>_instance.sha256. test/fx/face.test.c
-# holds the face to each hand-written face bit for bit.
+# holds the face to each hand-written face bit for bit, and a kernel that never had one (align, idelay) to the
+# kernel itself; test/fx/face_<k>.test.c carries that kernel's closed-form oracles through the face.
 FX_FACE_GOLDENS = trim width clipper
 # A kernel's perturbation arm: test/fx/<k>-perturb.sh builds its oracle against a moved declaration.
 FX_PERTURB = $(wildcard test/fx/*-perturb.sh)
@@ -732,6 +733,8 @@ FX_LDFLAGS_spring_instance = $(FX_NO_ALLOC_LDFLAGS)
 FX_LDFLAGS_balancer_instance = $(FX_NO_ALLOC_LDFLAGS)
 FX_LDFLAGS_suboct_instance = $(FX_NO_ALLOC_LDFLAGS)
 FX_LDFLAGS_face = $(FX_NO_ALLOC_LDFLAGS)
+FX_LDFLAGS_face_align = $(FX_NO_ALLOC_LDFLAGS)
+FX_LDFLAGS_face_idelay = $(FX_NO_ALLOC_LDFLAGS)
 
 $(BUILD)/fx_%: test/fx/%.test.c $(FX_DEPS)
 	$(if $(filter $*,$(FX_CONTRACT_ORACLES)),$(CC) $(TESTFLAGS) -pthread -Itest/fx -o $@ $< $(LIB_CONTRACTS) -lm $(FX_LDFLAGS_$*),$(CC) $(CFLAGS) $(INC) -Itest/fx -o $@ $< $(LIB) -lm $(FX_LDFLAGS_$*))

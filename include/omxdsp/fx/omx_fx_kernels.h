@@ -15,13 +15,16 @@
 #include <stdint.h>
 #include <string.h>
 
+#include <omxdsp/omx_align.h>
 #include <omxdsp/omx_clipper.h>
+#include <omxdsp/omx_idelay.h>
 #include <omxdsp/omx_kernel_desc.h>
 #include <omxdsp/omx_trim.h>
 #include <omxdsp/omx_width.h>
 
 /**
- * @brief The served kernel at index `i`, in name order.
+ * @brief The served kernel at index `i`: each batch appended in the order it joined, so an index once
+ *        given keeps its kernel.
  * @param i The index, from 0.
  * @return The kernel's descriptor; null past the last.
  * @thread control
@@ -31,6 +34,8 @@ static inline const struct omx_kernel_desc *omx_fx_kernel_at(uint32_t i) {
   case 0: return omx_clipper_desc();
   case 1: return omx_trim_desc();
   case 2: return omx_width_desc();
+  case 3: return omx_align_desc();
+  case 4: return omx_idelay_desc();
   default: return NULL;
   }
 }

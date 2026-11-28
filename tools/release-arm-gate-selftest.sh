@@ -16,7 +16,9 @@
 # gate() evaluates the pieces extracted from release.yml (the event literal and the `== <literal>`
 # comparison), so changing either in release.yml moves the table. `--sabotage` proves it: it rewrites
 # the event literal in a copy of release.yml (the shape check still matches) and requires the table to
-# go red on a resolved-row line, not only the literal check.
+# go red on a resolved-row line, not only the literal check. The rpm job builds aarch64 beside x86_64 (owner ruling
+# 2026-11-26, the full matrix for every package): --sabotage also plants an x86_64-only rpm arch-matrix and an rpm gate
+# with no aarch64, each of which must be named red.
 set -uo pipefail
 cd "$(dirname "$0")/.."
 REL="${RELEASE_YML:-.github/workflows/release.yml}"
@@ -29,6 +31,19 @@ if [ "${1:-}" = --sabotage ]; then
   out="$(RELEASE_YML="$tmp/release.yml" "$0" 2>&1)" && { echo "release-arm-gate-selftest: FAIL — a changed event literal left the selftest green"; exit 1; }
   grep -q 'resolved' <<< "$out" || { echo "release-arm-gate-selftest: FAIL — the changed event literal did not move the table"; echo "$out"; exit 1; }
   echo "release-arm-gate-selftest: sabotage ok — a changed event literal turns the table red"
+  # the rpm job narrowed back to x86_64 (the line it carried under the 2026-11-19 ruling) must be red on the rpm part
+  awk '{ print } /^  rpm:/ { r = 1 } r && /^      publish: false$/ { print "      arch-matrix: '"'"'[\"x86_64\"]'"'"'"; r = 0 }' \
+    .github/workflows/release.yml > "$tmp/rpm.yml"
+  grep -q "^      arch-matrix: '\[\"x86_64\"\]'\$" "$tmp/rpm.yml" || { echo "release-arm-gate-selftest: FAIL — the x86_64-only rpm line was not planted"; exit 1; }
+  out="$(RELEASE_YML="$tmp/rpm.yml" "$0" 2>&1)" && { echo "release-arm-gate-selftest: FAIL — an x86_64-only rpm arch-matrix left the selftest green"; exit 1; }
+  grep -q "rpm's arch-matrix narrows" <<< "$out" || { echo "release-arm-gate-selftest: FAIL — the x86_64-only rpm line was not named"; echo "$out"; exit 1; }
+  echo "release-arm-gate-selftest: sabotage ok — an x86_64-only rpm arch-matrix is red"
+  # the rpm job gated like deb but with no aarch64 in its arm matrix must be red too
+  awk '{ print } /^  rpm:/ { r = 1 } r && /^      publish: false$/ { print "      arch-matrix: ${{ (github.event_name != '"'"'push'"'"' && inputs.arm == false) && '"'"'[\"x86_64\"]'"'"' || '"'"'[\"x86_64\"]'"'"' }}"; r = 0 }' \
+    .github/workflows/release.yml > "$tmp/rpmgate.yml"
+  out="$(RELEASE_YML="$tmp/rpmgate.yml" "$0" 2>&1)" && { echo "release-arm-gate-selftest: FAIL — an rpm arm gate without aarch64 left the selftest green"; exit 1; }
+  grep -q "rpm's arm matrix .* lacks aarch64" <<< "$out" || { echo "release-arm-gate-selftest: FAIL — the rpm gate without aarch64 was not named"; echo "$out"; exit 1; }
+  echo "release-arm-gate-selftest: sabotage ok — an rpm arm gate without aarch64 is red"
   exit 0
 fi
 
@@ -88,21 +103,27 @@ pull_request null noarm
 EOF
 }
 
-# rpm builds no aarch64 at all: the owner ruling of 2026-11-19 stops building Fedora 45 aarch64, so its arch-matrix is
-# the fixed x86_64 list, with no gate. deb keeps the arm gate.
+# rpm builds Fedora aarch64 beside x86_64: the owner ruling of 2026-11-26 (the full matrix for every package) supersedes
+# the 2026-11-19 one that built x86_64 alone. The rpm job either names no arch-matrix, and takes build-rpm.yml's default
+# (x86_64 and aarch64), or carries the same gate as deb with aarch64 in its arm matrix; a fixed list without aarch64,
+# '["x86_64"]' among them, is red.
 rpm_line="$(awk '
   /^  rpm:/ { injob = 1 }
   injob && /^  [a-z]+:$/ && !/^  rpm:/ { injob = 0 }
   injob && /arch-matrix:/ { print; exit }
 ' "$REL")"
-[[ "$rpm_line" =~ arch-matrix:\ \'\[\"x86_64\"\]\'[[:space:]]*$ ]] || {
-  echo "release-arm-gate-selftest: FAIL — rpm's arch-matrix is not the fixed '[\"x86_64\"]' (no Fedora aarch64): $rpm_line"
-  fails=$((fails + 1))
-}
+if [ -n "$rpm_line" ]; then
+  if extract rpm; then
+    check_job rpm aarch64
+  else
+    echo "release-arm-gate-selftest: FAIL — rpm's arch-matrix narrows the shared default (x86_64 and aarch64) without the arm gate: $rpm_line"
+    fails=$((fails + 1))
+  fi
+fi
 check_job deb arm64
 
 if [ "$fails" -ne 0 ]; then
   echo "release-arm-gate-selftest: FAIL — $fails part(s) of the arm gate wrong"
   exit 1
 fi
-echo "release-arm-gate-selftest: ok — deb arch-matrix builds arm64 on every tag push, opt-in only on dispatch; rpm is x86_64 only"
+echo "release-arm-gate-selftest: ok — deb arch-matrix builds arm64 on every tag push, opt-in only on dispatch; rpm builds aarch64 beside x86_64"

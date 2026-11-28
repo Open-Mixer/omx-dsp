@@ -90,7 +90,12 @@ The later batches, smallest first, each a kernel whose state is its parameters:
 3. gate, spring, tone, loudlevel, leveler, mbcomp, balancer
 4. doubler, suboct, drive, plosive, delay, reverb
 5. dyneq, comp, geq, eq (the counted controls: a band's row taken once per band)
-6. align and idelay, written straight against the descriptor (no hand-written face first)
+6. align and idelay, written straight against the descriptor (no hand-written face first). Done
+   (omx-dsp#185): `omx_align_desc()` and `omx_idelay_desc()`, served by `omx_fx_kernels.h`. With no
+   hand-written twin, `test/fx/face.test.c` holds the face to the kernel itself, driven from its own
+   calls, and `test/fx/face_align.test.c` and `test/fx/face_idelay.test.c` carry the kernels' closed
+   forms through the face (a unit impulse exactly D samples late at exactly 1, at the nine oracle
+   rates). `tools/face-conformance.sh` requires both kernels to have a face, of either kind.
 
 Each batch removes its faces and their hand-list rows once their outside consumers call the
 generic face.

@@ -24,7 +24,10 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include <omxcontract/omx_vocabulary.h>
+
 #include "omx_contract.h"
+#include "omx_kernel_desc.h"
 #include "omx_lookahead.h"
 #include "omxdsp.h"
 
@@ -174,5 +177,114 @@ static inline void omx_idelay_pair_apply(float *l, float *r, uint32_t n, struct 
            "finite-out");
 }
 #undef OMX_CONTRACT_STAGE
+
+/** @brief The output delay as the generic face (fx/omx_fx_face.h) serves it: a pair over two rings of its own,
+ * inline, OMX_IDELAY_CAP floats each, so the full travel is reachable at every oracle rate and nothing is
+ * allocated. The pair points into its own rings: the state is bound where it lives and never copied after. */
+struct omx_idelay_kernel {
+  float sr;                      /**< The sample rate init bound the state to, Hz. */
+  struct omx_idelay_pair pair;   /**< The pair over `ring_l` and `ring_r`: the cursors and the applied delays. */
+  uint32_t tgt;                  /**< The delay, whole samples, omx_idelay_samples() of `ms`. */
+  float ms;                      /**< outputDelay as the last set took it, ms. */
+  int enabled;                   /**< Non-zero while engaged, as the last set left it. */
+  float ring_l[OMX_IDELAY_CAP];  /**< The left ring. */
+  float ring_r[OMX_IDELAY_CAP];  /**< The right ring. */
+};
+
+/**
+ * @brief Bind a zeroed state to its rate, its pair over its own rings, at no delay. Allocates nothing.
+ * @param state A struct omx_idelay_kernel, zeroed.
+ * @param sr The sample rate, Hz: one of the nine oracle rates.
+ * @return 1 when usable, 0 when the rate is not one of them.
+ * @thread control
+ */
+static inline int omx_idelay_kernel_init(void *state, float sr) {
+  struct omx_idelay_kernel *k = state;
+  if (!omx_rate_is_oracle_full(sr)) return 0;
+  k->sr = sr;
+  k->pair.ring_l = k->ring_l;
+  k->pair.ring_r = k->ring_r;
+  k->pair.cap = (uint32_t)OMX_IDELAY_CAP;
+  k->enabled = 1;
+  return 1;
+}
+
+#define OMX_CONTRACT_STAGE "idelay/clear"
+/**
+ * @brief Silence the pair, keeping the delay: both rings back to 0, the write cursors and the applied delays back
+ *        at 0, as init left them. Bounded work, no allocation.
+ * @param state A struct omx_idelay_kernel.
+ * @post `cleared-pair-is-fresh`.
+ * @thread audio
+ */
+static inline void omx_idelay_kernel_clear(void *state) {
+  struct omx_idelay_kernel *k = state;
+  for (uint32_t i = 0; i < (uint32_t)OMX_IDELAY_CAP; i++) k->ring_l[i] = 0.0f, k->ring_r[i] = 0.0f;
+  k->pair.wpos_l = k->pair.wpos_r = 0u;
+  k->pair.cur_l = k->pair.cur_r = 0u;
+  OMX_POST(k->ring_l[0] == 0.0f && k->ring_r[OMX_IDELAY_CAP - 1] == 0.0f && k->pair.wpos_l == 0u && k->pair.cur_r == 0u,
+           "cleared-pair-is-fresh");
+}
+#undef OMX_CONTRACT_STAGE
+
+/**
+ * @brief Take the resolved outputDelay: whole samples, omx_idelay_samples()'s, the line's own conversion; both legs
+ *        take the one delay. A bypassed -> engaged edge clears the pair, so a re-engaged delay is a fresh one.
+ * @param state A struct omx_idelay_kernel.
+ * @param values outputDelay, ms, inside OUTPUT_DELAY_RANGE.
+ * @param bypass Non-zero while bypassed.
+ * @thread audio
+ */
+static inline void omx_idelay_kernel_set(void *state, const float *values, int bypass) {
+  struct omx_idelay_kernel *k = state;
+  if (!bypass && !k->enabled) omx_idelay_kernel_clear(k);
+  k->enabled = bypass ? 0 : 1;
+  k->ms = values[0];
+  k->tgt = omx_idelay_samples(k->ms, k->sr, k->pair.cap);
+}
+
+/**
+ * @brief One engaged block, both legs in place, at the delay: omx_idelay_pair_apply(), a move cross-faded across
+ *        the block.
+ * @param state A struct omx_idelay_kernel.
+ * @param l The left leg, `n` frames.
+ * @param r The right leg, `n` frames.
+ * @param n The block length.
+ * @thread audio
+ */
+static inline void omx_idelay_kernel_process(void *state, float *l, float *r, uint32_t n) {
+  struct omx_idelay_kernel *k = state;
+  omx_idelay_pair_apply(l, r, n, &k->pair, k->tgt, k->tgt);
+}
+
+/**
+ * @brief The frames of latency the output delay reports: none. The delay IS the effect; a host that compensated it
+ *        would undo the alignment.
+ * @param state A struct omx_idelay_kernel, unread.
+ * @return 0.
+ * @thread audio
+ */
+static inline uint32_t omx_idelay_kernel_latency(const void *state) {
+  (void)state;
+  return 0u;
+}
+
+/**
+ * @brief The output delay's descriptor: data/kernels/idelay.json's one control through the render. The travel
+ *        declares no default; its floor, no delay, is the come-up value and what a non-finite word reads as.
+ * @return The descriptor, a constant.
+ * @thread control
+ */
+static inline const struct omx_kernel_desc *omx_idelay_desc(void) {
+  static const struct omx_param_desc params[] = {
+      {"outputDelay", OMX_PARAM_TRAVEL, (float)OMX_OUTPUT_DELAY_RANGE_MIN, (float)OMX_OUTPUT_DELAY_RANGE_MAX,
+       (float)OMX_OUTPUT_DELAY_RANGE_MIN, OMX_PARAM_UNITS_MS},
+  };
+  static const struct omx_kernel_desc desc = {
+      "idelay", sizeof(struct omx_idelay_kernel), 1u, params, 0u, NULL, omx_idelay_kernel_init, omx_idelay_kernel_set,
+      omx_idelay_kernel_process, omx_idelay_kernel_clear, omx_idelay_kernel_latency, NULL,
+  };
+  return &desc;
+}
 
 #endif /* OMX_IDELAY_H */

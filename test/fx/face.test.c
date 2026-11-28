@@ -2,7 +2,9 @@
 // Copyright (C) 2026 Pau Aliagas <linuxnow@gmail.com>
 //
 // The generic face (fx/omx_fx_face.h) over each kernel it serves (fx/omx_fx_kernels.h) against that kernel's
-// hand-written face, at each of the nine oracle rates:
+// hand-written face, or, for a kernel that never had one (align, idelay: docs/generic-face.md, Migration item 6),
+// against the kernel itself driven here from its own calls (omx_align_arm/target/apply, omx_idelay_samples and
+// omx_idelay_pair_apply over rings of this file's), at each of the nine oracle rates:
 //   A  init answers as the hand-written face at every rate, the oracle set's and refused ones alike;
 //   B  bit for bit: a script of host values, block by block, the travels walked past both ends and
 //      through non-finite words, the choices through fractional, negative and out-of-set indices, the
@@ -12,14 +14,16 @@
 //      default index does on the hand-written face;
 //   D  the refusals: a null face, descriptor, state or port, an empty block, a face not ready;
 //   E  clear: a trim lands its ramp, a width ring is silenced, a clipper's meter reads 0;
-//   F  the served list: every kernel is found by its name and holds a hand-written twin here, nothing
-//      allocates and the ledger is clean.
+//   F  the served list: every kernel is found by its name and holds a twin here (its hand-written face or
+//      its kernel), nothing allocates and the ledger is clean.
 #define OMX_CONTRACT_STORAGE 1
 #include <omxdsp/fx/omx_clipper_instance.h>
 #include <omxdsp/fx/omx_fx_face.h>
 #include <omxdsp/fx/omx_fx_kernels.h>
 #include <omxdsp/fx/omx_trim_instance.h>
 #include <omxdsp/fx/omx_width_instance.h>
+#include <omxdsp/omx_align.h>
+#include <omxdsp/omx_idelay.h>
 
 #include "instance_oracle.h"
 #include "instance_no_alloc.h"
@@ -74,10 +78,102 @@ static void clipper_run(void *h, const float *il, const float *ir, float *ol, fl
 static uint32_t clipper_latency(const void *h) { return omx_clipper_instance_latency(h); }
 static float clipper_meter(const void *h, uint32_t i) { return i == 0u ? omx_clipper_instance_gain_reduction_db(h) : 0.0f; }
 
+/* The kernels with no hand-written face: each twin is the kernel's own calls over rings of this file's, the
+ * resolve a host's port model owes it written out from the contract (the travel clamped into its range, a
+ * non-finite word reading as the floor, no delay), a bypass->engaged edge silencing the rings and cursors. */
+static struct {
+  struct omx_align_state st;
+  float ring_l[OMX_ALIGN_CAP], ring_r[OMX_ALIGN_CAP];
+  float sr, tgt;
+  int bypass, was_engaged, ready;
+} h_align;
+
+static int align_init(void *h, float sr) {
+  (void)h;
+  memset(&h_align, 0, sizeof h_align);
+  if (!omx_rate_is_oracle_full(sr) || !omx_align_arm(&h_align.st, h_align.ring_l, h_align.ring_r)) return 0;
+  h_align.sr = sr;
+  h_align.was_engaged = h_align.ready = 1;
+  return 1;
+}
+static void align_resolve(void *h, int bypass, const float *v) {
+  (void)h;
+  if (!h_align.ready) return;
+  if (!bypass && !h_align.was_engaged) {
+    memset(h_align.ring_l, 0, sizeof h_align.ring_l);
+    memset(h_align.ring_r, 0, sizeof h_align.ring_r);
+    h_align.st.line_l.wpos = h_align.st.line_r.wpos = 0u;
+    h_align.st.cur = 0.0f;
+  }
+  h_align.was_engaged = !bypass;
+  h_align.bypass = bypass ? 1 : 0;
+  const float lo = (float)OMX_INPUT_ALIGN_DELAY_RANGE_MIN, hi = (float)OMX_INPUT_ALIGN_DELAY_RANGE_MAX;
+  const float ms = !(v[0] - v[0] == 0.0f) ? lo : v[0] < lo ? lo : v[0] > hi ? hi : v[0];
+  h_align.tgt = omx_align_target(ms, h_align.sr);
+}
+static void align_run(void *h, const float *il, const float *ir, float *ol, float *orr, uint32_t n) {
+  (void)h;
+  if (!il || !ir || !ol || !orr || n == 0u) return;
+  if (ol != il) memcpy(ol, il, n * sizeof(float));
+  if (orr != ir) memcpy(orr, ir, n * sizeof(float));
+  if (h_align.ready && !h_align.bypass) omx_align_apply(&h_align.st, ol, orr, n, h_align.tgt);
+}
+static uint32_t align_latency(const void *h) {
+  (void)h;
+  return 0u;
+}
+
+static struct {
+  struct omx_idelay_pair pair;
+  float ring_l[OMX_IDELAY_CAP], ring_r[OMX_IDELAY_CAP];
+  float sr;
+  uint32_t tgt;
+  int bypass, was_engaged, ready;
+} h_idelay;
+
+static int idelay_init(void *h, float sr) {
+  (void)h;
+  memset(&h_idelay, 0, sizeof h_idelay);
+  if (!omx_rate_is_oracle_full(sr)) return 0;
+  h_idelay.pair.ring_l = h_idelay.ring_l;
+  h_idelay.pair.ring_r = h_idelay.ring_r;
+  h_idelay.pair.cap = (uint32_t)OMX_IDELAY_CAP;
+  h_idelay.sr = sr;
+  h_idelay.was_engaged = h_idelay.ready = 1;
+  return 1;
+}
+static void idelay_resolve(void *h, int bypass, const float *v) {
+  (void)h;
+  if (!h_idelay.ready) return;
+  if (!bypass && !h_idelay.was_engaged) {
+    memset(h_idelay.ring_l, 0, sizeof h_idelay.ring_l);
+    memset(h_idelay.ring_r, 0, sizeof h_idelay.ring_r);
+    h_idelay.pair.wpos_l = h_idelay.pair.wpos_r = h_idelay.pair.cur_l = h_idelay.pair.cur_r = 0u;
+  }
+  h_idelay.was_engaged = !bypass;
+  h_idelay.bypass = bypass ? 1 : 0;
+  const float lo = (float)OMX_OUTPUT_DELAY_RANGE_MIN, hi = (float)OMX_OUTPUT_DELAY_RANGE_MAX;
+  const float ms = !(v[0] - v[0] == 0.0f) ? lo : v[0] < lo ? lo : v[0] > hi ? hi : v[0];
+  h_idelay.tgt = omx_idelay_samples(ms, h_idelay.sr, h_idelay.pair.cap);
+}
+static void idelay_run(void *h, const float *il, const float *ir, float *ol, float *orr, uint32_t n) {
+  (void)h;
+  if (!il || !ir || !ol || !orr || n == 0u) return;
+  if (ol != il) memcpy(ol, il, n * sizeof(float));
+  if (orr != ir) memcpy(orr, ir, n * sizeof(float));
+  if (h_idelay.ready && !h_idelay.bypass) omx_idelay_pair_apply(ol, orr, n, &h_idelay.pair, h_idelay.tgt, h_idelay.tgt);
+}
+static uint32_t idelay_latency(const void *h) {
+  (void)h;
+  return 0u;
+}
+
 static const struct twin TWINS[] = {
     {"trim", &h_trim, trim_init, trim_resolve, trim_run, trim_latency, NULL},
     {"width", &h_width, width_init, width_resolve, width_run, width_latency, NULL},
     {"clipper", &h_clipper, clipper_init, clipper_resolve, clipper_run, clipper_latency, clipper_meter},
+    {"align", &h_align, align_init, align_resolve, align_run, align_latency, NULL},
+    {"idelay", &h_idelay, idelay_init, idelay_resolve, idelay_run, idelay_latency, NULL},
 };
 #define NTWINS (sizeof TWINS / sizeof TWINS[0])
 
@@ -87,6 +183,8 @@ static union {
   struct omx_trim_kernel trim;
   struct omx_width_kernel width;
   struct omx_clipper_kernel clipper;
+  struct omx_align_kernel align;
+  struct omx_idelay_kernel idelay;
 } g_k;
 
 /* ---- the script ------------------------------------------------------------------------------------ */
@@ -120,7 +218,7 @@ static void arm_init(const struct twin *t, const struct omx_kernel_desc *d) {
   static const float RATES[] = {22050.0f, 0.0f, -48000.0f, NAN, INFINITY, 1.0f};
   for (unsigned i = 0; i < sizeof RATES / sizeof RATES[0]; i++) {
     const int h = t->init(t->hand, RATES[i]), f = omx_fx_face_init(&g_f, d, &g_k, RATES[i]);
-    ok(h == f, "init answers as the hand-written face at a rate outside the set", f, h);
+    ok(h == f, "init answers as the twin (the hand-written face or the kernel) at a rate outside the set", f, h);
   }
   ok(t->init(t->hand, g_sr) == 1 && omx_fx_face_init(&g_f, d, &g_k, g_sr) == 1, "an oracle rate is taken by both", 0, 1);
   drain();
@@ -158,9 +256,9 @@ static void arm_bits(const struct twin *t, const struct omx_kernel_desc *d) {
     drain();
   }
   g_counting = 0;
-  ok(moved == 0u, "the output is the hand-written face's, bit for bit, block by block", moved, 0);
-  ok(meters == 0u, "every meter reads the hand-written face's after each block", meters, 0);
-  ok(lat == 0u, "the latency is the hand-written face's", lat, 0);
+  ok(moved == 0u, "the output is the twin's (the hand-written face's or the kernel's), bit for bit, block by block", moved, 0);
+  ok(meters == 0u, "every meter reads the twin's after each block", meters, 0);
+  ok(lat == 0u, "the latency is the twin's", lat, 0);
   ok(g_allocs == 0, "nothing allocates", (double)g_allocs, 0);
   clean();
 }
@@ -277,7 +375,7 @@ static void arm_list(void) {
     ok(omx_fx_kernel(d->name) == d, "a served kernel is found by its name", n, 0);
     for (unsigned t = 0; t < NTWINS; t++) twinned += strcmp(TWINS[t].name, d->name) == 0;
   }
-  ok(n == NTWINS && twinned == NTWINS, "every served kernel has its hand-written twin here, and no other", n, NTWINS);
+  ok(n == NTWINS && twinned == NTWINS, "every served kernel has its twin here, and no other", n, NTWINS);
   ok(omx_fx_kernel("no-such-kernel") == NULL && omx_fx_kernel(NULL) == NULL, "an unknown name finds nothing", 1, 0);
   clean();
 }

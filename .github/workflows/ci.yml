@@ -52,7 +52,8 @@ jobs:
           wave: ${{ vars.OMX_RELEASE_MATRIX }}
           rpm-releases: '["45"]'
           rpm-arches: '["x86_64"]'
-          deb-releases: ${{ vars.OMX_RELEASE_MATRIX == 'full' && '["bookworm", "trixie"]' || '["trixie"]' }}
+          # trixie alone, quick and full: Debian bookworm is dropped from the matrix (owner 2026-11-27)
+          deb-releases: '["trixie"]'
           deb-arches: '["amd64", "arm64"]'
           x86-runner: ${{ github.event.pull_request.head.repo.fork && 'ubuntu-latest' || vars.OMX_RUNNER || 'ubuntu-latest' }}
 
@@ -97,7 +98,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # ruling D25: bookworm is a full cell, served only at the wave-end full release
+        # ruling D25: the cells follow the release set; no bookworm cell (dropped from the matrix, owner 2026-11-27)
         cell: ${{ fromJSON(needs.checks.outputs.cells) }}
     container:
       image: ${{ matrix.cell.image }}
@@ -299,7 +300,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     container:
-      image: fedora:45
+      image: fedora:45  # tool image: one run of omx-contract's reader, renderer and proof over data/, the whole repository at once; not a release cell
     defaults:
       run:
         shell: bash

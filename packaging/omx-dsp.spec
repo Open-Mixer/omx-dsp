@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2026 Pau Aliagas <linuxnow@gmail.com>
 Name: omx-dsp
-Version: 0.34.3
+Version: 0.34.4
 Release: 1%{?dist}
 License: GPL-3.0-or-later
 Summary: The audio toolbox of the OpenMixer console, as a real-time-safe C library
@@ -181,6 +181,17 @@ npm_config_engine_strict=true %make_install PREFIX=%{_prefix} LIBDIR=%{_libdir} 
 %{_datadir}/omx-dsp/catalogs/
 
 %changelog
+* Fri Nov 27 2026 Pau Aliagas <linuxnow@gmail.com> - 0.34.4-1
+- The align and idelay kernels reach a host through the generic face
+  (#185): omx_align_desc() and omx_idelay_desc() in their kernels'
+  headers, appended to omx_fx_kernels.h, each one control
+  (inputAlignDelay, outputDelay, ms) over rings of its own state, latency
+  0, its clear audio-thread safe. No hand-written face. face-conformance
+  requires each of the two to have a face of either kind, an instance
+  header or a descriptor.
+- Published by the devel release of the full matrix, with every change
+  merged to devel since 0.34.3.
+
 * Thu Nov 26 2026 Pau Aliagas <linuxnow@gmail.com> - 0.34.3-1
 - The RPMs are built for Fedora aarch64 as well as x86_64: the release
   matrix is Open-Mixer/.github's shared releases and architectures, with no

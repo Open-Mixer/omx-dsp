@@ -71,7 +71,8 @@ Debian bookworm's GCC 12.2 on arm64 (Raspberry Pi OS, Zynthian) crashes with an 
 error in `vect_transform_reduction` on a loop that keeps a `double` running maximum or minimum with
 `fmax`/`fmin` over values widened from `float`. Write such a reduction as a comparison instead,
 `if (!(e <= worst)) worst = e;`, which also carries a NaN into the result. `make lint` refuses the
-shape on any host (`tools/reduction-check.sh`), and CI builds the suite on bookworm arm64.
+shape on any host (`tools/reduction-check.sh`). CI no longer builds on bookworm: it is dropped from the
+matrix (owner 2026-11-27), so the lint is what holds the shape.
 
 ## Golden digests and libm
 

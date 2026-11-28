@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 Pau Aliagas <linuxnow@gmail.com>
 
-/* libFuzzer harness: the instance faces of every effect (include/omxdsp/fx/omx_*_instance.h),
+/* libFuzzer harness: the instance faces of every effect (include/omxdsp/fx/omx_*_instance.h), and the
+ * generic face (fx/omx_fx_face.h) over each kernel that has no hand-written one, align and idelay:
  * the code a host's audio callback runs: init at a rate, resolve the control ports, run a block.
  *
  * Input:  [0]     which effect (modulo the table below)
@@ -62,6 +63,8 @@
 #include <omxdsp/fx/omx_spring_instance.h>
 #include <omxdsp/fx/omx_upward_instance.h>
 #include <omxdsp/fx/omx_width_instance.h>
+#include <omxdsp/fx/omx_fx_face.h>
+#include <omxdsp/fx/omx_fx_kernels.h>
 
 
 #define BLOCK_MAX 512u
@@ -171,6 +174,25 @@ FX_STD(upward, OmxUpwardInstance,
 FX_STD(width, OmxWidthInstance,
        { float w = F(); int ps = I(); float pm = F(); int bm = I(); float bh = F();
          omx_width_instance_resolve(s, bypass, w, ps, pm, bm, bh); })
+/* A kernel the generic face serves (fx/omx_fx_face.h): the face and the kernel's state as one row, its ports the
+ * descriptor's controls in their declared order, one raw float word each, the face resolving them. */
+#define FX_FACE(k) \
+  struct face_##k { struct omx_fx_face f; struct omx_##k##_kernel st; }; \
+  static int k##_init(void *s, float sr) { \
+    struct face_##k *u = s; \
+    return omx_fx_face_init(&u->f, omx_fx_kernel(#k), &u->st, sr); \
+  } \
+  static void k##_resolve(void *s, int bypass, struct fuzz_in *c) { \
+    struct face_##k *u = s; \
+    float v[OMX_KERNEL_PARAMS_MAX]; \
+    for (uint32_t i = 0; i < omx_fx_kernel(#k)->n_params; i++) v[i] = F(); \
+    omx_fx_face_resolve(&u->f, bypass, v); \
+  } \
+  static void k##_run(void *s, const float *il, const float *ir, float *ol, float *or_, uint32_t n) { \
+    omx_fx_face_run(&((struct face_##k *)s)->f, il, ir, ol, or_, n); \
+  }
+FX_FACE(align)
+FX_FACE(idelay)
 
 /* The faces with array ports, and the two with a key or a double rate. */
 FX_INIT_STD(comp, OmxCompInstance)
@@ -268,6 +290,8 @@ static const struct fx FX[] = {
     ROW(upward, OmxUpwardInstance),   ROW(glue, OmxGlueInstance),
     ROW(loudlevel, OmxLoudlevelInstance), ROW(spring, OmxSpringInstance),
     ROW(balancer, OmxBalancerInstance),
+    /* appended, so every older seed's first byte still picks its face: the generic face's kernels */
+    ROW(align, struct face_align),    ROW(idelay, struct face_idelay),
 };
 #define FX_COUNT (sizeof FX / sizeof FX[0])
 
