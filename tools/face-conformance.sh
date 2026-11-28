@@ -5,9 +5,11 @@
 # face-conformance.sh — every instance face's resolve() takes its kernel's contract controls: the
 # same names, in the declared order, nothing extra and nothing missing.
 #
-#   tools/face-conformance.sh              the check, over include/omxdsp/fx/omx_<k>_instance.h
-#   tools/face-conformance.sh --self-test  a renamed and a dropped argument, and a control renamed in
-#                                          data/kernels/, must each be named
+#   tools/face-conformance.sh              the check, over include/omxdsp/fx/omx_<k>_instance.h and the
+#                                          generic face's list, include/omxdsp/fx/omx_fx_kernels.h
+#   tools/face-conformance.sh --self-test  a renamed and a dropped argument, a control renamed in
+#                                          data/kernels/, and a required kernel with neither face, must
+#                                          each be named
 #
 # Each kernel's controls are an ordered list in its definition file, data/kernels/<k>.json of this tree: the
 # library defines every kernel it implements. A face's resolve is
@@ -30,9 +32,11 @@ PENDING=""
 # face does not take yet: "<kernel>:<control>" in C case. An installed contract inside the range may carry them
 # (FreeMixer/omx-dsp#95); the face may omit them, and must take them in order when it does. Every other
 # control still has to be taken, so the list only shrinks as faces catch up.
-# REQUIRED names the kernels whose instance face must exist: a face absent from the tree is named, where the
-# glob below would only skip it. Each is a kernel the console runs per strip or per output whose plugin is
-# generated from the face.
+# REQUIRED names the kernels that must have a face, of either kind: a hand-written instance face
+# (omx_<k>_instance.h) or a descriptor the generic face serves (`return omx_<k>_desc();` in omx_fx_kernels.h,
+# held to its kernel file by tools/face-descriptor-check.sh). A kernel with neither is named, where the glob below
+# would only skip it. Each is a kernel the console runs per strip or per output whose plugin is generated from a
+# face; align and idelay have descriptors only (docs/generic-face.md, Migration item 6).
 REQUIRED="align idelay"
 NEWER="gate:hp_hz gate:lp_hz drive:oversample geq:mode"
 
@@ -132,7 +136,10 @@ check() {
     bad=1
   done
   for k in $REQUIRED; do
-    [ -f "$fx/omx_${k}_instance.h" ] || { echo "face-conformance: $k: no face omx_${k}_instance.h, and the kernel requires one" >&2; bad=1; }
+    [ -f "$fx/omx_${k}_instance.h" ] && continue
+    [ -f "$fx/omx_fx_kernels.h" ] && grep -q "return omx_${k}_desc();" "$fx/omx_fx_kernels.h" && continue
+    echo "face-conformance: $k: no face, neither omx_${k}_instance.h nor a descriptor in omx_fx_kernels.h, and the kernel requires one" >&2
+    bad=1
   done
   [ "$ok" -gt 0 ] || { echo "face-conformance: no face conforms; the check would prove nothing" >&2; return 2; }
   [ "$bad" = 0 ] && echo "face-conformance: $ok faces take their kernel's contract controls, by name, order and kind"
@@ -143,7 +150,7 @@ OWN="$HERE/data/kernels"
 
 if [ "${1:-}" = --self-test ]; then
   scratch="$(mktemp -d)"; trap 'rm -rf "$scratch"' EXIT
-  cp "$HERE"/include/omxdsp/fx/omx_*_instance.h "$scratch/"
+  cp "$HERE"/include/omxdsp/fx/omx_*_instance.h "$HERE/include/omxdsp/fx/omx_fx_kernels.h" "$scratch/"
   check "$scratch" "$OWN" >/dev/null || { echo "face-conformance self-test: the unmodified faces do not pass" >&2; exit 1; }
   # A renamed argument: the contract's `depth` written as `depth_pct`.
   sed -i 's/^\( *\)float depth, float mix, int mode) {$/\1float depth_pct, float mix, int mode) {/' "$scratch/omx_tremolo_instance.h"
@@ -164,11 +171,20 @@ if [ "${1:-}" = --self-test ]; then
   sed -i 's/^      "name": "depth",$/      "name": "depthPct",/' "$scratch/own/tremolo.json"
   out="$(check "$HERE/include/omxdsp/fx" "$scratch/own" 2>&1)" && { echo "face-conformance self-test: a tremolo control renamed in this tree's kernel file passed" >&2; exit 1; }
   grep -q 'contract: *float depth_pct$' <<<"$out" || { echo "face-conformance self-test: a tremolo control renamed in this tree's kernel file was NOT named" >&2; exit 1; }
-  # A required face removed: the align face absent must be named.
+  # A required kernel with neither face: align's descriptor dropped from the generic face's list must be named.
+  cp "$HERE/include/omxdsp/fx/omx_geq_instance.h" "$scratch/"
+  check "$scratch" "$OWN" >/dev/null || { echo "face-conformance self-test: the restored faces do not pass" >&2; exit 1; }
   rm -f "$scratch/omx_align_instance.h"
-  out="$(check "$scratch" "$OWN" 2>&1)" && { echo "face-conformance self-test: a required face removed passed" >&2; exit 1; }
-  grep -q 'align: no face omx_align_instance.h' <<<"$out" || { echo "face-conformance self-test: a required face removed was NOT named" >&2; exit 1; }
-  echo "face-conformance self-test: a renamed and a dropped argument, a band array of no contract count and a control renamed in this tree's kernel file and a required face removed were each named"
+  sed -i '/return omx_align_desc();/d' "$scratch/omx_fx_kernels.h"
+  grep -q 'return omx_align_desc();' "$scratch/omx_fx_kernels.h" && { echo "face-conformance self-test: the align plant did not land" >&2; exit 1; }
+  out="$(check "$scratch" "$OWN" 2>&1)" && { echo "face-conformance self-test: a required kernel with neither face passed" >&2; exit 1; }
+  grep -q 'align: no face, neither omx_align_instance.h nor a descriptor' <<<"$out" || { echo "face-conformance self-test: a required kernel with neither face was NOT named" >&2; exit 1; }
+  # Either kind is a face: the same kernel with a hand-written instance face (a copy of the trim's, renamed) passes.
+  sed 's/omx_trim_instance_resolve/omx_align_instance_resolve/' "$HERE/include/omxdsp/fx/omx_trim_instance.h" > "$scratch/omx_align_instance.h"
+  out="$(check "$scratch" "$OWN" 2>&1)" || true
+  grep -q 'align: no face' <<<"$out" && { echo "face-conformance self-test: a required kernel with a hand-written face was named as having none" >&2; exit 1; }
+  rm -f "$scratch/omx_align_instance.h"
+  echo "face-conformance self-test: a renamed and a dropped argument, a band array of no contract count, a control renamed in this tree's kernel file and a required kernel with neither face were each named"
   exit 0
 fi
 
