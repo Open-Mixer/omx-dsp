@@ -182,10 +182,13 @@ npm_config_engine_strict=true %make_install PREFIX=%{_prefix} LIBDIR=%{_libdir} 
 
 %changelog
 * Fri Nov 27 2026 Pau Aliagas <linuxnow@gmail.com> - 0.34.4-1
-- The align and idelay kernels have instance faces (#185):
-  omx_align_instance.h and omx_idelay_instance.h, each resolving its one
-  contract control (inputAlignDelay, outputDelay, ms), owning its rings,
-  latency 0. face-conformance requires both faces and now checks 33.
+- The align and idelay kernels reach a host through the generic face
+  (#185): omx_align_desc() and omx_idelay_desc() in their kernels'
+  headers, appended to omx_fx_kernels.h, each one control
+  (inputAlignDelay, outputDelay, ms) over rings of its own state, latency
+  0, its clear audio-thread safe. No hand-written face. face-conformance
+  requires each of the two to have a face of either kind, an instance
+  header or a descriptor.
 - Published by the devel release of the full matrix, with every change
   merged to devel since 0.34.3.
 
