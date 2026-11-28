@@ -9,7 +9,7 @@ import { limitUnits, loadData, renderC, resolveData } from './oc.mjs';
 import { UNION, editData, scratchData } from './helpers.mjs';
 
 const resolved = (dir = UNION) => resolveData(loadData(dir));
-const header = (r) => renderC(r).find((f) => f.path === 'omxcontract/omx_contract_limits.h').text;
+const header = (r) => renderC(r).find((f) => f.path === 'omxcontract/omx_contract.h').text;
 
 test('the attack floor is the detector constant, 0.5 ms, and the knee is 6 dB as omx-dsp\'s test spells it', () => {
   const r = resolved();

@@ -34,7 +34,7 @@
  * @brief The definitions omx-dsp implements: every kernel's travels, sets, readouts and constants. */
 
 #include <math.h>
-#include <omxcontract/omx_contract_limits.h>
+#include <omxcontract/omx_contract.h>
 
 /* Per-parameter numeric travel, one block per `travels` table named <PREFIX>_LIMITS:
  * OMX_<PREFIX>_<FIELD>_MIN/_MAX/_DEFAULT, float literals. */

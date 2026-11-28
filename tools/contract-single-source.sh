@@ -21,7 +21,7 @@
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
 : "${CONTRACT_INC:=$(sh "$HERE/tools/contract-include.sh")}"
-H="$CONTRACT_INC/omxcontract/omx_contract_limits.h"
+H="$CONTRACT_INC/omxcontract/omx_contract.h"
 OWN=include/omxdsp/omxdsp_definitions.h
 
 names() { grep -oE '^#[[:space:]]*define[[:space:]]+OMX_[A-Z0-9_]+' "$1" | awk '{print $2}' | sort -u; }

@@ -3,7 +3,7 @@
 # Copyright (C) 2026 Pau Aliagas <linuxnow@gmail.com>
 #
 # perturb.sh <dir> — the C reads the generated headers, not a copy of them.
-# A PERTURBED omx_contract_limits.h (one declared rate dropped) and omxdsp_definitions.h (the comp's
+# A PERTURBED omx_contract.h (one declared rate dropped) and omxdsp_definitions.h (the comp's
 # ratio floor moved +0.5, the opto release's fastMs moved +5 ms; then, one at a time, the LR4 section Q
 # and the all-pass/crossover tolerances; the ledger cap untouched) are written from the real ones into a
 # directory searched ahead of include/ and the contract include, and test/omxdsp_perturb.c is built
@@ -27,7 +27,7 @@ rm -rf "$OUT" && mkdir -p "$OUT/omxcontract" "$OUT/omxdsp"
 GEN="${OMXDSP_GEN:-$OUT/gen}"
 [ -n "${OMXDSP_GEN:-}" ] || bash "$PKG/tools/kernels-gen.sh" "$GEN" >/dev/null
 cp "$CONTRACT_INC"/omxcontract/*.h "$OUT/omxcontract/"
-LIMITS=omxcontract/omx_contract_limits.h
+LIMITS=omxcontract/omx_contract.h
 DEFS=omxdsp/omxdsp_definitions.h
 cp "$PKG/include/$DEFS" "$OUT/$DEFS"
 REAL_LIMITS="$CONTRACT_INC/$LIMITS"

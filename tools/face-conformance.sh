@@ -82,7 +82,7 @@ arguments() {
 # render defines (the installed contract's header or this library's include/omxdsp/omxdsp_definitions.h), or a macro the face defines as one (`#define
 # OMX_EQ_INSTANCE_BANDS OMX_EQ_BAND_COUNTS_EQ8_MAX`); every other line, and any other extent,
 # unchanged, so it is named as a mismatch.
-LIMITS="$(sh "$HERE/tools/contract-include.sh")/omxcontract/omx_contract_limits.h $HERE/include/omxdsp/omxdsp_definitions.h"
+LIMITS="$(sh "$HERE/tools/contract-include.sh")/omxcontract/omx_contract.h $HERE/include/omxdsp/omxdsp_definitions.h"
 per_band() {
   local face="$1" line t n x to
   while IFS= read -r line; do
