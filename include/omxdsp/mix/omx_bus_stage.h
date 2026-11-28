@@ -13,7 +13,7 @@
  * balance stays inside its declared range and the out gain never inverts or exceeds the fader
  * (`bus/output-gain`), and the composed out stage leaves the bus finite (`bus/output-stage`).
  * Moved from OpenMixer's engine (its mix_dsp.h) with the same names, arguments, arithmetic and
- * contract stages and tokens, bit for bit (FreeMixer/omx-dsp#185).
+ * contract stages and tokens, bit for bit.
  *
  * Header-only. Not in omxdsp.h: include <omxdsp/mix/omx_bus_stage.h>.
  */

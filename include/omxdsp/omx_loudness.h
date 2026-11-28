@@ -18,7 +18,7 @@
  * histogram. A histogram bin is 0.1 LU wide, from −70 LUFS (the absolute gate, a bin edge) up, and
  * holds its count and the exact sum of its energies, so a programme of any length takes the same
  * state. The relative gates are placed in energy; the bin a gate falls in is kept when its own
- * mean is above the gate. Design: BUILDING.md, "Loudness" (FreeMixer/omx-dsp#64).
+ * mean is above the gate. Design: BUILDING.md, "Loudness".
  *
  * Contract: NO allocation, NO lock, NO libc on the process path.
  */

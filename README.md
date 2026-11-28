@@ -12,14 +12,14 @@ headers and static libraries, nothing a running program loads.
 
 ## Install
 
-Fedora 45, x86_64:
+Fedora 45 (x86_64, aarch64):
 
 ```
 sudo dnf install https://www.openmixer.org/rpm/openmixer-release.noarch.rpm
 sudo dnf install omx-dsp-devel
 ```
 
-Debian trixie, arm64 (also Raspberry Pi OS and Zynthian):
+Debian trixie (amd64, arm64), also Raspberry Pi OS and Zynthian:
 
 ```
 cd /tmp && curl -fsSLO https://www.openmixer.org/deb/openmixer-release.deb && sudo apt install ./openmixer-release.deb
