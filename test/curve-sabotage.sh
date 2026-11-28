@@ -73,7 +73,7 @@ run hrp-mark 's|    if (!bands\[b\].on \|\| !ex->marks) continue;|    if (!bands
 run user-only 's|    if (origin\[b\] == OMX_CURVE_ORIGINS_USER) {|    if (origin[b] != OMX_CURVE_ORIGINS_FBS_LIVE) {|'
 run default-q 's|                      : (double)omx_eq_lv2_clamp_q(kind == OMX_EQ_NOTCH ? OMX_EQ_LV2_NOTCH : OMX_EQ_LV2_BELL,|                      : 0.5 + 0.0 * omx_eq_lv2_clamp_q(kind == OMX_EQ_NOTCH ? OMX_EQ_LV2_NOTCH : OMX_EQ_LV2_BELL,|'
 run limiter 's|  const float r = ratio ? (float)omx_curve_term_value(ratio) : INFINITY, k|  const float r = ratio ? (float)omx_curve_term_value(ratio) : 4.0f, k|'
-run slope-enum 's|  if (!f \|\| !s \|\| s->unit != OMX_CURVE_UNITS_DB) return OMX_CURVE_TERM_MISSING;|  if (!f \|\| !s) return OMX_CURVE_TERM_MISSING;|'
+run slope-enum 's|  if (!f \|\| !s \|\| (s->unit != OMX_CURVE_UNITS_DB \&\& s->unit != OMX_CURVE_UNITS_DB_PER_OCT)) return OMX_CURVE_TERM_MISSING;|  if (!f \|\| !s) return OMX_CURVE_TERM_MISSING;|'
 run drive-bias 's|  const struct omx_drive_bias bias = omx_drive_bias_for(o.curve, o.even_w);|  const struct omx_drive_bias bias = omx_drive_bias_for(o.curve, 0.0f);|'
 run drive-mix 's|  return (dry + o->mix \* delta) \* o->trim_lin;|  return (dry + delta) * o->trim_lin;|'
 run drive-trim 's|  return (dry + o->mix \* delta) \* o->trim_lin;|  return dry + o->mix * delta;|'
