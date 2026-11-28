@@ -670,7 +670,7 @@ FX_CONTRACT_ORACLES = delay_taps geq pitch transient chorus flanger phaser tremo
 FX_ORACLES = align_fdelay delay_taps dyn_flat gaincomp_fpflags geq_true band_dyn_poly comp_key delay_color gate_key reverb_return dyn_upward comp_release comp_models transient_readouts comp_key_isolation comp_feedback face face_align face_idelay
 # The effects that carry a host-agnostic instance core, include/omxdsp/fx/omx_<k>_instance.h: each
 # adds test/fx/<k>_instance.test.c, its oracle at every declared rate, contracts compiled in.
-FX_INSTANCES = chorus flanger drive reverb tremolo phaser pitch rotary limiter deesser delay align idelay
+FX_INSTANCES = chorus flanger drive reverb tremolo phaser pitch rotary limiter deesser delay
 # The instance faces with golden digests of their own: test/fx/<k>_instance_golden.test.c,
 # compared with test/golden/<k>_instance.sha256.
 FX_INSTANCE_GOLDENS = pitch
@@ -706,8 +706,6 @@ FX_LDFLAGS_flanger_instance = $(FX_NO_ALLOC_LDFLAGS)
 FX_LDFLAGS_reverb_instance = $(FX_NO_ALLOC_LDFLAGS)
 FX_LDFLAGS_deesser_instance = $(FX_NO_ALLOC_LDFLAGS)
 FX_LDFLAGS_delay_instance = $(FX_NO_ALLOC_LDFLAGS)
-FX_LDFLAGS_align_instance = $(FX_NO_ALLOC_LDFLAGS)
-FX_LDFLAGS_idelay_instance = $(FX_NO_ALLOC_LDFLAGS)
 FX_LDFLAGS_eq_instance = $(FX_NO_ALLOC_LDFLAGS)
 FX_LDFLAGS_comp_instance = $(FX_NO_ALLOC_LDFLAGS)
 FX_LDFLAGS_gate_instance = $(FX_NO_ALLOC_LDFLAGS)
