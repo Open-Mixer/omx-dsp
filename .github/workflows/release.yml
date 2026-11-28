@@ -2,12 +2,13 @@
 # Copyright (C) 2026 Pau Aliagas <linuxnow@gmail.com>
 name: release
 
-# Two paths, one build. A manual run with staged on BUILDS omx-dsp-devel and omx-rt-gate (RPM, fc45 x86_64; Fedora 45
-# aarch64 is not built, owner ruling 2026-11-19) and libomxdsp-dev, omx-rt-gate and omx-dsp-contract (DEB, amd64 and
+# Two paths, one build. A manual run with staged on BUILDS omx-dsp-devel and omx-rt-gate (RPM, fc45 x86_64 and
+# aarch64) and libomxdsp-dev, omx-rt-gate and omx-dsp-contract (DEB, amd64 and
 # arm64) through Open-Mixer/.github's build-rpm.yml and build-deb.yml, signed, into the staging channel (staging/rpm and
-# staging/deb of the channel repository), where the next layer builds against them. The quick set by default (matrix:
-# quick, the staging of a devel run); a promotion candidate is dispatched with matrix: full, the only staged tree a tag
-# can promote (promote-staged refuses one that lacks a release or architecture). Without staged, a dispatch (and the
+# staging/deb of the channel repository), where the next layer builds against them. The full matrix by default (matrix:
+# full, every release and architecture: owner ruling 2026-11-26, every package in every cell; a quick default staged
+# fc45 x86_64 and trixie arm64 alone and the next layer's amd64 and aarch64 builds found nothing), the only staged tree
+# a tag can promote (promote-staged refuses one that lacks a release or architecture); matrix: quick is asked for by name. Without staged, a dispatch (and the
 # ci.yml dry run that calls this workflow) builds unsigned trees and publishes nothing.
 #
 # A version tag v<make version> PROMOTES and never builds: on the commit the staged build recorded, and that commit on
@@ -28,7 +29,7 @@ on:
   workflow_dispatch:
     inputs:
       arm:
-        description: 'Build the arm64 DEBs too (a dispatched release needs them); no Fedora aarch64 RPM is built'
+        description: 'Build the arm64 DEBs too (a dispatched release needs them); the RPMs are fc45 x86_64 and aarch64 either way'
         type: boolean
         default: true
       staged:
@@ -36,10 +37,10 @@ on:
         type: boolean
         default: false
       matrix:
-        description: 'quick (fc45 x86_64, trixie arm64: the staging of every devel run) or full (every release and architecture: a promotion candidate, the only tree a tag can promote)'
+        description: 'full (every release and architecture, the default: owner ruling 2026-11-26, and the only tree a tag can promote) or quick (fc45 x86_64, trixie arm64 alone, asked for by name)'
         type: choice
         options: [quick, full]
-        default: quick
+        default: full
       version:
         description: 'A dry run of the promotion: the staged version to find (no v). Set, nothing is built'
         type: string
@@ -57,7 +58,7 @@ on:
       arm:
         type: boolean
         default: true
-        description: "Build the arm64 DEBs too; the pull-request dry run passes false (arm builds run at release only); no Fedora aarch64 RPM is built"
+        description: "Build the arm64 DEBs too; the pull-request dry run passes false (arm builds run at release only); the RPMs are fc45 x86_64 and aarch64"
       staged:
         type: boolean
         default: false
